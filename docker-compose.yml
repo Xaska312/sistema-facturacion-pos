@@ -1,0 +1,54 @@
+services:
+  postgres-db:
+    image: postgres:16-alpine
+    container_name: poshibrido-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${DB_USER:-pos_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-pos_secret_password}
+      POSTGRES_DB: ${DB_NAME:-pos_hibrido}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-pos_user} -d ${DB_NAME:-pos_hibrido}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: poshibrido-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=${DB_URL}
+      - SPRING_DATASOURCE_USERNAME=${DB_USER}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./backend/src
+          target: /app/src
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: poshibrido-frontend
+    ports:
+      - "4200:4200"
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    volumes:
+      - ./frontend/src:/app/src
+    depends_on:
+      - backend
+
+volumes:
+  postgres-data:
