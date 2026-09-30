@@ -1,17 +1,13 @@
 import { Component } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
+import { ToastModule } from 'primeng/toast';
 
 @Component({
   selector: 'app-root',
-  standalone: true,
+  imports: [RouterOutlet, ToastModule],
   template: `
-    <main class="flex items-center justify-center min-h-screen bg-gray-50">
-      <div class="text-center">
-        <h1 class="text-4xl font-bold text-blue-600 mb-4">POS Híbrido</h1>
-        <p class="text-lg text-gray-600">Frontend Angular 19 inicializado correctamente.</p>
-      </div>
-    </main>
+    <p-toast position="top-right" />
+    <router-outlet />
   `,
 })
-export class AppComponent {
-  title = 'pos-hibrido-frontend';
-}
+export class AppComponent {}

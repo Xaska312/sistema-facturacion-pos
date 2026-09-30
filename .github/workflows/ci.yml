@@ -7,7 +7,8 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build-and-test-backend:
+  backend:
+    name: Backend (Java 21 · compilación + tests con Testcontainers)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -20,10 +21,11 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: maven
-      - name: Build and test with Maven
-        run: mvn clean verify
+      - name: Build y tests (unitarios + integración)
+        run: mvn -B clean verify
 
-  build-and-test-frontend:
+  frontend:
+    name: Frontend (Node 22 · build + tests)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -36,7 +38,9 @@ jobs:
           node-version: '22'
           cache: 'npm'
           cache-dependency-path: './frontend/package-lock.json'
-      - name: Install dependencies
+      - name: Instalar dependencias
         run: npm ci
-      - name: Build frontend
+      - name: Build
         run: npm run build
+      - name: Tests
+        run: npm run test:ci
