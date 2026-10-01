@@ -22,36 +22,39 @@ import { problemMessage } from '../../core/errors/problem';
           <h1 class="text-xl font-semibold">Invitación no disponible</h1>
           <p class="text-slate-600">{{ error() }}</p>
           <a routerLink="/login" class="text-blue-600 hover:underline">Ir a iniciar sesión</a>
-        } @else if (preview(); as p) {
-          <h1 class="text-xl font-semibold">Te invitaron a {{ p.tenantName }}</h1>
-          <p class="text-slate-600">
-            {{ p.invitedByName ?? 'Un administrador' }} te invitó a trabajar en <strong>{{ p.tenantName }}</strong>
-            con el correo <strong>{{ p.email }}</strong>.
-          </p>
-          @if (p.status !== 'PENDING') {
-            <p class="text-amber-700">Esta invitación ya fue {{ p.status === 'ACCEPTED' ? 'usada' : 'revocada' }}.</p>
-          } @else if (p.expired) {
-            <p class="text-amber-700">Esta invitación venció el {{ p.expiresAt | date: 'medium' }}. Pide un enlace nuevo.</p>
-          } @else if (!auth.isAuthenticated()) {
-            <p class="text-sm text-slate-500">Para aceptarla, inicia sesión o crea tu cuenta con ese correo.</p>
-            <div class="flex gap-2">
-              <a routerLink="/login" [queryParams]="{ returnUrl: here() }" class="flex-1">
-                <p-button label="Iniciar sesión" styleClass="w-full" />
-              </a>
-              <a routerLink="/registro" [queryParams]="{ returnUrl: here(), email: p.email }" class="flex-1">
-                <p-button label="Crear cuenta" severity="secondary" styleClass="w-full" />
-              </a>
-            </div>
-          } @else if (wrongAccount()) {
-            <p class="text-amber-700">
-              Iniciaste sesión como {{ auth.user()?.email }}. Esta invitación es para {{ p.email }}.
-            </p>
-            <p-button label="Cambiar de cuenta" severity="secondary" (onClick)="switchAccount()" />
-          } @else {
-            <p-button label="Aceptar invitación" [loading]="accepting()" (onClick)="accept()" />
-          }
         } @else {
-          <p class="text-slate-500">Cargando invitación…</p>
+          <!-- Angular 19 solo permite "as" en el primer bloque del @if -->
+          @if (preview(); as p) {
+            <h1 class="text-xl font-semibold">Te invitaron a {{ p.tenantName }}</h1>
+            <p class="text-slate-600">
+              {{ p.invitedByName ?? 'Un administrador' }} te invitó a trabajar en <strong>{{ p.tenantName }}</strong>
+              con el correo <strong>{{ p.email }}</strong>.
+            </p>
+            @if (p.status !== 'PENDING') {
+              <p class="text-amber-700">Esta invitación ya fue {{ p.status === 'ACCEPTED' ? 'usada' : 'revocada' }}.</p>
+            } @else if (p.expired) {
+              <p class="text-amber-700">Esta invitación venció el {{ p.expiresAt | date: 'medium' }}. Pide un enlace nuevo.</p>
+            } @else if (!auth.isAuthenticated()) {
+              <p class="text-sm text-slate-500">Para aceptarla, inicia sesión o crea tu cuenta con ese correo.</p>
+              <div class="flex gap-2">
+                <a routerLink="/login" [queryParams]="{ returnUrl: here() }" class="flex-1">
+                  <p-button label="Iniciar sesión" styleClass="w-full" />
+                </a>
+                <a routerLink="/registro" [queryParams]="{ returnUrl: here(), email: p.email }" class="flex-1">
+                  <p-button label="Crear cuenta" severity="secondary" styleClass="w-full" />
+                </a>
+              </div>
+            } @else if (wrongAccount()) {
+              <p class="text-amber-700">
+                Iniciaste sesión como {{ auth.user()?.email }}. Esta invitación es para {{ p.email }}.
+              </p>
+              <p-button label="Cambiar de cuenta" severity="secondary" (onClick)="switchAccount()" />
+            } @else {
+              <p-button label="Aceptar invitación" [loading]="accepting()" (onClick)="accept()" />
+            }
+          } @else {
+            <p class="text-slate-500">Cargando invitación…</p>
+          }
         }
       </section>
     </main>
