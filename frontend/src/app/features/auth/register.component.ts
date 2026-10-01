@@ -1,12 +1,13 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import { AuthService } from '../../core/auth/auth.service';
 import { problemMessage } from '../../core/errors/problem';
+import { safeReturnUrl } from '../../core/auth/return-url';
 
 @Component({
   selector: 'app-register',
@@ -42,7 +43,8 @@ import { problemMessage } from '../../core/errors/problem';
 
         <p-button type="submit" label="Registrarme" [loading]="loading()" [disabled]="form.invalid" styleClass="w-full" />
         <p class="text-sm text-center">
-          ¿Ya tienes cuenta? <a routerLink="/login" class="text-blue-600 hover:underline">Inicia sesión</a>
+          ¿Ya tienes cuenta? <a routerLink="/login" [queryParams]="returnUrl ? { returnUrl: returnUrl } : {}"
+                                class="text-blue-600 hover:underline">Inicia sesión</a>
         </p>
       </form>
     </main>
@@ -52,13 +54,15 @@ export class RegisterComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly messages = inject(MessageService);
+  private readonly query = inject(ActivatedRoute).snapshot.queryParamMap;
+  protected readonly returnUrl = safeReturnUrl(this.query.get('returnUrl'));
 
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
 
   readonly form = inject(FormBuilder).nonNullable.group({
     fullName: ['', [Validators.required, Validators.maxLength(150)]],
-    email: ['', [Validators.required, Validators.email]],
+    email: [this.query.get('email') ?? '', [Validators.required, Validators.email]],
     phone: [''],
     password: ['', [Validators.required, Validators.minLength(10), Validators.pattern(/^(?=.*[A-Za-z])(?=.*\d).+$/)]],
   });
@@ -73,7 +77,7 @@ export class RegisterComponent {
     this.auth.register({ ...value, phone: value.phone || null }).subscribe({
       next: () => {
         this.messages.add({ severity: 'success', summary: 'Cuenta creada', detail: 'Ya puedes iniciar sesión.' });
-        void this.router.navigate(['/login']);
+        void this.router.navigate(['/login'], { queryParams: this.returnUrl ? { returnUrl: this.returnUrl } : {} });
       },
       error: (err: unknown) => {
         this.error.set(problemMessage(err));

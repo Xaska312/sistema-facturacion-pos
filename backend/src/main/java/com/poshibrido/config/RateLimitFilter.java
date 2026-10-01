@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Límite de peticiones por IP (ventana fija de 1 minuto) para login y registro.
+ * Límite de peticiones por IP (ventana fija de 1 minuto) para login, registro y consulta de invitaciones.
  * En memoria: suficiente para una instancia; con varias réplicas se moverá a Redis/proxy (Fase 7).
  * La IP se toma de {@code getRemoteAddr()}: detrás de un proxy, configurar
  * {@code server.forward-headers-strategy} para que refleje la IP real.
@@ -30,7 +30,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
     public RateLimitFilter(RateLimitProperties properties, HandlerExceptionResolver exceptionResolver) {
         this.limits = Map.of(
                 "/api/v1/auth/login", properties.loginPerMinute(),
-                "/api/v1/auth/register", properties.registerPerMinute());
+                "/api/v1/auth/register", properties.registerPerMinute(),
+                "/api/v1/invitations/preview", properties.loginPerMinute());
         this.exceptionResolver = exceptionResolver;
     }
 

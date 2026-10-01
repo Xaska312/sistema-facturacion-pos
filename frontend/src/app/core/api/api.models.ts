@@ -70,3 +70,121 @@ export interface ProblemDetail {
   detail?: string;
   errors?: { field: string; message: string }[];
 }
+
+// ---------------------------------------------------------------- Fase 2
+
+export interface CashRegister {
+  id: string;
+  branchId: string;
+  code: string;
+  name: string;
+  active: boolean;
+}
+
+export interface BranchInput {
+  name: string;
+  address: string | null;
+  cityCode: string | null;
+  phone: string | null;
+}
+
+export interface Permission {
+  code: string;
+  module: string;
+  description: string;
+}
+
+export interface Role {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  systemRole: boolean;
+  /** false solo para OWNER. */
+  editable: boolean;
+  permissions: string[];
+  memberCount: number;
+}
+
+export interface RoleInput {
+  name: string;
+  description: string | null;
+  permissions: string[];
+}
+
+export interface RoleRef {
+  id: string;
+  code: string;
+  name: string;
+}
+
+export interface BranchRef {
+  id: string;
+  code: string;
+  name: string;
+}
+
+export interface Member {
+  id: string;
+  displayName: string;
+  email: string | null;
+  active: boolean;
+  owner: boolean;
+  roles: RoleRef[];
+  branches: BranchRef[];
+  defaultBranchId: string | null;
+}
+
+export type InvitationStatus = 'PENDING' | 'ACCEPTED' | 'REVOKED';
+
+export interface Invitation {
+  id: string;
+  email: string;
+  status: InvitationStatus;
+  expired: boolean;
+  expiresAt: string;
+  createdAt: string;
+  invitedByName: string | null;
+  roles: RoleRef[];
+  branches: BranchRef[];
+}
+
+export interface InvitationCreated {
+  invitation: Invitation;
+  /** Se entrega una sola vez; con él se arma el enlace. */
+  token: string;
+}
+
+export interface InvitationPreview {
+  tenantName: string;
+  email: string;
+  invitedByName: string | null;
+  status: InvitationStatus;
+  expired: boolean;
+  expiresAt: string;
+}
+
+export interface InvitationAccepted {
+  tenantId: string;
+  tenantName: string;
+}
+
+export interface BusinessSettings {
+  allowNegativeStock: boolean;
+  pricesIncludeTax: boolean;
+  timezone: string;
+  currency: string;
+  receiptFooter: string;
+  maxDiscountPercent: number;
+}
+
+export interface Department {
+  code: string;
+  name: string;
+}
+
+export interface City {
+  code: string;
+  name: string;
+  departmentCode: string;
+}

@@ -8,4 +8,6 @@ import java.util.UUID;
 public interface BranchRepository extends JpaRepository<Branch, UUID> {
 
     boolean existsByCode(String code);
+
+    long countByActiveTrue();
 }

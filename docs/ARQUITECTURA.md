@@ -10,11 +10,26 @@ com.poshibrido
   config/        seguridad (JWT, CORS, rate limit)
   identity/      usuarios, login, tokens, refresh, membresías        -> platform.*
   tenancy/       tenants, resolución de tenant, schemas, Flyway, aprovisionamiento
-  access/        permisos y miembros dentro del schema del negocio
-  organization/  sucursales (en Fase 1 solo listar/crear)             -> t_<slug>.*
+  access/        roles, permisos, miembros e invitaciones (reglas anti-escalada)
+  organization/  sucursales, cajas registradoras, ajustes del negocio  -> t_<slug>.*
+  location/      catálogo DIVIPOLA (departamentos y municipios)       -> platform.*
+  audit/         registro de auditoría (audit_log del negocio)
 ```
-Los módulos se hablan por interfaces públicas (`TenantApi`, `UserApi`, `MembershipApi`, `AccessApi`,
-`TenantDataSeeder`), nunca por repositorios ajenos.
+Los módulos se hablan por interfaces públicas (`TenantApi`, `UserApi`, `MembershipApi`, `SessionApi`,
+`InvitationApi`, `AccessApi`, `BranchApi`, `BusinessSettingsApi`, `LocationApi`, `TenantDataSeeder`),
+nunca por repositorios ajenos.
+
+## Invitaciones
+```
+Admin (token de negocio)            Invitado
+POST /members/invitations  ──────▶  enlace <origen>/invitacion/<token>  (WhatsApp, correo…)
+  · roles ⊆ permisos del admin       POST /invitations/preview  (público)
+  · guarda hash del token            registro / login (returnUrl) ──▶ POST /invitations/accept
+                                       · correo de la sesión = correo invitado
+                                       · crea/reactiva member + roles + sucursales (JDBC calificado)
+                                       · membership ACTIVE, invitación ACCEPTED, audit_log
+                                     POST /auth/select-tenant
+```
 
 ## Flujo de una petición de negocio
 1. `RequestIdFilter` asigna `requestId` (MDC y header `X-Request-Id`).

@@ -3,7 +3,7 @@ import { ApplicationConfig, inject, provideAppInitializer, provideZoneChangeDete
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import Aura from '@primeng/themes/aura';
-import { MessageService } from 'primeng/api';
+import { ConfirmationService, MessageService } from 'primeng/api';
 import { providePrimeNG } from 'primeng/config';
 import { firstValueFrom } from 'rxjs';
 import { routes } from './app.routes';
@@ -19,6 +19,7 @@ export const appConfig: ApplicationConfig = {
     provideAnimationsAsync(),
     providePrimeNG({ theme: { preset: Aura, options: { darkModeSelector: false } } }),
     MessageService,
+    ConfirmationService,
     // Recupera la sesión (cookie de refresh) antes de evaluar las rutas, para que al recargar
     // la página los guards vean el negocio ya seleccionado.
     provideAppInitializer(() => firstValueFrom(inject(AuthService).restore())),

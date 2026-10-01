@@ -44,7 +44,38 @@ export const routes: Routes = [
         data: { permission: 'branches:read' },
         loadComponent: () => import('./features/branches/branches.component').then((m) => m.BranchesComponent),
       },
+      {
+        path: 'cajas',
+        canActivate: [permissionGuard],
+        data: { permission: 'cash-registers:manage' },
+        loadComponent: () =>
+          import('./features/cash-registers/cash-registers.component').then((m) => m.CashRegistersComponent),
+      },
+      {
+        path: 'usuarios',
+        canActivate: [permissionGuard],
+        data: { permission: 'members:read' },
+        loadComponent: () => import('./features/members/members.component').then((m) => m.MembersComponent),
+      },
+      {
+        path: 'roles',
+        canActivate: [permissionGuard],
+        data: { permission: 'roles:manage' },
+        loadComponent: () => import('./features/roles/roles.component').then((m) => m.RolesComponent),
+      },
+      {
+        path: 'ajustes',
+        canActivate: [permissionGuard],
+        data: { permission: 'settings:read' },
+        loadComponent: () => import('./features/settings/settings.component').then((m) => m.SettingsComponent),
+      },
     ],
+  },
+  {
+    // Enlace público de invitación (con o sin sesión).
+    path: 'invitacion/:token',
+    loadComponent: () =>
+      import('./features/invitations/accept-invitation.component').then((m) => m.AcceptInvitationComponent),
   },
   { path: '**', redirectTo: 'app' },
 ];

@@ -9,13 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.time.Instant;
-import java.util.Base64;
-import java.util.HexFormat;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -29,9 +23,8 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Transactional(propagation = Propagation.MANDATORY, noRollbackFor = UnauthorizedException.class)
-public class RefreshTokenService {
+public class RefreshTokenService implements SessionApi {
 
-    private static final SecureRandom RANDOM = new SecureRandom();
     private static final String INVALID = "La sesión expiró. Inicia sesión nuevamente.";
 
     private final RefreshTokenRepository repository;
@@ -81,25 +74,23 @@ public class RefreshTokenService {
         repository.revokeAllActive(userId, Instant.now());
     }
 
+    @Override
+    public void revokeTenantSessions(UUID userId, UUID tenantId) {
+        repository.revokeActiveForTenant(userId, tenantId, Instant.now());
+    }
+
     private Optional<RefreshToken> find(String rawToken) {
-        if (rawToken == null || rawToken.isBlank() || rawToken.length() > 128) {
+        if (!SecureTokens.looksValid(rawToken)) {
             return Optional.empty();
         }
         return repository.findByTokenHash(hash(rawToken));
     }
 
     private static String newRawToken() {
-        byte[] bytes = new byte[32];
-        RANDOM.nextBytes(bytes);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+        return SecureTokens.newToken();
     }
 
     static String hash(String raw) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            return HexFormat.of().formatHex(digest.digest(raw.getBytes(StandardCharsets.UTF_8)));
-        } catch (NoSuchAlgorithmException ex) {
-            throw new IllegalStateException("SHA-256 no disponible", ex);
-        }
+        return SecureTokens.sha256(raw);
     }
 }

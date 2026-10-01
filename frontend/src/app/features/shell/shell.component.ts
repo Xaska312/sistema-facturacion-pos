@@ -2,7 +2,7 @@ import { Component, computed, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { AuthService } from '../../core/auth/auth.service';
-import { visibleMenu } from './menu';
+import { visibleMenu, withHeadings } from './menu';
 
 @Component({
   selector: 'app-shell',
@@ -15,10 +15,13 @@ import { visibleMenu } from './menu';
           <p class="text-xs text-slate-400">{{ auth.user()?.fullName }}</p>
         </div>
         <nav class="flex md:flex-col gap-1 p-2 flex-1 overflow-x-auto">
-          @for (item of menu(); track item.route) {
-            <a [routerLink]="item.route" routerLinkActive="bg-slate-700"
-               [routerLinkActiveOptions]="{ exact: item.route === '/app' }"
-               class="px-3 py-2 rounded hover:bg-slate-800 whitespace-nowrap">{{ item.label }}</a>
+          @for (entry of menu(); track entry.item.route) {
+            @if (entry.heading) {
+              <p class="hidden md:block px-3 pt-4 pb-1 text-xs uppercase tracking-wide text-slate-400">{{ entry.heading }}</p>
+            }
+            <a [routerLink]="entry.item.route" routerLinkActive="bg-slate-700"
+               [routerLinkActiveOptions]="{ exact: entry.item.route === '/app' }"
+               class="px-3 py-2 rounded hover:bg-slate-800 whitespace-nowrap">{{ entry.item.label }}</a>
           }
         </nav>
         <div class="p-2 flex md:flex-col gap-1">
@@ -38,7 +41,7 @@ export class ShellComponent {
 
   protected readonly menu = computed(() => {
     const permissions = this.auth.permissions();
-    return visibleMenu((p) => permissions.has(p));
+    return withHeadings(visibleMenu((p) => permissions.has(p)));
   });
 
   switchTenant(): void {

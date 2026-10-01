@@ -52,6 +52,13 @@ public class TenantDirectory implements TenantApi {
         return visible.stream().map(t -> TenantSummary.of(t, userId)).toList();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<TenantInfo> findInfo(UUID tenantId) {
+        return tenants.findById(tenantId).map(t -> new TenantInfo(t.getId(), t.getSlug(), t.getSchemaName(),
+                t.getTradeName(), t.getStatus(), t.getOwnerUserId()));
+    }
+
     public void evict(UUID tenantId) {
         cache.remove(tenantId);
     }

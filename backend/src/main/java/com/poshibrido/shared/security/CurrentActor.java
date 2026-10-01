@@ -6,6 +6,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.UUID;
 
 /**
@@ -26,6 +28,18 @@ public final class CurrentActor {
             }
         }
         return Optional.empty();
+    }
+
+    /** Permisos ({@code recurso:acción}) del token de la petición actual. */
+    public static Set<String> permissions() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) {
+            return Set.of();
+        }
+        return auth.getAuthorities().stream()
+                .map(a -> a.getAuthority())
+                .filter(a -> a != null && a.contains(":"))
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     public static UUID requireUserId() {

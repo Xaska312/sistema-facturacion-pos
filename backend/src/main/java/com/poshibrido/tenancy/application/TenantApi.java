@@ -14,4 +14,7 @@ public interface TenantApi {
 
     /** Negocios donde el usuario tiene membresía activa o de los que es dueño. */
     List<TenantSummary> listVisibleTo(UUID userId);
+
+    /** Datos del negocio en cualquier estado (sin caché). */
+    Optional<TenantInfo> findInfo(UUID tenantId);
 }

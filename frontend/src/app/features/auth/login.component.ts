@@ -1,11 +1,12 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import { AuthService } from '../../core/auth/auth.service';
 import { problemMessage } from '../../core/errors/problem';
+import { safeReturnUrl } from '../../core/auth/return-url';
 
 @Component({
   selector: 'app-login',
@@ -35,7 +36,8 @@ import { problemMessage } from '../../core/errors/problem';
         <p-button type="submit" label="Ingresar" [loading]="loading()" [disabled]="form.invalid" styleClass="w-full" />
 
         <p class="text-sm text-center">
-          ¿No tienes cuenta? <a routerLink="/registro" class="text-blue-600 hover:underline">Regístrate</a>
+          ¿No tienes cuenta? <a routerLink="/registro" [queryParams]="returnUrl ? { returnUrl: returnUrl } : {}"
+                                class="text-blue-600 hover:underline">Regístrate</a>
         </p>
       </form>
     </main>
@@ -44,6 +46,7 @@ import { problemMessage } from '../../core/errors/problem';
 export class LoginComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  protected readonly returnUrl = safeReturnUrl(inject(ActivatedRoute).snapshot.queryParamMap.get('returnUrl'));
 
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
@@ -61,7 +64,7 @@ export class LoginComponent {
     this.error.set(null);
     const { email, password } = this.form.getRawValue();
     this.auth.login(email, password).subscribe({
-      next: () => void this.router.navigate(['/negocios']),
+      next: () => void this.router.navigateByUrl(this.returnUrl ?? '/negocios'),
       error: (err: unknown) => {
         this.error.set(problemMessage(err));
         this.loading.set(false);

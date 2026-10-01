@@ -53,4 +53,19 @@ public class Branch extends AuditableEntity {
         branch.active = true;
         return branch;
     }
+
+    public void update(String name, String address, String cityCode, String phone) {
+        this.name = name;
+        this.address = address;
+        this.cityCode = cityCode;
+        this.phone = phone;
+    }
+
+    public void deactivate() {
+        this.active = false;
+    }
+
+    public void activate() {
+        this.active = true;
+    }
 }

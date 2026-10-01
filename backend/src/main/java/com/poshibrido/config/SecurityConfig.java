@@ -36,7 +36,8 @@ import java.util.List;
 /**
  * Seguridad stateless con JWT.
  * <ul>
- *   <li>{@code /api/v1/auth/**} y {@code /api/v1/tenants/**}: endpoints de plataforma.</li>
+ *   <li>{@code /api/v1/auth/**}, {@code /api/v1/tenants/**}, {@code /api/v1/invitations/**} y
+ *       {@code /api/v1/locations/**}: endpoints de plataforma (cualquier sesión).</li>
  *   <li>Resto de {@code /api/v1/**}: endpoints de negocio; exigen token con {@code tid} (si no, 403).</li>
  *   <li>Cada endpoint de negocio declara su permiso con {@code @PreAuthorize}.</li>
  * </ul>
@@ -74,7 +75,9 @@ public class SecurityConfig {
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/login",
                                 "/api/v1/auth/refresh", "/api/v1/auth/logout").permitAll()
-                        .requestMatchers("/api/v1/auth/**", "/api/v1/tenants", "/api/v1/tenants/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/invitations/preview").permitAll()
+                        .requestMatchers("/api/v1/auth/**", "/api/v1/tenants", "/api/v1/tenants/**",
+                                "/api/v1/invitations/**", "/api/v1/locations/**").authenticated()
                         .requestMatchers("/api/v1/platform/**").hasAuthority(PLATFORM_ADMIN)
                         .requestMatchers("/api/v1/**").hasAuthority(TENANT_SESSION)
                         .anyRequest().denyAll())

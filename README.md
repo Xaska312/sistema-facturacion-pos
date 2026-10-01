@@ -11,7 +11,8 @@ POS web multi-negocio para comercios en Colombia. Backend Spring Boot 4.1 (Java 
 |---|---|
 | 0 — Esqueleto | ✅ Completada |
 | 1 — Identidad, tenancy y aprovisionamiento | ✅ Completada (validada en local el 2026-10-01: 21 tests en verde y app probada) |
-| 2 — Acceso y organización | ⏳ Siguiente |
+| 2 — Acceso y organización | 🧪 Entregada, pendiente de validar en local |
+| 3 — Catálogo y terceros | ⏳ Siguiente |
 
 ## Requisitos
 - **Docker Desktop** (o Docker Engine + Compose). Debe estar en estado *Engine running* antes de levantar el proyecto o correr los tests.
@@ -121,3 +122,32 @@ TTOKEN=$(curl -s -b cookies.txt -c cookies.txt -X POST $API/auth/select-tenant \
 curl -s $API/branches -H "Authorization: Bearer $TTOKEN"           # 200: sede principal
 ```
 (Con `curl` por HTTP la cookie `Secure` no se reenvía salvo a `localhost`.)
+
+---
+
+## Fase 2 — Acceso y organización 🧪
+
+**Incluye**
+- **Usuarios:** invitar por enlace (correo + roles + sucursales), ver y revocar invitaciones, editar roles y sucursales de cada miembro, desactivar/activar. Página pública `/invitacion/<token>` para aceptar (con registro o inicio de sesión y regreso automático).
+- **Roles y permisos:** crear, editar y eliminar roles con permisos agrupados por módulo. Reglas anti-escalada (nadie otorga permisos que no tiene; OWNER intocable).
+- **Sucursales** (crear, editar, municipio DIVIPOLA, activar/desactivar) y **cajas registradoras** por sucursal.
+- **Ajustes del negocio:** vender sin existencias, precios con IVA incluido, zona horaria, moneda, descuento máximo, pie del recibo.
+- **Auditoría** de todos esos cambios y **menú por permisos** con sección *Configuración*.
+
+**Criterios de aceptación y tests**
+| Criterio | Test |
+|---|---|
+| Un CASHIER no ve ni puede llamar endpoints de configuración | `ConfigurationAccessIT` (backend) y `menu.spec.ts` (frontend) |
+| Invitar, aceptar con el correo correcto, revocar, vencer, re-invitar | `InvitationFlowIT` |
+| Nadie escala privilegios; OWNER y propietario protegidos | `PrivilegeEscalationIT` |
+| Roles y miembros (CRUD, permisos aplicados al renovar, desactivar corta el acceso) | `RoleAndMemberManagementIT` |
+| Sucursales, cajas, ajustes y DIVIPOLA | `OrganizationIT` |
+| Aislamiento entre negocios en cada módulo nuevo | `ModuleIsolationIT` |
+
+**Probar a mano**
+1. Entra como propietario → *Configuración → Usuarios → Invitar usuario*. Elige rol **Cajero** y la sede principal → *Generar enlace* → copia el enlace.
+2. Abre el enlace en otra ventana privada → *Crear cuenta* con ese correo → vuelve sola a la invitación → *Aceptar invitación*.
+3. Como cajero, el menú solo muestra *Inicio* y *Sucursales*; si escribes `/app/ajustes` en la barra, te devuelve al inicio, y la API responde 403.
+4. Como propietario, crea un rol en *Roles y permisos*, cámbiale permisos al cajero en *Usuarios* o desactívalo.
+
+**Nota DIVIPOLA:** por ahora el catálogo trae los 33 departamentos y sus capitales. El listado completo de municipios se agregará con una migración generada desde el archivo oficial del DANE.

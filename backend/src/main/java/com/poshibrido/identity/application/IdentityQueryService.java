@@ -12,6 +12,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -31,6 +34,28 @@ public class IdentityQueryService implements UserApi, MembershipApi {
             throw new ForbiddenException("La cuenta no está activa.");
         }
         return UserSummary.of(user);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<UUID, UserSummary> findSummaries(Collection<UUID> userIds) {
+        if (userIds.isEmpty()) {
+            return Map.of();
+        }
+        return users.findAllById(userIds).stream()
+                .collect(Collectors.toMap(u -> u.getId(), u -> UserSummary.of(u)));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<UserSummary> findByEmail(String email) {
+        return users.findByEmail(User.normalizeEmail(email)).map(u -> UserSummary.of(u));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isActiveMember(UUID userId, UUID tenantId) {
+        return memberships.findByUserIdAndTenantId(userId, tenantId).map(m -> m.isActive()).orElse(false);
     }
 
     @Override
