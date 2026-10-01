@@ -4,12 +4,16 @@ export interface MenuItem {
   /** Permiso requerido; sin permiso = visible para cualquier miembro. */
   permission?: string;
   /** Grupo del menú lateral. */
-  section?: 'Configuración';
+  section?: 'Catálogo' | 'Terceros' | 'Configuración';
 }
 
 /** Menú lateral. Las opciones de fases siguientes se agregan aquí con su permiso. */
 export const MENU: MenuItem[] = [
   { label: 'Inicio', route: '/app' },
+  { label: 'Productos', route: '/app/productos', permission: 'products:read', section: 'Catálogo' },
+  { label: 'Ajustes de catálogo', route: '/app/catalogo', permission: 'products:manage', section: 'Catálogo' },
+  { label: 'Clientes', route: '/app/clientes', permission: 'parties:read', section: 'Terceros' },
+  { label: 'Proveedores', route: '/app/proveedores', permission: 'parties:read', section: 'Terceros' },
   { label: 'Sucursales', route: '/app/sucursales', permission: 'branches:read', section: 'Configuración' },
   { label: 'Cajas', route: '/app/cajas', permission: 'cash-registers:manage', section: 'Configuración' },
   { label: 'Usuarios', route: '/app/usuarios', permission: 'members:read', section: 'Configuración' },

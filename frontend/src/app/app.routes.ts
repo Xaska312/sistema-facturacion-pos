@@ -39,6 +39,52 @@ export const routes: Routes = [
         loadComponent: () => import('./features/shell/home.component').then((m) => m.HomeComponent),
       },
       {
+        path: 'productos',
+        canActivate: [permissionGuard],
+        data: { permission: 'products:read' },
+        loadComponent: () => import('./features/products/products.component').then((m) => m.ProductsComponent),
+      },
+      {
+        path: 'productos/importar',
+        canActivate: [permissionGuard],
+        data: { permission: 'products:manage' },
+        loadComponent: () =>
+          import('./features/products/product-import.component').then((m) => m.ProductImportComponent),
+      },
+      {
+        path: 'productos/nuevo',
+        canActivate: [permissionGuard],
+        data: { permission: 'products:manage' },
+        loadComponent: () =>
+          import('./features/products/product-editor.component').then((m) => m.ProductEditorComponent),
+      },
+      {
+        path: 'productos/:id',
+        canActivate: [permissionGuard],
+        data: { permission: 'products:read' },
+        loadComponent: () =>
+          import('./features/products/product-editor.component').then((m) => m.ProductEditorComponent),
+      },
+      {
+        path: 'catalogo',
+        canActivate: [permissionGuard],
+        data: { permission: 'products:manage' },
+        loadComponent: () =>
+          import('./features/catalog-settings/catalog-settings.component').then((m) => m.CatalogSettingsComponent),
+      },
+      {
+        path: 'clientes',
+        canActivate: [permissionGuard],
+        data: { permission: 'parties:read', kind: 'customers' },
+        loadComponent: () => import('./features/parties/parties.component').then((m) => m.PartiesComponent),
+      },
+      {
+        path: 'proveedores',
+        canActivate: [permissionGuard],
+        data: { permission: 'parties:read', kind: 'suppliers' },
+        loadComponent: () => import('./features/parties/parties.component').then((m) => m.PartiesComponent),
+      },
+      {
         path: 'sucursales',
         canActivate: [permissionGuard],
         data: { permission: 'branches:read' },

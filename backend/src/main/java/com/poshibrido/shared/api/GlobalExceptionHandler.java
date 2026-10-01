@@ -14,6 +14,9 @@ import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -56,6 +59,16 @@ public class GlobalExceptionHandler {
             MissingServletRequestParameterException.class})
     public ResponseEntity<ProblemDetail> handleBadRequest(Exception ex) {
         return build(HttpStatus.BAD_REQUEST, "Petición inválida", "La petición no tiene un formato válido.");
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ProblemDetail> handleUploadSize(MaxUploadSizeExceededException ex) {
+        return build(HttpStatus.PAYLOAD_TOO_LARGE, "Archivo demasiado grande", "El archivo supera el tamaño permitido (5 MB).");
+    }
+
+    @ExceptionHandler({MissingServletRequestPartException.class, MultipartException.class})
+    public ResponseEntity<ProblemDetail> handleMultipart(Exception ex) {
+        return build(HttpStatus.BAD_REQUEST, "Petición inválida", "Adjunta el archivo en el campo 'file'.");
     }
 
     @ExceptionHandler(AuthenticationException.class)

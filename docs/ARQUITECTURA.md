@@ -12,11 +12,14 @@ com.poshibrido
   tenancy/       tenants, resolución de tenant, schemas, Flyway, aprovisionamiento
   access/        roles, permisos, miembros e invitaciones (reglas anti-escalada)
   organization/  sucursales, cajas registradoras, ajustes del negocio  -> t_<slug>.*
+  catalog/       categorías, unidades, impuestos, productos, códigos, listas de precios, importación
+  parties/       terceros: clientes y proveedores (NIT con DV)
   location/      catálogo DIVIPOLA (departamentos y municipios)       -> platform.*
   audit/         registro de auditoría (audit_log del negocio)
 ```
 Los módulos se hablan por interfaces públicas (`TenantApi`, `UserApi`, `MembershipApi`, `SessionApi`,
-`InvitationApi`, `AccessApi`, `BranchApi`, `BusinessSettingsApi`, `LocationApi`, `TenantDataSeeder`),
+`InvitationApi`, `AccessApi`, `BranchApi`, `BusinessSettingsApi`, `LocationApi`, `PricingApi`, `PriceListApi`,
+`TenantDataSeeder`),
 nunca por repositorios ajenos.
 
 ## Invitaciones
@@ -57,3 +60,13 @@ OWNER → membresía + `ACTIVE` (tx plataforma). Cualquier fallo: `DROP SCHEMA �
 - `db/platform`: schema `platform`.
 - `db/tenant`: cada `t_<slug>` y la plantilla `tenant_template` (usada para validar el modelo JPA).
 Al arrancar se migran `platform`, la plantilla y todos los negocios `ACTIVE`, antes de iniciar Hibernate.
+
+## Catálogo: precio de un código escaneado
+```
+código ──▶ product_barcodes ──▶ (producto, unidad: base o presentación)
+   └─(si no es código)──▶ SKU ──▶ (producto, unidad base)
+precio = lista del cliente (price_list_items[lista, producto, unidad])
+         └─ si no hay ──▶ General: unidad base → products.sale_price
+                                    presentación → conversion.sale_price ?? sale_price × factor
+```
+`PricingApi.price(productId, unitId, priceListId)` es el punto de entrada para ventas (Fase 5).

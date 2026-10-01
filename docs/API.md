@@ -87,3 +87,41 @@ Paginación: `{ content, page, size, totalElements, totalPages }`.
 `products:read|manage`, `parties:read|manage`, `inventory:read|adjust|transfer`, `cash:operate|read`,
 `sales:create|read|void|discount`, `reports:read`.
 Roles: OWNER y ADMIN (todos), CASHIER, SELLER, WAREHOUSE, ACCOUNTANT (ver `db/tenant/V2__seed_access_and_organization.sql`).
+
+## Catálogo (Fase 3)
+Leer: `products:read`. Modificar: `products:manage`.
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/products?search=&categoryId=&includeInactive=&page=&size=&sort=name,asc` | Busca por nombre, SKU o código exacto |
+| GET | `/products/{id}` | Producto con presentaciones, códigos y precios por lista |
+| POST | `/products` · PUT `/products/{id}` | Cuerpo completo (abajo). 409 SKU o código repetido; 422 referencias inválidas |
+| POST | `/products/{id}/activate` · `/deactivate` | |
+| GET | `/products/lookup?code=&priceListId=` | Código de barras o SKU → `{productId, sku, name, unitId, unitCode, factor, price, fromList, taxType, taxRate, trackInventory}`. 404 si no existe, 422 si está inactivo |
+| POST | `/barcodes/internal` | `{barcode}` EAN-13 interno libre (prefijo 29) |
+| POST | `/products/import?dryRun=true` (multipart `file`) | Reporte `{totalRows, toCreate, toUpdate, newCategories, errors[{row, message}], applied}`. Con `dryRun=false` importa solo si no hay errores |
+| GET/POST | `/categories` · PUT `/categories/{id}` · POST `/{id}/activate`·`/deactivate` | Árbol con `parentId`; nombre único entre hermanas; sin ciclos |
+| GET/POST | `/units` · PUT `/units/{id}` · activar/desactivar | Código 1–10 letras/números |
+| GET/POST | `/taxes` · PUT `/taxes/{id}` · activar/desactivar | Tipos IVA, INC, EXEMPT, EXCLUDED (exento/excluido con tarifa 0) |
+| GET/POST | `/price-lists` · PUT `/price-lists/{id}` · activar/desactivar | GET también con `parties:read`. La General no se desactiva |
+
+Cuerpo de producto:
+```json
+{ "sku": "AGUA-600", "name": "Agua 600 ml", "description": null, "categoryId": null,
+  "baseUnitId": "<UND>", "taxId": "<IVA19>", "cost": 800, "salePrice": 1500, "trackInventory": true,
+  "conversions": [{ "unitId": "<CJ>", "factor": 24, "salePrice": 30000 }],
+  "barcodes":   [{ "barcode": "7700000000017" }, { "barcode": "17700000000014", "unitId": "<CJ>" }],
+  "listPrices": [{ "priceListId": "<MAYORISTA>", "unitId": null, "price": 1300 }] }
+```
+CSV de importación (separador `;` o `,`, UTF-8): `sku, nombre, codigo_barras, categoria, unidad, impuesto, costo, precio, controla_inventario, descripcion` (obligatorias: sku, nombre, impuesto, precio). Números en formato colombiano o inglés: `2.500` = 2500, `2,5` = 2.5.
+
+## Terceros (Fase 3)
+Leer: `parties:read`. Modificar: `parties:manage`.
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/customers?search=&includeInactive=&page=&size=` | Busca por nombre o documento; *Consumidor final* primero |
+| GET | `/customers/{id}` | |
+| POST | `/customers` · PUT `/customers/{id}` | Datos del tercero + `priceListId`, `creditLimit`. 409 documento ya registrado como cliente |
+| POST | `/customers/{id}/activate` · `/deactivate` | El tercero del sistema no se modifica (422) |
+| GET/POST/PUT | `/suppliers` … | Igual, sin lista ni cupo |
+
+Datos del tercero: `{personType: NATURAL|LEGAL, documentType: CC|CE|NIT|PASSPORT|TI|PEP, documentNumber, verificationDigit (solo NIT), firstNames, lastNames | businessName, email, phone, address, cityCode}`. Persona jurídica = NIT. El DV se valida con el algoritmo de la DIAN (422 indicando el DV correcto).
