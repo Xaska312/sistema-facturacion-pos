@@ -1,6 +1,5 @@
 package com.poshibrido.tenancy.infrastructure;
 
-import com.poshibrido.tenancy.application.TenantRef;
 import com.poshibrido.tenancy.domain.TenantSchemas;
 import org.hibernate.context.spi.CurrentTenantIdentifierResolver;
 import org.springframework.stereotype.Component;
@@ -17,7 +16,7 @@ public class TenantIdentifierResolver implements CurrentTenantIdentifierResolver
     @Override
     public String resolveCurrentTenantIdentifier() {
         return TenantContext.current()
-                .map(TenantRef::schema)
+                .map(t -> t.schema())
                 .orElse(TenantSchemas.PLATFORM_SCHEMA);
     }
 

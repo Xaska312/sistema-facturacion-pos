@@ -54,7 +54,7 @@ class BranchPermissionIT extends IntegrationTest {
         api.postWith(session, "/api/v1/branches", """
                 {"code":"","name":""}
                 """).andExpect(status().isBadRequest());
-        api.getWith(session, "/api/v1/branches?sort=password,asc").andExpect(status().isUnprocessableEntity());
+        api.getWith(session, "/api/v1/branches?sort=password,asc").andExpect(status().is(422));
     }
 
     private void addMember(String slug, UUID tenantId, UUID userId, String roleCode) {

@@ -23,18 +23,20 @@ import static org.springframework.security.test.web.servlet.setup.SecurityMockMv
 @SpringBootTest
 public abstract class IntegrationTest {
 
-    private static final PostgreSQLContainer POSTGRES;
+    /** Contenedor compartido por toda la ejecución; Testcontainers (Ryuk) lo detiene al terminar la JVM. */
+    private static final PostgreSQLContainer POSTGRES = startContainerIfNeeded();
 
-    static {
-        if (System.getenv("POS_TEST_DB_URL") == null) {
-            POSTGRES = new PostgreSQLContainer("postgres:16-alpine")
-                    .withDatabaseName("pos_test")
-                    .withUsername("test")
-                    .withPassword("test");
-            POSTGRES.start();
-        } else {
-            POSTGRES = null;
+    @SuppressWarnings("resource") // se cierra al terminar la JVM, no al salir de este método
+    private static PostgreSQLContainer startContainerIfNeeded() {
+        if (System.getenv("POS_TEST_DB_URL") != null) {
+            return null;
         }
+        PostgreSQLContainer container = new PostgreSQLContainer("postgres:16-alpine")
+                .withDatabaseName("pos_test")
+                .withUsername("test")
+                .withPassword("test");
+        container.start();
+        return container;
     }
 
     @DynamicPropertySource

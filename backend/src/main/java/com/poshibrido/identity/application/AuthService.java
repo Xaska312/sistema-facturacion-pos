@@ -1,7 +1,6 @@
 package com.poshibrido.identity.application;
 
 import com.poshibrido.access.application.AccessApi;
-import com.poshibrido.identity.domain.Membership;
 import com.poshibrido.identity.domain.User;
 import com.poshibrido.identity.infrastructure.MembershipRepository;
 import com.poshibrido.identity.infrastructure.UserRepository;
@@ -102,7 +101,7 @@ public class AuthService {
     @Transactional
     public SessionResult selectTenant(UUID userId, UUID tenantId, String currentRefreshToken) {
         User user = users.findById(userId)
-                .filter(User::isActive)
+                .filter(u -> u.isActive())
                 .orElseThrow(() -> new UnauthorizedException(SESSION_EXPIRED));
         TenantAccess access = resolveTenantAccess(user, tenantId)
                 .orElseThrow(() -> new ForbiddenException(NO_ACCESS));
@@ -119,7 +118,7 @@ public class AuthService {
             throw new UnauthorizedException(SESSION_EXPIRED);
         }
         RefreshTokenService.Rotation rotation = refreshTokens.rotate(rawRefreshToken);
-        User user = users.findById(rotation.userId()).filter(User::isActive).orElse(null);
+        User user = users.findById(rotation.userId()).filter(u -> u.isActive()).orElse(null);
         if (user == null) {
             refreshTokens.revokeAll(rotation.userId());
             throw new UnauthorizedException(SESSION_EXPIRED);
@@ -151,7 +150,7 @@ public class AuthService {
 
     private Optional<TenantAccess> resolveTenantAccess(User user, UUID tenantId) {
         boolean member = memberships.findByUserIdAndTenantId(user.getId(), tenantId)
-                .map(Membership::isActive)
+                .map(m -> m.isActive())
                 .orElse(false);
         if (!member) {
             return Optional.empty();

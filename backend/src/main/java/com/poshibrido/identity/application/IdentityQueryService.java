@@ -37,7 +37,7 @@ public class IdentityQueryService implements UserApi, MembershipApi {
     @Transactional(readOnly = true)
     public Set<UUID> activeTenantIds(UUID userId) {
         return memberships.findByUserIdAndStatus(userId, MembershipStatus.ACTIVE).stream()
-                .map(Membership::getTenantId)
+                .map(m -> m.getTenantId())
                 .collect(Collectors.toSet());
     }
 
@@ -45,7 +45,7 @@ public class IdentityQueryService implements UserApi, MembershipApi {
     @Transactional(propagation = Propagation.MANDATORY)
     public void grantActive(UUID userId, UUID tenantId) {
         memberships.findByUserIdAndTenantId(userId, tenantId)
-                .ifPresentOrElse(Membership::activate,
+                .ifPresentOrElse(m -> m.activate(),
                         () -> memberships.save(Membership.active(userId, tenantId)));
     }
 }
