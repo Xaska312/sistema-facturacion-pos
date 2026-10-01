@@ -42,9 +42,11 @@ class TenantIsolationIT extends IntegrationTest {
                 .andExpect(jsonPath("$.tenantId").value(tenantId.toString()))
                 .andExpect(jsonPath("$.permissions", hasItem("branches:manage")));
 
-        api.getWith(owner, "/api/v1/tenants")
+        String tenantsBody = api.getWith(owner, "/api/v1/tenants")
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[?(@.id == '%s')].status".formatted(tenantId)).value(List.of("ACTIVE")));
+                .andReturn().getResponse().getContentAsString();
+        List<String> statuses = JsonPath.read(tenantsBody, "$[?(@.id == '%s')].status".formatted(tenantId));
+        assertThat(statuses).as("GET /tenants respondió: %s", tenantsBody).containsExactly("ACTIVE");
     }
 
     @Test
