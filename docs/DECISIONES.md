@@ -14,7 +14,7 @@ Cada decisión o suposición que se aparta del prompt maestro, o lo precisa, que
 4. `application.properties` contenía YAML (Spring lo leía como properties y se perdía la configuración). Se reemplazó por `application.yml`.
 5. Había dos migraciones `V1` en `db/platform` (una era del tenant): Flyway no arranca así. La del tenant pasó a `db/tenant`. Como ninguna base llegó a migrarse (el arranque fallaba), se reescribieron `V1`/`V2` de plataforma en lugar de agregar `V3`.
 6. En Boot 4 cambiaron paquetes y artefactos: `HibernatePropertiesCustomizer` está en `org.springframework.boot.hibernate.autoconfigure`; Testcontainers 2 usa `testcontainers-postgresql` y `org.testcontainers.postgresql.PostgreSQLContainer`; springdoc 3.x es la línea compatible con Boot 4.
-7. `package.json` del frontend declaraba `primeng` y `@tailwindcss/postcss` pero el `package-lock.json` no los tenía (`npm ci` fallaba). Hay que regenerar el lock con `npm install` (ver README).
+7. `package.json` del frontend declaraba `primeng` y `@tailwindcss/postcss` pero el `package-lock.json` no los tenía (`npm ci` fallaba). Se regeneró con `npm install` y se commiteó (resuelto).
 
 ### Seguridad y tokens
 8. **JWT HS256 con Spring Security OAuth2 JOSE (Nimbus)** en lugar de JJWT: se integra nativamente con `oauth2ResourceServer().jwt()`, valida firma, `exp` e `iss`, y evita la dependencia de JJWT con Jackson 2. La configuración es manual (sin autoconfiguración de resource server).
@@ -41,8 +41,10 @@ Cada decisión o suposición que se aparta del prompt maestro, o lo precisa, que
 27. **Tipos de negocio:** solo `RETAIL` se puede crear en el MVP (los demás responden 422).
 28. **Aplazado a fases siguientes:** `plans`/`subscriptions` (Fase 7), catálogo DIVIPOLA `departments`/`cities` (Fase 2; mientras tanto las sucursales guardan `city_code` de 5 dígitos), invitación de miembros (Fase 2).
 
-### Pendiente de confirmar en el primer build real
-El entorno donde se escribió esta fase no tenía acceso a Maven Central, npm ni Docker Hub, así que el código **no se compiló allí**; el SQL sí se validó contra PostgreSQL 16. Si el primer CI falla, revisar primero:
-- Si los campos extra del `ProblemDetail` (`errors`, `timestamp`) salen anidados en `properties` con Jackson 3: registrar el mixin de `ProblemDetail` en el `JsonMapper`.
-- Si `ddl-auto=validate` reclama por `Instant` ↔ `timestamptz`: anotar con `@JdbcTypeCode(SqlTypes.TIMESTAMP_UTC)`.
-- Si springdoc 3.0.0 no arranca con Boot 4.1: subir a la última 3.0.x.
+### Resultado del primer build real (2026-10-01)
+La fase se escribió en un entorno sin acceso a Maven Central, npm ni Docker Hub, así que la primera compilación real fue en local (Windows, Docker Desktop):
+- Compiló sin errores con Spring Boot 4.1.1 y la aplicación arrancó: la validación del modelo (`Instant` ↔ `timestamptz`) y springdoc 3.0.0 no dieron problemas.
+- 20 de 21 tests pasaron a la primera. El fallo era del test, no del código: en Spring 7, `jsonPath("$[?(@.id == '…')].status").value(List.of(...))` devolvía `null`. Se reemplazó por `JsonPath.read` + AssertJ.
+
+29. **Advertencias del IDE:** se desactivó `java.compile.nullAnalysis.mode` en `.vscode/settings.json`: con las anotaciones JSpecify de Spring 7, el análisis de nulos de JDT genera avisos falsos. No afecta a Maven ni al CI. Se reemplazaron también las APIs deprecadas en Spring 7 (`HttpStatus.UNPROCESSABLE_ENTITY` → `UNPROCESSABLE_CONTENT`).
+30. **Entrega por parches:** durante la Fase 1 el asistente no tenía permiso de push al repositorio; los cambios se entregaron como archivos `.patch` (aplicados con `git am`) y el push lo hizo el equipo. Los `.patch` no se versionan.
