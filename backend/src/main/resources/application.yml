@@ -1,0 +1,61 @@
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    include-message: never
+    include-stacktrace: never
+
+spring:
+  application:
+    name: poshibrido-backend
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/pos_hibrido}
+    username: ${DB_USER:pos_user}
+    password: ${DB_PASSWORD:}
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:10}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  threads:
+    virtual:
+      enabled: false
+
+app:
+  security:
+    # Secreto HS256 (mínimo 32 bytes). Obligatorio: sin valor por defecto.
+    jwt-secret: ${JWT_SECRET}
+    issuer: pos-hibrido
+    access-token-ttl: ${JWT_ACCESS_TTL:PT15M}
+    refresh-token-ttl: ${JWT_REFRESH_TTL:P7D}
+    refresh-cookie-secure: ${REFRESH_COOKIE_SECURE:true}
+    max-failed-attempts: 5
+    lock-duration: PT15M
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
+  rate-limit:
+    login-per-minute: ${RATE_LIMIT_LOGIN:10}
+    register-per-minute: ${RATE_LIMIT_REGISTER:5}
+
+springdoc:
+  api-docs:
+    enabled: ${OPENAPI_ENABLED:false}
+  swagger-ui:
+    enabled: ${OPENAPI_ENABLED:false}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+
+logging:
+  pattern:
+    level: "%5p [req=%X{requestId:-} tenant=%X{tenant:-} user=%X{userId:-}]"

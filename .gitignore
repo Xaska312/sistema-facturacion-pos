@@ -1,0 +1,20 @@
+# Secretos y entorno local
+.env
+*.env.local
+
+# Logs y temporales
+*.log
+logs/
+tmp/
+
+# IDEs / SO
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Node en la raíz (el frontend tiene su propio .gitignore)
+node_modules/
+
+# Parches recibidos para aplicar con git am
+*.patch

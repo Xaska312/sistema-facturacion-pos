@@ -1,5 +1,3 @@
--- Creación del schema de plataforma inicial
+-- Schema de plataforma (datos globales del SaaS).
+-- Los UUID (v7) se generan en la aplicación: no se requieren extensiones.
 CREATE SCHEMA IF NOT EXISTS platform;
-
--- Extensión para generación de UUIDs si es necesario a futuro
-CREATE EXTENSION IF NOT EXISTS "pgcrypto" SCHEMA platform;

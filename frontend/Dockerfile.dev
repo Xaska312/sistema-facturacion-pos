@@ -1,8 +1,8 @@
 FROM node:22-alpine
 WORKDIR /app
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 COPY . .
 EXPOSE 4200
-# ng serve bindeado a 0.0.0.0 para que Docker lo exponga
-CMD ["npx", "ng", "serve", "--host", "0.0.0.0", "--poll", "2000"]
+# ng serve en 0.0.0.0 para que Docker lo exponga; el proxy apunta a API_TARGET (ver proxy.conf.js)
+CMD ["npx", "ng", "serve", "--host", "0.0.0.0", "--poll", "2000", "--proxy-config", "proxy.conf.js"]
