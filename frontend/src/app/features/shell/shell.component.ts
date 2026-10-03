@@ -20,7 +20,7 @@ import { visibleMenu, withHeadings } from './menu';
               <p class="hidden md:block px-3 pt-4 pb-1 text-xs uppercase tracking-wide text-slate-400">{{ entry.heading }}</p>
             }
             <a [routerLink]="entry.item.route" routerLinkActive="bg-slate-700"
-               [routerLinkActiveOptions]="{ exact: entry.item.route === '/app' || entry.item.route === '/app/inventario' }"
+               [routerLinkActiveOptions]="{ exact: exactRoutes.has(entry.item.route) }"
                class="px-3 py-2 rounded hover:bg-slate-800 whitespace-nowrap">{{ entry.item.label }}</a>
           }
         </nav>
@@ -38,6 +38,8 @@ import { visibleMenu, withHeadings } from './menu';
 export class ShellComponent {
   protected readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  /** Rutas con subrutas en el menú: solo se marcan activas en su ruta exacta. */
+  protected readonly exactRoutes = new Set(['/app', '/app/inventario', '/app/caja']);
 
   protected readonly menu = computed(() => {
     const permissions = this.auth.permissions();

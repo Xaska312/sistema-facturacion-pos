@@ -2,6 +2,8 @@ package com.poshibrido.shared.error;
 
 import org.springframework.http.HttpStatus;
 
+import java.util.Map;
+
 /**
  * Excepción base de dominio. El mensaje es seguro para mostrarse al usuario (en español);
  * el {@code GlobalExceptionHandler} lo traduce a ProblemDetail con el estado HTTP indicado.
@@ -23,5 +25,10 @@ public abstract class DomainException extends RuntimeException {
 
     public String getTitle() {
         return title;
+    }
+
+    /** Datos adicionales para el ProblemDetail (p. ej. el detalle de precios que cambiaron). */
+    public Map<String, Object> getProperties() {
+        return Map.of();
     }
 }

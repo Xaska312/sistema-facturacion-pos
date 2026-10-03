@@ -95,7 +95,7 @@ public class BranchService implements BranchApi {
             return List.of();
         }
         return branches.findAllById(ids).stream()
-                .map(b -> new BranchRef(b.getId(), b.getCode(), b.getName(), b.isActive()))
+                .map(b -> new BranchRef(b.getId(), b.getCode(), b.getName(), b.isActive(), b.getAddress(), b.getPhone()))
                 .toList();
     }
 

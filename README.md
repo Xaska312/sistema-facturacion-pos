@@ -13,8 +13,9 @@ POS web multi-negocio para comercios en Colombia. Backend Spring Boot 4.1 (Java 
 | 1 — Identidad, tenancy y aprovisionamiento | ✅ Completada (validada en local el 2026-10-01: 21 tests en verde y app probada) |
 | 2 — Acceso y organización | ✅ Completada (validada en local el 2026-10-01: 46 tests en verde y app probada) |
 | 3 — Catálogo y terceros | ✅ Completada (validada en local el 2026-10-02: tests en verde y app probada) |
-| 4 — Inventario | 🧪 Entregada, pendiente de validar en local |
-| 5 — Ventas y caja | ⏳ Siguiente |
+| 4 — Inventario | ✅ Completada (validada en local el 2026-10-03: tests en verde y app probada) |
+| 5 — Caja y ventas | 🧪 Entregada, pendiente de validar en local |
+| 6 — Reportes y dashboard | ⏳ Siguiente |
 
 ## Requisitos
 - **Docker Desktop** (o Docker Engine + Compose). Debe estar en estado *Engine running* antes de levantar el proyecto o correr los tests.
@@ -69,6 +70,13 @@ cd frontend; npm run test:ci       # Karma + ChromeHeadless
 cd backend && ./mvnw verify
 cd frontend && npm run test:ci
 ```
+**E2E (Playwright)**: con la app levantada (`docker compose up`), en otra terminal:
+```powershell
+cd e2e; npm install; npx playwright install chromium; npx playwright test
+```
+Crea un usuario y un negocio nuevos por la API y recorre login → abrir caja → vender → cerrar caja en el navegador.
+El reporte queda en `e2e/playwright-report`. En GitHub se puede lanzar a mano con el flujo *E2E POS Híbrido*.
+
 `mvnw verify` solo ejecuta las pruebas: levanta un PostgreSQL temporal, prueba y lo apaga; **no deja la aplicación corriendo** (para eso, `docker compose up`).
 
 Sin Docker se pueden apuntar los tests a un PostgreSQL 16 existente con las variables
@@ -185,7 +193,7 @@ Validada en local: 46 tests en verde; invitación por enlace, menú por permisos
 4. *Terceros → Clientes*: registra una empresa con NIT (el DV se calcula solo) y asígnale la lista *Mayorista*.
 5. Como cajero: ve productos y registra clientes, pero no puede crear productos ni entrar a *Ajustes de catálogo*.
 
-## Fase 4 — Inventario 🧪
+## Fase 4 — Inventario ✅
 
 **Incluye**
 - **Existencias por sucursal** en unidad base, con mínimo y máximo por producto y sucursal y **alertas** de existencias bajas (también en *Inicio*).
@@ -219,3 +227,35 @@ Validada en local: 46 tests en verde; invitación por enlace, menú por permisos
 6. En *Existencias*, pon mínimo 30 al producto: aparece la alerta aquí y en *Inicio*.
 7. Abre el *Kardex* del producto: el saldo de cada línea es el anterior más la cantidad.
 8. Como vendedor o cajero: ve existencias y kardex, pero no registra ajustes ni traslados.
+
+## Fase 5 — Caja y ventas 🧪
+
+**Incluye**
+- **Caja**: abrir con base de efectivo (una sesión abierta por caja y por usuario; solo en cajas de las sucursales asignadas), ingresos, egresos y retiros con motivo, **cierre con arqueo ciego**: el cajero cuenta sin ver el esperado; el sistema calcula esperado = base + movimientos en efectivo y guarda la diferencia. Una sesión cerrada no se reabre.
+- **Informe de caja** parcial (X) y de cierre (Z): ventas, anulaciones, cobrado por medio de pago, ingresos, egresos, retiros, esperado, contado y diferencia (estos últimos con el permiso nuevo `cash:audit`: dueño, administrador y contador).
+- **Pantalla de venta** (`/pos`, a pantalla completa, sirve en tablet horizontal): lector de códigos siempre enfocado (`3*código` = 3 unidades), **F2** buscar por nombre, **F4** cobrar, **Esc** cancelar; cliente con su lista de precios; descuento por línea (por encima del límite del negocio exige `sales:discount`); **pago mixto** (efectivo, tarjeta, transferencia) con cálculo del cambio (solo en efectivo).
+- **Venta en una sola transacción**: precios, impuestos y descuentos los recalcula el servidor (si la pantalla mostraba otro precio o total → 409 y la pantalla se actualiza); descuenta inventario (`SALE` con saldo resultante) sin permitir existencias negativas; registra el efectivo en la caja; consecutivo **POS-1, POS-2…** sin huecos; `Idempotency-Key` obligatoria (un doble clic o reintento no duplica la venta).
+- **Tiquete** imprimible en impresora térmica de **58 u 80 mm** (se elige en el diálogo del tiquete y queda guardado en el equipo).
+- **Ventas**: historial con filtros, detalle, reimprimir y **anular** con motivo (`sales:void`): no se borra nada, el inventario vuelve (`SALE_VOID`) y el efectivo sale de la caja de la venta o, si ya se cerró, de la caja abierta de quien anula.
+- Ventas, pagos, impuestos y movimientos de caja son **inmutables** en la base de datos (triggers). Cada venta guarda cliente identificado y totales por impuesto para la facturación electrónica futura y publica el evento `SaleCompleted`.
+
+**Tests**
+| Qué | Test |
+|---|---|
+| Venta con IVA, pago mixto, cambio, inventario, kardex, informe, consecutivos | `SalesIT.saleUpdatesStockCashAndNumbering` |
+| Precio distinto → 409, descuentos con y sin permiso, precios sin IVA | `SalesIT.serverRecalculatesPricesAndAppliesDiscountRules` |
+| **20 ventas simultáneas del último producto → exactamente 1 aceptada** | `SalesIT.twentyConcurrentSalesOfTheLastUnitOnlyOneSucceeds` |
+| **Misma Idempotency-Key (también simultánea) → una sola venta** | `SalesIT.sameIdempotencyKeyCreatesOneSale` |
+| Anulación (inventario y efectivo, sesión cerrada), inmutabilidad, permisos por endpoint, aislamiento, token sin negocio | `SalesIT` |
+| Arqueo ciego, una sesión por caja y por usuario, sucursales asignadas, idempotencia de movimientos | `CashIT` |
+| Impuestos, totales, cambio, arqueo | `SaleCalculatorTest`, `CashCountTest`, `sale-math.spec.ts` |
+| Flujo completo en el navegador | `e2e/tests/venta.spec.ts` (Playwright) |
+
+**Probar a mano**
+1. Crea un producto con código de barras y dale saldo inicial (Fase 4).
+2. *Ventas → Mi caja*: elige la caja, escribe la base (p. ej. 50.000) y *Abrir caja*.
+3. *Ir a vender*: escanea o escribe el código y Enter (o `2*código`). F2 busca por nombre. *Cambiar cliente* aplica su lista de precios.
+4. **F4**: paga parte con tarjeta y el resto en efectivo con un billete mayor; mira el cambio. *Registrar venta* → tiquete → *Imprimir* (elige 58 u 80 mm).
+5. *Ventas → Ventas*: abre la venta, reimprímela y anúlala con un motivo. Revisa que la existencia volvió.
+6. *Mi caja*: registra un retiro y *Cerrar caja* contando el efectivo. Como dueño, *Historial de caja* muestra el esperado y la diferencia; como cajero, no.
+7. Como vendedor (sin `cash:operate`): ve la pantalla de venta pero no puede cobrar sin caja abierta; no ve *Mi caja* ni puede anular.

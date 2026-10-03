@@ -1,19 +1,28 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { ButtonModule } from 'primeng/button';
 import { StockAlert } from '../../core/api/api.models';
 import { InventoryApi } from '../../core/api/inventory.api';
 import { AuthService } from '../../core/auth/auth.service';
+import { HasPermissionDirective } from '../../shared/has-permission.directive';
 import { formatQuantity } from '../../shared/money';
 
 @Component({
   selector: 'app-home',
-  imports: [RouterLink],
+  imports: [RouterLink, ButtonModule, HasPermissionDirective],
   template: `
     <h1 class="text-2xl font-semibold mb-2">Bienvenido, {{ auth.user()?.fullName }}</h1>
     <p class="text-slate-600 mb-6">
       Estás trabajando en <strong>{{ auth.currentTenant()?.tradeName ?? 'tu negocio' }}</strong>.
       El panel con ventas llega en la Fase 6.
     </p>
+
+    <div class="flex flex-wrap gap-2 mb-4">
+      <a *hasPermission="'sales:create'" routerLink="/pos"><p-button label="Vender" size="large" /></a>
+      <a *hasPermission="'cash:operate'" routerLink="/app/caja">
+        <p-button label="Mi caja" size="large" severity="secondary" [outlined]="true" />
+      </a>
+    </div>
 
     @if (alerts().length > 0) {
       <section class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">

@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -26,5 +27,11 @@ public class MemberDirectory {
         }
         return members.findAllById(ids.stream().filter(Objects::nonNull).collect(Collectors.toSet())).stream()
                 .collect(Collectors.toMap(Member::getId, Member::getDisplayName));
+    }
+
+    /** Sucursales asignadas al miembro (vacío si no es miembro del negocio). */
+    @Transactional(readOnly = true)
+    public Set<UUID> branchIdsOf(UUID memberId) {
+        return members.findById(memberId).map(m -> Set.copyOf(m.getBranchIds())).orElse(Set.of());
     }
 }

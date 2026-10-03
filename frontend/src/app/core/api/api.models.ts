@@ -462,3 +462,245 @@ export interface ProductLookup {
   taxRate: number;
   trackInventory: boolean;
 }
+
+// ---------------------------------------------------------------- Caja (Fase 5)
+
+export type CashSessionStatus = 'OPEN' | 'CLOSED';
+export type CashMovementType = 'SALE' | 'SALE_VOID' | 'INCOME' | 'EXPENSE' | 'WITHDRAWAL';
+export type ManualCashMovementType = 'INCOME' | 'EXPENSE' | 'WITHDRAWAL';
+
+export interface PaymentMethod {
+  id: string;
+  code: string;
+  name: string;
+  affectsCash: boolean;
+  requiresReference: boolean;
+}
+
+export interface RegisterOption {
+  id: string;
+  code: string;
+  name: string;
+  branchId: string;
+  branchName: string;
+  busy: boolean;
+  busyBy: string | null;
+}
+
+export interface CashSession {
+  id: string;
+  cashRegisterId: string;
+  registerCode: string | null;
+  registerName: string | null;
+  branchId: string;
+  branchName: string | null;
+  status: CashSessionStatus;
+  openedBy: string;
+  openedByName: string | null;
+  openedAt: string;
+  openingAmount: number;
+  openingNotes: string | null;
+  closedAt: string | null;
+  closedBy: string | null;
+  closedByName: string | null;
+  countedAmount: number | null;
+  /** Solo con el permiso cash:audit (cierre ciego). */
+  expectedAmount: number | null;
+  difference: number | null;
+  closingNotes: string | null;
+  mine: boolean;
+}
+
+export interface CashMovement {
+  entryNo: number | null;
+  id: string;
+  type: CashMovementType;
+  amount: number;
+  reason: string | null;
+  referenceType: string | null;
+  referenceId: string | null;
+  createdBy: string | null;
+  createdByName: string | null;
+  createdAt: string;
+}
+
+export interface MethodTotal {
+  paymentMethodId: string;
+  code: string | null;
+  name: string | null;
+  amount: number;
+  count: number;
+}
+
+export interface CashSection {
+  opening: number;
+  sales: number;
+  voidRefunds: number;
+  incomes: number;
+  expenses: number;
+  withdrawals: number;
+  expected: number | null;
+  counted: number | null;
+  difference: number | null;
+}
+
+export interface CashReport {
+  session: CashSession;
+  salesCount: number;
+  salesTotal: number;
+  voidedCount: number;
+  voidedTotal: number;
+  netSales: number;
+  byMethod: MethodTotal[];
+  voidsHereCount: number;
+  cash: CashSection;
+  auditView: boolean;
+}
+
+// ---------------------------------------------------------------- Ventas (Fase 5)
+
+export type SaleStatus = 'COMPLETED' | 'VOIDED';
+
+export interface SaleRow {
+  id: string;
+  documentNumber: string;
+  number: number;
+  status: SaleStatus;
+  createdAt: string;
+  branchId: string;
+  branchName: string | null;
+  cashRegisterId: string;
+  registerCode: string | null;
+  customerName: string;
+  customerDocument: string;
+  total: number;
+  itemCount: number;
+  createdBy: string;
+  createdByName: string | null;
+}
+
+export interface SaleItem {
+  lineNo: number;
+  productId: string;
+  sku: string;
+  name: string;
+  unitId: string;
+  unitCode: string;
+  quantity: number;
+  unitPrice: number;
+  grossAmount: number;
+  discountPercent: number;
+  discountAmount: number;
+  taxType: string;
+  taxRate: number;
+  taxableBase: number;
+  taxAmount: number;
+  total: number;
+}
+
+export interface SalePayment {
+  lineNo: number;
+  paymentMethodId: string;
+  methodCode: string;
+  methodName: string;
+  amount: number;
+  tendered: number;
+  reference: string | null;
+}
+
+export interface SaleTax {
+  taxId: string;
+  taxType: string;
+  taxRate: number;
+  taxableBase: number;
+  taxAmount: number;
+}
+
+export interface ReceiptHeader {
+  businessName: string | null;
+  branchName: string | null;
+  branchAddress: string | null;
+  branchPhone: string | null;
+  registerCode: string | null;
+  registerName: string | null;
+  footer: string | null;
+  timezone: string | null;
+}
+
+export interface Sale {
+  id: string;
+  documentNumber: string;
+  prefix: string;
+  number: number;
+  status: SaleStatus;
+  createdAt: string;
+  branchId: string;
+  cashRegisterId: string;
+  cashSessionId: string;
+  customerId: string;
+  customerDocumentType: string;
+  customerDocumentNumber: string;
+  customerVerificationDigit: number | null;
+  customerName: string;
+  pricesIncludeTax: boolean;
+  grossTotal: number;
+  discountTotal: number;
+  subtotal: number;
+  taxTotal: number;
+  total: number;
+  paidTotal: number;
+  changeAmount: number;
+  notes: string | null;
+  createdBy: string;
+  createdByName: string | null;
+  voidedAt: string | null;
+  voidedBy: string | null;
+  voidedByName: string | null;
+  voidReason: string | null;
+  items: SaleItem[];
+  payments: SalePayment[];
+  taxes: SaleTax[];
+  receipt: ReceiptHeader;
+}
+
+export interface PosConfig {
+  pricesIncludeTax: boolean;
+  maxDiscountPercent: number;
+  allowNegativeStock: boolean;
+  currency: string;
+  receiptFooter: string | null;
+  businessName: string;
+  finalConsumerId: string;
+}
+
+export interface SaleItemInput {
+  productId: string;
+  unitId: string | null;
+  quantity: number;
+  discountPercent: number | null;
+  /** Precio que muestra la pantalla: si el vigente es otro, el backend responde 409. */
+  unitPrice: number | null;
+}
+
+export interface SalePaymentInput {
+  paymentMethodId: string;
+  amount: number;
+  reference: string | null;
+}
+
+export interface SaleInput {
+  customerId: string | null;
+  items: SaleItemInput[];
+  payments: SalePaymentInput[];
+  expectedTotal: number | null;
+  notes: string | null;
+}
+
+/** Detalle del 409 cuando cambiaron precios. */
+export interface PriceChange {
+  line: number;
+  sku: string;
+  name: string;
+  expectedPrice: number;
+  currentPrice: number;
+}
