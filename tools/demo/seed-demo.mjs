@@ -49,7 +49,10 @@ class ApiError extends Error {
   }
 }
 
-async function api(method, path, { token, body, headers = {}, expect } = {}) {
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function api(method, path, options = {}, attempt = 1) {
+  const { token, body, headers = {}, expect } = options;
   const response = await fetch(BASE + path, {
     method,
     headers: {
@@ -59,6 +62,13 @@ async function api(method, path, { token, body, headers = {}, expect } = {}) {
     },
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
+  if (response.status === 429 && attempt <= 4) {
+    // Límite de registros/logins por minuto (RateLimitFilter): se espera lo que indica el servidor.
+    const seconds = Number(response.headers.get('Retry-After')) || 60;
+    console.log(`  … límite de intentos por minuto: esperando ${seconds} s`);
+    await sleep((seconds + 1) * 1000);
+    return api(method, path, options, attempt + 1);
+  }
   const text = await response.text();
   const data = text ? JSON.parse(text) : null;
   if (!response.ok && !(expect ?? []).includes(response.status)) {
@@ -106,17 +116,19 @@ async function main() {
   // Fase 1: dueño y negocio
   const ownerPlatform = await ensureUser(USERS.owner);
   const { data: mine } = await api('GET', '/api/v1/tenants', { token: ownerPlatform });
-  if (mine.some((t) => t.slug === SLUG)) {
-    console.log(`El negocio "${SLUG}" ya existe. Entra con ${USERS.owner.email} / ${PASSWORD}.`);
-    console.log('Para crear otro, ejecuta de nuevo con DEMO_SLUG=otro_nombre.');
-    return;
+  // Si ya existe (p. ej. de una ejecución anterior incompleta), se crea otro: tienda_demo_2, _3…
+  let slug = SLUG;
+  let tradeName = 'Tienda Demo';
+  for (let n = 2; mine.some((t) => t.slug === slug); n++) {
+    slug = `${SLUG}_${n}`;
+    tradeName = `Tienda Demo ${n}`;
   }
   const { data: tenant } = await api('POST', '/api/v1/tenants', {
     token: ownerPlatform,
-    body: { slug: SLUG, legalName: 'Tienda Demo S.A.S.', tradeName: 'Tienda Demo', businessType: 'RETAIL' },
+    body: { slug, legalName: `${tradeName} S.A.S.`, tradeName, businessType: 'RETAIL' },
   });
   const owner = await selectTenant(ownerPlatform, tenant.id);
-  step('Dueño y negocio "Tienda Demo" creados');
+  step(`Dueño y negocio "${tradeName}" creados`);
 
   // Fase 2: ajustes, sucursales y cajas
   await api('PUT', '/api/v1/settings', {
@@ -154,7 +166,7 @@ async function main() {
     });
     const platform = await ensureUser(user);
     await api('POST', '/api/v1/invitations/accept', { token: platform, body: { token: invitation.token } });
-    tokens[key] = await selectTenant(await ensureUser(user), tenant.id);
+    tokens[key] = await selectTenant(platform, tenant.id);
   }
   step('Usuarios cajero, vendedor y bodeguero (invitados y aceptados)');
 
@@ -352,7 +364,8 @@ async function main() {
   step('Caja rápida: venta del cajero y cierre cuadrado');
 
   console.log(`
-Listo. Abre http://localhost:4200 y entra con cualquiera de estos usuarios (contraseña: ${PASSWORD}):
+Listo: negocio "${tradeName}". Abre http://localhost:4200 y entra con cualquiera de estos usuarios
+(contraseña: ${PASSWORD}) y elige "${tradeName}":
   Dueño       ${USERS.owner.email}       todo; ve esperado y diferencias del arqueo
   Cajero      ${USERS.cashier.email}      vende y opera su caja (arqueo ciego)
   Vendedor    ${USERS.seller.email}    ve la pantalla de venta, no opera caja ni anula
