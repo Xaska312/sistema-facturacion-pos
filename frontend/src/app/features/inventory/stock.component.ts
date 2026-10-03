@@ -52,8 +52,7 @@ import { STATUS_LABEL } from './labels';
                     emptyText="No hay productos que controlen inventario" (pageChange)="load($event)">
       <ng-template #actions let-row>
         <span class="inline-flex gap-2 items-center">
-          <p-tag [value]="statusLabel[row.status]"
-                 [severity]="row.status === 'LOW' ? 'danger' : row.status === 'OVER' ? 'warn' : 'success'" />
+          <p-tag [value]="statusText(row)" [severity]="statusSeverity(row)" />
           <a [routerLink]="['/app/inventario/kardex', row.productId]" [queryParams]="{ branchId: row.branchId }">
             <p-button label="Kardex" size="small" [text]="true" />
           </a>
@@ -88,7 +87,14 @@ export class StockComponent implements OnInit {
   private readonly messages = inject(MessageService);
   protected readonly auth = inject(AuthService);
 
-  protected readonly statusLabel = STATUS_LABEL;
+  // La fila de la plantilla llega como `any`: estos métodos le dan tipo antes de indexar.
+  protected statusText(row: StockRow): string {
+    return STATUS_LABEL[row.status];
+  }
+
+  protected statusSeverity(row: StockRow): 'danger' | 'warn' | 'success' {
+    return row.status === 'LOW' ? 'danger' : row.status === 'OVER' ? 'warn' : 'success';
+  }
   protected readonly q = formatQuantity;
   protected readonly branches = signal<Branch[]>([]);
   protected readonly page = signal<PageResponse<StockRow> | null>(null);
