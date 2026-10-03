@@ -182,7 +182,8 @@ public class ProductImportService {
                 Product product = existing.get(row.sku());
                 // En una actualización, las columnas ausentes conservan el valor actual del producto.
                 boolean keepUnit = product != null && !columns.containsKey("unidad");
-                boolean keepCost = product != null && !columns.containsKey("costo");
+                // El costo de un producto con movimientos lo calcula el inventario: el archivo no lo cambia.
+                boolean keepCost = product != null && (product.isCostLocked() || !columns.containsKey("costo"));
                 boolean keepTracking = product != null && !columns.containsKey("controla_inventario");
                 Product.Data data = new Product.Data(row.sku(), row.name(),
                         row.description() != null ? row.description() : product == null ? null : product.getDescription(),

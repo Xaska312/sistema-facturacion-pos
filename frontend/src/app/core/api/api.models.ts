@@ -262,6 +262,8 @@ export interface Product {
   taxType: TaxType | null;
   taxRate: number | null;
   cost: number;
+  /** El costo lo calcula el inventario (promedio ponderado): no se edita. */
+  costLocked: boolean;
   salePrice: number;
   trackInventory: boolean;
   tracksLots: boolean;
@@ -344,4 +346,119 @@ export interface PartyInput {
   /** Solo clientes. */
   priceListId?: string | null;
   creditLimit?: number | null;
+}
+
+// ---------------------------------------------------------------- Fase 4: inventario
+
+export type StockStatus = 'LOW' | 'OK' | 'OVER';
+export type MovementType =
+  | 'INITIAL'
+  | 'PURCHASE'
+  | 'SALE'
+  | 'SALE_VOID'
+  | 'ADJUSTMENT_IN'
+  | 'ADJUSTMENT_OUT'
+  | 'TRANSFER_OUT'
+  | 'TRANSFER_IN'
+  | 'RETURN';
+export type InventoryDocumentType = 'INITIAL' | 'ADJUSTMENT' | 'TRANSFER' | 'COUNT';
+export type Direction = 'IN' | 'OUT';
+
+export interface StockRow {
+  branchId: string;
+  productId: string;
+  sku: string;
+  name: string;
+  unitCode: string;
+  quantity: number;
+  minStock: number | null;
+  maxStock: number | null;
+  status: StockStatus;
+  averageCost: number;
+  stockValue: number;
+}
+
+export interface StockAlert {
+  branchId: string;
+  branchName: string | null;
+  productId: string;
+  sku: string;
+  name: string;
+  unitCode: string;
+  quantity: number;
+  minStock: number;
+}
+
+export interface KardexRow {
+  entryNo: number;
+  createdAt: string;
+  branchId: string;
+  branchName: string | null;
+  type: MovementType;
+  quantity: number;
+  unitCost: number;
+  balanceAfter: number;
+  referenceType: string;
+  referenceId: string;
+  documentNumber: number | null;
+  reason: string | null;
+  createdByName: string | null;
+}
+
+export interface InventoryDocumentLine {
+  lineNo: number;
+  productId: string;
+  sku: string | null;
+  name: string | null;
+  unitId: string;
+  unitCode: string | null;
+  quantity: number;
+  factor: number;
+  baseQuantity: number;
+  direction: Direction | null;
+  unitCost: number | null;
+  expectedQuantity: number | null;
+  countedQuantity: number | null;
+  difference: number | null;
+}
+
+export interface InventoryDocument {
+  id: string;
+  number: number;
+  type: InventoryDocumentType;
+  branchId: string;
+  branchName: string | null;
+  targetBranchId: string | null;
+  targetBranchName: string | null;
+  reason: string | null;
+  notes: string | null;
+  createdBy: string | null;
+  createdByName: string | null;
+  createdAt: string;
+  lineCount: number;
+  lines: InventoryDocumentLine[];
+}
+
+export interface InventoryLineInput {
+  productId: string;
+  unitId: string | null;
+  quantity: number;
+  direction?: Direction | null;
+  unitCost?: number | null;
+}
+
+export interface ProductLookup {
+  productId: string;
+  sku: string;
+  name: string;
+  unitId: string;
+  unitCode: string;
+  factor: number;
+  price: number;
+  priceListId: string | null;
+  fromList: boolean;
+  taxId: string;
+  taxType: TaxType;
+  taxRate: number;
+  trackInventory: boolean;
 }

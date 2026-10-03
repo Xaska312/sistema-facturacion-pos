@@ -123,6 +123,18 @@ public class TestApi {
                 .content(json));
     }
 
+    /** POST con encabezados extra (pares nombre, valor), p. ej. Idempotency-Key. */
+    public ResultActions postWithHeaders(Session session, String path, String json, String... headers) throws Exception {
+        var request = post(path)
+                .header(HttpHeaders.AUTHORIZATION, session.bearer())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json);
+        for (int i = 0; i + 1 < headers.length; i += 2) {
+            request.header(headers[i], headers[i + 1]);
+        }
+        return mvc.perform(request);
+    }
+
     public ResultActions putWith(Session session, String path, String json) throws Exception {
         return mvc.perform(put(path)
                 .header(HttpHeaders.AUTHORIZATION, session.bearer())

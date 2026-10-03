@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -100,7 +101,20 @@ public class ProductService {
         products.findBySkuIgnoreCase(sku).filter(other -> !other.getId().equals(id)).ifPresent(other -> {
             throw new ConflictException("Ya existe otro producto con el SKU " + sku + ".");
         });
-        product.apply(validData(command, sku, refs));
+        Product.Data data = validData(command, sku, refs);
+        if (product.isCostLocked() && command.cost() == null) {
+            data = new Product.Data(data.sku(), data.name(), data.description(), data.categoryId(), data.baseUnitId(),
+                    data.taxId(), product.getCost(), data.salePrice(), data.trackInventory());
+        }
+        if (product.isCostLocked() && !data.baseUnitId().equals(product.getBaseUnitId())) {
+            throw new BusinessRuleException("No se puede cambiar la unidad base de un producto que ya tiene "
+                    + "movimientos de inventario.");
+        }
+        if (product.isCostLocked() && data.cost().setScale(2, RoundingMode.HALF_UP).compareTo(product.getCost()) != 0) {
+            throw new BusinessRuleException("El costo de este producto lo calcula el inventario (promedio ponderado) "
+                    + "y no se puede editar a mano.");
+        }
+        product.apply(data);
         apply(product, command, refs);
         syncListPrices(product, command.listPrices(), refs);
         ProductView view = toView(product, refs, listItems.findByProduct(id));
@@ -276,7 +290,7 @@ public class ProductService {
         return new ProductView(p.getId(), p.getSku(), p.getName(), p.getDescription(), p.getCategoryId(),
                 category == null ? null : category.getName(), p.getBaseUnitId(), code(unitById, p.getBaseUnitId()),
                 p.getTaxId(), tax == null ? null : tax.getCode(), tax == null ? null : tax.getType(),
-                tax == null ? null : tax.getRate(), p.getCost(), p.getSalePrice(), p.isTrackInventory(),
+                tax == null ? null : tax.getRate(), p.getCost(), p.isCostLocked(), p.getSalePrice(), p.isTrackInventory(),
                 p.isTracksLots(), p.isActive(), conversions, barcodeViews, listPrices);
     }
 

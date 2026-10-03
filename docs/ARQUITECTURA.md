@@ -14,12 +14,13 @@ com.poshibrido
   organization/  sucursales, cajas registradoras, ajustes del negocio  -> t_<slug>.*
   catalog/       categorías, unidades, impuestos, productos, códigos, listas de precios, importación
   parties/       terceros: clientes y proveedores (NIT con DV)
+  inventory/     saldos por sucursal, movimientos (kardex), documentos, costo promedio
   location/      catálogo DIVIPOLA (departamentos y municipios)       -> platform.*
   audit/         registro de auditoría (audit_log del negocio)
 ```
 Los módulos se hablan por interfaces públicas (`TenantApi`, `UserApi`, `MembershipApi`, `SessionApi`,
 `InvitationApi`, `AccessApi`, `BranchApi`, `BusinessSettingsApi`, `LocationApi`, `PricingApi`, `PriceListApi`,
-`TenantDataSeeder`),
+`InventoryCatalogApi`, `MemberDirectory`, `TenantDataSeeder`),
 nunca por repositorios ajenos.
 
 ## Invitaciones
@@ -70,3 +71,18 @@ precio = lista del cliente (price_list_items[lista, producto, unidad])
                                     presentación → conversion.sale_price ?? sale_price × factor
 ```
 `PricingApi.price(productId, unitId, priceListId)` es el punto de entrada para ventas (Fase 5).
+
+## Inventario: libro de movimientos
+```
+caso de uso (ajuste, traslado, conteo; luego venta y compra)
+   └─▶ StockLedger.open(sucursales, productos, productos con costo)      una transacción
+         1. productos que cambian costo o aún sin costo manejado ── FOR NO KEY UPDATE (orden id)
+         2. saldos faltantes: INSERT … ON CONFLICT DO NOTHING
+         3. saldos ── FOR UPDATE (orden producto, sucursal)
+       Session.post(...) por línea
+         · entrada con costo → costo promedio ponderado → products.cost
+         · saldo + cantidad (≥ 0 salvo permiso) → stock_balances
+         · INSERT stock_movements (entry_no, balance_after)      ← inmutable (trigger)
+```
+Invariante, verificada por `GET /inventory/consistency` y por los tests: para cada saldo,
+`quantity = Σ movimientos = balance_after del último movimiento`.

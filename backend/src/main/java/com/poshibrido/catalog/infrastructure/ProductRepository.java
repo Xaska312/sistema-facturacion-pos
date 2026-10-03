@@ -43,5 +43,29 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
 
     long countByTaxIdAndActiveTrue(UUID taxId);
 
+    /**
+     * Bloquea las filas de productos en orden de id. {@code FOR NO KEY UPDATE} (y no {@code FOR UPDATE}) para no
+     * chocar con los {@code FOR KEY SHARE} que PostgreSQL toma al validar las llaves foráneas de los movimientos.
+     */
+    @Query(value = "SELECT id FROM products WHERE id IN (:ids) ORDER BY id FOR NO KEY UPDATE", nativeQuery = true)
+    List<UUID> lockIds(@Param("ids") Collection<UUID> ids);
+
+    /** Productos cuyo costo aún no maneja el inventario ({@code cost_locked} nunca vuelve a falso). */
+    @Query("select p.id from Product p where p.id in :ids and p.costLocked = false")
+    List<UUID> findIdsWithUnlockedCost(@Param("ids") Collection<UUID> ids);
+
+    /** Productos activos que controlan inventario (listado de existencias). */
+    @Query("""
+            select p from Product p
+            where p.active = true and p.trackInventory = true
+              and (lower(p.name) like :pattern escape '\\'
+                   or upper(p.sku) like :patternUpper escape '\\'
+                   or p.id in (select b.product.id from ProductBarcode b where b.barcode = :exact))
+              and (:anyCategory = true or p.categoryId = :categoryId)
+            """)
+    Page<Product> searchTracked(@Param("pattern") String pattern, @Param("patternUpper") String patternUpper,
+                                @Param("exact") String exact, @Param("anyCategory") boolean anyCategory,
+                                @Param("categoryId") UUID categoryId, Pageable pageable);
+
     long countByCategoryIdAndActiveTrue(UUID categoryId);
 }

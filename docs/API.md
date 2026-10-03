@@ -125,3 +125,23 @@ Leer: `parties:read`. Modificar: `parties:manage`.
 | GET/POST/PUT | `/suppliers` … | Igual, sin lista ni cupo |
 
 Datos del tercero: `{personType: NATURAL|LEGAL, documentType: CC|CE|NIT|PASSPORT|TI|PEP, documentNumber, verificationDigit (solo NIT), firstNames, lastNames | businessName, email, phone, address, cityCode}`. Persona jurídica = NIT. El DV se valida con el algoritmo de la DIAN (422 indicando el DV correcto).
+
+## Inventario (Fase 4)
+Leer: `inventory:read`. Ajustes, saldos iniciales, conteos y mínimos: `inventory:adjust`. Traslados: `inventory:transfer`.
+Cantidades siempre en unidad base del producto en las respuestas.
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/inventory/stock?branchId=&search=&categoryId=&page=&size=&sort=name,asc` | Existencias de una sucursal: `{productId, sku, name, unitCode, quantity, minStock, maxStock, status: LOW\|OK\|OVER, averageCost, stockValue}` |
+| GET | `/inventory/balance?branchId=&productId=` | Saldo de un producto en una sucursal |
+| GET | `/inventory/alerts?branchId=` | Productos en o por debajo del mínimo (todas las sucursales si no se indica) |
+| PUT | `/inventory/stock-levels` | `{branchId, productId, minStock, maxStock}` (null = sin límite; 422 si máximo < mínimo) |
+| GET | `/inventory/kardex?productId=&branchId=&from=&to=&page=&size=` | Movimientos, el más reciente primero. Fechas `AAAA-MM-DD` en la zona horaria del negocio |
+| GET | `/inventory/documents?type=&branchId=&page=&size=` · `/inventory/documents/{id}` | Documentos con sus líneas |
+| GET | `/inventory/consistency` | `{consistent, mismatches[]}`: compara cada saldo con la suma de sus movimientos |
+| POST | `/inventory/initial-balances` | `{branchId, notes, lines}`. 409 si el producto ya tiene movimientos en la sucursal |
+| POST | `/inventory/adjustments` | `{branchId, reason, notes, lines}`; cada línea con `direction: IN\|OUT`; costo solo en entradas |
+| POST | `/inventory/transfers` | `{fromBranchId, toBranchId, notes, lines}` |
+| POST | `/inventory/counts` | `{branchId, reason, notes, lines}`; `quantity` = lo contado (puede ser 0) |
+
+Línea: `{productId, unitId (opcional, base por defecto), quantity, direction, unitCost (por unidad indicada)}`.
+Los `POST` responden 201 con el documento y aceptan el encabezado `Idempotency-Key`. 422 *Existencias insuficientes* si una salida deja el saldo negativo; 409 si otra operación simultánea obliga a reintentar.

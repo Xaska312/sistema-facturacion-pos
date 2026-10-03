@@ -79,3 +79,19 @@ La fase se escribió en un entorno sin acceso a Maven Central, npm ni Docker Hub
 53. **Permisos**: el CAJERO puede registrar clientes en caja (`parties:manage`, sembrado en Fase 1) pero no administra productos; el BODEGUERO administra productos pero no ve terceros.
 54. **Búsquedas con LIKE** escapan `%`, `_` y `\` con `escape '\'` explícito (Hibernate/PostgreSQL no usan escape por defecto).
 55. **Peticiones con booleanos opcionales** usan `Boolean` (no `boolean`): con Jackson 3 un primitivo ausente en el JSON puede rechazarse.
+
+## Fase 4 — Inventario
+
+56. **Costo promedio ponderado** (decisión del equipo), uno por producto para todo el negocio, guardado en `products.cost` (2 decimales, HALF_UP). Cada entrada con costo (saldo inicial, ajuste de entrada con costo; en Fase 7, compras) calcula `(existencia total × costo actual + cantidad × costo de entrada) / (existencia total + cantidad)`; si la existencia total es ≤ 0, el costo nuevo es el de la entrada. La existencia total se suma bajo el bloqueo del producto.
+57. **Costo manejado por el inventario**: desde el primer movimiento `products.cost_locked = true` y el costo deja de editarse a mano (422) y por CSV (se conserva). Tampoco cambia la unidad base, porque saldos y kardex están en esa unidad.
+58. **Salidas, traslados y conteos se valoran al costo promedio** y no lo cambian. Un ajuste de entrada sin costo entra al promedio actual.
+59. **Conteo físico** (decisión del equipo): el documento guarda esperado (saldo bloqueado al registrar) y contado por línea; la diferencia se registra como `ADJUSTMENT_IN` o `ADJUSTMENT_OUT`. Sin diferencia no hay movimiento.
+60. **Traslados inmediatos** (decisión del equipo): `TRANSFER_OUT` y `TRANSFER_IN` en la misma transacción; no hay estado "en tránsito".
+61. **Inmutabilidad en la base de datos**: triggers que rechazan `UPDATE`/`DELETE` en `stock_movements`, `inventory_documents` e `inventory_document_lines`, además de `@Immutable` en JPA. Las correcciones se hacen con un nuevo ajuste.
+62. **Orden del kardex** por `entry_no` (identidad de la base de datos), no por fecha: dos movimientos en el mismo instante quedan en el orden en que se registraron. Cada movimiento guarda `balance_after`.
+63. **Concurrencia**: `StockLedger` es el único punto que modifica saldos. Bloquea en orden fijo, primero productos (los que recalculan costo o aún no tienen el costo manejado por el inventario) con `FOR NO KEY UPDATE`, y luego saldos (producto, sucursal) con `FOR UPDATE`. `FOR NO KEY UPDATE` no choca con los bloqueos de llave foránea que toma PostgreSQL al insertar movimientos, lo que evita interbloqueos. Si aun así hay uno, la API responde 409 para reintentar.
+64. **Sin existencias negativas** desde documentos de inventario (422 *Existencias insuficientes*). El parámetro para permitir negativos llegará con ventas (Fase 5).
+65. **Idempotencia**: `Idempotency-Key` opcional (8–100 caracteres `A-Z a-z 0-9 _ -`) en los `POST` que crean documentos; la misma clave devuelve el mismo documento. El frontend genera una por pantalla de edición.
+66. **Límites**: hasta 500 líneas por documento, sin productos repetidos; cantidades > 0 (≥ 0 en conteos); decimales solo si la unidad base los admite. Costos unitarios con 2 decimales.
+67. **Lotes**: `stock_balances.lot_id` existe para la Fase de lotes y vencimientos; hoy todos los saldos son sin lote.
+68. **Sucursales por usuario**: `member_branches` aún no restringe las operaciones de inventario; cualquier usuario con el permiso opera en todas las sucursales. Se aplicará cuando la caja lo necesite (Fase 5).
