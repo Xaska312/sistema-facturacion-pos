@@ -69,7 +69,11 @@ import { barcodeGroup, conversionGroup, fillForm, listPriceGroup, productForm, t
           </label>
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">Costo</span>
-            <input pInputText type="number" min="0" step="0.01" formControlName="cost" />
+            <input pInputText type="number" min="0" step="0.01" formControlName="cost"
+                   [readonly]="product()?.costLocked === true" />
+            @if (product()?.costLocked) {
+              <small class="text-slate-500">Costo promedio ponderado, calculado por el inventario.</small>
+            }
           </label>
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">Precio de venta (lista General)</span>

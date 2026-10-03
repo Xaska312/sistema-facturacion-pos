@@ -73,6 +73,34 @@ export const routes: Routes = [
           import('./features/catalog-settings/catalog-settings.component').then((m) => m.CatalogSettingsComponent),
       },
       {
+        path: 'inventario',
+        canActivate: [permissionGuard],
+        data: { permission: 'inventory:read' },
+        loadComponent: () => import('./features/inventory/stock.component').then((m) => m.StockComponent),
+      },
+      {
+        path: 'inventario/movimientos',
+        canActivate: [permissionGuard],
+        data: { permission: 'inventory:read' },
+        loadComponent: () =>
+          import('./features/inventory/documents.component').then((m) => m.InventoryDocumentsComponent),
+      },
+      {
+        path: 'inventario/kardex/:productId',
+        canActivate: [permissionGuard],
+        data: { permission: 'inventory:read' },
+        loadComponent: () => import('./features/inventory/kardex.component').then((m) => m.KardexComponent),
+      },
+      {
+        // Saldo inicial, ajuste y conteo requieren inventory:adjust; el traslado, inventory:transfer
+        // (el backend valida cada uno; aquí basta con poder ver el inventario).
+        path: 'inventario/nuevo/:kind',
+        canActivate: [permissionGuard],
+        data: { permission: 'inventory:read' },
+        loadComponent: () =>
+          import('./features/inventory/document-editor.component').then((m) => m.InventoryDocumentEditorComponent),
+      },
+      {
         path: 'clientes',
         canActivate: [permissionGuard],
         data: { permission: 'parties:read', kind: 'customers' },

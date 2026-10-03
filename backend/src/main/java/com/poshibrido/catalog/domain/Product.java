@@ -68,6 +68,10 @@ public class Product extends AuditableEntity {
     @Column(nullable = false)
     private boolean active;
 
+    /** Verdadero cuando el inventario ya maneja el costo (promedio ponderado): no se edita a mano. */
+    @Column(name = "cost_locked", nullable = false)
+    private boolean costLocked;
+
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<ProductUnitConversion> conversions = new HashSet<>();
 
@@ -156,6 +160,24 @@ public class Product extends AuditableEntity {
 
     public void setActive(boolean active) {
         this.active = active;
+    }
+
+    /** Costo promedio ponderado calculado por el inventario. */
+    public void applyAverageCost(BigDecimal averageCost) {
+        this.cost = averageCost.setScale(2, RoundingMode.HALF_UP);
+        this.costLocked = true;
+    }
+
+    public void lockCost() {
+        this.costLocked = true;
+    }
+
+    /** Factor de conversión a la unidad base (1 para la base); vacío si la unidad no es del producto. */
+    public Optional<BigDecimal> factorFor(UUID unitId) {
+        if (baseUnitId.equals(unitId)) {
+            return Optional.of(BigDecimal.ONE);
+        }
+        return conversionFor(unitId).map(ProductUnitConversion::getFactor);
     }
 
     private static BigDecimal scale2(BigDecimal value) {

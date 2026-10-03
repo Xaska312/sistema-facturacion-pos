@@ -8,6 +8,7 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.dao.ConcurrencyFailureException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
@@ -100,6 +101,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ProblemDetail> handleOptimisticLock(ObjectOptimisticLockingFailureException ex) {
         return build(HttpStatus.CONFLICT, "Conflicto",
                 "El registro fue modificado por otro usuario. Recarga e intenta de nuevo.");
+    }
+
+    /** Interbloqueo o espera de bloqueo agotada entre operaciones simultáneas: se puede reintentar. */
+    @ExceptionHandler(ConcurrencyFailureException.class)
+    public ResponseEntity<ProblemDetail> handleConcurrency(ConcurrencyFailureException ex) {
+        log.warn("Conflicto de concurrencia: {}", ex.getMostSpecificCause().getMessage());
+        return build(HttpStatus.CONFLICT, "Conflicto",
+                "Otra operación modificó los mismos datos al mismo tiempo. Intenta de nuevo.");
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

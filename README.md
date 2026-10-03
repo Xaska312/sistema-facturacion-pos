@@ -12,8 +12,9 @@ POS web multi-negocio para comercios en Colombia. Backend Spring Boot 4.1 (Java 
 | 0 — Esqueleto | ✅ Completada |
 | 1 — Identidad, tenancy y aprovisionamiento | ✅ Completada (validada en local el 2026-10-01: 21 tests en verde y app probada) |
 | 2 — Acceso y organización | ✅ Completada (validada en local el 2026-10-01: 46 tests en verde y app probada) |
-| 3 — Catálogo y terceros | 🧪 Entregada, pendiente de validar en local |
-| 4 — Inventario | ⏳ Siguiente |
+| 3 — Catálogo y terceros | ✅ Completada (validada en local el 2026-10-02: tests en verde y app probada) |
+| 4 — Inventario | 🧪 Entregada, pendiente de validar en local |
+| 5 — Ventas y caja | ⏳ Siguiente |
 
 ## Requisitos
 - **Docker Desktop** (o Docker Engine + Compose). Debe estar en estado *Engine running* antes de levantar el proyecto o correr los tests.
@@ -157,7 +158,7 @@ Validada en local: 46 tests en verde; invitación por enlace, menú por permisos
 
 ---
 
-## Fase 3 — Catálogo y terceros 🧪
+## Fase 3 — Catálogo y terceros ✅
 
 **Incluye**
 - **Productos:** SKU, nombre, categoría, unidad base, impuesto, costo, precio, control de inventario. Búsqueda por nombre, SKU o código de barras.
@@ -183,3 +184,38 @@ Validada en local: 46 tests en verde; invitación por enlace, menú por permisos
 3. *Importar CSV*: descarga la plantilla, llénala en Excel, guárdala como **CSV UTF-8**, *Validar* y luego *Importar*.
 4. *Terceros → Clientes*: registra una empresa con NIT (el DV se calcula solo) y asígnale la lista *Mayorista*.
 5. Como cajero: ve productos y registra clientes, pero no puede crear productos ni entrar a *Ajustes de catálogo*.
+
+## Fase 4 — Inventario 🧪
+
+**Incluye**
+- **Existencias por sucursal** en unidad base, con mínimo y máximo por producto y sucursal y **alertas** de existencias bajas (también en *Inicio*).
+- **Kardex** por producto: cada movimiento con fecha, tipo, cantidad, costo, saldo resultante, documento, motivo y responsable. Filtro por sucursal y fechas.
+- **Documentos de inventario**, numerados `INV-000001`:
+  - **Saldo inicial**: solo si el producto no tiene movimientos en la sucursal.
+  - **Ajuste**: entradas o salidas, con motivo obligatorio. Una entrada con costo recalcula el promedio.
+  - **Traslado** entre sucursales: sale de una y entra a la otra en la misma operación (inmediato).
+  - **Conteo físico**: se registra lo contado; el sistema calcula la diferencia contra el saldo y la ajusta.
+- **Costo promedio ponderado**: lo calcula el inventario y queda en el producto. Desde el primer movimiento, el costo y la unidad base no se editan a mano (ni por CSV).
+- **Movimientos inmutables**: la base de datos rechaza cualquier `UPDATE` o `DELETE` sobre movimientos y documentos. Para corregir se registra un ajuste.
+- **Sin sobreventa**: operaciones simultáneas sobre el mismo producto se ejecutan una tras otra; ninguna salida deja el saldo negativo.
+- **`Idempotency-Key`**: reenviar la misma solicitud (doble clic, reintento) no crea otro documento.
+- **Cantidades por presentación**: escanear el código de la caja agrega la línea en *CJ*; se convierte a unidad base.
+
+**Tests**
+| Qué | Test |
+|---|---|
+| Saldo = suma de movimientos tras saldo inicial, ajustes, traslado y conteo; kardex; promedio ponderado; costo bloqueado | `InventoryIT.everyOperationKeepsBalanceEqualToSumOfMovements` |
+| Existencias insuficientes, validaciones, idempotencia, alertas, permisos por rol, aislamiento | `InventoryIT` |
+| 12 salidas simultáneas con existencia 5 → exactamente 5 aceptadas; entradas con costo y salidas simultáneas sin conflictos | `InventoryIT` |
+| La base de datos rechaza editar o borrar movimientos | `InventoryIT.movementsAndDocumentsAreImmutableInTheDatabase` |
+| Fórmula del promedio ponderado | `WeightedAverageTest` |
+
+**Probar a mano**
+1. Crea un producto *Gaseosa* con presentación *CJ* de 12 y un código de barras para la caja.
+2. *Inventario → Movimientos → Saldo inicial*: 24 UND a costo 1.000.
+3. *Ajuste*: entrada de 1 caja (escanea o escribe el código de la caja) a 24.000 la caja. El costo del producto queda en 1.333,33 y ya no se puede editar.
+4. Crea la sucursal *Norte* y haz un *Traslado* de 10 UND. Revisa *Existencias* en cada sucursal.
+5. *Conteo físico* en la principal: escribe una cantidad distinta de la actual y mira la diferencia antes de guardar.
+6. En *Existencias*, pon mínimo 30 al producto: aparece la alerta aquí y en *Inicio*.
+7. Abre el *Kardex* del producto: el saldo de cada línea es el anterior más la cantidad.
+8. Como vendedor o cajero: ve existencias y kardex, pero no registra ajustes ni traslados.
