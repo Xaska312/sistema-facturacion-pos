@@ -59,6 +59,19 @@ docker compose down -v       # además BORRA la base de datos (útil para empeza
 docker compose up --build    # reconstruye después de cambiar código
 ```
 
+## Datos de demostración
+Con la app levantada, crea un negocio de prueba que usa todas las funciones (sucursales, cajas, usuarios por rol,
+catálogo, clientes, inventario, ventas, anulación y cierres de caja):
+```powershell
+node tools/demo/seed-demo.mjs
+```
+Sin Node instalado, con Docker:
+```powershell
+docker run --rm -v "${PWD}/tools:/tools" -e POS_API=http://host.docker.internal:8080 node:22-alpine node /tools/demo/seed-demo.mjs
+```
+Usuarios (contraseña `DemoPos2026`): `dueno@tienda-demo.test`, `cajero@tienda-demo.test`, `vendedor@tienda-demo.test`,
+`bodega@tienda-demo.test`. Para otro negocio demo: `DEMO_SLUG=otro_nombre`.
+
 ## Tests
 **Windows (PowerShell)**
 ```powershell

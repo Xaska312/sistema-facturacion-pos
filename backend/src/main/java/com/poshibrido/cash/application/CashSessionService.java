@@ -80,8 +80,11 @@ public class CashSessionService {
         return registers.all().stream()
                 .filter(RegisterRef::usable)
                 .filter(r -> allowed == null || allowed.contains(r.branchId()))
-                .map(r -> new RegisterOption(r.id(), r.code(), r.name(), r.branchId(), r.branchName(),
-                        openBy.containsKey(r.id()), names.get(openBy.get(r.id()))))
+                .map(r -> {
+                    UUID busyBy = openBy.get(r.id());
+                    return new RegisterOption(r.id(), r.code(), r.name(), r.branchId(), r.branchName(),
+                            busyBy != null, busyBy == null ? null : names.get(busyBy));
+                })
                 .toList();
     }
 
