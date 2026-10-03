@@ -39,6 +39,24 @@ export const routes: Routes = [
         loadComponent: () => import('./features/shell/home.component').then((m) => m.HomeComponent),
       },
       {
+        path: 'caja',
+        canActivate: [permissionGuard],
+        data: { permission: 'cash:operate' },
+        loadComponent: () => import('./features/cash/cash.component').then((m) => m.CashComponent),
+      },
+      {
+        path: 'caja/historial',
+        canActivate: [permissionGuard],
+        data: { permission: 'cash:read' },
+        loadComponent: () => import('./features/cash/cash-history.component').then((m) => m.CashHistoryComponent),
+      },
+      {
+        path: 'ventas',
+        canActivate: [permissionGuard],
+        data: { permission: 'sales:read' },
+        loadComponent: () => import('./features/sales/sales.component').then((m) => m.SalesComponent),
+      },
+      {
         path: 'productos',
         canActivate: [permissionGuard],
         data: { permission: 'products:read' },
@@ -144,6 +162,13 @@ export const routes: Routes = [
         loadComponent: () => import('./features/settings/settings.component').then((m) => m.SettingsComponent),
       },
     ],
+  },
+  {
+    // Pantalla de venta a pantalla completa (sin menú lateral), pensada también para tablet horizontal.
+    path: 'pos',
+    canActivate: [authGuard, tenantGuard, permissionGuard],
+    data: { permission: 'sales:create' },
+    loadComponent: () => import('./features/pos/pos.component').then((m) => m.PosComponent),
   },
   {
     // Enlace público de invitación (con o sin sesión).

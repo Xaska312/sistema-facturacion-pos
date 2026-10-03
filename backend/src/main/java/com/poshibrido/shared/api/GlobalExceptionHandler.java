@@ -40,7 +40,9 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DomainException.class)
     public ResponseEntity<ProblemDetail> handleDomain(DomainException ex) {
-        return build(ex.getStatus(), ex.getTitle(), ex.getMessage());
+        ResponseEntity<ProblemDetail> response = build(ex.getStatus(), ex.getTitle(), ex.getMessage());
+        ex.getProperties().forEach(response.getBody()::setProperty);
+        return response;
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

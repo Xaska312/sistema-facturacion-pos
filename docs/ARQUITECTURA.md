@@ -15,12 +15,15 @@ com.poshibrido
   catalog/       categorías, unidades, impuestos, productos, códigos, listas de precios, importación
   parties/       terceros: clientes y proveedores (NIT con DV)
   inventory/     saldos por sucursal, movimientos (kardex), documentos, costo promedio
+  cash/          medios de pago, sesiones de caja, movimientos de efectivo, informe X/Z
+  sales/         ventas (tiquete POS), cálculo, pagos, consecutivos, anulación, eventos
   location/      catálogo DIVIPOLA (departamentos y municipios)       -> platform.*
   audit/         registro de auditoría (audit_log del negocio)
 ```
 Los módulos se hablan por interfaces públicas (`TenantApi`, `UserApi`, `MembershipApi`, `SessionApi`,
 `InvitationApi`, `AccessApi`, `BranchApi`, `BusinessSettingsApi`, `LocationApi`, `PricingApi`, `PriceListApi`,
-`InventoryCatalogApi`, `MemberDirectory`, `TenantDataSeeder`),
+`InventoryCatalogApi`, `MemberDirectory`, `CashRegisterApi`, `CustomerApi`, `CashApi`, `SessionSalesSummary`,
+`TenantDataSeeder`),
 nunca por repositorios ajenos.
 
 ## Invitaciones
@@ -86,3 +89,18 @@ caso de uso (ajuste, traslado, conteo; luego venta y compra)
 ```
 Invariante, verificada por `GET /inventory/consistency` y por los tests: para cada saldo,
 `quantity = Σ movimientos = balance_after del último movimiento`.
+
+## Venta: una sola transacción
+```
+POST /sales (Idempotency-Key) ── ¿clave ya usada? ──▶ devuelve esa venta
+  └─ transacción
+      1. sesión de caja abierta del usuario ── FOR SHARE   (sin caja → 422; el cierre espera)
+      2. cliente, precios (PricingApi), impuestos y descuentos recalculados ── ¿difieren? → 409
+      3. pagos: Σ ≥ total, cambio solo en efectivo
+      4. StockLedger: productos y saldos bloqueados en orden ── SALE por ítem (balance_after)
+      5. document_sequences ── FOR UPDATE ── POS-n
+      6. INSERT sales, sale_items, sale_tax_totals, sale_payments; cash_movements (efectivo neto)
+      7. audit_log + evento SaleCompleted
+```
+La caja no depende de ventas: el informe de cierre pide el resumen de ventas por la interfaz `SessionSalesSummary`,
+que implementa el módulo de ventas.

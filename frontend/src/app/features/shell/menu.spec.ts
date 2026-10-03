@@ -6,24 +6,32 @@ describe('visibleMenu', () => {
     expect(labels).toEqual(['Inicio']);
   });
 
-  it('un cajero ve productos, terceros y sucursales, pero nada más de configuración', () => {
+  it('un cajero vende y opera su caja, ve productos, terceros y sucursales, pero nada más de configuración', () => {
     const cashier = new Set(['branches:read', 'products:read', 'parties:read', 'parties:manage', 'inventory:read',
-      'sales:create', 'cash:operate']);
+      'sales:create', 'sales:read', 'cash:operate']);
     const labels = visibleMenu((p) => cashier.has(p)).map((m) => m.label);
-    expect(labels).toEqual(['Inicio', 'Productos', 'Existencias', 'Movimientos', 'Clientes', 'Proveedores', 'Sucursales']);
+    expect(labels).toEqual(['Inicio', 'Vender', 'Mi caja', 'Ventas', 'Productos', 'Existencias', 'Movimientos',
+      'Clientes', 'Proveedores', 'Sucursales']);
+  });
+
+  it('un vendedor sin caja ve la pantalla de venta pero no la caja', () => {
+    const seller = new Set(['sales:create', 'sales:read']);
+    const labels = visibleMenu((p) => seller.has(p)).map((m) => m.label);
+    expect(labels).toEqual(['Inicio', 'Vender', 'Ventas']);
   });
 
   it('el propietario ve toda la configuración', () => {
     const labels = visibleMenu(() => true).map((m) => m.label);
-    expect(labels).toEqual(['Inicio', 'Productos', 'Ajustes de catálogo', 'Existencias', 'Movimientos', 'Clientes',
-      'Proveedores', 'Sucursales', 'Cajas', 'Usuarios', 'Roles y permisos', 'Ajustes']);
+    expect(labels).toEqual(['Inicio', 'Vender', 'Mi caja', 'Ventas', 'Historial de caja', 'Productos',
+      'Ajustes de catálogo', 'Existencias', 'Movimientos', 'Clientes', 'Proveedores', 'Sucursales', 'Cajas', 'Usuarios',
+      'Roles y permisos', 'Ajustes']);
   });
 });
 
 describe('withHeadings', () => {
   it('pone el título de sección solo en el primer elemento del grupo', () => {
     const headings = withHeadings(MENU).map((e) => e.heading);
-    expect(headings).toEqual([null, 'Catálogo', null, 'Inventario', null, 'Terceros', null, 'Configuración', null, null,
-      null, null]);
+    expect(headings).toEqual([null, 'Ventas', null, null, null, 'Catálogo', null, 'Inventario', null, 'Terceros', null,
+      'Configuración', null, null, null, null]);
   });
 });

@@ -18,3 +18,7 @@ node_modules/
 
 # Parches recibidos para aplicar con git am
 *.patch
+
+# Resultados de Playwright (e2e)
+test-results/
+playwright-report/

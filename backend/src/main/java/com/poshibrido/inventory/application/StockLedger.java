@@ -57,6 +57,16 @@ public class StockLedger {
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public Session open(Collection<UUID> branchIds, Collection<UUID> productIds, Collection<UUID> costProductIds) {
+        return open(branchIds, productIds, costProductIds, false);
+    }
+
+    /**
+     * @param reversal reverso de un documento ya registrado (anulación de venta): no exige que el producto siga
+     *                 activo ni que siga controlando inventario, porque devuelve lo que ya salió
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public Session open(Collection<UUID> branchIds, Collection<UUID> productIds, Collection<UUID> costProductIds,
+                        boolean reversal) {
         Set<UUID> products = new TreeSet<>(productIds);
         Set<UUID> branches = new TreeSet<>(branchIds);
         InventoryCatalogApi.LockedProducts loaded = catalog.loadForInventory(products, costProductIds);
@@ -65,6 +75,9 @@ public class StockLedger {
             StockProduct p = info.get(productId);
             if (p == null) {
                 throw new NotFoundException("Producto no encontrado.");
+            }
+            if (reversal) {
+                continue;
             }
             if (!p.active()) {
                 throw new BusinessRuleException("El producto " + p.name() + " está inactivo.");

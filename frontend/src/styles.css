@@ -8,3 +8,23 @@ body {
   background: #f8fafc;
   color: #0f172a;
 }
+
+/* Tiquete: al imprimir se muestra solo la copia del tiquete (ver receipt-prefs.ts). */
+.receipt-print-root,
+.receipt-print-copy {
+  display: none;
+}
+
+@media print {
+  @page {
+    margin: 0;
+  }
+
+  body > :not(.receipt-print-copy) {
+    display: none !important;
+  }
+
+  .receipt-print-copy {
+    display: block !important;
+  }
+}

@@ -145,3 +145,38 @@ Cantidades siempre en unidad base del producto en las respuestas.
 
 Línea: `{productId, unitId (opcional, base por defecto), quantity, direction, unitCost (por unidad indicada)}`.
 Los `POST` responden 201 con el documento y aceptan el encabezado `Idempotency-Key`. 422 *Existencias insuficientes* si una salida deja el saldo negativo; 409 si otra operación simultánea obliga a reintentar.
+
+## Caja (Fase 5)
+Operar: `cash:operate`. Historial: `cash:read` (sin él, cada usuario ve solo sus sesiones). Esperado, diferencia y desglose del efectivo: `cash:audit` (cierre ciego).
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/payment-methods` | Medios de pago activos `{id, code: CASH\|CARD\|TRANSFER, name, affectsCash, requiresReference}` (`sales:create`, `sales:read`, `cash:read` o `cash:operate`) |
+| GET | `/cash/registers` | Cajas activas de las sucursales del usuario (todas con `branches:manage`) con `busy`/`busyBy` |
+| GET | `/cash/sessions/current` | Sesión abierta del usuario; **204** si no tiene (`cash:operate` o `sales:create`) |
+| POST | `/cash/sessions` | `{cashRegisterId, openingAmount, notes}` → 201. 409 si la caja o el usuario ya tienen una abierta; 403 sucursal no asignada |
+| POST | `/cash/sessions/{id}/movements` | `{type: INCOME\|EXPENSE\|WITHDRAWAL, amount > 0, reason}` → 201. Solo en la sesión propia y abierta. `Idempotency-Key` opcional |
+| POST | `/cash/sessions/{id}/close` | `{countedAmount, notes}` → informe de cierre. Quien abrió o quien tenga `cash:audit`. 409 si ya está cerrada |
+| GET | `/cash/sessions?cashRegisterId=&branchId=&status=&userId=&from=&to=&page=&size=` | Historial (`cash:read`) |
+| GET | `/cash/sessions/{id}` · `/movements` · `/report` | Sesión, movimientos de efectivo e informe X/Z `{salesCount, salesTotal, voidedCount, voidedTotal, netSales, byMethod[], voidsHereCount, cash{opening, sales, voidRefunds, incomes, expenses, withdrawals, expected, counted, difference}, auditView}` |
+
+## Ventas (Fase 5)
+| Método | Ruta | Permiso | Descripción |
+|---|---|---|---|
+| POST | `/sales` | `sales:create` | Registra la venta (cuerpo abajo). **`Idempotency-Key` obligatoria** (8–100 `A-Z a-z 0-9 _ -`). 201 con la venta |
+| POST | `/sales/{id}/void` | `sales:void` | `{reason}` → venta anulada. 409 si ya lo estaba; 422 si hay que devolver efectivo y no hay caja abierta |
+| GET | `/sales?from=&to=&branchId=&status=&cashSessionId=&search=&page=&size=` | `sales:read` | `search`: número (`POS-12` o `12`) o nombre/documento del cliente |
+| GET | `/sales/{id}` | `sales:read` | Venta con ítems, pagos, impuestos y encabezado del tiquete |
+| GET | `/sales/config` | `sales:create` | `{pricesIncludeTax, maxDiscountPercent, allowNegativeStock, currency, receiptFooter, businessName, finalConsumerId}` |
+| GET | `/sales/price?productId=&unitId=&customerId=` | `sales:create` | Precio vigente para el cliente |
+
+Cuerpo de venta:
+```json
+{ "customerId": null,
+  "items": [{ "productId": "<id>", "unitId": null, "quantity": 2, "discountPercent": null, "unitPrice": 2000 }],
+  "payments": [{ "paymentMethodId": "<CARD>", "amount": 20000, "reference": "APR-123" },
+               { "paymentMethodId": "<CASH>", "amount": 10000 }],
+  "expectedTotal": 25000, "notes": null }
+```
+- `customerId` nulo = consumidor final. `unitId` nulo = unidad base. `unitPrice` y `expectedTotal` (opcionales) son lo que mostró la pantalla: si difieren de lo que calcula el servidor → **409** con `changes[{line, sku, name, expectedPrice, currentPrice}]`, `expectedTotal` y `currentTotal`.
+- Pagos: `amount` es lo entregado. La suma debe cubrir el total; tarjeta y transferencia no pueden superarlo (el cambio solo sale del efectivo).
+- 422: sin caja abierta, existencias insuficientes (indica producto y disponible), cantidades con decimales en unidades enteras, pagos inválidos. 403: descuento por encima del límite sin `sales:discount`.

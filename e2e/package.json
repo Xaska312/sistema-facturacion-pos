@@ -1,0 +1,13 @@
+{
+  "name": "pos-hibrido-e2e",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Flujo de punta a punta (Playwright) contra la app levantada con docker compose",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.0"
+  }
+}
