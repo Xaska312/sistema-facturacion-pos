@@ -11,8 +11,9 @@ POS web multi-negocio para comercios en Colombia. Backend Spring Boot 4.1 (Java 
 |---|---|
 | 0 — Esqueleto | ✅ Completada |
 | 1 — Identidad, tenancy y aprovisionamiento | ✅ Completada (validada en local el 2026-10-01: 21 tests en verde y app probada) |
-| 2 — Acceso y organización | 🧪 Entregada, pendiente de validar en local |
-| 3 — Catálogo y terceros | ⏳ Siguiente |
+| 2 — Acceso y organización | ✅ Completada (validada en local el 2026-10-01: 46 tests en verde y app probada) |
+| 3 — Catálogo y terceros | 🧪 Entregada, pendiente de validar en local |
+| 4 — Inventario | ⏳ Siguiente |
 
 ## Requisitos
 - **Docker Desktop** (o Docker Engine + Compose). Debe estar en estado *Engine running* antes de levantar el proyecto o correr los tests.
@@ -125,7 +126,9 @@ curl -s $API/branches -H "Authorization: Bearer $TTOKEN"           # 200: sede p
 
 ---
 
-## Fase 2 — Acceso y organización 🧪
+## Fase 2 — Acceso y organización ✅
+
+Validada en local: 46 tests en verde; invitación por enlace, menú por permisos y cambios de rol probados en la app.
 
 **Incluye**
 - **Usuarios:** invitar por enlace (correo + roles + sucursales), ver y revocar invitaciones, editar roles y sucursales de cada miembro, desactivar/activar. Página pública `/invitacion/<token>` para aceptar (con registro o inicio de sesión y regreso automático).
@@ -151,3 +154,32 @@ curl -s $API/branches -H "Authorization: Bearer $TTOKEN"           # 200: sede p
 4. Como propietario, crea un rol en *Roles y permisos*, cámbiale permisos al cajero en *Usuarios* o desactívalo.
 
 **Nota DIVIPOLA:** por ahora el catálogo trae los 33 departamentos y sus capitales. El listado completo de municipios se agregará con una migración generada desde el archivo oficial del DANE.
+
+---
+
+## Fase 3 — Catálogo y terceros 🧪
+
+**Incluye**
+- **Productos:** SKU, nombre, categoría, unidad base, impuesto, costo, precio, control de inventario. Búsqueda por nombre, SKU o código de barras.
+- **Presentaciones:** p. ej. *Caja = 24 UND*, con precio propio o calculado (precio base × factor).
+- **Códigos de barras:** varios por producto, únicos en el negocio; cada uno identifica la unidad base o una presentación. Botón *Generar código interno* (EAN-13 válido con prefijo 29).
+- **Lector:** `GET /products/lookup?code=` resuelve código de barras o SKU → producto, unidad, factor y precio (lo usará la pantalla de venta).
+- **Listas de precios:** la *General* es el precio del producto; se pueden crear otras (Mayorista, Promoción…) con precios por producto y unidad, y asignarlas a clientes. Si una lista no tiene precio, se usa el de la General.
+- **Ajustes de catálogo:** categorías en árbol, unidades, impuestos (IVA 19 %, 5 %, exento, excluido, INC) y listas de precios.
+- **Importación CSV** (desde Excel): validar primero, luego importar; todo o nada; un SKU existente se actualiza; categorías nuevas se crean solas.
+- **Clientes y proveedores:** persona natural o jurídica, tipos de documento colombianos, **dígito de verificación del NIT** validado, municipio DIVIPOLA, lista de precios y cupo para clientes. Un mismo tercero puede ser cliente y proveedor. *Consumidor final* sembrado y protegido.
+
+**Tests**
+| Qué | Test |
+|---|---|
+| Datos base, categorías, productos, presentaciones, códigos, listas, lector, validaciones | `CatalogIT` |
+| Importación CSV (formato Excel, errores por fila, todo o nada, actualización por SKU) | `ProductImportIT` |
+| Clientes/proveedores, NIT y DV, documento duplicado, permisos por rol, aislamiento | `PartiesIT` |
+| DV del NIT, EAN-13, lector CSV y números con formato colombiano | `NitTest`, `Ean13Test`, `CsvTest` |
+
+**Probar a mano**
+1. *Catálogo → Ajustes de catálogo*: crea las categorías *Bebidas* y, dentro, *Gaseosas*; crea la lista *Mayorista*.
+2. *Catálogo → Productos → Nuevo producto*: agrega una presentación *CJ* de 24, un código de barras para la unidad y otro para la caja (o *Generar código interno*), y un precio en *Mayorista*.
+3. *Importar CSV*: descarga la plantilla, llénala en Excel, guárdala como **CSV UTF-8**, *Validar* y luego *Importar*.
+4. *Terceros → Clientes*: registra una empresa con NIT (el DV se calcula solo) y asígnale la lista *Mayorista*.
+5. Como cajero: ve productos y registra clientes, pero no puede crear productos ni entrar a *Ajustes de catálogo*.

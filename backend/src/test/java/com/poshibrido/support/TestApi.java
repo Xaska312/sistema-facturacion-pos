@@ -4,6 +4,7 @@ import com.jayway.jsonpath.JsonPath;
 import jakarta.servlet.http.Cookie;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
@@ -13,6 +14,7 @@ import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -134,6 +136,17 @@ public class TestApi {
 
     public ResultActions postEmpty(Session session, String path) throws Exception {
         return mvc.perform(post(path).header(HttpHeaders.AUTHORIZATION, session.bearer()));
+    }
+
+    /** Sube un archivo en el campo multipart "file". */
+    public ResultActions upload(Session session, String path, byte[] content, String... params) throws Exception {
+        var request = multipart(path)
+                .file(new MockMultipartFile("file", "productos.csv", "text/csv", content))
+                .header(HttpHeaders.AUTHORIZATION, session.bearer());
+        for (int i = 0; i + 1 < params.length; i += 2) {
+            request.param(params[i], params[i + 1]);
+        }
+        return mvc.perform(request);
     }
 
     public ResultActions postPublic(String path, String json) throws Exception {

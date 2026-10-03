@@ -188,3 +188,160 @@ export interface City {
   name: string;
   departmentCode: string;
 }
+
+// ---------------------------------------------------------------- Fase 3: catálogo
+
+export interface Category {
+  id: string;
+  parentId: string | null;
+  name: string;
+  active: boolean;
+}
+
+export interface Unit {
+  id: string;
+  code: string;
+  name: string;
+  allowsDecimals: boolean;
+  active: boolean;
+}
+
+export type TaxType = 'IVA' | 'INC' | 'EXEMPT' | 'EXCLUDED';
+
+export interface Tax {
+  id: string;
+  code: string;
+  name: string;
+  type: TaxType;
+  rate: number;
+  active: boolean;
+}
+
+export interface PriceList {
+  id: string;
+  code: string;
+  name: string;
+  defaultList: boolean;
+  active: boolean;
+}
+
+export interface ProductConversion {
+  unitId: string;
+  unitCode: string | null;
+  factor: number;
+  salePrice: number | null;
+  effectivePrice: number | null;
+}
+
+export interface ProductBarcode {
+  barcode: string;
+  unitId: string | null;
+  unitCode: string | null;
+  internal: boolean;
+}
+
+export interface ProductListPrice {
+  priceListId: string;
+  priceListName: string | null;
+  unitId: string;
+  unitCode: string | null;
+  price: number;
+}
+
+export interface Product {
+  id: string;
+  sku: string;
+  name: string;
+  description: string | null;
+  categoryId: string | null;
+  categoryName: string | null;
+  baseUnitId: string;
+  baseUnitCode: string | null;
+  taxId: string;
+  taxCode: string | null;
+  taxType: TaxType | null;
+  taxRate: number | null;
+  cost: number;
+  salePrice: number;
+  trackInventory: boolean;
+  tracksLots: boolean;
+  active: boolean;
+  conversions: ProductConversion[];
+  barcodes: ProductBarcode[];
+  listPrices: ProductListPrice[];
+}
+
+export interface ProductInput {
+  sku: string;
+  name: string;
+  description: string | null;
+  categoryId: string | null;
+  baseUnitId: string;
+  taxId: string;
+  cost: number;
+  salePrice: number;
+  trackInventory: boolean;
+  conversions: { unitId: string; factor: number; salePrice: number | null }[];
+  barcodes: { barcode: string; unitId: string | null; internal: boolean }[];
+  listPrices: { priceListId: string; unitId: string; price: number }[];
+}
+
+export interface ImportRowError {
+  row: number;
+  message: string;
+}
+
+export interface ImportReport {
+  totalRows: number;
+  toCreate: number;
+  toUpdate: number;
+  newCategories: string[];
+  errors: ImportRowError[];
+  applied: boolean;
+}
+
+// ---------------------------------------------------------------- Fase 3: terceros
+
+export type PersonType = 'NATURAL' | 'LEGAL';
+export type DocumentType = 'CC' | 'CE' | 'NIT' | 'PASSPORT' | 'TI' | 'PEP';
+
+export interface Party {
+  id: string;
+  personType: PersonType;
+  documentType: DocumentType;
+  documentNumber: string;
+  verificationDigit: number | null;
+  formattedDocument: string;
+  displayName: string;
+  firstNames: string | null;
+  lastNames: string | null;
+  businessName: string | null;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  cityCode: string | null;
+  active: boolean;
+  system: boolean;
+  priceListId: string | null;
+  priceListName: string | null;
+  creditLimit: number | null;
+  alsoCustomer: boolean;
+  alsoSupplier: boolean;
+}
+
+export interface PartyInput {
+  personType: PersonType;
+  documentType: DocumentType;
+  documentNumber: string;
+  verificationDigit: number | null;
+  firstNames: string | null;
+  lastNames: string | null;
+  businessName: string | null;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  cityCode: string | null;
+  /** Solo clientes. */
+  priceListId?: string | null;
+  creditLimit?: number | null;
+}
