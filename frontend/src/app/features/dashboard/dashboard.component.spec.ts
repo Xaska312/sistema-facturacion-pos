@@ -1,3 +1,4 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { Router, provideRouter } from '@angular/router';
@@ -40,7 +41,7 @@ describe('DashboardComponent', () => {
         { provide: ReportsApi, useValue: reports },
         { provide: OrganizationApi, useValue: { branches: () => of({ content: [], page: 0, size: 100, totalElements: 0, totalPages: 0 }) } },
         { provide: InventoryApi, useValue: { alerts: () => of([]) } },
-        { provide: AuthService, useValue: { hasPermission: () => true } },
+        { provide: AuthService, useValue: { hasPermission: () => true, user: signal(null) } },
       ],
     });
   });

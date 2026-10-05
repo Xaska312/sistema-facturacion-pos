@@ -44,6 +44,8 @@ type Tab = 'members' | 'invitations';
                       initialSort="displayName,asc" caption="Miembros del negocio" searchPlaceholder="Buscar por nombre"
                       emptyIcon="pi pi-users" emptyTitle="Aún no hay más usuarios"
                       emptyMessage="Invita a tus cajeros y vendedores para que cada uno entre con su usuario."
+                      [emptyActionLabel]="mayInvite ? 'Invitar usuario' : null" emptyActionIcon="pi pi-user-plus"
+                      (emptyAction)="openInvite()"
                       (queryChange)="loadMembers($event)">
         <ng-template #actions let-row>
           @if (canManage(row)) {
@@ -59,6 +61,8 @@ type Tab = 'members' | 'invitations';
                       [trackBy]="invitationId" initialSort="createdAt,desc" caption="Invitaciones pendientes"
                       emptyIcon="pi pi-envelope" emptyTitle="No hay invitaciones pendientes"
                       emptyMessage="Las invitaciones que generes aparecen aquí hasta que las acepten o venzan."
+                      [emptyActionLabel]="mayInvite ? 'Invitar usuario' : null" emptyActionIcon="pi pi-user-plus"
+                      (emptyAction)="openInvite()"
                       (queryChange)="loadInvitations($event)">
         <ng-template #actions let-row>
           <p-button *hasPermission="'members:manage'" label="Revocar" icon="pi pi-times" size="small" [text]="true"
@@ -160,6 +164,7 @@ export class MembersComponent implements OnInit {
   private readonly access = inject(AccessApi);
   private readonly organization = inject(OrganizationApi);
   private readonly auth = inject(AuthService);
+  protected readonly mayInvite = this.auth.hasPermission('members:manage');
   private readonly messages = inject(MessageService);
   private readonly confirm = inject(ConfirmService);
 

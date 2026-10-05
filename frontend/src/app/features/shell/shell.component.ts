@@ -10,6 +10,10 @@ import { filter } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { THEME_MODES, ThemeMode, themeModeIcon } from '../../core/theme/theme-mode';
 import { ThemeService } from '../../core/theme/theme.service';
+import { HelpPanelComponent } from '../../shared/help/help-panel.component';
+import { helpForUrl } from '../../shared/help/screen-help';
+import { TourId } from '../../shared/tour/tour';
+import { TourService } from '../../shared/tour/tour.service';
 import { UI_PREF_KEYS, readUiPref, writeUiPref } from '../../shared/ui-prefs';
 import { buildBreadcrumbs } from './breadcrumbs';
 import { EXACT_MATCH_ROUTES, MENU, initials, visibleMenu, withHeadings } from './menu';
@@ -24,7 +28,8 @@ interface ThemeOption extends PrimeMenuItem {
  */
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, NgTemplateOutlet, DrawerModule, MenuModule, TooltipModule],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, NgTemplateOutlet, DrawerModule, MenuModule, TooltipModule,
+    HelpPanelComponent],
   template: `
     <button type="button" class="skip-link" (click)="focusMain()">Saltar al contenido</button>
 
@@ -94,6 +99,12 @@ interface ThemeOption extends PrimeMenuItem {
             <span class="truncate">{{ tradeName() }}</span>
           </span>
 
+          @if (helpTopic()) {
+            <button type="button" class="icon-button" aria-label="Ayuda de esta pantalla" aria-haspopup="dialog"
+                    [attr.aria-expanded]="helpOpen()" pTooltip="Ayuda" tooltipPosition="bottom" (click)="helpOpen.set(true)">
+              <i class="pi pi-question-circle" aria-hidden="true"></i>
+            </button>
+          }
           <button type="button" class="icon-button" aria-haspopup="menu" [attr.aria-label]="themeButtonLabel()"
                   (click)="themeMenu.toggle($event)">
             <i [class]="themeIcon()" aria-hidden="true"></i>
@@ -119,6 +130,12 @@ interface ThemeOption extends PrimeMenuItem {
           </button>
           <p-menu #userMenu [model]="userItems()" [popup]="true" appendTo="body" />
         </header>
+
+        @if (helpTopic(); as topic) {
+          <p-drawer [(visible)]="helpOpen" position="right" [style]="{ width: 'min(24rem, 100vw)' }" [header]="'Ayuda: ' + topic.title">
+            <app-help-panel [topic]="topic" [showTour]="tourAvailable() !== null" (startTour)="startTour($event)" />
+          </p-drawer>
+        }
 
         <main #main id="main" tabindex="-1" class="flex-1 min-w-0 p-4 md:p-6 outline-none">
           <router-outlet />
@@ -235,11 +252,13 @@ export class ShellComponent {
   protected readonly auth = inject(AuthService);
   protected readonly theme = inject(ThemeService);
   private readonly router = inject(Router);
+  private readonly tours = inject(TourService);
   private readonly mainElement = viewChild.required<ElementRef<HTMLElement>>('main');
 
   protected readonly exactRoutes = EXACT_MATCH_ROUTES;
   protected readonly collapsed = signal(readUiPref(UI_PREF_KEYS.sidebarCollapsed) === 'true');
   protected readonly drawerOpen = signal(false);
+  protected readonly helpOpen = signal(false);
   private readonly url = signal(this.router.url);
   private readonly pageTitle = signal<string | null>(deepestTitle(this.router.routerState.snapshot.root));
 
@@ -248,6 +267,15 @@ export class ShellComponent {
     return withHeadings(visibleMenu((p) => permissions.has(p)));
   });
   protected readonly crumbs = computed(() => buildBreadcrumbs(this.url(), this.pageTitle(), MENU));
+  protected readonly helpTopic = computed(() => helpForUrl(this.url()));
+  /** Recorrido de la pantalla actual, si el usuario ve lo que recorre. */
+  protected readonly tourAvailable = computed(() => {
+    const topic = this.helpTopic();
+    if (!topic?.tour) {
+      return null;
+    }
+    return !topic.tourPermission || this.auth.permissions().has(topic.tourPermission) ? topic.tour : null;
+  });
   protected readonly tradeName = computed(() => this.auth.currentTenant()?.tradeName ?? 'Mi negocio');
   protected readonly userName = computed(() => this.auth.user()?.fullName ?? 'Usuario');
   protected readonly userInitials = computed(() => initials(this.auth.user()?.fullName));
@@ -269,6 +297,9 @@ export class ShellComponent {
     {
       label: this.auth.user()?.email ?? '',
       items: [
+        ...(this.tourAvailable()
+          ? [{ label: 'Ver recorrido guiado', icon: 'pi pi-directions', command: () => this.startTour(this.tourAvailable() ?? undefined) }]
+          : []),
         { label: 'Cambiar negocio', icon: 'pi pi-sync', command: () => this.switchTenant() },
         { separator: true },
         { label: 'Salir', icon: 'pi pi-sign-out', command: () => this.logout() },
@@ -286,6 +317,7 @@ export class ShellComponent {
         this.url.set(event.urlAfterRedirects);
         this.pageTitle.set(deepestTitle(this.router.routerState.snapshot.root));
         this.drawerOpen.set(false);
+        this.helpOpen.set(false);
       });
   }
 
@@ -297,6 +329,14 @@ export class ShellComponent {
 
   focusMain(): void {
     this.mainElement().nativeElement.focus();
+  }
+
+  /** Desde la ayuda o el menú de usuario: la pantalla que define el recorrido lo inicia. */
+  startTour(id: TourId | undefined): void {
+    this.helpOpen.set(false);
+    if (id) {
+      this.tours.requestReplay(id);
+    }
   }
 
   switchTenant(): void {

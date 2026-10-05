@@ -1,12 +1,13 @@
 import { DatePipe } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { Branch, InventoryDocument, InventoryDocumentLine, InventoryDocumentType, PageResponse } from '../../core/api/api.models';
 import { InventoryApi } from '../../core/api/inventory.api';
 import { OrganizationApi } from '../../core/api/organization.api';
+import { AuthService } from '../../core/auth/auth.service';
 import { HasPermissionDirective } from '../../shared/has-permission.directive';
 import { formatCop, formatQuantity } from '../../shared/money';
 import { PageHeaderComponent } from '../../shared/page-header.component';
@@ -39,6 +40,8 @@ import { DOCUMENT_LABEL, DOCUMENT_ROUTE, documentNumber } from './labels';
                     caption="Documentos de inventario" emptyIcon="pi pi-arrow-right-arrow-left"
                     emptyTitle="Aún no hay movimientos"
                     emptyMessage="Empieza con un saldo inicial para cargar las existencias que ya tienes."
+                    [emptyActionLabel]="canAdjust ? 'Registrar saldo inicial' : null" emptyActionIcon="pi pi-plus"
+                    (emptyAction)="newInitial()"
                     (queryChange)="load($event)">
       <label tableToolbar class="flex items-center gap-2 text-sm">
         <span class="sr-only">Tipo de documento</span>
@@ -97,6 +100,8 @@ import { DOCUMENT_LABEL, DOCUMENT_ROUTE, documentNumber } from './labels';
 export class InventoryDocumentsComponent implements OnInit {
   private readonly api = inject(InventoryApi);
   private readonly organization = inject(OrganizationApi);
+  private readonly router = inject(Router);
+  protected readonly canAdjust = inject(AuthService).hasPermission('inventory:adjust');
 
   protected readonly labels = DOCUMENT_LABEL;
   protected readonly routes = DOCUMENT_ROUTE;
@@ -139,6 +144,10 @@ export class InventoryDocumentsComponent implements OnInit {
     { header: 'Motivo', cell: (d) => d.reason, hideOnMobile: true },
     { header: 'Responsable', cell: (d) => d.createdByName, hideOnMobile: true },
   ];
+
+  newInitial(): void {
+    void this.router.navigate(['/app/inventario/nuevo', DOCUMENT_ROUTE.INITIAL]);
+  }
 
   ngOnInit(): void {
     this.organization.branches({ page: 0, size: 100, sort: 'code,asc' }).subscribe((p) => this.branches.set(p.content));

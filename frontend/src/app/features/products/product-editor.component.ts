@@ -12,11 +12,12 @@ import { formatCop } from '../../shared/money';
 import { barcodeGroup, conversionGroup, fillForm, listPriceGroup, productForm, toInput } from './product-form';
 import { PageHeaderComponent } from '../../shared/page-header.component';
 import { StatusBadgeComponent } from '../../shared/status-badge.component';
+import { TermComponent } from '../../shared/help/term.component';
 
 /** Alta y edición de un producto: datos, presentaciones, códigos de barras y precios por lista. */
 @Component({
   selector: 'app-product-editor',
-  imports: [ReactiveFormsModule, RouterLink, ButtonModule, InputTextModule, PageHeaderComponent, StatusBadgeComponent],
+  imports: [TermComponent, ReactiveFormsModule, RouterLink, ButtonModule, InputTextModule, PageHeaderComponent, StatusBadgeComponent],
   template: `
     <app-page-header [title]="isNew() ? 'Nuevo producto' : (product()?.name ?? 'Producto')">
       @if (product()?.active === false) {
@@ -69,7 +70,9 @@ import { StatusBadgeComponent } from '../../shared/status-badge.component';
             <input pInputText type="number" min="0" step="0.01" formControlName="cost"
                    [readonly]="product()?.costLocked === true" />
             @if (product()?.costLocked) {
-              <small class="text-muted">Costo promedio ponderado, calculado por el inventario.</small>
+              <small class="text-muted">
+                <app-term term="costo-promedio">Costo promedio</app-term> ponderado, calculado por el inventario.
+              </small>
             }
           </label>
           <label class="flex flex-col gap-1">

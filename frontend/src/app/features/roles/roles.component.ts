@@ -11,6 +11,7 @@ import { toggleIn } from '../members/assignable';
 import { ConfirmService } from '../../shared/confirm';
 import { PageHeaderComponent } from '../../shared/page-header.component';
 import { StatusBadgeComponent } from '../../shared/status-badge.component';
+import { ROLE_CODE_PATTERN, roleCodeFrom } from './role-code';
 
 const MODULE_LABEL: Record<string, string> = {
   organization: 'Organización',
@@ -38,7 +39,6 @@ const MODULE_LABEL: Record<string, string> = {
           <header class="flex items-start justify-between gap-2">
             <div>
               <h2 class="font-medium">{{ role.name }}</h2>
-              <p class="text-xs font-mono text-muted">{{ role.code }}</p>
             </div>
             @if (role.systemRole) {
               <app-status-badge status="system" />
@@ -64,15 +64,9 @@ const MODULE_LABEL: Record<string, string> = {
     <p-dialog [(visible)]="dialogOpen" [modal]="true" [header]="editing() ? 'Editar rol' : 'Nuevo rol'"
               [style]="{ width: '40rem' }">
       <div class="flex flex-col gap-3">
-        @if (!editing()) {
-          <label class="flex flex-col gap-1">
-            <span class="text-sm font-medium">Código</span>
-            <input pInputText [(ngModel)]="code" placeholder="SUPERVISOR" />
-          </label>
-        }
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Nombre</span>
-          <input pInputText [(ngModel)]="name" />
+          <input pInputText [ngModel]="name" (ngModelChange)="setName($event)" placeholder="Supervisor de caja" />
         </label>
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Descripción</span>
@@ -88,13 +82,23 @@ const MODULE_LABEL: Record<string, string> = {
                   <input type="checkbox" class="mt-1" [checked]="selected().has(permission.code)"
                          [disabled]="!auth.hasPermission(permission.code)"
                          (change)="selected.set(toggle(selected(), permission.code))" />
-                  <span>{{ permission.description }}
-                    <span class="block text-xs font-mono text-muted">{{ permission.code }}</span></span>
+                  <span>{{ permission.description }}</span>
                 </label>
               }
             </fieldset>
           }
         </div>
+        @if (!editing()) {
+          <details class="text-sm">
+            <summary class="cursor-pointer text-muted min-h-11 inline-flex items-center">Opciones avanzadas</summary>
+            <label class="flex flex-col gap-1 mt-1">
+              <span class="font-medium">Código interno</span>
+              <input pInputText [ngModel]="code" (ngModelChange)="setCode($event)" aria-describedby="role-code-help" />
+              <span id="role-code-help" class="text-xs text-muted">Se arma solo con el nombre. Cámbialo solo si ya existe
+                otro rol con el mismo código (letras, números y _).</span>
+            </label>
+          </details>
+        }
         <div class="flex justify-end gap-2">
           <p-button label="Cancelar" [text]="true" severity="secondary" (onClick)="dialogOpen = false" />
           <p-button label="Guardar" [loading]="saving()" [disabled]="!canSave()" (onClick)="save()" />
@@ -119,6 +123,8 @@ export class RolesComponent implements OnInit {
   protected dialogOpen = false;
   protected code = '';
   protected name = '';
+  /** Si el usuario escribió el código a mano, ya no se arma con el nombre. */
+  private codeEdited = false;
   protected description = '';
 
   ngOnInit(): void {
@@ -131,7 +137,7 @@ export class RolesComponent implements OnInit {
   }
 
   protected canSave(): boolean {
-    const codeOk = this.editing() !== null || /^[A-Za-z][A-Za-z0-9_]{1,39}$/.test(this.code);
+    const codeOk = this.editing() !== null || ROLE_CODE_PATTERN.test(this.code);
     return codeOk && this.name.trim().length > 0 && this.selected().size > 0;
   }
 
@@ -139,9 +145,22 @@ export class RolesComponent implements OnInit {
     this.api.roles().subscribe((list) => this.roles.set(list));
   }
 
+  setName(value: string): void {
+    this.name = value;
+    if (!this.editing() && !this.codeEdited) {
+      this.code = roleCodeFrom(value);
+    }
+  }
+
+  setCode(value: string): void {
+    this.code = value;
+    this.codeEdited = true;
+  }
+
   openCreate(): void {
     this.editing.set(null);
     this.code = '';
+    this.codeEdited = false;
     this.name = '';
     this.description = '';
     this.selected.set(new Set());

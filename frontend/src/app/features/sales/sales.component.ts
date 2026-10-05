@@ -1,5 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -7,6 +8,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { Observable, tap, throwError } from 'rxjs';
 import { PageResponse, Sale, SaleRow, SaleStatus } from '../../core/api/api.models';
 import { SaleFilters, SalesApi } from '../../core/api/sales.api';
+import { AuthService } from '../../core/auth/auth.service';
 import { FormDialogComponent } from '../../shared/forms/form-dialog.component';
 import { HasPermissionDirective } from '../../shared/has-permission.directive';
 import { PageHeaderComponent } from '../../shared/page-header.component';
@@ -33,7 +35,9 @@ const SALE_STATUS: Record<SaleStatus, StatusKey> = { COMPLETED: 'completed', VOI
 
     <app-data-table [columns]="columns" [page]="page()" [loading]="loading()" [trackBy]="trackById"
                     caption="Ventas" searchPlaceholder="Número (POS-12) o cliente" emptyIcon="pi pi-receipt"
-                    emptyTitle="No hay ventas en este periodo" emptyMessage="Cambia las fechas o ve a vender."
+                    emptyTitle="No hay ventas en este periodo" emptyMessage="Cambia las fechas o el estado, o registra una venta."
+                    [emptyActionLabel]="canSell ? 'Ir a vender' : null" emptyActionIcon="pi pi-shopping-cart"
+                    (emptyAction)="goSell()"
                     (queryChange)="load($event)">
       <label tableToolbar class="flex items-center gap-2 text-sm">
         <span>Desde</span>
@@ -99,6 +103,8 @@ const SALE_STATUS: Record<SaleStatus, StatusKey> = { COMPLETED: 'completed', VOI
 export class SalesComponent implements OnInit {
   private readonly sales = inject(SalesApi);
   private readonly messages = inject(MessageService);
+  private readonly router = inject(Router);
+  protected readonly canSell = inject(AuthService).hasPermission('sales:create');
 
   protected readonly page = signal<PageResponse<SaleRow> | null>(null);
   protected readonly loading = signal(true);
@@ -120,6 +126,10 @@ export class SalesComponent implements OnInit {
     { header: 'Estado', cell: (s) => SALE_STATUS[s.status], kind: 'status' },
     { header: 'Total', cell: (s) => s.total, kind: 'money' },
   ];
+
+  goSell(): void {
+    void this.router.navigate(['/pos']);
+  }
 
   ngOnInit(): void {
     this.load(this.query);

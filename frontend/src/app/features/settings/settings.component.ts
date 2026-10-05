@@ -10,6 +10,15 @@ import { PageHeaderComponent } from '../../shared/page-header.component';
 /** Zonas horarias de Colombia y vecinas más usadas; el backend acepta cualquier zona IANA válida. */
 export const TIMEZONES = ['America/Bogota', 'America/Panama', 'America/Lima', 'America/Guayaquil', 'America/Caracas'];
 
+/** Nombre para el usuario (el valor guardado sigue siendo la zona IANA). */
+const TIMEZONE_LABEL: Record<string, string> = {
+  'America/Bogota': 'Colombia (Bogotá)',
+  'America/Panama': 'Panamá',
+  'America/Lima': 'Perú (Lima)',
+  'America/Guayaquil': 'Ecuador (Guayaquil)',
+  'America/Caracas': 'Venezuela (Caracas)',
+};
+
 @Component({
   selector: 'app-settings',
   imports: [ReactiveFormsModule, ButtonModule, InputTextModule, PageHeaderComponent],
@@ -32,7 +41,7 @@ export const TIMEZONES = ['America/Bogota', 'America/Panama', 'America/Lima', 'A
             <span class="text-sm font-medium">Zona horaria</span>
             <select formControlName="timezone" class="border rounded px-2 py-2">
               @for (zone of timezones; track zone) {
-                <option [value]="zone">{{ zone }}</option>
+                <option [value]="zone">{{ timezoneLabel(zone) }}</option>
               }
             </select>
           </label>
@@ -44,12 +53,20 @@ export const TIMEZONES = ['America/Bogota', 'America/Panama', 'America/Lima', 'A
           </label>
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">Descuento máximo sin autorización (%)</span>
-            <input pInputText type="number" min="0" max="100" step="0.5" formControlName="maxDiscountPercent" />
+            <input pInputText type="number" min="0" max="100" step="0.5" formControlName="maxDiscountPercent"
+                   aria-describedby="discount-help" />
+            <span id="discount-help" class="text-xs text-muted">
+              Cualquier vendedor puede descontar hasta este porcentaje por producto; más allá, solo quien tiene el
+              permiso de dar descuentos.
+            </span>
           </label>
         </div>
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Pie del recibo</span>
-          <textarea formControlName="receiptFooter" rows="3" maxlength="500" class="border rounded px-2 py-2"></textarea>
+          <textarea formControlName="receiptFooter" rows="3" maxlength="500" class="border rounded px-2 py-2"
+                    aria-describedby="footer-help"></textarea>
+          <span id="footer-help" class="text-xs text-muted">Sale al final de cada tiquete: horario, redes sociales,
+            política de cambios…</span>
         </label>
       </fieldset>
       @if (canEdit) {
@@ -67,6 +84,9 @@ export class SettingsComponent implements OnInit {
   private readonly messages = inject(MessageService);
   protected readonly canEdit = inject(AuthService).hasPermission('settings:manage');
   protected readonly timezones = TIMEZONES;
+  protected timezoneLabel(zone: string): string {
+    return TIMEZONE_LABEL[zone] ?? zone;
+  }
   protected readonly saving = signal(false);
 
   protected readonly form = inject(FormBuilder).nonNullable.group({

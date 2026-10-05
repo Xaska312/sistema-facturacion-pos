@@ -39,7 +39,7 @@ import { openedSince } from './pos-labels';
       </span>
       <a routerLink="/app/caja" class="pos-link">Caja</a>
       <a *hasPermission="'sales:read'" routerLink="/app/ventas" class="pos-link">Ventas</a>
-      <button type="button" class="pos-link" aria-label="Atajos de teclado" title="Atajos de teclado (?)"
+      <button type="button" class="pos-link" data-tour="pos-help" aria-label="Atajos de teclado" title="Atajos de teclado (?)"
               (click)="help.emit()">
         <i class="pi pi-question-circle" aria-hidden="true"></i>
       </button>

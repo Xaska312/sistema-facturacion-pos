@@ -5,6 +5,7 @@ const IVA19 = '01920000-0000-7000-8000-000000000401';
 const PASSWORD = 'ClaveE2E-12345';
 
 interface Setup {
+  userId: string;
   email: string;
   tradeName: string;
   sku: string;
@@ -23,7 +24,9 @@ async function prepareBusiness(request: APIRequestContext): Promise<Setup> {
   })).status()).toBe(201);
   const login = await request.post('/api/v1/auth/login', { data: { email, password: PASSWORD } });
   expect(login.ok()).toBeTruthy();
-  const platformToken = (await login.json()).accessToken as string;
+  const session = await login.json();
+  const platformToken = session.accessToken as string;
+  const userId = session.user.id as string;
 
   const tenant = await request.post('/api/v1/tenants', {
     headers: { Authorization: `Bearer ${platformToken}` },
@@ -54,11 +57,14 @@ async function prepareBusiness(request: APIRequestContext): Promise<Setup> {
     data: { branchId: principal!.id, lines: [{ productId, quantity: 10, unitCost: 1200 }] },
   })).status()).toBe(201);
 
-  return { email, tradeName, sku };
+  return { userId, email, tradeName, sku };
 }
 
 test('login → abrir caja → vender → cerrar caja', async ({ page, request }) => {
   const setup = await prepareBusiness(request);
+
+  // Los recorridos guiados ya vistos (si no, su capa tapa la pantalla la primera vez); se prueban en los tests unitarios.
+  await page.addInitScript((key) => localStorage.setItem(key, '["dashboard","pos"]'), `pos.tours.${setup.userId}`);
 
   // Login y selección del negocio
   await page.goto('/login');
@@ -68,6 +74,7 @@ test('login → abrir caja → vender → cerrar caja', async ({ page, request }
   await expect(page.getByText(setup.tradeName, { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Entrar' }).click();
   await expect(page).toHaveURL(/\/app$/);
+  await expect(page.getByRole('heading', { name: 'Primeros pasos' })).toBeVisible();
 
   // Abrir caja desde el POS (apertura guiada) con base de 50.000
   await page.getByRole('link', { name: 'Vender' }).first().click();
