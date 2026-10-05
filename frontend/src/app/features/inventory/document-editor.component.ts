@@ -20,12 +20,12 @@ import { DOCUMENT_LABEL, documentNumber, documentTypeFromRoute } from './labels'
   selector: 'app-inventory-document-editor',
   imports: [FormsModule, RouterLink, ButtonModule, InputTextModule],
   template: `
-    <a routerLink="/app/inventario/movimientos" class="text-sm text-blue-600 hover:underline">← Movimientos</a>
+    <a routerLink="/app/inventario/movimientos" class="text-sm text-brand hover:underline">← Movimientos</a>
     @if (type(); as t) {
       <h1 class="text-2xl font-semibold mb-1">{{ labels[t] }}</h1>
-      <p class="text-sm text-slate-600 mb-4">{{ help[t] }}</p>
+      <p class="text-sm text-muted mb-4">{{ help[t] }}</p>
 
-      <section class="bg-white rounded-xl shadow p-4 grid gap-3 md:grid-cols-3 max-w-5xl">
+      <section class="card p-4 grid gap-3 md:grid-cols-3 max-w-5xl">
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">{{ t === 'TRANSFER' ? 'Sucursal de origen' : 'Sucursal' }}</span>
           <select class="border rounded px-2 py-2" [ngModel]="branchId" (ngModelChange)="branchId = $event; refreshBalances()">
@@ -60,7 +60,7 @@ import { DOCUMENT_LABEL, documentNumber, documentTypeFromRoute } from './labels'
         </label>
       </section>
 
-      <section class="bg-white rounded-xl shadow p-4 mt-4 max-w-5xl flex flex-col gap-3">
+      <section class="card p-4 mt-4 max-w-5xl flex flex-col gap-3">
         <div class="flex flex-wrap gap-2 items-center">
           <input pInputText class="flex-1 min-w-64" placeholder="Escanea el código o escribe SKU/nombre y presiona Enter"
                  [(ngModel)]="code" (keyup.enter)="add()" autofocus />
@@ -69,7 +69,7 @@ import { DOCUMENT_LABEL, documentNumber, documentTypeFromRoute } from './labels'
         @if (results().length > 0) {
           <ul class="border rounded divide-y text-sm max-h-60 overflow-y-auto">
             @for (r of results(); track r.id) {
-              <li><button type="button" class="w-full text-left px-3 py-2 hover:bg-slate-50" (click)="pick(r, null)">
+              <li><button type="button" class="w-full text-left px-3 py-2 hover:bg-surface-alt" (click)="pick(r, null)">
                 <span class="font-mono">{{ r.sku }}</span> {{ r.name }}</button></li>
             }
           </ul>
@@ -77,7 +77,7 @@ import { DOCUMENT_LABEL, documentNumber, documentTypeFromRoute } from './labels'
 
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
-            <thead class="bg-slate-50 text-left">
+            <thead class="bg-surface-alt text-left">
               <tr>
                 <th class="p-2">Producto</th>
                 @if (t === 'ADJUSTMENT') { <th class="p-2">Tipo</th> }
@@ -110,8 +110,8 @@ import { DOCUMENT_LABEL, documentNumber, documentTypeFromRoute } from './labels'
                   </td>
                   @if (t === 'COUNT') {
                     <td class="p-2 text-right">{{ q(line.currentQuantity) }} {{ line.baseUnitCode }}</td>
-                    <td class="p-2 text-right" [class.text-red-700]="difference(line) < 0"
-                        [class.text-green-700]="difference(line) > 0">{{ q(difference(line)) }}</td>
+                    <td class="p-2 text-right" [class.text-danger]="difference(line) < 0"
+                        [class.text-success]="difference(line) > 0">{{ q(difference(line)) }}</td>
                   }
                   @if (t === 'INITIAL' || t === 'ADJUSTMENT') {
                     <td class="p-2">
@@ -119,7 +119,7 @@ import { DOCUMENT_LABEL, documentNumber, documentTypeFromRoute } from './labels'
                         <input pInputText type="number" min="0" step="0.01" class="w-32" [(ngModel)]="line.unitCost"
                                [placeholder]="t === 'ADJUSTMENT' ? 'Costo promedio' : ''" />
                       } @else {
-                        <span class="text-slate-500 text-xs">Costo promedio</span>
+                        <span class="text-muted text-xs">Costo promedio</span>
                       }
                     </td>
                   }
@@ -128,7 +128,7 @@ import { DOCUMENT_LABEL, documentNumber, documentTypeFromRoute } from './labels'
                   </td>
                 </tr>
               } @empty {
-                <tr><td colspan="7" class="p-6 text-center text-slate-500">Agrega productos escaneando o buscando.</td></tr>
+                <tr><td colspan="7" class="p-6 text-center text-muted">Agrega productos escaneando o buscando.</td></tr>
               }
             </tbody>
           </table>
@@ -137,13 +137,13 @@ import { DOCUMENT_LABEL, documentNumber, documentTypeFromRoute } from './labels'
 
       <div class="flex justify-end gap-2 mt-4 max-w-5xl items-center">
         @if (problem(); as message) {
-          <span class="text-sm text-amber-700">{{ message }}</span>
+          <span class="text-sm text-warning">{{ message }}</span>
         }
         <a routerLink="/app/inventario/movimientos"><p-button label="Cancelar" [text]="true" severity="secondary" /></a>
         <p-button label="Registrar" [loading]="saving()" [disabled]="problem() !== null" (onClick)="save()" />
       </div>
     } @else {
-      <p class="text-slate-500">Tipo de documento desconocido.</p>
+      <p class="text-muted">Tipo de documento desconocido.</p>
     }
   `,
 })

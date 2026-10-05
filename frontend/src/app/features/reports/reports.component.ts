@@ -48,7 +48,7 @@ const TAX_NAMES: Record<string, string> = {
   template: `
     <h1 class="text-2xl font-semibold mb-4">Reportes</h1>
 
-    <section class="bg-white rounded-xl shadow p-3 mb-4 flex flex-wrap items-end gap-3">
+    <section class="card p-3 mb-4 flex flex-wrap items-end gap-3">
       @if (tab() !== 'inventory') {
         <label class="flex flex-col text-sm">
           <span>Desde</span>
@@ -89,40 +89,41 @@ const TAX_NAMES: Record<string, string> = {
     <nav class="flex flex-wrap gap-1 mb-4" aria-label="Reportes">
       @for (t of tabs; track t.id) {
         <button type="button" class="px-3 py-2 rounded-lg text-sm border"
-                [class.bg-slate-900]="tab() === t.id" [class.text-white]="tab() === t.id"
-                [class.bg-white]="tab() !== t.id" (click)="select(t.id)">{{ t.label }}</button>
+                [class.bg-brand]="tab() === t.id" [class.text-brand-contrast]="tab() === t.id"
+                [attr.aria-pressed]="tab() === t.id"
+                [class.bg-surface]="tab() !== t.id" (click)="select(t.id)">{{ t.label }}</button>
       }
     </nav>
 
     @if (loading()) {
-      <p class="text-slate-500">Cargando…</p>
+      <p class="text-muted">Cargando…</p>
     }
 
     @switch (tab()) {
       @case ('summary') {
         @if (summary(); as s) {
           <div class="grid gap-3 grid-cols-2 lg:grid-cols-4 mb-4">
-            <div class="bg-white rounded-xl shadow p-4">
-              <p class="text-sm text-slate-500">Ventas</p>
+            <div class="card p-4">
+              <p class="text-sm text-muted">Ventas</p>
               <p class="text-2xl font-semibold">{{ cop(s.total) }}</p>
-              <p class="text-xs text-slate-500">{{ s.salesCount }} ventas</p>
+              <p class="text-xs text-muted">{{ s.salesCount }} ventas</p>
             </div>
-            <div class="bg-white rounded-xl shadow p-4">
-              <p class="text-sm text-slate-500">Ticket promedio</p>
+            <div class="card p-4">
+              <p class="text-sm text-muted">Ticket promedio</p>
               <p class="text-2xl font-semibold">{{ cop(s.averageTicket) }}</p>
             </div>
-            <div class="bg-white rounded-xl shadow p-4">
-              <p class="text-sm text-slate-500">Utilidad</p>
+            <div class="card p-4">
+              <p class="text-sm text-muted">Utilidad</p>
               <p class="text-2xl font-semibold">{{ cop(s.profit) }}</p>
-              <p class="text-xs text-slate-500">Margen {{ pct(s.marginPercent) }}</p>
+              <p class="text-xs text-muted">Margen {{ pct(s.marginPercent) }}</p>
             </div>
-            <div class="bg-white rounded-xl shadow p-4">
-              <p class="text-sm text-slate-500">Anuladas</p>
+            <div class="card p-4">
+              <p class="text-sm text-muted">Anuladas</p>
               <p class="text-2xl font-semibold">{{ s.voidedCount }}</p>
-              <p class="text-xs text-slate-500">{{ cop(s.voidedTotal) }}</p>
+              <p class="text-xs text-muted">{{ cop(s.voidedTotal) }}</p>
             </div>
           </div>
-          <div class="bg-white rounded-xl shadow p-4 text-sm max-w-xl">
+          <div class="card p-4 text-sm max-w-xl">
             <p class="flex justify-between"><span>Ventas brutas</span><span>{{ cop(s.grossTotal) }}</span></p>
             <p class="flex justify-between"><span>Descuentos</span><span>-{{ cop(s.discountTotal) }}</span></p>
             <p class="flex justify-between"><span>Base (sin impuestos)</span><span>{{ cop(s.subtotal) }}</span></p>
@@ -138,26 +139,26 @@ const TAX_NAMES: Record<string, string> = {
         }
       }
       @case ('days') {
-        <section class="bg-white rounded-xl shadow p-4 mb-4">
+        <section class="card p-4 mb-4">
           <app-bar-chart orientation="vertical" [items]="dayBars()" [format]="cop" [height]="180"
                          [labelEvery]="dayBars().length > 14 ? 7 : 1" ariaLabel="Ventas por día" />
         </section>
         <ng-container *ngTemplateOutlet="salesTable; context: { $implicit: days(), title: 'Fecha', csv: 'sales/by-day' }" />
       }
       @case ('branches') {
-        <section class="bg-white rounded-xl shadow p-4 mb-4">
+        <section class="card p-4 mb-4">
           <app-bar-chart [items]="bars(branchRows())" [format]="cop" ariaLabel="Ventas por sucursal" />
         </section>
         <ng-container *ngTemplateOutlet="salesTable; context: { $implicit: branchRows(), title: 'Sucursal', csv: 'sales/by-branch' }" />
       }
       @case ('sellers') {
-        <section class="bg-white rounded-xl shadow p-4 mb-4">
+        <section class="card p-4 mb-4">
           <app-bar-chart [items]="bars(sellerRows())" [format]="cop" ariaLabel="Ventas por vendedor" />
         </section>
         <ng-container *ngTemplateOutlet="salesTable; context: { $implicit: sellerRows(), title: 'Vendedor', csv: 'sales/by-seller' }" />
       }
       @case ('payments') {
-        <section class="bg-white rounded-xl shadow p-4 mb-4 max-w-2xl">
+        <section class="card p-4 mb-4 max-w-2xl">
           <app-bar-chart [items]="paymentBars()" [format]="cop" ariaLabel="Ventas por medio de pago" />
         </section>
         <p-button label="Exportar CSV" severity="secondary" [outlined]="true" (onClick)="download('sales/by-payment-method')" />
@@ -173,9 +174,9 @@ const TAX_NAMES: Record<string, string> = {
           <p-button label="Exportar CSV" severity="secondary" [outlined]="true" size="small"
                     (onClick)="download('products', { orderBy: productOrder, limit: 1000 })" />
         </div>
-        <div class="bg-white rounded-xl shadow overflow-x-auto">
+        <div class="card overflow-x-auto">
           <table class="w-full text-sm">
-            <thead class="bg-slate-50 text-left">
+            <thead class="bg-surface-alt text-left">
               <tr>
                 <th class="p-2">Producto</th><th class="p-2">Categoría</th><th class="p-2 text-right">Cantidad</th>
                 <th class="p-2 text-right">Total</th><th class="p-2 text-right">Costo</th>
@@ -185,28 +186,28 @@ const TAX_NAMES: Record<string, string> = {
             <tbody>
               @for (p of products(); track p.productId) {
                 <tr class="border-t">
-                  <td class="p-2"><span class="font-mono text-xs text-slate-500">{{ p.sku }}</span> {{ p.name }}</td>
+                  <td class="p-2"><span class="font-mono text-xs text-muted">{{ p.sku }}</span> {{ p.name }}</td>
                   <td class="p-2">{{ p.categoryName ?? '—' }}</td>
                   <td class="p-2 text-right whitespace-nowrap">{{ q(p.quantity) }} {{ p.unitCode }}</td>
                   <td class="p-2 text-right">{{ cop(p.total) }}</td>
                   <td class="p-2 text-right">{{ cop(p.cost) }}</td>
-                  <td class="p-2 text-right" [class.text-red-700]="p.profit < 0">{{ cop(p.profit) }}</td>
+                  <td class="p-2 text-right" [class.text-danger]="p.profit < 0">{{ cop(p.profit) }}</td>
                   <td class="p-2 text-right">{{ pct(p.marginPercent) }}</td>
                 </tr>
               } @empty {
-                <tr><td colspan="7" class="p-6 text-center text-slate-500">Sin ventas en el periodo.</td></tr>
+                <tr><td colspan="7" class="p-6 text-center text-muted">Sin ventas en el periodo.</td></tr>
               }
             </tbody>
           </table>
         </div>
       }
       @case ('categories') {
-        <section class="bg-white rounded-xl shadow p-4 mb-4 max-w-2xl">
+        <section class="card p-4 mb-4 max-w-2xl">
           <app-bar-chart [items]="categoryBars()" [format]="cop" ariaLabel="Ventas por categoría" />
         </section>
-        <div class="bg-white rounded-xl shadow overflow-x-auto mb-3">
+        <div class="card overflow-x-auto mb-3">
           <table class="w-full text-sm">
-            <thead class="bg-slate-50 text-left">
+            <thead class="bg-surface-alt text-left">
               <tr>
                 <th class="p-2">Categoría</th><th class="p-2 text-right">Base</th><th class="p-2 text-right">Total</th>
                 <th class="p-2 text-right">Costo</th><th class="p-2 text-right">Utilidad</th><th class="p-2 text-right">Margen</th>
@@ -223,7 +224,7 @@ const TAX_NAMES: Record<string, string> = {
                   <td class="p-2 text-right">{{ pct(c.marginPercent) }}</td>
                 </tr>
               } @empty {
-                <tr><td colspan="6" class="p-6 text-center text-slate-500">Sin ventas en el periodo.</td></tr>
+                <tr><td colspan="6" class="p-6 text-center text-muted">Sin ventas en el periodo.</td></tr>
               }
             </tbody>
           </table>
@@ -231,9 +232,9 @@ const TAX_NAMES: Record<string, string> = {
         <p-button label="Exportar CSV" severity="secondary" [outlined]="true" (onClick)="download('categories')" />
       }
       @case ('taxes') {
-        <div class="bg-white rounded-xl shadow overflow-x-auto mb-3 max-w-3xl">
+        <div class="card overflow-x-auto mb-3 max-w-3xl">
           <table class="w-full text-sm">
-            <thead class="bg-slate-50 text-left">
+            <thead class="bg-surface-alt text-left">
               <tr>
                 <th class="p-2">Impuesto</th><th class="p-2 text-right">Tarifa</th><th class="p-2 text-right">Ventas</th>
                 <th class="p-2 text-right">Base</th><th class="p-2 text-right">Impuesto</th>
@@ -249,29 +250,29 @@ const TAX_NAMES: Record<string, string> = {
                   <td class="p-2 text-right">{{ cop(t.taxAmount) }}</td>
                 </tr>
               } @empty {
-                <tr><td colspan="5" class="p-6 text-center text-slate-500">Sin ventas en el periodo.</td></tr>
+                <tr><td colspan="5" class="p-6 text-center text-muted">Sin ventas en el periodo.</td></tr>
               }
             </tbody>
           </table>
         </div>
-        <p class="text-xs text-slate-500 mb-3">Base e impuesto de las ventas registradas (no incluye las anuladas).</p>
+        <p class="text-xs text-muted mb-3">Base e impuesto de las ventas registradas (no incluye las anuladas).</p>
         <p-button label="Exportar CSV" severity="secondary" [outlined]="true" (onClick)="download('taxes')" />
       }
       @case ('inventory') {
         @if (valuation(); as v) {
           <div class="grid gap-3 grid-cols-2 max-w-xl mb-4">
-            <div class="bg-white rounded-xl shadow p-4">
-              <p class="text-sm text-slate-500">Inventario valorizado</p>
+            <div class="card p-4">
+              <p class="text-sm text-muted">Inventario valorizado</p>
               <p class="text-2xl font-semibold">{{ cop(v.totalValue) }}</p>
             </div>
-            <div class="bg-white rounded-xl shadow p-4">
-              <p class="text-sm text-slate-500">Productos con existencia</p>
+            <div class="card p-4">
+              <p class="text-sm text-muted">Productos con existencia</p>
               <p class="text-2xl font-semibold">{{ v.productCount }}</p>
             </div>
           </div>
-          <div class="bg-white rounded-xl shadow overflow-x-auto mb-3">
+          <div class="card overflow-x-auto mb-3">
             <table class="w-full text-sm">
-              <thead class="bg-slate-50 text-left">
+              <thead class="bg-surface-alt text-left">
                 <tr>
                   <th class="p-2">Sucursal</th><th class="p-2">Producto</th><th class="p-2">Categoría</th>
                   <th class="p-2 text-right">Existencia</th><th class="p-2 text-right">Costo promedio</th>
@@ -282,28 +283,28 @@ const TAX_NAMES: Record<string, string> = {
                 @for (r of v.rows; track r.branchId + r.productId) {
                   <tr class="border-t">
                     <td class="p-2">{{ r.branchName }}</td>
-                    <td class="p-2"><span class="font-mono text-xs text-slate-500">{{ r.sku }}</span> {{ r.name }}</td>
+                    <td class="p-2"><span class="font-mono text-xs text-muted">{{ r.sku }}</span> {{ r.name }}</td>
                     <td class="p-2">{{ r.categoryName ?? '—' }}</td>
                     <td class="p-2 text-right whitespace-nowrap">{{ q(r.quantity) }} {{ r.unitCode }}</td>
                     <td class="p-2 text-right">{{ cop(r.averageCost) }}</td>
                     <td class="p-2 text-right">{{ cop(r.value) }}</td>
                   </tr>
                 } @empty {
-                  <tr><td colspan="6" class="p-6 text-center text-slate-500">No hay existencias.</td></tr>
+                  <tr><td colspan="6" class="p-6 text-center text-muted">No hay existencias.</td></tr>
                 }
               </tbody>
             </table>
           </div>
-          <p class="text-xs text-slate-500 mb-3">Existencias actuales × costo promedio ponderado.</p>
+          <p class="text-xs text-muted mb-3">Existencias actuales × costo promedio ponderado.</p>
           <p-button label="Exportar CSV" severity="secondary" [outlined]="true" (onClick)="download('inventory/valuation')" />
         }
       }
     }
 
     <ng-template #salesTable let-rows let-title="title" let-csv="csv">
-      <div class="bg-white rounded-xl shadow overflow-x-auto mb-3">
+      <div class="card overflow-x-auto mb-3">
         <table class="w-full text-sm">
-          <thead class="bg-slate-50 text-left">
+          <thead class="bg-surface-alt text-left">
             <tr>
               <th class="p-2">{{ title }}</th><th class="p-2 text-right">Ventas</th><th class="p-2 text-right">Total</th>
               <th class="p-2 text-right">Ticket promedio</th><th class="p-2 text-right">Utilidad</th>
@@ -321,7 +322,7 @@ const TAX_NAMES: Record<string, string> = {
                 <td class="p-2 text-right">{{ pct(r.marginPercent) }}</td>
               </tr>
             } @empty {
-              <tr><td colspan="6" class="p-6 text-center text-slate-500">Sin ventas en el periodo.</td></tr>
+              <tr><td colspan="6" class="p-6 text-center text-muted">Sin ventas en el periodo.</td></tr>
             }
           </tbody>
         </table>

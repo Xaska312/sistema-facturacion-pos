@@ -15,9 +15,9 @@ import { slugify } from './slugify';
   imports: [ReactiveFormsModule, RouterLink, ButtonModule, InputTextModule],
   template: `
     <main class="min-h-screen flex items-center justify-center p-4">
-      <section class="w-full max-w-lg bg-white rounded-xl shadow p-6 flex flex-col gap-4">
+      <section class="w-full max-w-lg card p-6 flex flex-col gap-4">
         <header>
-          <p class="text-xs text-slate-500">Paso {{ step() }} de 2</p>
+          <p class="text-xs text-muted">Paso {{ step() }} de 2</p>
           <h1 class="text-xl font-semibold">Crear negocio</h1>
         </header>
 
@@ -34,23 +34,23 @@ import { slugify } from './slugify';
             <label class="flex flex-col gap-1">
               <span class="text-sm font-medium">Identificador</span>
               <input pInputText formControlName="slug" (input)="slugTouched = true" />
-              <small class="text-slate-500">Minúsculas, números y "_" (3 a 41). No se puede cambiar después.</small>
+              <small class="text-muted">Minúsculas, números y "_" (3 a 41). No se puede cambiar después.</small>
             </label>
-            <div class="rounded-lg bg-slate-50 p-3 text-sm">
+            <div class="rounded-lg bg-surface-alt p-3 text-sm">
               Tipo de negocio: <strong>Comercio (RETAIL)</strong>
-              <span class="text-slate-500"> — farmacia, restaurante y servicios llegarán después.</span>
+              <span class="text-muted"> — farmacia, restaurante y servicios llegarán después.</span>
             </div>
             <div class="flex justify-between">
-              <a routerLink="/negocios" class="self-center text-sm text-slate-600 hover:underline">Cancelar</a>
+              <a routerLink="/negocios" class="self-center text-sm text-muted hover:underline">Cancelar</a>
               <p-button label="Continuar" [disabled]="form.invalid" (onClick)="step.set(2)" />
             </div>
           } @else {
             <dl class="grid grid-cols-3 gap-2 text-sm">
-              <dt class="text-slate-500">Nombre</dt><dd class="col-span-2">{{ form.value.tradeName }}</dd>
-              <dt class="text-slate-500">Razón social</dt><dd class="col-span-2">{{ form.value.legalName }}</dd>
-              <dt class="text-slate-500">Identificador</dt><dd class="col-span-2 font-mono">{{ form.value.slug }}</dd>
+              <dt class="text-muted">Nombre</dt><dd class="col-span-2">{{ form.value.tradeName }}</dd>
+              <dt class="text-muted">Razón social</dt><dd class="col-span-2">{{ form.value.legalName }}</dd>
+              <dt class="text-muted">Identificador</dt><dd class="col-span-2 font-mono">{{ form.value.slug }}</dd>
             </dl>
-            <p class="text-sm text-slate-500">
+            <p class="text-sm text-muted">
               Se creará tu negocio con una sede principal, una caja y los roles por defecto.
             </p>
             <div class="flex justify-between">

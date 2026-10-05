@@ -14,17 +14,17 @@ export const TIMEZONES = ['America/Bogota', 'America/Panama', 'America/Lima', 'A
   imports: [ReactiveFormsModule, ButtonModule, InputTextModule],
   template: `
     <h1 class="text-2xl font-semibold mb-4">Ajustes del negocio</h1>
-    <form [formGroup]="form" (ngSubmit)="save()" class="bg-white rounded-xl shadow p-4 md:p-6 flex flex-col gap-4 max-w-2xl">
+    <form [formGroup]="form" (ngSubmit)="save()" class="card p-4 md:p-6 flex flex-col gap-4 max-w-2xl">
       <fieldset [disabled]="!canEdit" class="flex flex-col gap-4">
         <label class="flex items-start gap-3">
           <input type="checkbox" class="mt-1" formControlName="allowNegativeStock" />
           <span><span class="font-medium">Permitir vender sin existencias</span>
-            <span class="block text-sm text-slate-500">Si está apagado, una venta sin stock suficiente se rechaza.</span></span>
+            <span class="block text-sm text-muted">Si está apagado, una venta sin stock suficiente se rechaza.</span></span>
         </label>
         <label class="flex items-start gap-3">
           <input type="checkbox" class="mt-1" formControlName="pricesIncludeTax" />
           <span><span class="font-medium">Los precios incluyen impuestos</span>
-            <span class="block text-sm text-slate-500">El precio de venta ya trae el IVA incluido.</span></span>
+            <span class="block text-sm text-muted">El precio de venta ya trae el IVA incluido.</span></span>
         </label>
         <div class="grid gap-4 md:grid-cols-2">
           <label class="flex flex-col gap-1">
@@ -56,7 +56,7 @@ export const TIMEZONES = ['America/Bogota', 'America/Panama', 'America/Lima', 'A
           <p-button type="submit" label="Guardar" [loading]="saving()" [disabled]="form.invalid || form.pristine" />
         </div>
       } @else {
-        <p class="text-sm text-slate-500">Solo lectura: no tienes permiso para modificar los ajustes.</p>
+        <p class="text-sm text-muted">Solo lectura: no tienes permiso para modificar los ajustes.</p>
       }
     </form>
   `,

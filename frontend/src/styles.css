@@ -1,12 +1,168 @@
 @import "tailwindcss";
 
-html,
-body {
-  margin: 0;
-  min-height: 100%;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  background: #f8fafc;
-  color: #0f172a;
+/*
+ * Sistema de diseño del POS (paleta A "Turquesa comercio").
+ *
+ * Los tokens de color viven SOLO aquí (claro en :root, oscuro en .app-dark). Tailwind los expone como
+ * utilidades (bg-surface, text-muted, text-brand, bg-danger-soft…) con @theme, y el preset de PrimeNG
+ * (core/theme/app-preset.ts) usa la misma paleta. Los templates no deben usar colores literales
+ * (slate-*, white, blue-*, #hex…): lo revisa tools/check-colors.mjs.
+ */
+
+@custom-variant dark (&:where(.app-dark, .app-dark *));
+
+:root {
+  color-scheme: light;
+  --surface-ground: #f5f7f7;
+  --surface: #ffffff;
+  --surface-alt: #eef2f2;
+  --surface-border: #dbe2e2;
+  --field-border: #839290;
+  --text: #12201f;
+  --text-muted: #4f5f5d;
+  --brand: #0f766e;
+  --brand-hover: #115e59;
+  --brand-contrast: #ffffff;
+  --brand-soft: #ccfbf1;
+  --brand-soft-text: #115e59;
+  --success: #15803d;
+  --success-soft: #dcfce7;
+  --success-soft-text: #14532d;
+  --warning: #b45309;
+  --warning-soft: #fef3c7;
+  --warning-soft-text: #78350f;
+  --danger: #b91c1c;
+  --danger-soft: #fee2e2;
+  --danger-soft-text: #7f1d1d;
+  --info: #1d4ed8;
+  --info-soft: #dbeafe;
+  --info-soft-text: #1e3a8a;
+  --focus-ring: #0f766e;
+  --elevation-card: 0 1px 2px rgb(16 24 40 / 0.05), 0 1px 3px rgb(16 24 40 / 0.06);
+  --elevation-overlay: 0 10px 30px rgb(16 24 40 / 0.12);
+}
+
+.app-dark {
+  color-scheme: dark;
+  --surface-ground: #0b1214;
+  --surface: #121c1e;
+  --surface-alt: #1b2729;
+  --surface-border: #2a3a3d;
+  --field-border: #5f7174;
+  --text: #e6efee;
+  --text-muted: #9cb0ad;
+  --brand: #2dd4bf;
+  --brand-hover: #5eead4;
+  --brand-contrast: #042f2e;
+  --brand-soft: #134e4a;
+  --brand-soft-text: #99f6e4;
+  --success: #4ade80;
+  --success-soft: #14532d;
+  --success-soft-text: #bbf7d0;
+  --warning: #fbbf24;
+  --warning-soft: #78350f;
+  --warning-soft-text: #fde68a;
+  --danger: #f87171;
+  --danger-soft: #7f1d1d;
+  --danger-soft-text: #fecaca;
+  --info: #60a5fa;
+  --info-soft: #1e3a8a;
+  --info-soft-text: #bfdbfe;
+  --focus-ring: #5eead4;
+  --elevation-card: 0 1px 2px rgb(0 0 0 / 0.35);
+  --elevation-overlay: 0 10px 30px rgb(0 0 0 / 0.5);
+}
+
+/* Solo los colores del sistema: las paletas de Tailwind (slate, blue…) no se generan. */
+@theme inline {
+  --color-*: initial;
+  --color-ground: var(--surface-ground);
+  --color-surface: var(--surface);
+  --color-surface-alt: var(--surface-alt);
+  --color-line: var(--surface-border);
+  --color-fg: var(--text);
+  --color-muted: var(--text-muted);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-contrast: var(--brand-contrast);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-soft-fg: var(--brand-soft-text);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-success-soft-fg: var(--success-soft-text);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-soft-fg: var(--warning-soft-text);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-soft-fg: var(--danger-soft-text);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-info-soft-fg: var(--info-soft-text);
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --shadow-card: var(--elevation-card);
+  --shadow-overlay: var(--elevation-overlay);
+}
+
+/* Estilos base (en la capa base: las utilidades de Tailwind y los estilos de PrimeNG ganan sobre ellos). */
+@layer base {
+  html,
+  body {
+    margin: 0;
+    min-height: 100%;
+    font-family: var(--font-sans);
+    background: var(--surface-ground);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  /* Los bordes sin color explícito usan el borde del tema (Tailwind 4 usa currentColor por defecto). */
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--surface-border);
+  }
+
+  /* Campos nativos (select, fecha, textarea) mientras se migran a PrimeNG: mismo fondo y borde visible. */
+  select,
+  textarea,
+  input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"]) {
+    background-color: var(--surface);
+    border-color: var(--field-border);
+  }
+
+  input[type="checkbox"],
+  input[type="radio"] {
+    accent-color: var(--brand);
+  }
+}
+
+/* Tarjeta estándar (antes "bg-white rounded-xl shadow"). */
+@utility card {
+  background-color: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: 0.75rem;
+  box-shadow: var(--elevation-card);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Tiquete: al imprimir se muestra solo la copia del tiquete (ver receipt-prefs.ts). */
@@ -18,6 +174,12 @@ body {
 @media print {
   @page {
     margin: 0;
+  }
+
+  /* El tiquete siempre sale en blanco y negro, aunque la pantalla esté en modo oscuro. */
+  html,
+  body {
+    background: transparent !important;
   }
 
   body > :not(.receipt-print-copy) {

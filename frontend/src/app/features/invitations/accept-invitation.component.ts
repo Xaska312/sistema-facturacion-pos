@@ -17,25 +17,25 @@ import { problemMessage } from '../../core/errors/problem';
   imports: [RouterLink, DatePipe, ButtonModule],
   template: `
     <main class="min-h-screen flex items-center justify-center p-4">
-      <section class="w-full max-w-md bg-white rounded-xl shadow p-6 flex flex-col gap-4">
+      <section class="w-full max-w-md card p-6 flex flex-col gap-4">
         @if (error()) {
           <h1 class="text-xl font-semibold">Invitación no disponible</h1>
-          <p class="text-slate-600">{{ error() }}</p>
-          <a routerLink="/login" class="text-blue-600 hover:underline">Ir a iniciar sesión</a>
+          <p class="text-muted">{{ error() }}</p>
+          <a routerLink="/login" class="text-brand hover:underline">Ir a iniciar sesión</a>
         } @else {
           <!-- Angular 19 solo permite "as" en el primer bloque del @if -->
           @if (preview(); as p) {
             <h1 class="text-xl font-semibold">Te invitaron a {{ p.tenantName }}</h1>
-            <p class="text-slate-600">
+            <p class="text-muted">
               {{ p.invitedByName ?? 'Un administrador' }} te invitó a trabajar en <strong>{{ p.tenantName }}</strong>
               con el correo <strong>{{ p.email }}</strong>.
             </p>
             @if (p.status !== 'PENDING') {
-              <p class="text-amber-700">Esta invitación ya fue {{ p.status === 'ACCEPTED' ? 'usada' : 'revocada' }}.</p>
+              <p class="text-warning">Esta invitación ya fue {{ p.status === 'ACCEPTED' ? 'usada' : 'revocada' }}.</p>
             } @else if (p.expired) {
-              <p class="text-amber-700">Esta invitación venció el {{ p.expiresAt | date: 'medium' }}. Pide un enlace nuevo.</p>
+              <p class="text-warning">Esta invitación venció el {{ p.expiresAt | date: 'medium' }}. Pide un enlace nuevo.</p>
             } @else if (!auth.isAuthenticated()) {
-              <p class="text-sm text-slate-500">Para aceptarla, inicia sesión o crea tu cuenta con ese correo.</p>
+              <p class="text-sm text-muted">Para aceptarla, inicia sesión o crea tu cuenta con ese correo.</p>
               <div class="flex gap-2">
                 <a routerLink="/login" [queryParams]="{ returnUrl: here() }" class="flex-1">
                   <p-button label="Iniciar sesión" styleClass="w-full" />
@@ -45,7 +45,7 @@ import { problemMessage } from '../../core/errors/problem';
                 </a>
               </div>
             } @else if (wrongAccount()) {
-              <p class="text-amber-700">
+              <p class="text-warning">
                 Iniciaste sesión como {{ auth.user()?.email }}. Esta invitación es para {{ p.email }}.
               </p>
               <p-button label="Cambiar de cuenta" severity="secondary" (onClick)="switchAccount()" />
@@ -53,7 +53,7 @@ import { problemMessage } from '../../core/errors/problem';
               <p-button label="Aceptar invitación" [loading]="accepting()" (onClick)="accept()" />
             }
           } @else {
-            <p class="text-slate-500">Cargando invitación…</p>
+            <p class="text-muted">Cargando invitación…</p>
           }
         }
       </section>

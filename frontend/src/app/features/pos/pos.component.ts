@@ -54,20 +54,22 @@ interface CustomerChoice {
   imports: [FormsModule, RouterLink, ButtonModule, DialogModule, InputTextModule, HasPermissionDirective,
     ReceiptComponent],
   template: `
-    <div class="h-screen flex flex-col bg-slate-100">
-      <header class="bg-slate-900 text-white px-4 py-2 flex flex-wrap items-center gap-x-4 gap-y-1">
-        <a routerLink="/app" class="text-slate-300 hover:text-white text-sm">← Menú</a>
+    <div class="h-screen flex flex-col bg-surface-alt">
+      <header class="bg-surface border-b border-line px-4 py-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+        <a routerLink="/app" class="text-muted hover:text-fg text-sm inline-flex items-center gap-1">
+          <i class="pi pi-arrow-left text-xs" aria-hidden="true"></i>Menú
+        </a>
         <span class="font-semibold">{{ config()?.businessName }}</span>
         @if (session(); as s) {
-          <span class="text-sm text-slate-300">{{ s.registerCode }} · {{ s.branchName }} · {{ auth.user()?.fullName }}</span>
+          <span class="text-sm text-muted">{{ s.registerCode }} · {{ s.branchName }} · {{ auth.user()?.fullName }}</span>
         }
         <span class="flex-1"></span>
-        <a routerLink="/app/caja" class="text-sm text-slate-300 hover:text-white">Caja</a>
-        <a *hasPermission="'sales:read'" routerLink="/app/ventas" class="text-sm text-slate-300 hover:text-white">Ventas</a>
+        <a routerLink="/app/caja" class="text-sm text-muted hover:text-fg">Caja</a>
+        <a *hasPermission="'sales:read'" routerLink="/app/ventas" class="text-sm text-muted hover:text-fg">Ventas</a>
       </header>
 
       @if (session() === null) {
-        <div class="m-4 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-900">
+        <div class="m-4 p-4 bg-warning-soft border border-warning/40 rounded-xl text-warning-soft-fg">
           <p class="font-medium">No tienes una caja abierta.</p>
           <p class="text-sm mb-3">Para vender, abre tu caja con la base de efectivo.</p>
           <a routerLink="/app/caja"><p-button label="Abrir caja" /></a>
@@ -75,7 +77,7 @@ interface CustomerChoice {
       }
 
       <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3 p-3 min-h-0">
-        <section class="md:col-span-2 flex flex-col min-h-0 bg-white rounded-xl shadow">
+        <section class="md:col-span-2 flex flex-col min-h-0 card">
           <div class="p-3 border-b flex gap-2">
             <input #scanner pInputText class="flex-1 text-lg" [(ngModel)]="code" (keydown.enter)="scan()"
                    (blur)="keepFocus()" autocomplete="off"
@@ -85,7 +87,7 @@ interface CustomerChoice {
           </div>
           <div class="flex-1 overflow-auto">
             <table class="w-full text-sm">
-              <thead class="bg-slate-50 text-left sticky top-0">
+              <thead class="bg-surface-alt text-left sticky top-0">
                 <tr>
                   <th class="p-2">Producto</th>
                   <th class="p-2 w-28 text-right">Cantidad</th>
@@ -99,8 +101,8 @@ interface CustomerChoice {
                 @for (line of lines(); track line.key; let i = $index) {
                   <tr class="border-t">
                     <td class="p-2">
-                      <span class="font-mono text-xs text-slate-500">{{ line.sku }}</span> {{ line.name }}
-                      <span class="text-xs text-slate-500">({{ line.unitCode }})</span>
+                      <span class="font-mono text-xs text-muted">{{ line.sku }}</span> {{ line.name }}
+                      <span class="text-xs text-muted">({{ line.unitCode }})</span>
                     </td>
                     <td class="p-2">
                       <input type="number" min="0" step="any" class="w-24 border rounded px-2 py-1 text-right"
@@ -120,7 +122,7 @@ interface CustomerChoice {
                   </tr>
                 } @empty {
                   <tr>
-                    <td colspan="6" class="p-8 text-center text-slate-500">
+                    <td colspan="6" class="p-8 text-center text-muted">
                       Escanea un producto para empezar la venta.
                     </td>
                   </tr>
@@ -131,17 +133,17 @@ interface CustomerChoice {
         </section>
 
         <aside class="flex flex-col gap-3 min-h-0">
-          <div class="bg-white rounded-xl shadow p-3">
-            <p class="text-xs uppercase text-slate-500">Cliente</p>
+          <div class="card p-3">
+            <p class="text-xs uppercase text-muted">Cliente</p>
             <p class="font-medium">{{ customer().name }}</p>
-            <p class="text-sm text-slate-500">{{ customer().document }}</p>
+            <p class="text-sm text-muted">{{ customer().document }}</p>
             <p-button label="Cambiar cliente" [text]="true" size="small" (onClick)="openCustomers()"
                       [disabled]="!session()" />
           </div>
-          <div class="bg-white rounded-xl shadow p-3 text-sm">
+          <div class="card p-3 text-sm">
             <p class="flex justify-between"><span>Artículos</span><span>{{ q(totals().items) }}</span></p>
             @if (totals().discount > 0) {
-              <p class="flex justify-between text-green-700"><span>Descuentos</span><span>-{{ cop(totals().discount) }}</span></p>
+              <p class="flex justify-between text-success"><span>Descuentos</span><span>-{{ cop(totals().discount) }}</span></p>
             }
             <p class="flex justify-between"><span>Base</span><span>{{ cop(totals().base) }}</span></p>
             <p class="flex justify-between"><span>Impuestos</span><span>{{ cop(totals().tax) }}</span></p>
@@ -170,14 +172,14 @@ interface CustomerChoice {
       <ul class="max-h-96 overflow-auto divide-y">
         @for (p of searchResults(); track p.id) {
           <li>
-            <button type="button" class="w-full text-left p-2 hover:bg-slate-50 flex justify-between gap-2"
+            <button type="button" class="w-full text-left p-2 hover:bg-surface-alt flex justify-between gap-2"
                     (click)="pickProduct(p)">
-              <span><span class="font-mono text-xs text-slate-500">{{ p.sku }}</span> {{ p.name }}</span>
-              <span class="text-slate-600">{{ cop(p.salePrice) }}</span>
+              <span><span class="font-mono text-xs text-muted">{{ p.sku }}</span> {{ p.name }}</span>
+              <span class="text-muted">{{ cop(p.salePrice) }}</span>
             </button>
           </li>
         } @empty {
-          <li class="p-2 text-sm text-slate-500">Sin resultados.</li>
+          <li class="p-2 text-sm text-muted">Sin resultados.</li>
         }
       </ul>
     </p-dialog>
@@ -193,21 +195,21 @@ interface CustomerChoice {
       <ul class="max-h-80 overflow-auto divide-y">
         @for (c of customerResults(); track c.id) {
           <li>
-            <button type="button" class="w-full text-left p-2 hover:bg-slate-50" (click)="pickCustomer(c)">
+            <button type="button" class="w-full text-left p-2 hover:bg-surface-alt" (click)="pickCustomer(c)">
               <span class="font-medium">{{ c.displayName }}</span>
-              <span class="text-sm text-slate-500"> · {{ c.documentType }} {{ c.formattedDocument }}</span>
+              <span class="text-sm text-muted"> · {{ c.documentType }} {{ c.formattedDocument }}</span>
               @if (c.priceListName) {
-                <span class="text-xs text-blue-700"> · {{ c.priceListName }}</span>
+                <span class="text-xs text-brand"> · {{ c.priceListName }}</span>
               }
             </button>
           </li>
         } @empty {
-          <li class="p-2 text-sm text-slate-500">Busca un cliente registrado.</li>
+          <li class="p-2 text-sm text-muted">Busca un cliente registrado.</li>
         }
       </ul>
       <div class="mt-3 flex justify-between">
         <p-button label="Consumidor final" [text]="true" (onClick)="resetCustomer()" />
-        <a *hasPermission="'parties:manage'" routerLink="/app/clientes" class="text-sm text-blue-700 self-center">
+        <a *hasPermission="'parties:manage'" routerLink="/app/clientes" class="text-sm text-brand self-center">
           Registrar cliente nuevo
         </a>
       </div>
@@ -248,10 +250,10 @@ interface CustomerChoice {
       <div class="text-sm border-t pt-2">
         <p class="flex justify-between"><span>Recibido</span><span>{{ cop(sum.paid) }}</span></p>
         @if (sum.missing > 0) {
-          <p class="flex justify-between text-red-700 font-medium"><span>Falta</span><span>{{ cop(sum.missing) }}</span></p>
+          <p class="flex justify-between text-danger font-medium"><span>Falta</span><span>{{ cop(sum.missing) }}</span></p>
         }
         @if (sum.nonCashExceeds) {
-          <p class="text-red-700">Tarjeta o transferencia no pueden superar el total: el cambio solo se da en efectivo.</p>
+          <p class="text-danger">Tarjeta o transferencia no pueden superar el total: el cambio solo se da en efectivo.</p>
         }
         <p class="flex justify-between text-2xl font-semibold mt-1"><span>Cambio</span><span>{{ cop(sum.change) }}</span></p>
       </div>
@@ -269,7 +271,7 @@ interface CustomerChoice {
         @if (sale.changeAmount > 0) {
           <p class="text-center text-2xl font-semibold mb-3">Cambio: {{ cop(sale.changeAmount) }}</p>
         }
-        <div class="flex justify-center bg-slate-100 p-3 max-h-[60vh] overflow-auto">
+        <div class="flex justify-center bg-surface-alt p-3 max-h-[60vh] overflow-auto">
           <app-receipt [sale]="sale" [width]="width()" />
         </div>
       }

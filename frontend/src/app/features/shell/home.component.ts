@@ -14,7 +14,7 @@ import { formatQuantity } from '../../shared/money';
   imports: [RouterLink, ButtonModule, HasPermissionDirective, DashboardComponent, MyDayComponent],
   template: `
     <h1 class="text-2xl font-semibold mb-2">Bienvenido, {{ auth.user()?.fullName }}</h1>
-    <p class="text-slate-600 mb-6">
+    <p class="text-muted mb-6">
       Estás trabajando en <strong>{{ auth.currentTenant()?.tradeName ?? 'tu negocio' }}</strong>.
     </p>
 
@@ -32,23 +32,23 @@ import { formatQuantity } from '../../shared/money';
     }
 
     @if (alerts().length > 0) {
-      <section class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
-        <h2 class="font-medium text-amber-900">Alertas de existencias</h2>
-        <p class="text-sm text-amber-900 mb-2">{{ alerts().length }} producto(s) en o por debajo del mínimo.</p>
-        <ul class="text-sm text-amber-900">
+      <section class="bg-warning-soft border border-warning/40 rounded-xl p-4 mb-4">
+        <h2 class="font-medium text-warning-soft-fg">Alertas de existencias</h2>
+        <p class="text-sm text-warning-soft-fg mb-2">{{ alerts().length }} producto(s) en o por debajo del mínimo.</p>
+        <ul class="text-sm text-warning-soft-fg">
           @for (a of alerts().slice(0, 5); track a.branchId + a.productId) {
             <li>{{ a.name }}: {{ q(a.quantity) }} {{ a.unitCode }} (mín. {{ q(a.minStock) }}) · {{ a.branchName }}</li>
           }
         </ul>
-        <a routerLink="/app/inventario" class="text-sm text-blue-700 hover:underline">Ver existencias</a>
+        <a routerLink="/app/inventario" class="text-sm text-brand hover:underline">Ver existencias</a>
       </section>
     }
 
-    <section class="bg-white rounded-xl shadow p-4">
+    <section class="card p-4">
       <h2 class="font-medium mb-2">Tus permisos en este negocio</h2>
       <ul class="flex flex-wrap gap-2">
         @for (permission of permissions(); track permission) {
-          <li class="text-xs font-mono bg-slate-100 rounded px-2 py-1">{{ permission }}</li>
+          <li class="text-xs font-mono bg-surface-alt rounded px-2 py-1">{{ permission }}</li>
         }
       </ul>
     </section>

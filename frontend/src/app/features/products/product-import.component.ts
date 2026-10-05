@@ -11,11 +11,11 @@ import { importTemplateCsv } from './import-template';
   selector: 'app-product-import',
   imports: [RouterLink, ButtonModule],
   template: `
-    <a routerLink="/app/productos" class="text-sm text-blue-600 hover:underline">← Productos</a>
+    <a routerLink="/app/productos" class="text-sm text-brand hover:underline">← Productos</a>
     <h1 class="text-2xl font-semibold mb-4">Importar productos</h1>
 
-    <section class="bg-white rounded-xl shadow p-4 flex flex-col gap-3 max-w-3xl">
-      <ol class="list-decimal list-inside text-sm text-slate-600 flex flex-col gap-1">
+    <section class="card p-4 flex flex-col gap-3 max-w-3xl">
+      <ol class="list-decimal list-inside text-sm text-muted flex flex-col gap-1">
         <li>Descarga la plantilla y llénala en Excel (una fila por producto).</li>
         <li>Guárdala como <strong>CSV UTF-8</strong>. Columnas obligatorias: sku, nombre, impuesto, precio.</li>
         <li>Impuesto: IVA19, IVA5, EXENTO o EXCLUIDO. Unidad: UND, KG, LT… (vacía = UND).</li>
@@ -38,9 +38,9 @@ import { importTemplateCsv } from './import-template';
     </section>
 
     @if (report(); as r) {
-      <section class="bg-white rounded-xl shadow p-4 mt-4 max-w-3xl">
+      <section class="card p-4 mt-4 max-w-3xl">
         <h2 class="font-medium mb-2">{{ r.applied ? 'Importación completada' : 'Resultado de la validación' }}</h2>
-        <p class="text-sm text-slate-600">
+        <p class="text-sm text-muted">
           {{ r.totalRows }} filas · {{ r.toCreate }} nuevos · {{ r.toUpdate }} actualizados
           @if (r.newCategories.length > 0) {
             · categorías nuevas: {{ r.newCategories.join(', ') }}
@@ -48,10 +48,10 @@ import { importTemplateCsv } from './import-template';
         </p>
         @if (r.errors.length > 0) {
           <table class="w-full text-sm mt-3">
-            <thead class="bg-slate-50 text-left"><tr><th class="p-2 w-20">Fila</th><th class="p-2">Error</th></tr></thead>
+            <thead class="bg-surface-alt text-left"><tr><th class="p-2 w-20">Fila</th><th class="p-2">Error</th></tr></thead>
             <tbody>
               @for (e of r.errors; track e.row + e.message) {
-                <tr class="border-t"><td class="p-2 font-mono">{{ e.row }}</td><td class="p-2 text-red-700">{{ e.message }}</td></tr>
+                <tr class="border-t"><td class="p-2 font-mono">{{ e.row }}</td><td class="p-2 text-danger">{{ e.message }}</td></tr>
               }
             </tbody>
           </table>

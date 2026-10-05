@@ -8,19 +8,19 @@ import { formatCop } from '../../shared/money';
   selector: 'app-my-day',
   template: `
     @if (data(); as d) {
-      <section class="bg-white rounded-xl shadow p-4 mb-4">
+      <section class="card p-4 mb-4">
         <h2 class="font-medium mb-3">Mis ventas de hoy</h2>
         <div class="grid gap-3 grid-cols-3 mb-3">
           <div>
-            <p class="text-sm text-slate-500">Total</p>
+            <p class="text-sm text-muted">Total</p>
             <p class="text-xl font-semibold">{{ cop(d.total) }}</p>
           </div>
           <div>
-            <p class="text-sm text-slate-500">Ventas</p>
+            <p class="text-sm text-muted">Ventas</p>
             <p class="text-xl font-semibold">{{ d.salesCount }}</p>
           </div>
           <div>
-            <p class="text-sm text-slate-500">Ticket promedio</p>
+            <p class="text-sm text-muted">Ticket promedio</p>
             <p class="text-xl font-semibold">{{ cop(d.averageTicket) }}</p>
           </div>
         </div>

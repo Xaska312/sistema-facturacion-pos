@@ -15,10 +15,10 @@ import { MOVEMENT_LABEL, documentNumber } from './labels';
   selector: 'app-kardex',
   imports: [FormsModule, RouterLink, DatePipe, ButtonModule],
   template: `
-    <a routerLink="/app/inventario" class="text-sm text-blue-600 hover:underline">← Existencias</a>
+    <a routerLink="/app/inventario" class="text-sm text-brand hover:underline">← Existencias</a>
     <h1 class="text-2xl font-semibold mb-1">Kardex</h1>
     @if (product(); as p) {
-      <p class="text-slate-600 mb-4"><span class="font-mono">{{ p.sku }}</span> — {{ p.name }} · costo promedio
+      <p class="text-muted mb-4"><span class="font-mono">{{ p.sku }}</span> — {{ p.name }} · costo promedio
         {{ cop(p.cost) }} por {{ p.baseUnitCode }}</p>
     }
 
@@ -43,9 +43,9 @@ import { MOVEMENT_LABEL, documentNumber } from './labels';
       <p-button label="Consultar" (onClick)="load(0)" />
     </div>
 
-    <div class="bg-white rounded-xl shadow overflow-x-auto">
+    <div class="card overflow-x-auto">
       <table class="w-full text-sm">
-        <thead class="bg-slate-50 text-left">
+        <thead class="bg-surface-alt text-left">
           <tr>
             <th class="p-3">Fecha</th><th class="p-3">Movimiento</th><th class="p-3">Documento</th>
             <th class="p-3">Sucursal</th><th class="p-3 text-right">Cantidad</th><th class="p-3 text-right">Saldo</th>
@@ -59,15 +59,15 @@ import { MOVEMENT_LABEL, documentNumber } from './labels';
               <td class="p-3">{{ movementLabel[m.type] }}</td>
               <td class="p-3 font-mono">{{ docNumber(m.documentNumber) }}</td>
               <td class="p-3">{{ m.branchName }}</td>
-              <td class="p-3 text-right font-mono" [class.text-red-700]="m.quantity < 0"
-                  [class.text-green-700]="m.quantity > 0">{{ m.quantity > 0 ? '+' : '' }}{{ q(m.quantity) }}</td>
+              <td class="p-3 text-right font-mono" [class.text-danger]="m.quantity < 0"
+                  [class.text-success]="m.quantity > 0">{{ m.quantity > 0 ? '+' : '' }}{{ q(m.quantity) }}</td>
               <td class="p-3 text-right font-mono">{{ q(m.balanceAfter) }}</td>
               <td class="p-3 text-right">{{ cop(m.unitCost) }}</td>
               <td class="p-3">{{ m.createdByName ?? '—' }}</td>
               <td class="p-3">{{ m.reason ?? '' }}</td>
             </tr>
           } @empty {
-            <tr><td colspan="9" class="p-6 text-center text-slate-500">Sin movimientos en el periodo.</td></tr>
+            <tr><td colspan="9" class="p-6 text-center text-muted">Sin movimientos en el periodo.</td></tr>
           }
         </tbody>
       </table>
@@ -75,7 +75,7 @@ import { MOVEMENT_LABEL, documentNumber } from './labels';
     @if (page(); as p) {
       @if (p.totalPages > 1) {
         <nav class="flex justify-end gap-3 mt-3 text-sm items-center">
-          <span class="text-slate-500">Página {{ p.page + 1 }} de {{ p.totalPages }}</span>
+          <span class="text-muted">Página {{ p.page + 1 }} de {{ p.totalPages }}</span>
           <button type="button" class="px-3 py-1 rounded border disabled:opacity-40" [disabled]="p.page === 0"
                   (click)="load(p.page - 1)">Más recientes</button>
           <button type="button" class="px-3 py-1 rounded border disabled:opacity-40"

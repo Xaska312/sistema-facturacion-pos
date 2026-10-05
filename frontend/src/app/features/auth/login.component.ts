@@ -14,9 +14,9 @@ import { safeReturnUrl } from '../../core/auth/return-url';
   template: `
     <main class="min-h-screen flex items-center justify-center p-4">
       <form [formGroup]="form" (ngSubmit)="submit()"
-            class="w-full max-w-sm bg-white rounded-xl shadow p-6 flex flex-col gap-4">
+            class="w-full max-w-sm card p-6 flex flex-col gap-4">
         <h1 class="text-2xl font-semibold text-center">POS Híbrido</h1>
-        <p class="text-center text-slate-500 -mt-2">Inicia sesión para continuar</p>
+        <p class="text-center text-muted -mt-2">Inicia sesión para continuar</p>
 
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Correo</span>
@@ -30,14 +30,14 @@ import { safeReturnUrl } from '../../core/auth/return-url';
         </label>
 
         @if (error()) {
-          <p class="text-sm text-red-600" role="alert">{{ error() }}</p>
+          <p class="text-sm text-danger" role="alert">{{ error() }}</p>
         }
 
         <p-button type="submit" label="Ingresar" [loading]="loading()" [disabled]="form.invalid" styleClass="w-full" />
 
         <p class="text-sm text-center">
           ¿No tienes cuenta? <a routerLink="/registro" [queryParams]="returnUrl ? { returnUrl: returnUrl } : {}"
-                                class="text-blue-600 hover:underline">Regístrate</a>
+                                class="text-brand hover:underline">Regístrate</a>
         </p>
       </form>
     </main>

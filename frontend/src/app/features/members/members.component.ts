@@ -28,10 +28,10 @@ type Tab = 'members' | 'invitations';
     </div>
 
     <div class="flex gap-2 mb-3">
-      <button type="button" class="px-3 py-1 rounded" [class.bg-slate-900]="tab() === 'members'"
-              [class.text-white]="tab() === 'members'" (click)="tab.set('members')">Miembros</button>
-      <button type="button" class="px-3 py-1 rounded" [class.bg-slate-900]="tab() === 'invitations'"
-              [class.text-white]="tab() === 'invitations'" (click)="showInvitations()">Invitaciones pendientes</button>
+      <button type="button" class="px-3 py-1 rounded" [class.bg-brand]="tab() === 'members'"
+              [class.text-brand-contrast]="tab() === 'members'" [attr.aria-pressed]="tab() === 'members'" (click)="tab.set('members')">Miembros</button>
+      <button type="button" class="px-3 py-1 rounded" [class.bg-brand]="tab() === 'invitations'"
+              [class.text-brand-contrast]="tab() === 'invitations'" [attr.aria-pressed]="tab() === 'invitations'" (click)="showInvitations()">Invitaciones pendientes</button>
     </div>
 
     @if (tab() === 'members') {
@@ -62,7 +62,7 @@ type Tab = 'members' | 'invitations';
             @if (row.expired) {
               <p-tag value="Vencida" severity="warn" />
             }
-            <span class="text-xs text-slate-500">vence {{ row.expiresAt | date: 'short' }}</span>
+            <span class="text-xs text-muted">vence {{ row.expiresAt | date: 'short' }}</span>
             <p-button *hasPermission="'members:manage'" label="Revocar" size="small" [text]="true" severity="danger"
                       (onClick)="revoke(row)" />
           </span>

@@ -74,12 +74,12 @@ export function descendantsOf(categories: Category[], rootId: string | null): Se
 
     <div class="flex flex-wrap gap-2 mb-3">
       @for (t of tabs; track t.id) {
-        <button type="button" class="px-3 py-1 rounded" [class.bg-slate-900]="tab() === t.id"
-                [class.text-white]="tab() === t.id" (click)="tab.set(t.id)">{{ t.label }}</button>
+        <button type="button" class="px-3 py-1 rounded" [class.bg-brand]="tab() === t.id"
+                [class.text-brand-contrast]="tab() === t.id" [attr.aria-pressed]="tab() === t.id" (click)="tab.set(t.id)">{{ t.label }}</button>
       }
     </div>
 
-    <div class="bg-white rounded-xl shadow overflow-x-auto">
+    <div class="card overflow-x-auto">
       <table class="w-full text-sm">
         <tbody>
           @switch (tab()) {
@@ -92,7 +92,7 @@ export function descendantsOf(categories: Category[], rootId: string | null): Se
                   </td>
                 </tr>
               } @empty {
-                <tr><td class="p-6 text-center text-slate-500">Aún no hay categorías.</td></tr>
+                <tr><td class="p-6 text-center text-muted">Aún no hay categorías.</td></tr>
               }
             }
             @case ('units') {
@@ -100,7 +100,7 @@ export function descendantsOf(categories: Category[], rootId: string | null): Se
                 <tr class="border-t">
                   <td class="p-3 font-mono w-24">{{ u.code }}</td>
                   <td class="p-3">{{ u.name }}</td>
-                  <td class="p-3 text-slate-500">{{ u.allowsDecimals ? 'Admite decimales' : 'Solo enteros' }}</td>
+                  <td class="p-3 text-muted">{{ u.allowsDecimals ? 'Admite decimales' : 'Solo enteros' }}</td>
                   <td class="p-3 text-right whitespace-nowrap">
                     <ng-container *ngTemplateOutlet="rowActions; context: { $implicit: u, resource: 'units' }" />
                   </td>
@@ -126,7 +126,7 @@ export function descendantsOf(categories: Category[], rootId: string | null): Se
                   <td class="p-3 font-mono w-32">{{ l.code }}</td>
                   <td class="p-3">{{ l.name }}
                     @if (l.defaultList) {
-                      <span class="text-xs text-slate-500">(precio de cada producto)</span>
+                      <span class="text-xs text-muted">(precio de cada producto)</span>
                     }
                   </td>
                   <td class="p-3 text-right whitespace-nowrap">

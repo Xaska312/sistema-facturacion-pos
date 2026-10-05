@@ -34,15 +34,15 @@ import { CASH_MOVEMENT_LABEL } from './labels';
     </div>
 
     @if (loading()) {
-      <p class="text-slate-500">Cargando…</p>
+      <p class="text-muted">Cargando…</p>
     } @else {
     @if (session(); as s) {
-      <section class="bg-white rounded-xl shadow p-4 mb-4">
+      <section class="card p-4 mb-4">
         <div class="flex flex-wrap justify-between gap-3">
           <div>
             <p class="text-lg font-medium">{{ s.registerCode }} · {{ s.registerName }}</p>
-            <p class="text-sm text-slate-600">{{ s.branchName }} · abierta el {{ s.openedAt | date: 'short' }}</p>
-            <p class="text-sm text-slate-600">Base de apertura: {{ cop(s.openingAmount) }}</p>
+            <p class="text-sm text-muted">{{ s.branchName }} · abierta el {{ s.openedAt | date: 'short' }}</p>
+            <p class="text-sm text-muted">Base de apertura: {{ cop(s.openingAmount) }}</p>
           </div>
           <div class="flex flex-wrap gap-2 items-start">
             <a *hasPermission="'sales:create'" routerLink="/pos"><p-button label="Ir a vender" /></a>
@@ -55,9 +55,9 @@ import { CASH_MOVEMENT_LABEL } from './labels';
         </div>
       </section>
 
-      <section class="bg-white rounded-xl shadow overflow-x-auto">
+      <section class="card overflow-x-auto">
         <table class="w-full text-sm">
-          <thead class="bg-slate-50 text-left">
+          <thead class="bg-surface-alt text-left">
             <tr>
               <th class="p-3">Hora</th><th class="p-3">Tipo</th><th class="p-3">Detalle</th>
               <th class="p-3 text-right">Valor</th>
@@ -69,29 +69,29 @@ import { CASH_MOVEMENT_LABEL } from './labels';
                 <td class="p-3 whitespace-nowrap">{{ m.createdAt | date: 'shortTime' }}</td>
                 <td class="p-3">{{ movementLabel[m.type] }}</td>
                 <td class="p-3">{{ m.reason }}</td>
-                <td class="p-3 text-right" [class.text-red-700]="m.amount < 0">{{ cop(m.amount) }}</td>
+                <td class="p-3 text-right" [class.text-danger]="m.amount < 0">{{ cop(m.amount) }}</td>
               </tr>
             } @empty {
-              <tr><td colspan="4" class="p-6 text-center text-slate-500">Sin movimientos de efectivo todavía.</td></tr>
+              <tr><td colspan="4" class="p-6 text-center text-muted">Sin movimientos de efectivo todavía.</td></tr>
             }
           </tbody>
         </table>
       </section>
     } @else {
-      <section class="bg-white rounded-xl shadow p-4">
+      <section class="card p-4">
         <p class="mb-3">No tienes una caja abierta. Elige la caja y cuenta la base de efectivo.</p>
         @if (registers().length === 0) {
-          <p class="text-sm text-slate-500">No hay cajas disponibles en tus sucursales.</p>
+          <p class="text-sm text-muted">No hay cajas disponibles en tus sucursales.</p>
         }
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mb-4">
           @for (r of registers(); track r.id) {
             <button type="button" class="text-left border rounded-xl p-3 disabled:opacity-50"
-                    [class.border-blue-600]="registerId === r.id" [class.bg-blue-50]="registerId === r.id"
+                    [class.border-brand]="registerId === r.id" [class.bg-brand-soft]="registerId === r.id"
                     [disabled]="r.busy" (click)="registerId = r.id">
               <p class="font-medium">{{ r.code }} · {{ r.name }}</p>
-              <p class="text-sm text-slate-600">{{ r.branchName }}</p>
+              <p class="text-sm text-muted">{{ r.branchName }}</p>
               @if (r.busy) {
-                <p class="text-xs text-amber-700">Abierta por {{ r.busyBy ?? 'otro usuario' }}</p>
+                <p class="text-xs text-warning">Abierta por {{ r.busyBy ?? 'otro usuario' }}</p>
               }
             </button>
           }
@@ -132,7 +132,7 @@ import { CASH_MOVEMENT_LABEL } from './labels';
     </p-dialog>
 
     <p-dialog header="Cerrar caja" [(visible)]="closeOpen" [modal]="true" [style]="{ width: '28rem' }">
-      <p class="text-sm text-slate-600 mb-3">
+      <p class="text-sm text-muted mb-3">
         Cuenta el efectivo que hay en la caja (billetes y monedas) y escribe el total. El sistema calcula si hay
         faltante o sobrante.
       </p>

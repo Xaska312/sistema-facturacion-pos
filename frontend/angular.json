@@ -27,6 +27,10 @@
               }
             ],
             "styles": [
+              "@fontsource/inter/latin-400.css",
+              "@fontsource/inter/latin-500.css",
+              "@fontsource/inter/latin-600.css",
+              "primeicons/primeicons.css",
               "src/styles.css"
             ],
             "scripts": []
@@ -88,6 +92,10 @@
               }
             ],
             "styles": [
+              "@fontsource/inter/latin-400.css",
+              "@fontsource/inter/latin-500.css",
+              "@fontsource/inter/latin-600.css",
+              "primeicons/primeicons.css",
               "src/styles.css"
             ],
             "scripts": []

@@ -58,11 +58,11 @@ export const SALE_STATUS_LABEL: Record<SaleStatus, string> = {
               [style]="{ width: '30rem' }">
       @if (detail(); as sale) {
         @if (sale.status === 'VOIDED') {
-          <p class="mb-3 p-2 rounded bg-red-50 text-red-800 text-sm">
+          <p class="mb-3 p-2 rounded bg-danger-soft text-danger text-sm">
             Anulada por {{ sale.voidedByName ?? '—' }}: {{ sale.voidReason }}
           </p>
         }
-        <div class="flex justify-center bg-slate-100 p-3 max-h-[60vh] overflow-auto">
+        <div class="flex justify-center bg-surface-alt p-3 max-h-[60vh] overflow-auto">
           <app-receipt [sale]="sale" [width]="width" />
         </div>
       }
@@ -79,7 +79,7 @@ export const SALE_STATUS_LABEL: Record<SaleStatus, string> = {
     </p-dialog>
 
     <p-dialog header="Anular venta" [(visible)]="voidOpen" [modal]="true" [style]="{ width: '26rem' }">
-      <p class="text-sm text-slate-600 mb-3">
+      <p class="text-sm text-muted mb-3">
         La venta queda anulada (no se borra): los productos vuelven al inventario y el efectivo se descuenta de la caja.
       </p>
       <label class="flex flex-col gap-1">

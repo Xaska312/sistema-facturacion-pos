@@ -19,7 +19,7 @@ import { barcodeGroup, conversionGroup, fillForm, listPriceGroup, productForm, t
   template: `
     <div class="flex items-center justify-between mb-4 gap-2">
       <div>
-        <a routerLink="/app/productos" class="text-sm text-blue-600 hover:underline">← Productos</a>
+        <a routerLink="/app/productos" class="text-sm text-brand hover:underline">← Productos</a>
         <h1 class="text-2xl font-semibold">{{ isNew() ? 'Nuevo producto' : (product()?.name ?? 'Producto') }}</h1>
       </div>
       @if (product()?.active === false) {
@@ -30,7 +30,7 @@ import { barcodeGroup, conversionGroup, fillForm, listPriceGroup, productForm, t
     <form [formGroup]="form" (ngSubmit)="save()" class="flex flex-col gap-4 max-w-4xl">
       <fieldset [disabled]="!canEdit" class="flex flex-col gap-4">
         <!-- Datos básicos -->
-        <section class="bg-white rounded-xl shadow p-4 grid gap-3 md:grid-cols-2">
+        <section class="card p-4 grid gap-3 md:grid-cols-2">
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">SKU</span>
             <input pInputText formControlName="sku" class="uppercase" />
@@ -72,13 +72,13 @@ import { barcodeGroup, conversionGroup, fillForm, listPriceGroup, productForm, t
             <input pInputText type="number" min="0" step="0.01" formControlName="cost"
                    [readonly]="product()?.costLocked === true" />
             @if (product()?.costLocked) {
-              <small class="text-slate-500">Costo promedio ponderado, calculado por el inventario.</small>
+              <small class="text-muted">Costo promedio ponderado, calculado por el inventario.</small>
             }
           </label>
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">Precio de venta (lista General)</span>
             <input pInputText type="number" min="0" step="0.01" formControlName="salePrice" />
-            <small class="text-slate-500">{{ formatCop(form.controls.salePrice.value) }} por {{ unitCode(form.controls.baseUnitId.value) }}</small>
+            <small class="text-muted">{{ formatCop(form.controls.salePrice.value) }} por {{ unitCode(form.controls.baseUnitId.value) }}</small>
           </label>
           <label class="flex flex-col gap-1 md:col-span-2">
             <span class="text-sm font-medium">Descripción</span>
@@ -87,11 +87,11 @@ import { barcodeGroup, conversionGroup, fillForm, listPriceGroup, productForm, t
         </section>
 
         <!-- Presentaciones -->
-        <section class="bg-white rounded-xl shadow p-4 flex flex-col gap-2">
+        <section class="card p-4 flex flex-col gap-2">
           <header class="flex items-center justify-between">
             <div>
               <h2 class="font-medium">Presentaciones</h2>
-              <p class="text-xs text-slate-500">Ej.: una caja de 24 unidades. Si no pones precio, se calcula precio base × factor.</p>
+              <p class="text-xs text-muted">Ej.: una caja de 24 unidades. Si no pones precio, se calcula precio base × factor.</p>
             </div>
             @if (canEdit) {
               <p-button label="Agregar" size="small" [text]="true" (onClick)="addConversion()" />
@@ -124,12 +124,12 @@ import { barcodeGroup, conversionGroup, fillForm, listPriceGroup, productForm, t
               }
             </div>
           } @empty {
-            <p class="text-sm text-slate-500">Se vende solo por {{ unitCode(form.controls.baseUnitId.value) }}.</p>
+            <p class="text-sm text-muted">Se vende solo por {{ unitCode(form.controls.baseUnitId.value) }}.</p>
           }
         </section>
 
         <!-- Códigos de barras -->
-        <section class="bg-white rounded-xl shadow p-4 flex flex-col gap-2">
+        <section class="card p-4 flex flex-col gap-2">
           <header class="flex items-center justify-between">
             <h2 class="font-medium">Códigos de barras</h2>
             @if (canEdit) {
@@ -163,17 +163,17 @@ import { barcodeGroup, conversionGroup, fillForm, listPriceGroup, productForm, t
               }
             </div>
           } @empty {
-            <p class="text-sm text-slate-500">Sin códigos. En la venta se podrá buscar por nombre o SKU.</p>
+            <p class="text-sm text-muted">Sin códigos. En la venta se podrá buscar por nombre o SKU.</p>
           }
         </section>
 
         <!-- Precios por lista -->
         @if (extraLists().length > 0) {
-          <section class="bg-white rounded-xl shadow p-4 flex flex-col gap-2">
+          <section class="card p-4 flex flex-col gap-2">
             <header class="flex items-center justify-between">
               <div>
                 <h2 class="font-medium">Precios en otras listas</h2>
-                <p class="text-xs text-slate-500">Si una lista no tiene precio para una unidad, se usa el de la lista General.</p>
+                <p class="text-xs text-muted">Si una lista no tiene precio para una unidad, se usa el de la lista General.</p>
               </div>
               @if (canEdit) {
                 <p-button label="Agregar" size="small" [text]="true" (onClick)="addListPrice()" />
@@ -210,7 +210,7 @@ import { barcodeGroup, conversionGroup, fillForm, listPriceGroup, productForm, t
                 }
               </div>
             } @empty {
-              <p class="text-sm text-slate-500">Usa los precios de la lista General.</p>
+              <p class="text-sm text-muted">Usa los precios de la lista General.</p>
             }
           </section>
         }

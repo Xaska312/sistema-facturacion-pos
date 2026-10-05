@@ -41,7 +41,7 @@ import { HasPermissionDirective } from '../../shared/has-permission.directive';
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">Código</span>
             <input pInputText formControlName="code" placeholder="NORTE" />
-            <small class="text-slate-500">No se puede cambiar después.</small>
+            <small class="text-muted">No se puede cambiar después.</small>
           </label>
         }
         <label class="flex flex-col gap-1">

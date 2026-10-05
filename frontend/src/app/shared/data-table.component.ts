@@ -21,9 +21,9 @@ export interface RowContext<T> {
   selector: 'app-data-table',
   imports: [NgTemplateOutlet],
   template: `
-    <div class="bg-white rounded-xl shadow overflow-x-auto">
+    <div class="card overflow-x-auto">
       <table class="w-full text-sm">
-        <thead class="bg-slate-50 text-left">
+        <thead class="bg-surface-alt text-left">
           <tr>
             @for (column of columns(); track column.header) {
               <th class="p-3 font-medium">{{ column.header }}</th>
@@ -47,7 +47,7 @@ export interface RowContext<T> {
             </tr>
           } @empty {
             <tr>
-              <td [attr.colspan]="columns().length + (actions() ? 1 : 0)" class="p-6 text-center text-slate-500">
+              <td [attr.colspan]="columns().length + (actions() ? 1 : 0)" class="p-6 text-center text-muted">
                 {{ loading() ? 'Cargando…' : emptyText() }}
               </td>
             </tr>
@@ -58,7 +58,7 @@ export interface RowContext<T> {
     @if (page(); as p) {
       @if (p.totalPages > 1) {
         <nav class="flex items-center justify-end gap-3 mt-3 text-sm">
-          <span class="text-slate-500">Página {{ p.page + 1 }} de {{ p.totalPages }} · {{ p.totalElements }} registros</span>
+          <span class="text-muted">Página {{ p.page + 1 }} de {{ p.totalPages }} · {{ p.totalElements }} registros</span>
           <button type="button" class="px-3 py-1 rounded border disabled:opacity-40"
                   [disabled]="p.page === 0" (click)="pageChange.emit(p.page - 1)">Anterior</button>
           <button type="button" class="px-3 py-1 rounded border disabled:opacity-40"

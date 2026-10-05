@@ -111,3 +111,16 @@ que implementa el módulo de ventas.
 rango y `costs` = costo de lo vendido por venta) sobre la conexión del negocio actual. No escribe ni llama a otros
 módulos. Las fechas se agrupan con `created_at AT TIME ZONE <zona del negocio>`. Los CSV se arman con
 `shared/csv/CsvWriter` (Excel en español). En el frontend, todas las gráficas pasan por `shared/charts/bar-chart`.
+
+## Frontend: sistema de diseño
+Los colores viven solo en `frontend/src/styles.css` como tokens CSS (`--surface`, `--text`, `--brand`, `--success`,
+`--warning`, `--danger`…) con su versión oscura bajo `.app-dark`. Tailwind los expone con `@theme`
+(`bg-surface`, `text-muted`, `text-brand`, `bg-danger-soft`… y la utilidad `card`) y quita sus paletas propias;
+PrimeNG usa la misma paleta con el preset `core/theme/app-preset.ts` (`definePreset(Aura, …)`,
+`darkModeSelector: '.app-dark'`). `ThemeService` guarda claro/oscuro/sistema en `localStorage` y `index.html` aplica la
+clase antes del primer render. `tools/check-colors.mjs` (en CI) rechaza colores literales en `src/app`.
+
+El `ShellComponent` arma la estructura: menú lateral por permisos (`features/shell/menu.ts`, contraíble a iconos y
+cajón en móvil), barra superior con migas de pan (`breadcrumbs.ts`, derivadas de la URL y del menú), tema y menú de
+usuario. Cada ruta tiene `title` (`AppTitleStrategy` → "Pantalla · POS Híbrido"). `loadingInterceptor` cuenta las
+peticiones en curso para la barra de carga superior (`SKIP_GLOBAL_LOADING` la omite).

@@ -56,7 +56,7 @@ import { DOCUMENT_LABEL, DOCUMENT_ROUTE, documentNumber } from './labels';
     <p-dialog [(visible)]="detailOpen" [modal]="true" [style]="{ width: '56rem' }"
               [header]="detail() ? labels[detail()!.type] + ' ' + docNumber(detail()!.number) : 'Documento'">
       @if (detail(); as d) {
-        <p class="text-sm text-slate-600 mb-3">
+        <p class="text-sm text-muted mb-3">
           {{ d.createdAt | date: 'medium' }} · {{ d.branchName }}
           @if (d.targetBranchName) {
             → {{ d.targetBranchName }}
@@ -68,7 +68,7 @@ import { DOCUMENT_LABEL, DOCUMENT_ROUTE, documentNumber } from './labels';
         </p>
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
-            <thead class="bg-slate-50 text-left">
+            <thead class="bg-surface-alt text-left">
               <tr>
                 <th class="p-2">Producto</th><th class="p-2 text-right">Cantidad</th><th class="p-2">Unidad</th>
                 @if (d.type === 'COUNT') {
@@ -88,8 +88,8 @@ import { DOCUMENT_LABEL, DOCUMENT_ROUTE, documentNumber } from './labels';
                   @if (d.type === 'COUNT') {
                     <td class="p-2 text-right">{{ q(l.expectedQuantity) }}</td>
                     <td class="p-2 text-right">{{ q(l.countedQuantity) }}</td>
-                    <td class="p-2 text-right" [class.text-red-700]="(l.difference ?? 0) < 0"
-                        [class.text-green-700]="(l.difference ?? 0) > 0">{{ q(l.difference) }}</td>
+                    <td class="p-2 text-right" [class.text-danger]="(l.difference ?? 0) < 0"
+                        [class.text-success]="(l.difference ?? 0) > 0">{{ q(l.difference) }}</td>
                   } @else {
                     <td class="p-2">{{ l.direction === 'IN' ? 'Entrada' : l.direction === 'OUT' ? 'Salida' : '' }}</td>
                     <td class="p-2 text-right">{{ cop(l.unitCost) }}</td>
