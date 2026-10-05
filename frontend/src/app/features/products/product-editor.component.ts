@@ -4,28 +4,25 @@ import { Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
-import { TagModule } from 'primeng/tag';
 import { forkJoin } from 'rxjs';
 import { Category, PriceList, Product, Tax, Unit } from '../../core/api/api.models';
 import { CatalogApi } from '../../core/api/catalog.api';
 import { AuthService } from '../../core/auth/auth.service';
 import { formatCop } from '../../shared/money';
 import { barcodeGroup, conversionGroup, fillForm, listPriceGroup, productForm, toInput } from './product-form';
+import { PageHeaderComponent } from '../../shared/page-header.component';
+import { StatusBadgeComponent } from '../../shared/status-badge.component';
 
 /** Alta y edición de un producto: datos, presentaciones, códigos de barras y precios por lista. */
 @Component({
   selector: 'app-product-editor',
-  imports: [ReactiveFormsModule, RouterLink, ButtonModule, InputTextModule, TagModule],
+  imports: [ReactiveFormsModule, RouterLink, ButtonModule, InputTextModule, PageHeaderComponent, StatusBadgeComponent],
   template: `
-    <div class="flex items-center justify-between mb-4 gap-2">
-      <div>
-        <a routerLink="/app/productos" class="text-sm text-brand hover:underline">← Productos</a>
-        <h1 class="text-2xl font-semibold">{{ isNew() ? 'Nuevo producto' : (product()?.name ?? 'Producto') }}</h1>
-      </div>
+    <app-page-header [title]="isNew() ? 'Nuevo producto' : (product()?.name ?? 'Producto')">
       @if (product()?.active === false) {
-        <p-tag value="Inactivo" severity="secondary" />
+        <app-status-badge status="inactive" />
       }
-    </div>
+    </app-page-header>
 
     <form [formGroup]="form" (ngSubmit)="save()" class="flex flex-col gap-4 max-w-4xl">
       <fieldset [disabled]="!canEdit" class="flex flex-col gap-4">

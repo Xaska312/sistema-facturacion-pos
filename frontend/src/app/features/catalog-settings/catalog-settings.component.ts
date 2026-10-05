@@ -1,16 +1,19 @@
-import { NgTemplateOutlet } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ConfirmationService, MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
-import { TagModule } from 'primeng/tag';
 import { Observable } from 'rxjs';
 import { Category, PriceList, Tax, TaxType, Unit } from '../../core/api/api.models';
 import { CatalogApi } from '../../core/api/catalog.api';
+import { ConfirmService } from '../../shared/confirm';
+import { FormDialogComponent } from '../../shared/forms/form-dialog.component';
+import { PageHeaderComponent } from '../../shared/page-header.component';
+import { StatusKey, activeStatus } from '../../shared/status';
+import { CellTemplateDirective } from '../../shared/table/cell-template.directive';
+import { DataTableComponent } from '../../shared/table/data-table.component';
+import { ColumnDef } from '../../shared/table/table';
 
-type Tab = 'categories' | 'units' | 'taxes' | 'price-lists';
+export type Tab = 'categories' | 'units' | 'taxes' | 'price-lists';
 
 export const TAX_TYPE_LABEL: Record<TaxType, string> = {
   IVA: 'IVA',
@@ -62,116 +65,106 @@ export function descendantsOf(categories: Category[], rootId: string | null): Se
   return result;
 }
 
+/** Fila común de las cuatro listas (categorías, unidades, impuestos y listas de precios). */
+export interface SettingRow {
+  id: string;
+  name: string;
+  active: boolean;
+  code: string | null;
+  /** Profundidad en el árbol de categorías. */
+  depth: number;
+  detail: string | null;
+  locked: boolean;
+  source: Category | Unit | Tax | PriceList;
+}
+
+export function settingRows(tab: Tab, data: { tree: { category: Category; depth: number }[]; units: Unit[];
+  taxes: Tax[]; priceLists: PriceList[] }): SettingRow[] {
+  switch (tab) {
+    case 'categories':
+      return data.tree.map(({ category, depth }) => ({
+        id: category.id, name: category.name, active: category.active, code: null, depth, detail: null, locked: false,
+        source: category,
+      }));
+    case 'units':
+      return data.units.map((u) => ({
+        id: u.id, name: u.name, active: u.active, code: u.code, depth: 0,
+        detail: u.allowsDecimals ? 'Admite decimales' : 'Solo enteros', locked: false, source: u,
+      }));
+    case 'taxes':
+      return data.taxes.map((t) => ({
+        id: t.id, name: t.name, active: t.active, code: t.code, depth: 0,
+        detail: `${TAX_TYPE_LABEL[t.type]} · ${t.rate.toLocaleString('es-CO')} %`, locked: false, source: t,
+      }));
+    default:
+      return data.priceLists.map((l) => ({
+        id: l.id, name: l.name, active: l.active, code: l.code, depth: 0,
+        detail: l.defaultList ? 'Precio de cada producto' : null, locked: l.defaultList, source: l,
+      }));
+  }
+}
+
 /** Categorías, unidades, impuestos y listas de precios. */
 @Component({
   selector: 'app-catalog-settings',
-  imports: [FormsModule, NgTemplateOutlet, ButtonModule, DialogModule, InputTextModule, TagModule],
+  imports: [FormsModule, ButtonModule, InputTextModule, DataTableComponent, CellTemplateDirective, PageHeaderComponent,
+    FormDialogComponent],
   template: `
-    <div class="flex flex-wrap items-center justify-between mb-4 gap-2">
-      <h1 class="text-2xl font-semibold">Ajustes del catálogo</h1>
-      <p-button [label]="'Nueva ' + singular()" (onClick)="openCreate()" />
-    </div>
+    <app-page-header title="Ajustes del catálogo"
+                     description="Categorías, unidades de medida, tarifas de impuesto y listas de precios de tus productos.">
+      <p-button [label]="'Nueva ' + singular()" icon="pi pi-plus" (onClick)="openCreate()" />
+    </app-page-header>
 
-    <div class="flex flex-wrap gap-2 mb-3">
+    <div class="flex flex-wrap gap-1 mb-3 p-1 rounded-lg bg-surface-alt w-fit" role="group" aria-label="Tipo de ajuste">
       @for (t of tabs; track t.id) {
-        <button type="button" class="px-3 py-1 rounded" [class.bg-brand]="tab() === t.id"
-                [class.text-brand-contrast]="tab() === t.id" [attr.aria-pressed]="tab() === t.id" (click)="tab.set(t.id)">{{ t.label }}</button>
+        <button type="button" class="px-3 py-1.5 rounded-md text-sm font-medium transition-colors"
+                [class.bg-surface]="tab() === t.id" [class.shadow-card]="tab() === t.id"
+                [class.text-muted]="tab() !== t.id" [attr.aria-pressed]="tab() === t.id" (click)="tab.set(t.id)">
+          {{ t.label }}
+        </button>
       }
     </div>
 
-    <div class="card overflow-x-auto">
-      <table class="w-full text-sm">
-        <tbody>
-          @switch (tab()) {
-            @case ('categories') {
-              @for (node of tree(); track node.category.id) {
-                <tr class="border-t">
-                  <td class="p-3" [style.padding-left.rem]="0.75 + node.depth * 1.5">{{ node.category.name }}</td>
-                  <td class="p-3 text-right whitespace-nowrap">
-                    <ng-container *ngTemplateOutlet="rowActions; context: { $implicit: node.category, resource: 'categories' }" />
-                  </td>
-                </tr>
-              } @empty {
-                <tr><td class="p-6 text-center text-muted">Aún no hay categorías.</td></tr>
-              }
-            }
-            @case ('units') {
-              @for (u of units(); track u.id) {
-                <tr class="border-t">
-                  <td class="p-3 font-mono w-24">{{ u.code }}</td>
-                  <td class="p-3">{{ u.name }}</td>
-                  <td class="p-3 text-muted">{{ u.allowsDecimals ? 'Admite decimales' : 'Solo enteros' }}</td>
-                  <td class="p-3 text-right whitespace-nowrap">
-                    <ng-container *ngTemplateOutlet="rowActions; context: { $implicit: u, resource: 'units' }" />
-                  </td>
-                </tr>
-              }
-            }
-            @case ('taxes') {
-              @for (t of taxes(); track t.id) {
-                <tr class="border-t">
-                  <td class="p-3 font-mono w-28">{{ t.code }}</td>
-                  <td class="p-3">{{ t.name }}</td>
-                  <td class="p-3">{{ taxTypeLabel[t.type] }}</td>
-                  <td class="p-3">{{ t.rate }} %</td>
-                  <td class="p-3 text-right whitespace-nowrap">
-                    <ng-container *ngTemplateOutlet="rowActions; context: { $implicit: t, resource: 'taxes' }" />
-                  </td>
-                </tr>
-              }
-            }
-            @case ('price-lists') {
-              @for (l of priceLists(); track l.id) {
-                <tr class="border-t">
-                  <td class="p-3 font-mono w-32">{{ l.code }}</td>
-                  <td class="p-3">{{ l.name }}
-                    @if (l.defaultList) {
-                      <span class="text-xs text-muted">(precio de cada producto)</span>
-                    }
-                  </td>
-                  <td class="p-3 text-right whitespace-nowrap">
-                    @if (!l.defaultList) {
-                      <ng-container *ngTemplateOutlet="rowActions; context: { $implicit: l, resource: 'price-lists' }" />
-                    } @else {
-                      <p-tag value="Predeterminada" severity="info" />
-                    }
-                  </td>
-                </tr>
-              }
-            }
+    <app-data-table [columns]="columns()" [items]="rows()" [trackBy]="trackById" [caption]="currentTab().label"
+                    [emptyTitle]="'Aún no hay ' + currentTab().label.toLowerCase()" emptyIcon="pi pi-tags"
+                    [emptyActionLabel]="'Crear ' + singular()" (emptyAction)="openCreate()">
+      <ng-template appCell="name" let-row>
+        <span class="inline-flex items-center gap-2" [style.padding-left.rem]="row.depth * 1.25">
+          @if (row.depth > 0) {
+            <i class="pi pi-angle-right text-xs text-muted" aria-hidden="true"></i>
           }
-        </tbody>
-      </table>
-    </div>
-
-    <ng-template #rowActions let-item let-resource="resource">
-      <span class="inline-flex gap-2 items-center">
-        @if (!item.active) {
-          <p-tag value="Inactivo" severity="secondary" />
+          {{ row.name }}
+        </span>
+      </ng-template>
+      <ng-template #actions let-row>
+        @if (!row.locked) {
+          <p-button label="Editar" icon="pi pi-pencil" size="small" [text]="true" (onClick)="openEdit(row.source)" />
+          <p-button [label]="row.active ? 'Desactivar' : 'Activar'" size="small" [text]="true"
+                    [icon]="row.active ? 'pi pi-ban' : 'pi pi-check-circle'"
+                    [severity]="row.active ? 'danger' : 'success'" (onClick)="toggle(row)" />
         }
-        <p-button label="Editar" size="small" [text]="true" (onClick)="openEdit(item)" />
-        <p-button [label]="item.active ? 'Desactivar' : 'Activar'" size="small" [text]="true"
-                  [severity]="item.active ? 'danger' : 'success'" (onClick)="toggle(resource, item)" />
-      </span>
-    </ng-template>
+      </ng-template>
+    </app-data-table>
 
-    <p-dialog [(visible)]="dialogOpen" [modal]="true" [header]="(editingId ? 'Editar ' : 'Nueva ') + singular()"
-              [style]="{ width: '28rem' }">
+    <app-form-dialog [(visible)]="dialogOpen" width="28rem" [header]="(editingId ? 'Editar ' : 'Nueva ') + singular()"
+                     [dirty]="draftDirty()" [invalidMessage]="draftProblem()" [save]="saveRequest"
+                     successMessage="Guardado" (saved)="reload()">
       <div class="flex flex-col gap-3">
         @if (tab() !== 'categories' && !editingId) {
-          <label class="flex flex-col gap-1">
-            <span class="text-sm font-medium">Código</span>
-            <input pInputText [(ngModel)]="code" class="uppercase" />
-          </label>
+          <div class="flex flex-col gap-1">
+            <label for="setting-code" class="text-sm font-medium">Código</label>
+            <input pInputText id="setting-code" [(ngModel)]="code" class="uppercase" autocomplete="off" />
+            <small class="text-xs text-muted">Corto y sin espacios (p. ej. {{ codeExample() }}). No se puede cambiar después.</small>
+          </div>
         }
-        <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium">Nombre</span>
-          <input pInputText [(ngModel)]="name" />
-        </label>
+        <div class="flex flex-col gap-1">
+          <label for="setting-name" class="text-sm font-medium">Nombre</label>
+          <input pInputText id="setting-name" [(ngModel)]="name" />
+        </div>
         @if (tab() === 'categories') {
-          <label class="flex flex-col gap-1">
-            <span class="text-sm font-medium">Dentro de</span>
-            <select class="border rounded px-2 py-2" [(ngModel)]="parentId">
+          <div class="flex flex-col gap-1">
+            <label for="setting-parent" class="text-sm font-medium">Dentro de</label>
+            <select id="setting-parent" class="border rounded-md px-2 py-2" [(ngModel)]="parentId">
               <option value="">— Categoría principal —</option>
               @for (node of tree(); track node.category.id) {
                 @if (!excludedParents().has(node.category.id) && node.category.active) {
@@ -179,45 +172,42 @@ export function descendantsOf(categories: Category[], rootId: string | null): Se
                 }
               }
             </select>
-          </label>
+          </div>
         }
         @if (tab() === 'units') {
-          <label class="flex items-center gap-2"><input type="checkbox" [(ngModel)]="allowsDecimals" /> Admite decimales (peso, volumen)</label>
+          <label class="flex items-center gap-2 text-sm">
+            <input type="checkbox" [(ngModel)]="allowsDecimals" /> Admite decimales (peso, volumen)
+          </label>
         }
         @if (tab() === 'taxes') {
           @if (!editingId) {
-            <label class="flex flex-col gap-1">
-              <span class="text-sm font-medium">Tipo</span>
-              <select class="border rounded px-2 py-2" [(ngModel)]="taxType">
+            <div class="flex flex-col gap-1">
+              <label for="setting-tax-type" class="text-sm font-medium">Tipo</label>
+              <select id="setting-tax-type" class="border rounded-md px-2 py-2" [(ngModel)]="taxType">
                 @for (type of taxTypes; track type) {
                   <option [value]="type">{{ taxTypeLabel[type] }}</option>
                 }
               </select>
-            </label>
+            </div>
           }
-          <label class="flex flex-col gap-1">
-            <span class="text-sm font-medium">Tarifa (%)</span>
-            <input pInputText type="number" min="0" max="100" step="0.01" [(ngModel)]="rate" />
-          </label>
+          <div class="flex flex-col gap-1">
+            <label for="setting-rate" class="text-sm font-medium">Tarifa (%)</label>
+            <input pInputText id="setting-rate" type="number" min="0" max="100" step="0.01" [(ngModel)]="rate" />
+          </div>
         }
-        <div class="flex justify-end gap-2">
-          <p-button label="Cancelar" [text]="true" severity="secondary" (onClick)="dialogOpen = false" />
-          <p-button label="Guardar" [loading]="saving()" [disabled]="!name.trim()" (onClick)="save()" />
-        </div>
       </div>
-    </p-dialog>
+    </app-form-dialog>
   `,
 })
 export class CatalogSettingsComponent implements OnInit {
   private readonly api = inject(CatalogApi);
-  private readonly messages = inject(MessageService);
-  private readonly confirm = inject(ConfirmationService);
+  private readonly confirm = inject(ConfirmService);
 
-  protected readonly tabs: { id: Tab; label: string; singular: string }[] = [
-    { id: 'categories', label: 'Categorías', singular: 'categoría' },
-    { id: 'units', label: 'Unidades', singular: 'unidad' },
-    { id: 'taxes', label: 'Impuestos', singular: 'tarifa de impuesto' },
-    { id: 'price-lists', label: 'Listas de precios', singular: 'lista de precios' },
+  protected readonly tabs: { id: Tab; label: string; singular: string; example: string }[] = [
+    { id: 'categories', label: 'Categorías', singular: 'categoría', example: '' },
+    { id: 'units', label: 'Unidades', singular: 'unidad', example: 'KG' },
+    { id: 'taxes', label: 'Impuestos', singular: 'tarifa de impuesto', example: 'IVA5' },
+    { id: 'price-lists', label: 'Listas de precios', singular: 'lista de precios', example: 'MAYORISTA' },
   ];
   protected readonly taxTypes: TaxType[] = ['IVA', 'INC', 'EXEMPT', 'EXCLUDED'];
   protected readonly taxTypeLabel = TAX_TYPE_LABEL;
@@ -228,11 +218,32 @@ export class CatalogSettingsComponent implements OnInit {
   protected readonly taxes = signal<Tax[]>([]);
   protected readonly priceLists = signal<PriceList[]>([]);
   protected readonly tree = computed(() => categoryTree(this.categories()));
-  protected readonly singular = computed(() => this.tabs.find((t) => t.id === this.tab())?.singular ?? '');
-  protected readonly saving = signal(false);
+  protected readonly currentTab = computed(() => this.tabs.find((t) => t.id === this.tab()) ?? this.tabs[0]);
+  protected readonly singular = computed(() => this.currentTab().singular);
+  protected readonly codeExample = computed(() => this.currentTab().example);
+  protected readonly rows = computed(() =>
+    settingRows(this.tab(), { tree: this.tree(), units: this.units(), taxes: this.taxes(), priceLists: this.priceLists() }),
+  );
+  protected readonly columns = computed<ColumnDef<SettingRow>[]>(() => {
+    const status: ColumnDef<SettingRow> = {
+      header: 'Estado',
+      cell: (r) => settingStatus(r),
+      kind: 'status',
+    };
+    if (this.tab() === 'categories') {
+      return [{ header: 'Nombre', cell: (r) => r.name, template: 'name' }, status];
+    }
+    return [
+      { header: 'Código', cell: (r) => r.code, kind: 'mono' },
+      { header: 'Nombre', cell: (r) => r.name },
+      { header: 'Detalle', cell: (r) => r.detail },
+      status,
+    ];
+  });
   /** Al editar, la categoría y sus descendientes no pueden ser su propio padre. */
   protected readonly editing = signal<string | null>(null);
   protected readonly excludedParents = computed(() => descendantsOf(this.categories(), this.editing()));
+  protected readonly trackById = (row: SettingRow): string => row.id;
 
   protected dialogOpen = false;
   protected editingId: string | null = null;
@@ -242,6 +253,7 @@ export class CatalogSettingsComponent implements OnInit {
   protected allowsDecimals = false;
   protected taxType: TaxType = 'IVA';
   protected rate = 19;
+  private snapshot = '';
 
   ngOnInit(): void {
     this.reload();
@@ -263,33 +275,42 @@ export class CatalogSettingsComponent implements OnInit {
     this.allowsDecimals = false;
     this.taxType = 'IVA';
     this.rate = 19;
+    this.snapshot = this.draftJson();
     this.dialogOpen = true;
   }
 
   openEdit(item: Category | Unit | Tax | PriceList): void {
     this.editingId = item.id;
     this.editing.set(item.id);
+    this.code = '';
     this.name = item.name;
     this.parentId = 'parentId' in item ? (item.parentId ?? '') : '';
     this.allowsDecimals = 'allowsDecimals' in item ? item.allowsDecimals : false;
     this.rate = 'rate' in item ? item.rate : 0;
+    this.snapshot = this.draftJson();
     this.dialogOpen = true;
   }
 
-  save(): void {
-    this.saving.set(true);
-    this.saveRequest(this.name.trim(), this.editingId).subscribe({
-      next: () => {
-        this.saving.set(false);
-        this.dialogOpen = false;
-        this.messages.add({ severity: 'success', summary: 'Guardado' });
-        this.reload();
-      },
-      error: () => this.saving.set(false),
-    });
+  protected draftDirty(): boolean {
+    return this.draftJson() !== this.snapshot;
   }
 
-  private saveRequest(name: string, id: string | null): Observable<unknown> {
+  protected draftProblem(): string | null {
+    if (this.tab() !== 'categories' && !this.editingId && !this.code.trim()) {
+      return 'Escribe el código.';
+    }
+    if (!this.name.trim()) {
+      return 'Escribe el nombre.';
+    }
+    if (this.tab() === 'taxes' && (Number(this.rate) < 0 || Number(this.rate) > 100)) {
+      return 'La tarifa debe estar entre 0 y 100 %.';
+    }
+    return null;
+  }
+
+  protected readonly saveRequest = (): Observable<unknown> => {
+    const name = this.name.trim();
+    const id = this.editingId;
     const tab = this.tab();
     if (tab === 'categories') {
       return this.api.saveCategory(id, name, this.parentId || null);
@@ -305,16 +326,25 @@ export class CatalogSettingsComponent implements OnInit {
         : this.api.createTax(this.code.trim(), name, this.taxType, Number(this.rate));
     }
     return id ? this.api.renamePriceList(id, name) : this.api.createPriceList(this.code.trim(), name);
-  }
+  };
 
-  toggle(resource: Tab, item: { id: string; name: string; active: boolean }): void {
-    const activate = !item.active;
-    this.confirm.confirm({
-      header: activate ? 'Activar' : 'Desactivar',
-      message: `¿${activate ? 'Activar' : 'Desactivar'} ${item.name}?`,
-      acceptLabel: 'Sí',
-      rejectLabel: 'No',
-      accept: () => this.api.setActive(resource, item.id, activate).subscribe(() => this.reload()),
+  toggle(row: SettingRow): void {
+    const resource = this.tab();
+    this.confirm.toggleActive({
+      active: row.active,
+      noun: this.singular(),
+      name: row.name,
+      consequence: 'No se podrá elegir en productos nuevos hasta que la actives de nuevo.',
+      accept: () => this.api.setActive(resource, row.id, !row.active).subscribe(() => this.reload()),
     });
   }
+
+  private draftJson(): string {
+    return JSON.stringify([this.code, this.name, this.parentId, this.allowsDecimals, this.taxType, this.rate]);
+  }
+}
+
+/** "Categoría", "unidad", "tarifa" y "lista" son femeninos: "Activa"/"Inactiva". */
+function settingStatus(row: SettingRow): StatusKey {
+  return row.locked ? 'default' : activeStatus(row.active, true);
 }

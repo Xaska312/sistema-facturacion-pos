@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, ElementRef, HostListener, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { ConfirmationService, MessageService } from 'primeng/api';
+import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
@@ -23,6 +23,7 @@ import { PartiesApi } from '../../core/api/parties.api';
 import { SalesApi, newIdempotencyKey } from '../../core/api/sales.api';
 import { AuthService } from '../../core/auth/auth.service';
 import { problemMessage } from '../../core/errors/problem';
+import { ConfirmService } from '../../shared/confirm';
 import { HasPermissionDirective } from '../../shared/has-permission.directive';
 import { formatCop, formatQuantity } from '../../shared/money';
 import { ReceiptComponent } from '../../shared/receipt/receipt.component';
@@ -297,7 +298,7 @@ export class PosComponent implements OnInit {
   private readonly catalog = inject(CatalogApi);
   private readonly parties = inject(PartiesApi);
   private readonly messages = inject(MessageService);
-  private readonly confirmation = inject(ConfirmationService);
+  private readonly confirm = inject(ConfirmService);
 
   private readonly scanner = viewChild<ElementRef<HTMLInputElement>>('scanner');
   private readonly search = viewChild<ElementRef<HTMLInputElement>>('search');
@@ -442,11 +443,12 @@ export class PosComponent implements OnInit {
     if (this.lines().length === 0) {
       return;
     }
-    this.confirmation.confirm({
+    this.confirm.ask({
       header: 'Cancelar venta',
       message: '¿Quitar todos los productos de esta venta?',
-      acceptLabel: 'Sí, cancelar',
-      rejectLabel: 'No',
+      acceptLabel: 'Cancelar venta',
+      rejectLabel: 'Seguir vendiendo',
+      danger: true,
       accept: () => this.resetSale(),
       reject: () => this.focusScanner(),
     });

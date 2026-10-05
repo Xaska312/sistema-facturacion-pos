@@ -1,95 +1,104 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ConfirmationService, MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
-import { TagModule } from 'primeng/tag';
+import { Observable } from 'rxjs';
 import { Branch, CashRegister, PageResponse } from '../../core/api/api.models';
 import { OrganizationApi } from '../../core/api/organization.api';
-import { ColumnDef, DataTableComponent } from '../../shared/data-table.component';
-import { HasPermissionDirective } from '../../shared/has-permission.directive';
+import { AuthService } from '../../core/auth/auth.service';
+import { ConfirmService } from '../../shared/confirm';
+import { FieldErrorComponent } from '../../shared/forms/field-error.component';
+import { FormDialogComponent } from '../../shared/forms/form-dialog.component';
+import { PageHeaderComponent } from '../../shared/page-header.component';
+import { activeStatus } from '../../shared/status';
+import { DataTableComponent } from '../../shared/table/data-table.component';
+import { ColumnDef, TableQuery, initialQuery, toPageQuery } from '../../shared/table/table';
 
 @Component({
   selector: 'app-cash-registers',
-  imports: [ReactiveFormsModule, ButtonModule, DialogModule, InputTextModule, TagModule, DataTableComponent,
-    HasPermissionDirective],
+  imports: [ReactiveFormsModule, ButtonModule, InputTextModule, DataTableComponent, PageHeaderComponent,
+    FormDialogComponent, FieldErrorComponent],
   template: `
-    <div class="flex flex-wrap items-center justify-between mb-4 gap-2">
-      <h1 class="text-2xl font-semibold">Cajas registradoras</h1>
-      <div class="flex gap-2 items-center">
-        <select class="border rounded px-2 py-2 text-sm" [value]="branchFilter() ?? ''" (change)="filterBy($event)">
+    <app-page-header title="Cajas registradoras"
+                     description="Cada caja se abre con una base de efectivo y se cierra con su arqueo.">
+      @if (canManage) {
+        <p-button label="Nueva caja" icon="pi pi-plus" (onClick)="openCreate()" />
+      }
+    </app-page-header>
+
+    <app-data-table [columns]="columns" [page]="page()" [loading]="loading()" [trackBy]="trackById"
+                    initialSort="code,asc" caption="Cajas registradoras" emptyIcon="pi pi-calculator"
+                    emptyTitle="Aún no hay cajas" emptyMessage="Crea al menos una caja para poder vender."
+                    [emptyActionLabel]="canManage ? 'Crear caja' : null" (emptyAction)="openCreate()"
+                    (queryChange)="load($event)">
+      <label tableToolbar class="flex items-center gap-2 text-sm">
+        <span class="sr-only">Sucursal</span>
+        <select class="border rounded-md px-2 py-2" [value]="branchFilter() ?? ''" (change)="filterBy($event)">
           <option value="">Todas las sucursales</option>
           @for (b of branches(); track b.id) {
             <option [value]="b.id">{{ b.name }}</option>
           }
         </select>
-        <p-button *hasPermission="'cash-registers:manage'" label="Nueva caja" (onClick)="openCreate()" />
-      </div>
-    </div>
-
-    <app-data-table [columns]="columns" [page]="page()" [loading]="loading()" [trackBy]="trackById"
-                    (pageChange)="load($event)">
+      </label>
       <ng-template #actions let-row>
-        <span class="inline-flex gap-2 items-center">
-          <p-tag [value]="row.active ? 'Activa' : 'Inactiva'" [severity]="row.active ? 'success' : 'secondary'" />
-          <ng-container *hasPermission="'cash-registers:manage'">
-            <p-button label="Renombrar" size="small" [text]="true" (onClick)="openEdit(row)" />
-            <p-button [label]="row.active ? 'Desactivar' : 'Activar'" size="small" [text]="true"
-                      [severity]="row.active ? 'danger' : 'success'" (onClick)="toggle(row)" />
-          </ng-container>
-        </span>
+        @if (canManage) {
+          <p-button label="Renombrar" icon="pi pi-pencil" size="small" [text]="true" (onClick)="openEdit(row)" />
+          <p-button [label]="row.active ? 'Desactivar' : 'Activar'" size="small" [text]="true"
+                    [icon]="row.active ? 'pi pi-ban' : 'pi pi-check-circle'"
+                    [severity]="row.active ? 'danger' : 'success'" (onClick)="toggle(row)" />
+        }
       </ng-template>
     </app-data-table>
 
-    <p-dialog [(visible)]="dialogOpen" [modal]="true" [header]="editing() ? 'Renombrar caja' : 'Nueva caja'"
-              [style]="{ width: '28rem' }">
-      <form [formGroup]="form" (ngSubmit)="save()" class="flex flex-col gap-3">
+    <app-form-dialog [(visible)]="dialogOpen" [header]="editing() ? 'Renombrar caja' : 'Nueva caja'" [form]="form"
+                     width="28rem" [save]="saveRequest" successMessage="Caja guardada" (saved)="load(query)">
+      <div [formGroup]="form" class="flex flex-col gap-3">
         @if (!editing()) {
-          <label class="flex flex-col gap-1">
-            <span class="text-sm font-medium">Sucursal</span>
-            <select formControlName="branchId" class="border rounded px-2 py-2">
+          <div class="flex flex-col gap-1">
+            <label for="register-branch" class="text-sm font-medium">Sucursal</label>
+            <select id="register-branch" formControlName="branchId" class="border rounded-md px-2 py-2">
               @for (b of activeBranches(); track b.id) {
                 <option [value]="b.id">{{ b.name }}</option>
               }
             </select>
-          </label>
-          <label class="flex flex-col gap-1">
-            <span class="text-sm font-medium">Código</span>
-            <input pInputText formControlName="code" placeholder="CAJA-2" />
-          </label>
+            <app-field-error [control]="form.controls.branchId" />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label for="register-code" class="text-sm font-medium">Código</label>
+            <input pInputText id="register-code" formControlName="code" placeholder="CAJA-2" autocomplete="off" />
+            <app-field-error [control]="form.controls.code"
+                             patternMessage="Usa de 2 a 20 letras, números, guiones o guiones bajos (sin espacios)." />
+          </div>
         }
-        <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium">Nombre</span>
-          <input pInputText formControlName="name" />
-        </label>
-        <div class="flex justify-end gap-2 mt-2">
-          <p-button label="Cancelar" [text]="true" severity="secondary" (onClick)="dialogOpen = false" />
-          <p-button type="submit" label="Guardar" [loading]="saving()" [disabled]="form.invalid" />
+        <div class="flex flex-col gap-1">
+          <label for="register-name" class="text-sm font-medium">Nombre</label>
+          <input pInputText id="register-name" formControlName="name" placeholder="Caja de la entrada" />
+          <app-field-error [control]="form.controls.name" />
         </div>
-      </form>
-    </p-dialog>
+      </div>
+    </app-form-dialog>
   `,
 })
 export class CashRegistersComponent implements OnInit {
   private readonly api = inject(OrganizationApi);
-  private readonly messages = inject(MessageService);
-  private readonly confirm = inject(ConfirmationService);
+  private readonly confirm = inject(ConfirmService);
+  protected readonly canManage = inject(AuthService).hasPermission('cash-registers:manage');
 
   protected readonly page = signal<PageResponse<CashRegister> | null>(null);
   protected readonly branches = signal<Branch[]>([]);
+  protected readonly activeBranches = computed(() => this.branches().filter((b) => b.active));
   protected readonly branchFilter = signal<string | null>(null);
   protected readonly loading = signal(true);
-  protected readonly saving = signal(false);
   protected readonly editing = signal<CashRegister | null>(null);
   protected dialogOpen = false;
-  private currentPage = 0;
+  protected query: TableQuery = initialQuery(20, 'code,asc');
 
   protected readonly trackById = (row: CashRegister): string => row.id;
   protected readonly columns: ColumnDef<CashRegister>[] = [
-    { header: 'Código', cell: (r) => r.code, cellClass: 'font-mono' },
-    { header: 'Nombre', cell: (r) => r.name },
-    { header: 'Sucursal', cell: (r) => this.branches().find((b) => b.id === r.branchId)?.name ?? '—' },
+    { header: 'Código', cell: (r) => r.code, kind: 'mono', sortField: 'code' },
+    { header: 'Nombre', cell: (r) => r.name, sortField: 'name' },
+    { header: 'Sucursal', cell: (r) => this.branches().find((b) => b.id === r.branchId)?.name },
+    { header: 'Estado', cell: (r) => activeStatus(r.active, true), kind: 'status' },
   ];
 
   protected readonly form = inject(FormBuilder).nonNullable.group({
@@ -98,19 +107,15 @@ export class CashRegistersComponent implements OnInit {
     name: ['', [Validators.required, Validators.maxLength(120)]],
   });
 
-  protected activeBranches(): Branch[] {
-    return this.branches().filter((b) => b.active);
-  }
-
   ngOnInit(): void {
     this.api.branches({ page: 0, size: 100, sort: 'code,asc' }).subscribe((p) => this.branches.set(p.content));
-    this.load(0);
+    this.load(this.query);
   }
 
-  load(page: number): void {
-    this.currentPage = page;
+  load(query: TableQuery): void {
+    this.query = query;
     this.loading.set(true);
-    this.api.cashRegisters({ page, size: 20, sort: 'code,asc' }, this.branchFilter()).subscribe({
+    this.api.cashRegisters(toPageQuery(query), this.branchFilter()).subscribe({
       next: (result) => {
         this.page.set(result);
         this.loading.set(false);
@@ -122,7 +127,7 @@ export class CashRegistersComponent implements OnInit {
   filterBy(event: Event): void {
     const value = (event.target as HTMLSelectElement).value;
     this.branchFilter.set(value || null);
-    this.load(0);
+    this.load({ ...this.query, page: 0 });
   }
 
   openCreate(): void {
@@ -143,32 +148,22 @@ export class CashRegistersComponent implements OnInit {
     this.dialogOpen = true;
   }
 
-  save(): void {
+  protected readonly saveRequest = (): Observable<unknown> => {
     const value = this.form.getRawValue();
     const current = this.editing();
-    this.saving.set(true);
-    const request = current
+    return current
       ? this.api.renameCashRegister(current.id, value.name.trim())
-      : this.api.createCashRegister(value.branchId, value.code, value.name.trim());
-    request.subscribe({
-      next: () => {
-        this.saving.set(false);
-        this.dialogOpen = false;
-        this.messages.add({ severity: 'success', summary: 'Caja guardada' });
-        this.load(this.currentPage);
-      },
-      error: () => this.saving.set(false),
-    });
-  }
+      : this.api.createCashRegister(value.branchId, value.code.trim(), value.name.trim());
+  };
 
   toggle(register: CashRegister): void {
-    const activate = !register.active;
-    this.confirm.confirm({
-      header: activate ? 'Activar caja' : 'Desactivar caja',
-      message: `¿${activate ? 'Activar' : 'Desactivar'} la caja ${register.name}?`,
-      acceptLabel: 'Sí',
-      rejectLabel: 'No',
-      accept: () => this.api.setCashRegisterActive(register.id, activate).subscribe(() => this.load(this.currentPage)),
+    this.confirm.toggleActive({
+      active: register.active,
+      noun: 'caja',
+      name: register.name,
+      consequence: 'No se podrá abrir para vender hasta que la actives de nuevo.',
+      accept: () =>
+        this.api.setCashRegisterActive(register.id, !register.active).subscribe(() => this.load(this.query)),
     });
   }
 }

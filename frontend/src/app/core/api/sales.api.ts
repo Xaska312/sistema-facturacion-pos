@@ -56,9 +56,9 @@ export class SalesApi {
     return this.http.post<Sale>(`/api/v1/sales/${id}/void`, { reason });
   }
 
-  search(filters: SaleFilters, page: number): Observable<PageResponse<SaleRow>> {
+  search(filters: SaleFilters, page: number, size = 20): Observable<PageResponse<SaleRow>> {
     return this.http.get<PageResponse<SaleRow>>('/api/v1/sales', {
-      params: pageParams({ page, size: 20 }, {
+      params: pageParams({ page, size }, {
         from: filters.from,
         to: filters.to,
         status: filters.status,

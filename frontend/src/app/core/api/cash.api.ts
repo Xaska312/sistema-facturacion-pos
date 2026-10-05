@@ -55,9 +55,9 @@ export class CashApi {
     return this.http.post<CashReport>(`/api/v1/cash/sessions/${sessionId}/close`, { countedAmount, notes });
   }
 
-  sessions(filters: CashSessionFilters, page: number): Observable<PageResponse<CashSession>> {
+  sessions(filters: CashSessionFilters, page: number, size = 20): Observable<PageResponse<CashSession>> {
     return this.http.get<PageResponse<CashSession>>('/api/v1/cash/sessions', {
-      params: pageParams({ page, size: 20 }, {
+      params: pageParams({ page, size }, {
         status: filters.status,
         cashRegisterId: filters.cashRegisterId,
         from: filters.from,

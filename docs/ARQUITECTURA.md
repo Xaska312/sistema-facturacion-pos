@@ -124,3 +124,8 @@ El `ShellComponent` arma la estructura: menú lateral por permisos (`features/sh
 cajón en móvil), barra superior con migas de pan (`breadcrumbs.ts`, derivadas de la URL y del menú), tema y menú de
 usuario. Cada ruta tiene `title` (`AppTitleStrategy` → "Pantalla · POS Híbrido"). `loadingInterceptor` cuenta las
 peticiones en curso para la barra de carga superior (`SKIP_GLOBAL_LOADING` la omite).
+
+Componentes compartidos (UX-2): `shared/table/data-table` (paginada en el servidor con `queryChange`, o lista en
+memoria con `items`; celdas por tipo y plantillas `appCell`; tarjetas en móvil), `shared/forms/form-dialog`
+(errores de campo del ProblemDetail vía `InlineErrorScope`), `page-header`, `empty-state`, `status-badge` (mapa
+`shared/status.ts`), `stat-card` y `ConfirmService` para confirmaciones.
