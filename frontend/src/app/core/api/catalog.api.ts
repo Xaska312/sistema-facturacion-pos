@@ -1,4 +1,4 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpContext, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
@@ -12,6 +12,7 @@ import {
   TaxType,
   Unit,
 } from './api.models';
+import { SILENT_CLIENT_ERRORS } from '../errors/error.interceptor';
 import { PageQuery, pageParams } from './organization.api';
 
 export interface ProductQuery extends PageQuery {
@@ -35,8 +36,11 @@ export class CatalogApi {
     });
   }
 
-  product(id: string): Observable<Product> {
-    return this.http.get<Product>(`/api/v1/products/${id}`);
+  /** Con {@code silent}, un 4xx (p. ej. un favorito que ya no existe) no muestra el toast global. */
+  product(id: string, silent = false): Observable<Product> {
+    return this.http.get<Product>(`/api/v1/products/${id}`, {
+      context: new HttpContext().set(SILENT_CLIENT_ERRORS, silent),
+    });
   }
 
   createProduct(input: ProductInput): Observable<Product> {

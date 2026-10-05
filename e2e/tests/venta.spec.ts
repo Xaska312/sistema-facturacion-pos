@@ -69,21 +69,25 @@ test('login → abrir caja → vender → cerrar caja', async ({ page, request }
   await page.getByRole('button', { name: 'Entrar' }).click();
   await expect(page).toHaveURL(/\/app$/);
 
-  // Abrir caja con base de 50.000
-  await page.getByRole('link', { name: 'Mi caja' }).first().click();
-  await expect(page.getByText('No tienes una caja abierta')).toBeVisible();
+  // Abrir caja desde el POS (apertura guiada) con base de 50.000
+  await page.getByRole('link', { name: 'Vender' }).first().click();
+  await expect(page).toHaveURL(/\/pos$/);
+  await expect(page.getByRole('heading', { name: 'No tienes una caja abierta' })).toBeVisible();
   await page.getByLabel('Base de efectivo').fill('50000');
   await page.getByRole('button', { name: 'Abrir caja' }).click();
-  await expect(page.getByText('CAJA-1 · Caja principal')).toBeVisible();
 
-  // Vender 2 unidades escaneando el SKU y cobrar en efectivo con 10.000
-  await page.getByRole('link', { name: 'Ir a vender' }).click();
-  await expect(page).toHaveURL(/\/pos$/);
+  // Vender 2 unidades: escanear 2*SKU, tocar la tarjeta (+1) y quitar una con "−" en el carrito
   const scanner = page.getByPlaceholder(/Escanea o escribe/);
   await expect(scanner).toBeEnabled();
+  await expect(page.getByText(/CAJA-1 · /)).toBeVisible();
   await scanner.fill(`2*${setup.sku}`);
   await scanner.press('Enter');
-  await expect(page.getByText('Gaseosa E2E')).toBeVisible();
+  const cart = page.getByRole('complementary', { name: 'Venta actual' });
+  await expect(cart.getByText('Gaseosa E2E')).toBeVisible();
+  await page.getByRole('button', { name: /^Agregar Gaseosa E2E/ }).click();
+  await expect(cart.getByText(/3 UND ×/)).toBeVisible();
+  await cart.getByRole('button', { name: 'Uno menos de Gaseosa E2E' }).click();
+  await expect(cart.getByText(/2 UND ×/)).toBeVisible();
   await page.keyboard.press('F4');
   const payment = page.getByRole('dialog', { name: 'Cobrar' });
   await expect(payment).toBeVisible();

@@ -129,3 +129,9 @@ Componentes compartidos (UX-2): `shared/table/data-table` (paginada en el servid
 memoria con `items`; celdas por tipo y plantillas `appCell`; tarjetas en móvil), `shared/forms/form-dialog`
 (errores de campo del ProblemDetail vía `InlineErrorScope`), `page-header`, `empty-state`, `status-badge` (mapa
 `shared/status.ts`), `stat-card` y `ConfirmService` para confirmaciones.
+
+POS (UX-4): `features/pos/pos.component` orquesta carrito, cobro, tiquete, atajos y foco del lector; las piezas
+`pos-header`, `product-grid` (favoritos locales en `favorites.ts`), `cart-panel` (emite cambios, no muta el carrito) y
+`open-cash` (apertura guiada) son presentacionales o de una sola consulta. El cálculo vive en `sale-math.ts`
+(totales, pagos, `stepQuantity`, `stockShortages`, `paymentsMissingReference`). `core/network/online.service` expone la
+conexión del navegador.

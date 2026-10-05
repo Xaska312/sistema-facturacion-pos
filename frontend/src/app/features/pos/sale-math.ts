@@ -49,6 +49,8 @@ export interface CartLine {
   discountPercent: number;
   taxRate: number;
   trackInventory: boolean;
+  /** Unidades base por unidad de la línea (caja de 24 → 24); sin dato, 1. */
+  factor?: number;
 }
 
 export interface CartTotals extends LineAmounts {
@@ -136,4 +138,38 @@ export function cashSuggestions(total: number): number[] {
     }
   }
   return [...suggestions].sort((a, b) => a - b).slice(0, 5);
+}
+
+/** Cantidad después de tocar + / − en el carrito: nunca negativa (0 = quitar la línea). */
+export function stepQuantity(quantity: number, delta: number): number {
+  return Math.max(0, money(quantity + delta));
+}
+
+/**
+ * Líneas cuya cantidad supera la existencia disponible en la sucursal. Suma todas las líneas del mismo producto
+ * (en unidades base) y devuelve, por clave de línea, cuánto hay disponible (en unidades de esa línea).
+ * Los productos sin control de inventario o sin dato de existencia no se marcan.
+ */
+export function stockShortages(lines: readonly CartLine[], stock: ReadonlyMap<string, number>): Map<string, number> {
+  const neededByProduct = new Map<string, number>();
+  for (const line of lines) {
+    if (line.trackInventory) {
+      neededByProduct.set(line.productId, (neededByProduct.get(line.productId) ?? 0) + line.quantity * (line.factor ?? 1));
+    }
+  }
+  const result = new Map<string, number>();
+  for (const line of lines) {
+    const available = stock.get(line.productId);
+    const needed = neededByProduct.get(line.productId);
+    if (available !== undefined && needed !== undefined && needed > available) {
+      result.set(line.key, Math.max(0, money(available / (line.factor ?? 1))));
+    }
+  }
+  return result;
+}
+
+/** Índices de los pagos cuyo medio exige referencia (p. ej. transferencia) y no la tienen; el backend la exige. */
+export function paymentsMissingReference(payments: readonly PaymentDraft[],
+                                         requiresReference: (methodId: string) => boolean): number[] {
+  return payments.flatMap((p, i) => (requiresReference(p.methodId) && !p.reference.trim() ? [i] : []));
 }
