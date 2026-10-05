@@ -1,55 +1,65 @@
 import { DatePipe } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
-import { Branch, InventoryDocument, InventoryDocumentType, PageResponse } from '../../core/api/api.models';
+import { Branch, InventoryDocument, InventoryDocumentLine, InventoryDocumentType, PageResponse } from '../../core/api/api.models';
 import { InventoryApi } from '../../core/api/inventory.api';
 import { OrganizationApi } from '../../core/api/organization.api';
-import { ColumnDef, DataTableComponent } from '../../shared/data-table.component';
 import { HasPermissionDirective } from '../../shared/has-permission.directive';
 import { formatCop, formatQuantity } from '../../shared/money';
+import { PageHeaderComponent } from '../../shared/page-header.component';
+import { CellTemplateDirective } from '../../shared/table/cell-template.directive';
+import { DataTableComponent } from '../../shared/table/data-table.component';
+import { ColumnDef, TableQuery, initialQuery } from '../../shared/table/table';
 import { DOCUMENT_LABEL, DOCUMENT_ROUTE, documentNumber } from './labels';
 
 /** Documentos de inventario (saldo inicial, ajustes, traslados y conteos) y acceso a crearlos. */
 @Component({
   selector: 'app-inventory-documents',
-  imports: [FormsModule, RouterLink, DatePipe, ButtonModule, DialogModule, DataTableComponent, HasPermissionDirective],
+  imports: [FormsModule, RouterLink, DatePipe, ButtonModule, DialogModule, DataTableComponent, HasPermissionDirective,
+    PageHeaderComponent, CellTemplateDirective],
   template: `
-    <div class="flex flex-wrap items-center justify-between mb-4 gap-2">
-      <h1 class="text-2xl font-semibold">Movimientos de inventario</h1>
-      <div class="flex flex-wrap gap-2">
-        <ng-container *hasPermission="'inventory:adjust'">
-          <a [routerLink]="['/app/inventario/nuevo', routes.INITIAL]"><p-button label="Saldo inicial" severity="secondary" [outlined]="true" /></a>
-          <a [routerLink]="['/app/inventario/nuevo', routes.ADJUSTMENT]"><p-button label="Ajuste" severity="secondary" [outlined]="true" /></a>
-          <a [routerLink]="['/app/inventario/nuevo', routes.COUNT]"><p-button label="Conteo físico" severity="secondary" [outlined]="true" /></a>
-        </ng-container>
-        <a *hasPermission="'inventory:transfer'" [routerLink]="['/app/inventario/nuevo', routes.TRANSFER]">
-          <p-button label="Traslado" />
-        </a>
-      </div>
-    </div>
-
-    <div class="flex flex-wrap gap-2 mb-3">
-      <select class="border rounded px-2 py-2 text-sm" [ngModel]="type" (ngModelChange)="type = $event; load(0)">
-        <option value="">Todos los tipos</option>
-        @for (t of types; track t) {
-          <option [value]="t">{{ labels[t] }}</option>
-        }
-      </select>
-      <select class="border rounded px-2 py-2 text-sm" [ngModel]="branchId" (ngModelChange)="branchId = $event; load(0)">
-        <option value="">Todas las sucursales</option>
-        @for (b of branches(); track b.id) {
-          <option [value]="b.id">{{ b.name }}</option>
-        }
-      </select>
-    </div>
+    <app-page-header title="Movimientos de inventario"
+                     description="Saldos iniciales, ajustes, traslados entre sucursales y conteos físicos.">
+      <ng-container *hasPermission="'inventory:adjust'">
+        <a pButton [routerLink]="['/app/inventario/nuevo', routes.INITIAL]" label="Saldo inicial" severity="secondary"
+           [outlined]="true"></a>
+        <a pButton [routerLink]="['/app/inventario/nuevo', routes.ADJUSTMENT]" label="Ajuste" severity="secondary"
+           [outlined]="true"></a>
+        <a pButton [routerLink]="['/app/inventario/nuevo', routes.COUNT]" label="Conteo físico" severity="secondary"
+           [outlined]="true"></a>
+      </ng-container>
+      <a *hasPermission="'inventory:transfer'" pButton [routerLink]="['/app/inventario/nuevo', routes.TRANSFER]"
+         label="Traslado" icon="pi pi-arrow-right-arrow-left"></a>
+    </app-page-header>
 
     <app-data-table [columns]="columns" [page]="page()" [loading]="loading()" [trackBy]="trackById"
-                    emptyText="Aún no hay movimientos" (pageChange)="load($event)">
+                    caption="Documentos de inventario" emptyIcon="pi pi-arrow-right-arrow-left"
+                    emptyTitle="Aún no hay movimientos"
+                    emptyMessage="Empieza con un saldo inicial para cargar las existencias que ya tienes."
+                    (queryChange)="load($event)">
+      <label tableToolbar class="flex items-center gap-2 text-sm">
+        <span class="sr-only">Tipo de documento</span>
+        <select class="border rounded-md px-2 py-2" [ngModel]="type" (ngModelChange)="type = $event; reloadFirstPage()">
+          <option value="">Todos los tipos</option>
+          @for (t of types; track t) {
+            <option [value]="t">{{ labels[t] }}</option>
+          }
+        </select>
+      </label>
+      <label tableToolbar class="flex items-center gap-2 text-sm">
+        <span class="sr-only">Sucursal</span>
+        <select class="border rounded-md px-2 py-2" [ngModel]="branchId" (ngModelChange)="branchId = $event; reloadFirstPage()">
+          <option value="">Todas las sucursales</option>
+          @for (b of branches(); track b.id) {
+            <option [value]="b.id">{{ b.name }}</option>
+          }
+        </select>
+      </label>
       <ng-template #actions let-row>
-        <p-button label="Ver" size="small" [text]="true" (onClick)="open(row)" />
+        <p-button label="Ver" icon="pi pi-eye" size="small" [text]="true" (onClick)="open(row)" />
       </ng-template>
     </app-data-table>
 
@@ -66,39 +76,17 @@ import { DOCUMENT_LABEL, DOCUMENT_ROUTE, documentNumber } from './labels';
             · {{ d.reason }}
           }
         </p>
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead class="bg-surface-alt text-left">
-              <tr>
-                <th class="p-2">Producto</th><th class="p-2 text-right">Cantidad</th><th class="p-2">Unidad</th>
-                @if (d.type === 'COUNT') {
-                  <th class="p-2 text-right">Esperado</th><th class="p-2 text-right">Contado</th>
-                  <th class="p-2 text-right">Diferencia</th>
-                } @else {
-                  <th class="p-2">Tipo</th><th class="p-2 text-right">Costo unit.</th>
-                }
-              </tr>
-            </thead>
-            <tbody>
-              @for (l of d.lines; track l.lineNo) {
-                <tr class="border-t">
-                  <td class="p-2"><span class="font-mono">{{ l.sku }}</span> {{ l.name }}</td>
-                  <td class="p-2 text-right">{{ q(l.quantity) }}</td>
-                  <td class="p-2">{{ l.unitCode }}</td>
-                  @if (d.type === 'COUNT') {
-                    <td class="p-2 text-right">{{ q(l.expectedQuantity) }}</td>
-                    <td class="p-2 text-right">{{ q(l.countedQuantity) }}</td>
-                    <td class="p-2 text-right" [class.text-danger]="(l.difference ?? 0) < 0"
-                        [class.text-success]="(l.difference ?? 0) > 0">{{ q(l.difference) }}</td>
-                  } @else {
-                    <td class="p-2">{{ l.direction === 'IN' ? 'Entrada' : l.direction === 'OUT' ? 'Salida' : '' }}</td>
-                    <td class="p-2 text-right">{{ cop(l.unitCost) }}</td>
-                  }
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
+        <app-data-table [columns]="lineColumns()" [items]="d.lines" [trackBy]="lineKey" [pageSizeOptions]="[]"
+                        caption="Líneas del documento">
+          <ng-template appCell="product" let-row>
+            <span class="font-mono">{{ row.sku }}</span> {{ row.name }}
+          </ng-template>
+          <ng-template appCell="difference" let-row>
+            <span [class.text-danger]="(row.difference ?? 0) < 0" [class.text-success]="(row.difference ?? 0) > 0">
+              {{ q(row.difference) }}
+            </span>
+          </ng-template>
+        </app-data-table>
         @if (d.notes) {
           <p class="text-sm mt-3"><span class="font-medium">Notas:</span> {{ d.notes }}</p>
         }
@@ -125,29 +113,52 @@ export class InventoryDocumentsComponent implements OnInit {
   protected detailOpen = false;
 
   protected readonly trackById = (row: InventoryDocument): string => row.id;
+  protected query: TableQuery = initialQuery();
+  protected readonly lineKey = (line: InventoryDocumentLine): number => line.lineNo;
+  protected readonly lineColumns = computed<ColumnDef<InventoryDocumentLine>[]>(() => {
+    const base: ColumnDef<InventoryDocumentLine>[] = [
+      { header: 'Producto', cell: (l) => l.name, template: 'product' },
+      { header: 'Cantidad', cell: (l) => l.quantity, kind: 'number' },
+      { header: 'Unidad', cell: (l) => l.unitCode },
+    ];
+    if (this.detail()?.type === 'COUNT') {
+      return [...base,
+        { header: 'Esperado', cell: (l) => l.expectedQuantity, kind: 'number' },
+        { header: 'Contado', cell: (l) => l.countedQuantity, kind: 'number' },
+        { header: 'Diferencia', cell: (l) => l.difference, kind: 'number', template: 'difference' }];
+    }
+    return [...base,
+      { header: 'Tipo', cell: (l) => (l.direction === 'IN' ? 'Entrada' : l.direction === 'OUT' ? 'Salida' : null) },
+      { header: 'Costo unit.', cell: (l) => l.unitCost, kind: 'money' }];
+  });
   protected readonly columns: ColumnDef<InventoryDocument>[] = [
-    { header: 'Número', cell: (d) => documentNumber(d.number), cellClass: 'font-mono' },
-    { header: 'Fecha', cell: (d) => new Date(d.createdAt).toLocaleString('es-CO') },
+    { header: 'Número', cell: (d) => documentNumber(d.number), kind: 'mono' },
     { header: 'Tipo', cell: (d) => DOCUMENT_LABEL[d.type] },
-    { header: 'Sucursal', cell: (d) => (d.targetBranchName ? `${d.branchName} → ${d.targetBranchName}` : d.branchName ?? '') },
-    { header: 'Motivo', cell: (d) => d.reason ?? '' },
-    { header: 'Responsable', cell: (d) => d.createdByName ?? '—' },
+    { header: 'Fecha', cell: (d) => d.createdAt, kind: 'datetime' },
+    { header: 'Sucursal', cell: (d) => (d.targetBranchName ? `${d.branchName} → ${d.targetBranchName}` : d.branchName) },
+    { header: 'Motivo', cell: (d) => d.reason, hideOnMobile: true },
+    { header: 'Responsable', cell: (d) => d.createdByName, hideOnMobile: true },
   ];
 
   ngOnInit(): void {
     this.organization.branches({ page: 0, size: 100, sort: 'code,asc' }).subscribe((p) => this.branches.set(p.content));
-    this.load(0);
+    this.load(this.query);
   }
 
-  load(page: number): void {
+  load(query: TableQuery): void {
+    this.query = query;
     this.loading.set(true);
-    this.api.documents(this.type || null, this.branchId || null, page).subscribe({
+    this.api.documents(this.type || null, this.branchId || null, query.page, query.size).subscribe({
       next: (result) => {
         this.page.set(result);
         this.loading.set(false);
       },
       error: () => this.loading.set(false),
     });
+  }
+
+  reloadFirstPage(): void {
+    this.load({ ...this.query, page: 0 });
   }
 
   open(document: InventoryDocument): void {

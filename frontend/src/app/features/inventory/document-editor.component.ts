@@ -11,6 +11,7 @@ import { OrganizationApi } from '../../core/api/organization.api';
 import { formatQuantity } from '../../shared/money';
 import { DraftLine, baseQuantity, draftLine, linesProblem, toLineInputs } from './document-lines';
 import { DOCUMENT_LABEL, documentNumber, documentTypeFromRoute } from './labels';
+import { PageHeaderComponent } from '../../shared/page-header.component';
 
 /**
  * Editor de documentos de inventario: saldo inicial, ajuste, traslado o conteo físico.
@@ -18,12 +19,10 @@ import { DOCUMENT_LABEL, documentNumber, documentTypeFromRoute } from './labels'
  */
 @Component({
   selector: 'app-inventory-document-editor',
-  imports: [FormsModule, RouterLink, ButtonModule, InputTextModule],
+  imports: [FormsModule, RouterLink, ButtonModule, InputTextModule, PageHeaderComponent],
   template: `
-    <a routerLink="/app/inventario/movimientos" class="text-sm text-brand hover:underline">← Movimientos</a>
     @if (type(); as t) {
-      <h1 class="text-2xl font-semibold mb-1">{{ labels[t] }}</h1>
-      <p class="text-sm text-muted mb-4">{{ help[t] }}</p>
+      <app-page-header [title]="labels[t]" [description]="help[t]" />
 
       <section class="card p-4 grid gap-3 md:grid-cols-3 max-w-5xl">
         <label class="flex flex-col gap-1">

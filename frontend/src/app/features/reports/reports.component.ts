@@ -19,6 +19,7 @@ import { BarItem } from '../../shared/charts/bar-scale';
 import { saveDownload } from '../../shared/download';
 import { formatCop, formatPercent, formatQuantity } from '../../shared/money';
 import { QuickRange, daysBetween, quickRange } from './periods';
+import { PageHeaderComponent } from '../../shared/page-header.component';
 
 type Tab = 'summary' | 'days' | 'branches' | 'sellers' | 'payments' | 'products' | 'categories' | 'taxes' | 'inventory';
 
@@ -44,9 +45,9 @@ const TAX_NAMES: Record<string, string> = {
 /** Reportes de ventas, utilidad, impuestos e inventario con exportación a CSV (permiso reports:read). */
 @Component({
   selector: 'app-reports',
-  imports: [FormsModule, NgTemplateOutlet, ButtonModule, BarChartComponent],
+  imports: [FormsModule, NgTemplateOutlet, ButtonModule, BarChartComponent, PageHeaderComponent],
   template: `
-    <h1 class="text-2xl font-semibold mb-4">Reportes</h1>
+    <app-page-header title="Reportes" description="Ventas, utilidad, impuestos e inventario por periodo, con exportación a Excel (CSV)." />
 
     <section class="card p-3 mb-4 flex flex-wrap items-end gap-3">
       @if (tab() !== 'inventory') {

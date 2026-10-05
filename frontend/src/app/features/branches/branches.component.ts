@@ -1,113 +1,125 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ConfirmationService, MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
-import { TagModule } from 'primeng/tag';
+import { Observable } from 'rxjs';
 import { Branch, City, Department, PageResponse } from '../../core/api/api.models';
 import { OrganizationApi } from '../../core/api/organization.api';
-import { ColumnDef, DataTableComponent } from '../../shared/data-table.component';
-import { HasPermissionDirective } from '../../shared/has-permission.directive';
+import { AuthService } from '../../core/auth/auth.service';
+import { ConfirmService } from '../../shared/confirm';
+import { FieldErrorComponent } from '../../shared/forms/field-error.component';
+import { FormDialogComponent } from '../../shared/forms/form-dialog.component';
+import { PageHeaderComponent } from '../../shared/page-header.component';
+import { activeStatus } from '../../shared/status';
+import { DataTableComponent } from '../../shared/table/data-table.component';
+import { ColumnDef, TableQuery, initialQuery, toPageQuery } from '../../shared/table/table';
+
+const CODE_PATTERN = /^[A-Za-z0-9_-]{2,20}$/;
 
 @Component({
   selector: 'app-branches',
-  imports: [ReactiveFormsModule, ButtonModule, DialogModule, InputTextModule, TagModule, DataTableComponent,
-    HasPermissionDirective],
+  imports: [ReactiveFormsModule, ButtonModule, InputTextModule, DataTableComponent, PageHeaderComponent,
+    FormDialogComponent, FieldErrorComponent],
   template: `
-    <div class="flex items-center justify-between mb-4 gap-2">
-      <h1 class="text-2xl font-semibold">Sucursales</h1>
-      <p-button *hasPermission="'branches:manage'" label="Nueva sucursal" (onClick)="openCreate()" />
-    </div>
+    <app-page-header title="Sucursales"
+                     description="Los puntos de venta de tu negocio. Cada caja y cada existencia pertenecen a una sucursal.">
+      @if (canManage) {
+        <p-button label="Nueva sucursal" icon="pi pi-plus" (onClick)="openCreate()" />
+      }
+    </app-page-header>
 
     <app-data-table [columns]="columns" [page]="page()" [loading]="loading()" [trackBy]="trackById"
-                    (pageChange)="load($event)">
+                    initialSort="code,asc" caption="Sucursales del negocio" emptyIcon="pi pi-building"
+                    emptyTitle="Aún no hay sucursales" emptyMessage="Crea una sucursal por cada local donde vendes."
+                    [emptyActionLabel]="canManage ? 'Crear sucursal' : null" (emptyAction)="openCreate()"
+                    (queryChange)="load($event)">
       <ng-template #actions let-row>
-        <span class="inline-flex gap-2 items-center">
-          <p-tag [value]="row.active ? 'Activa' : 'Inactiva'" [severity]="row.active ? 'success' : 'secondary'" />
-          <ng-container *hasPermission="'branches:manage'">
-            <p-button label="Editar" size="small" [text]="true" (onClick)="openEdit(row)" />
-            <p-button [label]="row.active ? 'Desactivar' : 'Activar'" size="small" [text]="true"
-                      [severity]="row.active ? 'danger' : 'success'" (onClick)="toggle(row)" />
-          </ng-container>
-        </span>
+        @if (canManage) {
+          <p-button label="Editar" icon="pi pi-pencil" size="small" [text]="true" (onClick)="openEdit(row)" />
+          <p-button [label]="row.active ? 'Desactivar' : 'Activar'" size="small" [text]="true"
+                    [icon]="row.active ? 'pi pi-ban' : 'pi pi-check-circle'"
+                    [severity]="row.active ? 'danger' : 'success'" (onClick)="toggle(row)" />
+        }
       </ng-template>
     </app-data-table>
 
-    <p-dialog [(visible)]="dialogOpen" [modal]="true" [header]="editing() ? 'Editar sucursal' : 'Nueva sucursal'"
-              [style]="{ width: '32rem' }">
-      <form [formGroup]="form" (ngSubmit)="save()" class="flex flex-col gap-3">
+    <app-form-dialog [(visible)]="dialogOpen" [header]="editing() ? 'Editar sucursal' : 'Nueva sucursal'" [form]="form"
+                     [save]="saveRequest" successMessage="Sucursal guardada" (saved)="load(query)">
+      <div [formGroup]="form" class="flex flex-col gap-3">
         @if (!editing()) {
-          <label class="flex flex-col gap-1">
-            <span class="text-sm font-medium">Código</span>
-            <input pInputText formControlName="code" placeholder="NORTE" />
-            <small class="text-muted">No se puede cambiar después.</small>
-          </label>
+          <div class="flex flex-col gap-1">
+            <label for="branch-code" class="text-sm font-medium">Código</label>
+            <input pInputText id="branch-code" formControlName="code" placeholder="NORTE" autocomplete="off"
+                   aria-describedby="branch-code-help" />
+            <small id="branch-code-help" class="text-xs text-muted">Corto y sin espacios. No se puede cambiar después.</small>
+            <app-field-error [control]="form.controls.code"
+                             patternMessage="Usa de 2 a 20 letras, números, guiones o guiones bajos (sin espacios)." />
+          </div>
         }
-        <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium">Nombre</span>
-          <input pInputText formControlName="name" />
-        </label>
-        <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium">Dirección</span>
-          <input pInputText formControlName="address" />
-        </label>
-        <div class="grid grid-cols-2 gap-3">
-          <label class="flex flex-col gap-1">
-            <span class="text-sm font-medium">Departamento</span>
-            <select formControlName="departmentCode" class="border rounded px-2 py-2" (change)="loadCities()">
+        <div class="flex flex-col gap-1">
+          <label for="branch-name" class="text-sm font-medium">Nombre</label>
+          <input pInputText id="branch-name" formControlName="name" placeholder="Sede norte" />
+          <app-field-error [control]="form.controls.name" />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label for="branch-address" class="text-sm font-medium">Dirección <span class="text-muted font-normal">(opcional)</span></label>
+          <input pInputText id="branch-address" formControlName="address" />
+        </div>
+        <div class="grid sm:grid-cols-2 gap-3">
+          <div class="flex flex-col gap-1">
+            <label for="branch-department" class="text-sm font-medium">Departamento</label>
+            <select id="branch-department" formControlName="departmentCode" class="border rounded-md px-2 py-2"
+                    (change)="loadCities()">
               <option value="">—</option>
               @for (d of departments(); track d.code) {
                 <option [value]="d.code">{{ d.name }}</option>
               }
             </select>
-          </label>
-          <label class="flex flex-col gap-1">
-            <span class="text-sm font-medium">Municipio</span>
-            <select formControlName="cityCode" class="border rounded px-2 py-2">
+          </div>
+          <div class="flex flex-col gap-1">
+            <label for="branch-city" class="text-sm font-medium">Municipio</label>
+            <select id="branch-city" formControlName="cityCode" class="border rounded-md px-2 py-2">
               <option value="">—</option>
               @for (c of cities(); track c.code) {
                 <option [value]="c.code">{{ c.name }}</option>
               }
             </select>
-          </label>
+            <app-field-error [control]="form.controls.cityCode" />
+          </div>
         </div>
-        <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium">Teléfono</span>
-          <input pInputText formControlName="phone" />
-        </label>
-        <div class="flex justify-end gap-2 mt-2">
-          <p-button label="Cancelar" [text]="true" severity="secondary" (onClick)="dialogOpen = false" />
-          <p-button type="submit" label="Guardar" [loading]="saving()" [disabled]="form.invalid" />
+        <div class="flex flex-col gap-1">
+          <label for="branch-phone" class="text-sm font-medium">Teléfono <span class="text-muted font-normal">(opcional)</span></label>
+          <input pInputText id="branch-phone" formControlName="phone" inputmode="tel" />
+          <app-field-error [control]="form.controls.phone" />
         </div>
-      </form>
-    </p-dialog>
+      </div>
+    </app-form-dialog>
   `,
 })
 export class BranchesComponent implements OnInit {
   private readonly api = inject(OrganizationApi);
-  private readonly messages = inject(MessageService);
-  private readonly confirm = inject(ConfirmationService);
+  private readonly confirm = inject(ConfirmService);
+  protected readonly canManage = inject(AuthService).hasPermission('branches:manage');
 
   protected readonly page = signal<PageResponse<Branch> | null>(null);
   protected readonly loading = signal(true);
-  protected readonly saving = signal(false);
   protected readonly editing = signal<Branch | null>(null);
   protected readonly departments = signal<Department[]>([]);
   protected readonly cities = signal<City[]>([]);
   protected dialogOpen = false;
-  private currentPage = 0;
+  protected query: TableQuery = initialQuery(20, 'code,asc');
 
   protected readonly trackById = (row: Branch): string => row.id;
   protected readonly columns: ColumnDef<Branch>[] = [
-    { header: 'Código', cell: (b) => b.code, cellClass: 'font-mono' },
-    { header: 'Nombre', cell: (b) => b.name },
-    { header: 'Dirección', cell: (b) => b.address ?? '—' },
-    { header: 'Municipio', cell: (b) => b.cityCode ?? '—', cellClass: 'font-mono' },
+    { header: 'Código', cell: (b) => b.code, kind: 'mono', sortField: 'code' },
+    { header: 'Nombre', cell: (b) => b.name, sortField: 'name' },
+    { header: 'Dirección', cell: (b) => b.address, hideOnMobile: true },
+    { header: 'Teléfono', cell: (b) => b.phone, hideOnMobile: true },
+    { header: 'Estado', cell: (b) => activeStatus(b.active, true), kind: 'status' },
   ];
 
   protected readonly form = inject(FormBuilder).nonNullable.group({
-    code: ['', [Validators.required, Validators.pattern(/^[A-Za-z0-9_-]{2,20}$/)]],
+    code: ['', [Validators.required, Validators.pattern(CODE_PATTERN)]],
     name: ['', [Validators.required, Validators.maxLength(120)]],
     address: [''],
     departmentCode: [''],
@@ -116,14 +128,14 @@ export class BranchesComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.load(0);
+    this.load(this.query);
     this.api.departments().subscribe((list) => this.departments.set(list));
   }
 
-  load(page: number): void {
-    this.currentPage = page;
+  load(query: TableQuery): void {
+    this.query = query;
     this.loading.set(true);
-    this.api.branches({ page, size: 20, sort: 'code,asc' }).subscribe({
+    this.api.branches(toPageQuery(query)).subscribe({
       next: (result) => {
         this.page.set(result);
         this.loading.set(false);
@@ -166,7 +178,7 @@ export class BranchesComponent implements OnInit {
     this.api.cities(department).subscribe((list) => this.cities.set(list));
   }
 
-  save(): void {
+  protected readonly saveRequest = (): Observable<unknown> => {
     const value = this.form.getRawValue();
     const input = {
       name: value.name.trim(),
@@ -175,27 +187,16 @@ export class BranchesComponent implements OnInit {
       phone: value.phone.trim() || null,
     };
     const current = this.editing();
-    this.saving.set(true);
-    const request = current ? this.api.updateBranch(current.id, input) : this.api.createBranch(value.code, input);
-    request.subscribe({
-      next: () => {
-        this.saving.set(false);
-        this.dialogOpen = false;
-        this.messages.add({ severity: 'success', summary: 'Sucursal guardada' });
-        this.load(this.currentPage);
-      },
-      error: () => this.saving.set(false),
-    });
-  }
+    return current ? this.api.updateBranch(current.id, input) : this.api.createBranch(value.code.trim(), input);
+  };
 
   toggle(branch: Branch): void {
-    const activate = !branch.active;
-    this.confirm.confirm({
-      header: activate ? 'Activar sucursal' : 'Desactivar sucursal',
-      message: `¿${activate ? 'Activar' : 'Desactivar'} la sucursal ${branch.name}?`,
-      acceptLabel: 'Sí',
-      rejectLabel: 'No',
-      accept: () => this.api.setBranchActive(branch.id, activate).subscribe(() => this.load(this.currentPage)),
+    this.confirm.toggleActive({
+      active: branch.active,
+      noun: 'sucursal',
+      name: branch.name,
+      consequence: 'No se podrá abrir caja ni vender en ella hasta que la actives de nuevo.',
+      accept: () => this.api.setBranchActive(branch.id, !branch.active).subscribe(() => this.load(this.query)),
     });
   }
 }

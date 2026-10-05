@@ -1,14 +1,16 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ConfirmationService, MessageService } from 'primeng/api';
+import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
-import { TagModule } from 'primeng/tag';
 import { AccessApi, groupByModule } from '../../core/api/access.api';
 import { Permission, Role } from '../../core/api/api.models';
 import { AuthService } from '../../core/auth/auth.service';
 import { toggleIn } from '../members/assignable';
+import { ConfirmService } from '../../shared/confirm';
+import { PageHeaderComponent } from '../../shared/page-header.component';
+import { StatusBadgeComponent } from '../../shared/status-badge.component';
 
 const MODULE_LABEL: Record<string, string> = {
   organization: 'Organización',
@@ -23,12 +25,12 @@ const MODULE_LABEL: Record<string, string> = {
 
 @Component({
   selector: 'app-roles',
-  imports: [FormsModule, ButtonModule, DialogModule, InputTextModule, TagModule],
+  imports: [FormsModule, ButtonModule, DialogModule, InputTextModule, PageHeaderComponent, StatusBadgeComponent],
   template: `
-    <div class="flex items-center justify-between mb-4 gap-2">
-      <h1 class="text-2xl font-semibold">Roles y permisos</h1>
-      <p-button label="Nuevo rol" (onClick)="openCreate()" />
-    </div>
+    <app-page-header title="Roles y permisos"
+                     description="Qué puede hacer cada persona. Los roles del sistema no se pueden cambiar; crea los tuyos.">
+      <p-button label="Nuevo rol" icon="pi pi-plus" (onClick)="openCreate()" />
+    </app-page-header>
 
     <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
       @for (role of roles(); track role.id) {
@@ -39,7 +41,7 @@ const MODULE_LABEL: Record<string, string> = {
               <p class="text-xs font-mono text-muted">{{ role.code }}</p>
             </div>
             @if (role.systemRole) {
-              <p-tag value="Sistema" severity="secondary" />
+              <app-status-badge status="system" />
             }
           </header>
           <p class="text-sm text-muted">{{ role.description ?? '' }}</p>
@@ -104,7 +106,7 @@ const MODULE_LABEL: Record<string, string> = {
 export class RolesComponent implements OnInit {
   private readonly api = inject(AccessApi);
   private readonly messages = inject(MessageService);
-  private readonly confirm = inject(ConfirmationService);
+  private readonly confirm = inject(ConfirmService);
   protected readonly auth = inject(AuthService);
 
   protected readonly roles = signal<Role[]>([]);
@@ -172,11 +174,11 @@ export class RolesComponent implements OnInit {
   }
 
   remove(role: Role): void {
-    this.confirm.confirm({
+    this.confirm.ask({
       header: 'Eliminar rol',
-      message: `¿Eliminar el rol ${role.name}?`,
-      acceptLabel: 'Eliminar',
-      rejectLabel: 'Cancelar',
+      message: `¿Eliminar el rol ${role.name}? Esta acción no se puede deshacer.`,
+      acceptLabel: 'Eliminar rol',
+      danger: true,
       accept: () => this.api.deleteRole(role.id).subscribe(() => this.load()),
     });
   }

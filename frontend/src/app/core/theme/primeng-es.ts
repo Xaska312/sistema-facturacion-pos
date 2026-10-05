@@ -22,5 +22,11 @@ export const PRIMENG_ES: Translation = {
     navigation: 'Navegación',
     previous: 'Anterior',
     next: 'Siguiente',
+    firstPageLabel: 'Primera página',
+    lastPageLabel: 'Última página',
+    nextPageLabel: 'Página siguiente',
+    prevPageLabel: 'Página anterior',
+    rowsPerPageLabel: 'Filas por página',
+    pageLabel: 'Página {page}',
   },
 };

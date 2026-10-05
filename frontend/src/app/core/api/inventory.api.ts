@@ -55,15 +55,16 @@ export class InventoryApi {
   }
 
   kardex(productId: string, branchId: string | null, from: string | null, to: string | null,
-         page: number): Observable<PageResponse<KardexRow>> {
+         page: number, size = 50): Observable<PageResponse<KardexRow>> {
     return this.http.get<PageResponse<KardexRow>>('/api/v1/inventory/kardex', {
-      params: pageParams({ page, size: 50 }, { productId, branchId, from, to }),
+      params: pageParams({ page, size }, { productId, branchId, from, to }),
     });
   }
 
-  documents(type: InventoryDocumentType | null, branchId: string | null, page: number): Observable<PageResponse<InventoryDocument>> {
+  documents(type: InventoryDocumentType | null, branchId: string | null, page: number,
+            size = 20): Observable<PageResponse<InventoryDocument>> {
     return this.http.get<PageResponse<InventoryDocument>>('/api/v1/inventory/documents', {
-      params: pageParams({ page, size: 20 }, { type, branchId }),
+      params: pageParams({ page, size }, { type, branchId }),
     });
   }
 

@@ -1,157 +1,155 @@
 import { Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ConfirmationService, MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
-import { TagModule } from 'primeng/tag';
+import { Observable } from 'rxjs';
 import { City, Department, PageResponse, Party, PersonType, PriceList } from '../../core/api/api.models';
 import { CatalogApi } from '../../core/api/catalog.api';
 import { OrganizationApi } from '../../core/api/organization.api';
 import { PartiesApi, PartyKind } from '../../core/api/parties.api';
 import { AuthService } from '../../core/auth/auth.service';
-import { ColumnDef, DataTableComponent } from '../../shared/data-table.component';
-import { formatCop } from '../../shared/money';
+import { ConfirmService } from '../../shared/confirm';
+import { FormDialogComponent } from '../../shared/forms/form-dialog.component';
+import { PageHeaderComponent } from '../../shared/page-header.component';
+import { StatusKey, activeStatus } from '../../shared/status';
+import { DataTableComponent } from '../../shared/table/data-table.component';
+import { ColumnDef, TableQuery, initialQuery, toPageQuery } from '../../shared/table/table';
 import { DOCUMENT_TYPES, PartyDraft, draftDv, draftOf, draftProblem, emptyDraft, toPartyInput } from './party-form';
 
 /** Clientes o proveedores (según {@code kind} en los datos de la ruta). */
 @Component({
   selector: 'app-parties',
-  imports: [FormsModule, ButtonModule, DialogModule, InputTextModule, TagModule, DataTableComponent],
+  imports: [FormsModule, ButtonModule, InputTextModule, DataTableComponent, PageHeaderComponent, FormDialogComponent],
   template: `
-    <div class="flex flex-wrap items-center justify-between mb-4 gap-2">
-      <h1 class="text-2xl font-semibold">{{ isCustomers() ? 'Clientes' : 'Proveedores' }}</h1>
+    <app-page-header [title]="isCustomers() ? 'Clientes' : 'Proveedores'"
+                     [description]="isCustomers()
+                       ? 'Personas y empresas a las que les vendes. Con su lista de precios y cupo de crédito.'
+                       : 'Personas y empresas a las que les compras.'">
       @if (canManage) {
-        <p-button [label]="isCustomers() ? 'Nuevo cliente' : 'Nuevo proveedor'" (onClick)="openCreate()" />
+        <p-button [label]="isCustomers() ? 'Nuevo cliente' : 'Nuevo proveedor'" icon="pi pi-plus" (onClick)="openCreate()" />
       }
-    </div>
-
-    <div class="flex flex-wrap gap-2 mb-3 items-center">
-      <input pInputText class="w-full md:w-80" placeholder="Buscar por nombre o documento" [(ngModel)]="search"
-             (keyup.enter)="load(0)" />
-      <label class="flex items-center gap-2 text-sm">
-        <input type="checkbox" [ngModel]="includeInactive" (ngModelChange)="includeInactive = $event; load(0)" />
-        Ver inactivos
-      </label>
-      <p-button label="Buscar" [text]="true" (onClick)="load(0)" />
-    </div>
+    </app-page-header>
 
     <app-data-table [columns]="columns()" [page]="page()" [loading]="loading()" [trackBy]="trackById"
-                    (pageChange)="load($event)">
+                    searchPlaceholder="Buscar por nombre o documento" [caption]="isCustomers() ? 'Clientes' : 'Proveedores'"
+                    [emptyIcon]="isCustomers() ? 'pi pi-users' : 'pi pi-truck'"
+                    [emptyTitle]="isCustomers() ? 'Aún no hay clientes' : 'Aún no hay proveedores'"
+                    [emptyMessage]="isCustomers()
+                      ? 'Registra a tus clientes frecuentes para venderles con su lista de precios.'
+                      : 'Registra a quienes te venden mercancía.'"
+                    [emptyActionLabel]="canManage ? (isCustomers() ? 'Crear cliente' : 'Crear proveedor') : null"
+                    (emptyAction)="openCreate()" (queryChange)="load($event)">
+      <label tableToolbar class="flex items-center gap-2 text-sm">
+        <input type="checkbox" [ngModel]="includeInactive" (ngModelChange)="includeInactive = $event; reloadFirstPage()" />
+        Ver inactivos
+      </label>
       <ng-template #actions let-row>
-        <span class="inline-flex gap-2 items-center">
-          @if (row.system) {
-            <p-tag value="Sistema" severity="info" />
-          }
-          @if (!row.active) {
-            <p-tag value="Inactivo" severity="secondary" />
-          }
-          @if (canManage && !row.system) {
-            <p-button label="Editar" size="small" [text]="true" (onClick)="openEdit(row)" />
-            <p-button [label]="row.active ? 'Desactivar' : 'Activar'" size="small" [text]="true"
-                      [severity]="row.active ? 'danger' : 'success'" (onClick)="toggle(row)" />
-          }
-        </span>
+        @if (canManage && !row.system) {
+          <p-button label="Editar" icon="pi pi-pencil" size="small" [text]="true" (onClick)="openEdit(row)" />
+          <p-button [label]="row.active ? 'Desactivar' : 'Activar'" size="small" [text]="true"
+                    [icon]="row.active ? 'pi pi-ban' : 'pi pi-check-circle'"
+                    [severity]="row.active ? 'danger' : 'success'" (onClick)="toggle(row)" />
+        }
       </ng-template>
     </app-data-table>
 
-    <p-dialog [(visible)]="dialogOpen" [modal]="true" [style]="{ width: '40rem' }"
-              [header]="(editingId ? 'Editar ' : 'Nuevo ') + (isCustomers() ? 'cliente' : 'proveedor')">
+    <app-form-dialog [(visible)]="dialogOpen" width="40rem"
+                     [header]="(editingId ? 'Editar ' : 'Nuevo ') + (isCustomers() ? 'cliente' : 'proveedor')"
+                     [dirty]="draftDirty()" [invalidMessage]="problem()" [save]="saveRequest"
+                     [successMessage]="isCustomers() ? 'Cliente guardado' : 'Proveedor guardado'" (saved)="load(query)">
       <div class="grid gap-3 md:grid-cols-2">
-        <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium">Tipo de persona</span>
-          <select class="border rounded px-2 py-2" [ngModel]="draft.personType" (ngModelChange)="setPersonType($event)">
+        <div class="flex flex-col gap-1">
+          <label for="party-person" class="text-sm font-medium">Tipo de persona</label>
+          <select id="party-person" class="border rounded-md px-2 py-2" [ngModel]="draft.personType"
+                  (ngModelChange)="setPersonType($event)">
             <option value="NATURAL">Persona natural</option>
             <option value="LEGAL">Persona jurídica (empresa)</option>
           </select>
-        </label>
-        <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium">Tipo de documento</span>
-          <select class="border rounded px-2 py-2" [(ngModel)]="draft.documentType">
+        </div>
+        <div class="flex flex-col gap-1">
+          <label for="party-doctype" class="text-sm font-medium">Tipo de documento</label>
+          <select id="party-doctype" class="border rounded-md px-2 py-2" [(ngModel)]="draft.documentType">
             @for (t of documentTypes; track t.value) {
               <option [value]="t.value">{{ t.label }}</option>
             }
           </select>
-        </label>
-        <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium">Número</span>
+        </div>
+        <div class="flex flex-col gap-1">
+          <label for="party-number" class="text-sm font-medium">Número</label>
           <div class="flex items-center gap-2">
-            <input pInputText class="flex-1" [(ngModel)]="draft.documentNumber" />
+            <input pInputText id="party-number" class="flex-1 min-w-0" inputmode="numeric" [(ngModel)]="draft.documentNumber" />
             @if (draft.documentType === 'NIT') {
-              <span class="text-sm text-muted" title="Dígito de verificación (calculado)">DV {{ dv() ?? '—' }}</span>
+              <span class="text-sm text-muted" title="Dígito de verificación, se calcula solo">DV {{ dv() ?? '—' }}</span>
             }
           </div>
-        </label>
+          @if (draft.documentType === 'NIT') {
+            <small class="text-xs text-muted">Escribe el NIT sin el dígito de verificación.</small>
+          }
+        </div>
         @if (draft.personType === 'NATURAL') {
-          <label class="flex flex-col gap-1">
-            <span class="text-sm font-medium">Nombres</span>
-            <input pInputText [(ngModel)]="draft.firstNames" />
-          </label>
-          <label class="flex flex-col gap-1">
-            <span class="text-sm font-medium">Apellidos</span>
-            <input pInputText [(ngModel)]="draft.lastNames" />
-          </label>
+          <div class="flex flex-col gap-1">
+            <label for="party-first" class="text-sm font-medium">Nombres</label>
+            <input pInputText id="party-first" [(ngModel)]="draft.firstNames" />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label for="party-last" class="text-sm font-medium">Apellidos</label>
+            <input pInputText id="party-last" [(ngModel)]="draft.lastNames" />
+          </div>
         } @else {
-          <label class="flex flex-col gap-1">
-            <span class="text-sm font-medium">Razón social</span>
-            <input pInputText [(ngModel)]="draft.businessName" />
-          </label>
+          <div class="flex flex-col gap-1">
+            <label for="party-business" class="text-sm font-medium">Razón social</label>
+            <input pInputText id="party-business" [(ngModel)]="draft.businessName" />
+          </div>
         }
-        <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium">Correo</span>
-          <input pInputText type="email" [(ngModel)]="draft.email" />
-        </label>
-        <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium">Teléfono</span>
-          <input pInputText [(ngModel)]="draft.phone" />
-        </label>
-        <label class="flex flex-col gap-1 md:col-span-2">
-          <span class="text-sm font-medium">Dirección</span>
-          <input pInputText [(ngModel)]="draft.address" />
-        </label>
-        <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium">Departamento</span>
-          <select class="border rounded px-2 py-2" [ngModel]="draft.departmentCode"
+        <div class="flex flex-col gap-1">
+          <label for="party-email" class="text-sm font-medium">Correo <span class="text-muted font-normal">(opcional)</span></label>
+          <input pInputText id="party-email" type="email" [(ngModel)]="draft.email" />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label for="party-phone" class="text-sm font-medium">Teléfono <span class="text-muted font-normal">(opcional)</span></label>
+          <input pInputText id="party-phone" inputmode="tel" [(ngModel)]="draft.phone" />
+        </div>
+        <div class="flex flex-col gap-1 md:col-span-2">
+          <label for="party-address" class="text-sm font-medium">Dirección <span class="text-muted font-normal">(opcional)</span></label>
+          <input pInputText id="party-address" [(ngModel)]="draft.address" />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label for="party-department" class="text-sm font-medium">Departamento</label>
+          <select id="party-department" class="border rounded-md px-2 py-2" [ngModel]="draft.departmentCode"
                   (ngModelChange)="draft.departmentCode = $event; loadCities('')">
             <option value="">—</option>
             @for (d of departments(); track d.code) {
               <option [value]="d.code">{{ d.name }}</option>
             }
           </select>
-        </label>
-        <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium">Municipio</span>
-          <select class="border rounded px-2 py-2" [(ngModel)]="draft.cityCode">
+        </div>
+        <div class="flex flex-col gap-1">
+          <label for="party-city" class="text-sm font-medium">Municipio</label>
+          <select id="party-city" class="border rounded-md px-2 py-2" [(ngModel)]="draft.cityCode">
             <option value="">—</option>
             @for (c of cities(); track c.code) {
               <option [value]="c.code">{{ c.name }}</option>
             }
           </select>
-        </label>
+        </div>
         @if (isCustomers()) {
-          <label class="flex flex-col gap-1">
-            <span class="text-sm font-medium">Lista de precios</span>
-            <select class="border rounded px-2 py-2" [(ngModel)]="draft.priceListId">
+          <div class="flex flex-col gap-1">
+            <label for="party-list" class="text-sm font-medium">Lista de precios</label>
+            <select id="party-list" class="border rounded-md px-2 py-2" [(ngModel)]="draft.priceListId">
               <option value="">General</option>
               @for (l of extraLists(); track l.id) {
                 <option [value]="l.id">{{ l.name }}</option>
               }
             </select>
-          </label>
-          <label class="flex flex-col gap-1">
-            <span class="text-sm font-medium">Cupo de crédito</span>
-            <input pInputText type="number" min="0" step="1000" [(ngModel)]="draft.creditLimit" />
-          </label>
+          </div>
+          <div class="flex flex-col gap-1">
+            <label for="party-credit" class="text-sm font-medium">Cupo de crédito</label>
+            <input pInputText id="party-credit" type="number" min="0" step="1000" [(ngModel)]="draft.creditLimit" />
+            <small class="text-xs text-muted">Valor máximo que puede quedar debiendo. 0 = no se le fía.</small>
+          </div>
         }
       </div>
-      @if (problem(); as message) {
-        <p class="text-sm text-warning mt-3">{{ message }}</p>
-      }
-      <div class="flex justify-end gap-2 mt-4">
-        <p-button label="Cancelar" [text]="true" severity="secondary" (onClick)="dialogOpen = false" />
-        <p-button label="Guardar" [loading]="saving()" [disabled]="problem() !== null" (onClick)="save()" />
-      </div>
-    </p-dialog>
+    </app-form-dialog>
   `,
 })
 export class PartiesComponent implements OnInit {
@@ -161,39 +159,39 @@ export class PartiesComponent implements OnInit {
   private readonly api = inject(PartiesApi);
   private readonly catalog = inject(CatalogApi);
   private readonly organization = inject(OrganizationApi);
-  private readonly messages = inject(MessageService);
-  private readonly confirm = inject(ConfirmationService);
+  private readonly confirm = inject(ConfirmService);
   protected readonly canManage = inject(AuthService).hasPermission('parties:manage');
 
   protected readonly documentTypes = DOCUMENT_TYPES;
   protected readonly isCustomers = computed(() => this.kind() === 'customers');
   protected readonly page = signal<PageResponse<Party> | null>(null);
   protected readonly loading = signal(true);
-  protected readonly saving = signal(false);
   protected readonly departments = signal<Department[]>([]);
   protected readonly cities = signal<City[]>([]);
   protected readonly priceLists = signal<PriceList[]>([]);
   protected readonly extraLists = computed(() => this.priceLists().filter((l) => l.active && !l.defaultList));
 
-  protected search = '';
   protected includeInactive = false;
   protected dialogOpen = false;
   protected editingId: string | null = null;
   protected draft: PartyDraft = emptyDraft();
-  private currentPage = 0;
+  /** Copia del borrador al abrir el diálogo, para saber si hay cambios sin guardar. */
+  private draftSnapshot = '';
+  protected query: TableQuery = initialQuery();
 
   protected readonly trackById = (row: Party): string => row.id;
   protected readonly columns = computed<ColumnDef<Party>[]>(() => {
     const base: ColumnDef<Party>[] = [
       { header: 'Nombre', cell: (p) => p.displayName },
-      { header: 'Documento', cell: (p) => `${p.documentType} ${p.formattedDocument}`, cellClass: 'font-mono' },
-      { header: 'Teléfono', cell: (p) => p.phone ?? '—' },
-      { header: 'Correo', cell: (p) => p.email ?? '—' },
+      { header: 'Documento', cell: (p) => `${p.documentType} ${p.formattedDocument}`, kind: 'mono' },
+      { header: 'Teléfono', cell: (p) => p.phone, hideOnMobile: true },
+      { header: 'Correo', cell: (p) => p.email, hideOnMobile: true },
     ];
+    const status: ColumnDef<Party> = { header: 'Estado', cell: (p) => partyStatus(p), kind: 'status' };
     return this.isCustomers()
-      ? [...base, { header: 'Lista', cell: (p) => p.priceListName ?? 'General' },
-        { header: 'Cupo', cell: (p) => formatCop(p.creditLimit) }]
-      : base;
+      ? [...base, { header: 'Lista', cell: (p) => p.priceListName ?? 'General', hideOnMobile: true },
+        { header: 'Cupo', cell: (p) => p.creditLimit, kind: 'money' }, status]
+      : [...base, status];
   });
 
   protected setPersonType(value: PersonType): void {
@@ -211,24 +209,32 @@ export class PartiesComponent implements OnInit {
     return draftProblem(this.draft);
   }
 
+  protected draftDirty(): boolean {
+    return JSON.stringify(this.draft) !== this.draftSnapshot;
+  }
+
   ngOnInit(): void {
     this.organization.departments().subscribe((list) => this.departments.set(list));
     if (this.isCustomers()) {
       this.catalog.priceLists().subscribe((list) => this.priceLists.set(list));
     }
-    this.load(0);
+    this.load(this.query);
   }
 
-  load(page: number): void {
-    this.currentPage = page;
+  load(query: TableQuery): void {
+    this.query = query;
     this.loading.set(true);
-    this.api.search(this.kind(), { page, size: 20 }, this.search.trim() || null, this.includeInactive).subscribe({
+    this.api.search(this.kind(), toPageQuery(query), query.search, this.includeInactive).subscribe({
       next: (result) => {
         this.page.set(result);
         this.loading.set(false);
       },
       error: () => this.loading.set(false),
     });
+  }
+
+  reloadFirstPage(): void {
+    this.load({ ...this.query, page: 0 });
   }
 
   loadCities(keepCity: string): void {
@@ -243,6 +249,7 @@ export class PartiesComponent implements OnInit {
   openCreate(): void {
     this.editingId = null;
     this.draft = emptyDraft();
+    this.draftSnapshot = JSON.stringify(this.draft);
     this.cities.set([]);
     this.dialogOpen = true;
   }
@@ -251,30 +258,24 @@ export class PartiesComponent implements OnInit {
     this.editingId = party.id;
     this.draft = draftOf(party);
     this.loadCities(party.cityCode ?? '');
+    this.draftSnapshot = JSON.stringify(this.draft);
     this.dialogOpen = true;
   }
 
-  save(): void {
-    this.saving.set(true);
-    this.api.save(this.kind(), this.editingId, toPartyInput(this.draft, this.isCustomers())).subscribe({
-      next: (saved) => {
-        this.saving.set(false);
-        this.dialogOpen = false;
-        this.messages.add({ severity: 'success', summary: 'Guardado', detail: saved.displayName });
-        this.load(this.currentPage);
-      },
-      error: () => this.saving.set(false),
-    });
-  }
+  protected readonly saveRequest = (): Observable<unknown> =>
+    this.api.save(this.kind(), this.editingId, toPartyInput(this.draft, this.isCustomers()));
 
   toggle(party: Party): void {
-    const activate = !party.active;
-    this.confirm.confirm({
-      header: activate ? 'Activar' : 'Desactivar',
-      message: `¿${activate ? 'Activar' : 'Desactivar'} a ${party.displayName}?`,
-      acceptLabel: 'Sí',
-      rejectLabel: 'No',
-      accept: () => this.api.setActive(this.kind(), party.id, activate).subscribe(() => this.load(this.currentPage)),
+    this.confirm.toggleActive({
+      active: party.active,
+      noun: this.isCustomers() ? 'cliente' : 'proveedor',
+      name: party.displayName,
+      consequence: this.isCustomers() ? 'No aparecerá al buscar clientes en la venta.' : undefined,
+      accept: () => this.api.setActive(this.kind(), party.id, !party.active).subscribe(() => this.load(this.query)),
     });
   }
+}
+
+function partyStatus(party: Party): StatusKey {
+  return party.system ? 'system' : activeStatus(party.active);
 }

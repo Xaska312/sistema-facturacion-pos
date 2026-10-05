@@ -1,18 +1,20 @@
 import { Component, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
-import { ImportReport } from '../../core/api/api.models';
+import { ImportReport, ImportRowError } from '../../core/api/api.models';
 import { CatalogApi } from '../../core/api/catalog.api';
 import { importTemplateCsv } from './import-template';
+import { PageHeaderComponent } from '../../shared/page-header.component';
+import { DataTableComponent } from '../../shared/table/data-table.component';
+import { ColumnDef } from '../../shared/table/table';
 
 /** Carga masiva de productos: validar (sin escribir) y luego importar. */
 @Component({
   selector: 'app-product-import',
-  imports: [RouterLink, ButtonModule],
+  imports: [ButtonModule, PageHeaderComponent, DataTableComponent],
   template: `
-    <a routerLink="/app/productos" class="text-sm text-brand hover:underline">← Productos</a>
-    <h1 class="text-2xl font-semibold mb-4">Importar productos</h1>
+    <app-page-header title="Importar productos" description="Carga o actualiza muchos productos a la vez desde un archivo CSV." />
 
     <section class="card p-4 flex flex-col gap-3 max-w-3xl">
       <ol class="list-decimal list-inside text-sm text-muted flex flex-col gap-1">
@@ -47,14 +49,10 @@ import { importTemplateCsv } from './import-template';
           }
         </p>
         @if (r.errors.length > 0) {
-          <table class="w-full text-sm mt-3">
-            <thead class="bg-surface-alt text-left"><tr><th class="p-2 w-20">Fila</th><th class="p-2">Error</th></tr></thead>
-            <tbody>
-              @for (e of r.errors; track e.row + e.message) {
-                <tr class="border-t"><td class="p-2 font-mono">{{ e.row }}</td><td class="p-2 text-danger">{{ e.message }}</td></tr>
-              }
-            </tbody>
-          </table>
+          <div class="mt-3">
+            <app-data-table [columns]="errorColumns" [items]="r.errors" [trackBy]="errorKey" [pageSizeOptions]="[]"
+                            caption="Filas con errores" />
+          </div>
         }
       </section>
     }
@@ -68,6 +66,11 @@ export class ProductImportComponent {
   protected readonly file = signal<File | null>(null);
   protected readonly report = signal<ImportReport | null>(null);
   protected readonly busy = signal(false);
+  protected readonly errorKey = (e: ImportRowError): string => `${e.row}:${e.message}`;
+  protected readonly errorColumns: ColumnDef<ImportRowError>[] = [
+    { header: 'Fila', cell: (e) => e.row, kind: 'mono', cellClass: 'w-20' },
+    { header: 'Error', cell: (e) => e.message, cellClass: 'text-danger' },
+  ];
 
   pick(event: Event): void {
     const input = event.target as HTMLInputElement;
