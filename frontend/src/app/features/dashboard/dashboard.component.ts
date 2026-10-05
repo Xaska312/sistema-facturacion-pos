@@ -59,7 +59,8 @@ interface DashboardView {
           <p class="text-sm text-muted">Revisa tu conexión e inténtalo de nuevo.</p>
           <p-button label="Reintentar" icon="pi pi-refresh" (onClick)="load()" />
         </div>
-      } @else if (view(); as v) {
+      } @else {
+      @if (view(); as v) {
         <section aria-label="Indicadores" class="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4"
                  [class.opacity-60]="loading()">
           @for (k of v.kpis; track k.label) {
@@ -149,6 +150,7 @@ interface DashboardView {
           <div class="card p-4 lg:col-span-2"><p-skeleton height="18rem" /></div>
           <div class="card p-4"><p-skeleton height="18rem" /></div>
         </div>
+      }
       }
     </div>
   `,

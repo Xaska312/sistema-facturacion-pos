@@ -23,7 +23,8 @@ import { paymentChart } from './dashboard-data';
           <p class="font-semibold">No pudimos cargar tus ventas de hoy</p>
           <p-button label="Reintentar" icon="pi pi-refresh" (onClick)="load()" />
         </div>
-      } @else if (data(); as d) {
+      } @else {
+      @if (data(); as d) {
         <div class="grid gap-3 grid-cols-1 sm:grid-cols-3">
           <app-stat-card label="Vendido hoy" [value]="cop(d.total)" icon="pi pi-dollar" />
           <app-stat-card label="Ventas" [value]="d.salesCount.toLocaleString('es-CO')" icon="pi pi-shopping-bag" />
@@ -49,6 +50,7 @@ import { paymentChart } from './dashboard-data';
             <div class="card p-4"><p-skeleton height="4.5rem" /></div>
           }
         </div>
+      }
       }
     </section>
   `,
