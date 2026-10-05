@@ -59,7 +59,7 @@ const SEVERITIES = { success: 'green', info: 'sky', warn: 'orange', help: 'purpl
 
 function solidButtons(): Record<string, Record<string, string>> {
   return Object.fromEntries(
-    Object.entries(SEVERITIES).map(([severity, hue]) => [
+    Object.entries(SEVERITIES).map(([severity, hue]): [string, Record<string, string>] => [
       severity,
       {
         background: `{${hue}.700}`,
@@ -78,10 +78,13 @@ function solidButtons(): Record<string, Record<string, string>> {
 
 function tintedButtons(withBorder: boolean): Record<string, Record<string, string>> {
   return Object.fromEntries(
-    Object.entries(SEVERITIES).map(([severity, hue]) => [
-      severity,
-      withBorder ? { borderColor: `{${hue}.700}`, color: `{${hue}.700}` } : { color: `{${hue}.700}` },
-    ]),
+    Object.entries(SEVERITIES).map(([severity, hue]): [string, Record<string, string>] => {
+      const tokens: Record<string, string> = { color: `{${hue}.700}` };
+      if (withBorder) {
+        tokens['borderColor'] = `{${hue}.700}`;
+      }
+      return [severity, tokens];
+    }),
   );
 }
 
