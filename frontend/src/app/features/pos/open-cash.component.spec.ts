@@ -59,23 +59,35 @@ describe('OpenCashComponent', () => {
     expect(opened.length).toBe(1);
   });
 
-  it('con varias cajas hay que elegir una (las ocupadas no se pueden)', async () => {
-    cash.registers.and.returnValue(of([register('caja-1'), register('caja-2', { busy: true, busyBy: 'Ana' })]));
+  it('con varias cajas libres hay que elegir una (las ocupadas no se pueden)', async () => {
+    cash.registers.and.returnValue(of([
+      register('caja-1'),
+      register('caja-2'),
+      register('caja-3', { busy: true, busyBy: 'Ana' }),
+    ]));
     const fixture = await render();
     const element = fixture.nativeElement as HTMLElement;
     const options = Array.from(element.querySelectorAll<HTMLButtonElement>('button.register'));
-    expect(options.length).toBe(2);
-    expect(options[1].disabled).toBeTrue();
+    expect(options.length).toBe(3);
+    expect(options[2].disabled).toBeTrue();
     expect(element.textContent).toContain('Abierta por Ana');
 
     element.querySelector('form')?.dispatchEvent(new Event('submit'));
     expect(cash.open).not.toHaveBeenCalled();
 
-    options[0].click();
+    options[1].click();
     fixture.detectChanges();
-    expect(options[0].getAttribute('aria-pressed')).toBe('true');
+    expect(options[1].getAttribute('aria-pressed')).toBe('true');
     element.querySelector('form')?.dispatchEvent(new Event('submit'));
-    expect(cash.open).toHaveBeenCalledWith('caja-1', 0, null);
+    expect(cash.open).toHaveBeenCalledWith('caja-2', 0, null);
+  });
+
+  it('si solo una caja está libre, queda elegida', async () => {
+    cash.registers.and.returnValue(of([register('caja-1'), register('caja-2', { busy: true, busyBy: 'Ana' })]));
+    const fixture = await render();
+    const options = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('button.register'));
+    expect(options[0].getAttribute('aria-pressed')).toBe('true');
+    expect(options[1].disabled).toBeTrue();
   });
 
   it('sin permiso de caja explica qué pedir y no consulta cajas', async () => {
