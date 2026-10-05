@@ -1,88 +1,51 @@
-import { DatePipe } from '@angular/common';
-import { Component, OnInit, inject, input, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
 import { Branch, KardexRow, PageResponse, Product } from '../../core/api/api.models';
 import { CatalogApi } from '../../core/api/catalog.api';
 import { InventoryApi } from '../../core/api/inventory.api';
 import { OrganizationApi } from '../../core/api/organization.api';
 import { formatCop, formatQuantity } from '../../shared/money';
+import { PageHeaderComponent } from '../../shared/page-header.component';
+import { CellTemplateDirective } from '../../shared/table/cell-template.directive';
+import { DataTableComponent } from '../../shared/table/data-table.component';
+import { ColumnDef, TableQuery, initialQuery } from '../../shared/table/table';
 import { MOVEMENT_LABEL, documentNumber } from './labels';
 
 /** Kardex de un producto: movimientos con saldo después de cada uno. */
 @Component({
   selector: 'app-kardex',
-  imports: [FormsModule, RouterLink, DatePipe, ButtonModule],
+  imports: [FormsModule, DataTableComponent, CellTemplateDirective, PageHeaderComponent],
   template: `
-    <a routerLink="/app/inventario" class="text-sm text-brand hover:underline">← Existencias</a>
-    <h1 class="text-2xl font-semibold mb-1">Kardex</h1>
-    @if (product(); as p) {
-      <p class="text-muted mb-4"><span class="font-mono">{{ p.sku }}</span> — {{ p.name }} · costo promedio
-        {{ cop(p.cost) }} por {{ p.baseUnitCode }}</p>
-    }
+    <app-page-header title="Kardex" [description]="subtitle()" />
 
-    <div class="flex flex-wrap gap-2 mb-3 items-end">
-      <label class="flex flex-col gap-1 text-sm">
+    <app-data-table [columns]="columns" [page]="page()" [loading]="loading()" [trackBy]="trackByEntry" [pageSize]="50"
+                    [pageSizeOptions]="[20, 50, 100]" caption="Movimientos del producto, del más reciente al más antiguo"
+                    emptyIcon="pi pi-list" emptyTitle="Sin movimientos en el periodo"
+                    emptyMessage="Cambia la sucursal o las fechas para ver otros movimientos."
+                    (queryChange)="load($event)">
+      <label tableToolbar class="flex items-center gap-2 text-sm">
         <span>Sucursal</span>
-        <select class="border rounded px-2 py-2" [(ngModel)]="branch">
+        <select class="border rounded-md px-2 py-2" [(ngModel)]="branch" (ngModelChange)="reloadFirstPage()">
           <option value="">Todas</option>
           @for (b of branches(); track b.id) {
             <option [value]="b.id">{{ b.name }}</option>
           }
         </select>
       </label>
-      <label class="flex flex-col gap-1 text-sm">
+      <label tableToolbar class="flex items-center gap-2 text-sm">
         <span>Desde</span>
-        <input type="date" class="border rounded px-2 py-2" [(ngModel)]="from" />
+        <input type="date" class="border rounded-md px-2 py-2" [(ngModel)]="from" (ngModelChange)="reloadFirstPage()" />
       </label>
-      <label class="flex flex-col gap-1 text-sm">
+      <label tableToolbar class="flex items-center gap-2 text-sm">
         <span>Hasta</span>
-        <input type="date" class="border rounded px-2 py-2" [(ngModel)]="to" />
+        <input type="date" class="border rounded-md px-2 py-2" [(ngModel)]="to" (ngModelChange)="reloadFirstPage()" />
       </label>
-      <p-button label="Consultar" (onClick)="load(0)" />
-    </div>
-
-    <div class="card overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead class="bg-surface-alt text-left">
-          <tr>
-            <th class="p-3">Fecha</th><th class="p-3">Movimiento</th><th class="p-3">Documento</th>
-            <th class="p-3">Sucursal</th><th class="p-3 text-right">Cantidad</th><th class="p-3 text-right">Saldo</th>
-            <th class="p-3 text-right">Costo unit.</th><th class="p-3">Responsable</th><th class="p-3">Motivo</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (m of page()?.content ?? []; track m.entryNo) {
-            <tr class="border-t">
-              <td class="p-3 whitespace-nowrap">{{ m.createdAt | date: 'short' }}</td>
-              <td class="p-3">{{ movementLabel[m.type] }}</td>
-              <td class="p-3 font-mono">{{ docNumber(m.documentNumber) }}</td>
-              <td class="p-3">{{ m.branchName }}</td>
-              <td class="p-3 text-right font-mono" [class.text-danger]="m.quantity < 0"
-                  [class.text-success]="m.quantity > 0">{{ m.quantity > 0 ? '+' : '' }}{{ q(m.quantity) }}</td>
-              <td class="p-3 text-right font-mono">{{ q(m.balanceAfter) }}</td>
-              <td class="p-3 text-right">{{ cop(m.unitCost) }}</td>
-              <td class="p-3">{{ m.createdByName ?? '—' }}</td>
-              <td class="p-3">{{ m.reason ?? '' }}</td>
-            </tr>
-          } @empty {
-            <tr><td colspan="9" class="p-6 text-center text-muted">Sin movimientos en el periodo.</td></tr>
-          }
-        </tbody>
-      </table>
-    </div>
-    @if (page(); as p) {
-      @if (p.totalPages > 1) {
-        <nav class="flex justify-end gap-3 mt-3 text-sm items-center">
-          <span class="text-muted">Página {{ p.page + 1 }} de {{ p.totalPages }}</span>
-          <button type="button" class="px-3 py-1 rounded border disabled:opacity-40" [disabled]="p.page === 0"
-                  (click)="load(p.page - 1)">Más recientes</button>
-          <button type="button" class="px-3 py-1 rounded border disabled:opacity-40"
-                  [disabled]="p.page + 1 >= p.totalPages" (click)="load(p.page + 1)">Anteriores</button>
-        </nav>
-      }
-    }
+      <ng-template appCell="quantity" let-row>
+        <span class="font-mono" [class.text-danger]="row.quantity < 0" [class.text-success]="row.quantity > 0">
+          {{ signedQuantity(row.quantity) }}
+        </span>
+      </ng-template>
+    </app-data-table>
   `,
 })
 export class KardexComponent implements OnInit {
@@ -95,26 +58,57 @@ export class KardexComponent implements OnInit {
   private readonly catalog = inject(CatalogApi);
   private readonly organization = inject(OrganizationApi);
 
-  protected readonly movementLabel = MOVEMENT_LABEL;
-  protected readonly q = formatQuantity;
-  protected readonly cop = formatCop;
-  protected readonly docNumber = documentNumber;
   protected readonly product = signal<Product | null>(null);
   protected readonly branches = signal<Branch[]>([]);
   protected readonly page = signal<PageResponse<KardexRow> | null>(null);
+  protected readonly loading = signal(true);
+  protected readonly subtitle = computed(() => {
+    const p = this.product();
+    return p ? `${p.sku} — ${p.name} · costo promedio ${formatCop(p.cost)} por ${p.baseUnitCode ?? 'unidad'}` : null;
+  });
   protected branch = '';
   protected from = '';
   protected to = '';
+  private query: TableQuery = initialQuery(50);
+
+  protected readonly trackByEntry = (row: KardexRow): number => row.entryNo;
+  protected readonly columns: ColumnDef<KardexRow>[] = [
+    { header: 'Fecha', cell: (m) => m.createdAt, kind: 'datetime' },
+    { header: 'Movimiento', cell: (m) => MOVEMENT_LABEL[m.type] },
+    { header: 'Documento', cell: (m) => documentNumber(m.documentNumber), kind: 'mono', hideOnMobile: true },
+    { header: 'Sucursal', cell: (m) => m.branchName, hideOnMobile: true },
+    { header: 'Cantidad', cell: (m) => m.quantity, kind: 'number', template: 'quantity' },
+    { header: 'Saldo', cell: (m) => m.balanceAfter, kind: 'number' },
+    { header: 'Costo unit.', cell: (m) => m.unitCost, kind: 'money', hideOnMobile: true },
+    { header: 'Responsable', cell: (m) => m.createdByName, hideOnMobile: true },
+    { header: 'Motivo', cell: (m) => m.reason, hideOnMobile: true },
+  ];
+
+  protected signedQuantity(quantity: number): string {
+    return `${quantity > 0 ? '+' : ''}${formatQuantity(quantity)}`;
+  }
 
   ngOnInit(): void {
     this.branch = this.branchId() ?? '';
     this.catalog.product(this.productId()).subscribe((p) => this.product.set(p));
     this.organization.branches({ page: 0, size: 100, sort: 'code,asc' }).subscribe((p) => this.branches.set(p.content));
-    this.load(0);
+    this.load(this.query);
   }
 
-  load(page: number): void {
-    this.api.kardex(this.productId(), this.branch || null, this.from || null, this.to || null, page)
-      .subscribe((result) => this.page.set(result));
+  load(query: TableQuery): void {
+    this.query = query;
+    this.loading.set(true);
+    this.api.kardex(this.productId(), this.branch || null, this.from || null, this.to || null, query.page, query.size)
+      .subscribe({
+        next: (result) => {
+          this.page.set(result);
+          this.loading.set(false);
+        },
+        error: () => this.loading.set(false),
+      });
+  }
+
+  reloadFirstPage(): void {
+    this.load({ ...this.query, page: 0 });
   }
 }

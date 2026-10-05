@@ -15,8 +15,13 @@ import {
 } from '../../core/api/api.models';
 import { CashApi } from '../../core/api/cash.api';
 import { newIdempotencyKey } from '../../core/api/sales.api';
+import { formatTime } from '../../shared/format';
 import { HasPermissionDirective } from '../../shared/has-permission.directive';
 import { formatCop } from '../../shared/money';
+import { PageHeaderComponent } from '../../shared/page-header.component';
+import { CellTemplateDirective } from '../../shared/table/cell-template.directive';
+import { DataTableComponent } from '../../shared/table/data-table.component';
+import { ColumnDef } from '../../shared/table/table';
 import { CashReportComponent } from './cash-report.component';
 import { CASH_MOVEMENT_LABEL } from './labels';
 
@@ -24,14 +29,12 @@ import { CASH_MOVEMENT_LABEL } from './labels';
 @Component({
   selector: 'app-cash',
   imports: [FormsModule, RouterLink, DatePipe, ButtonModule, DialogModule, InputTextModule, HasPermissionDirective,
-    CashReportComponent],
+    CashReportComponent, PageHeaderComponent, DataTableComponent, CellTemplateDirective],
   template: `
-    <div class="flex flex-wrap items-center justify-between mb-4 gap-2">
-      <h1 class="text-2xl font-semibold">Mi caja</h1>
-      <a *hasPermission="'cash:read'" routerLink="/app/caja/historial">
-        <p-button label="Historial de caja" severity="secondary" [outlined]="true" />
-      </a>
-    </div>
+    <app-page-header title="Mi caja" description="Abre tu caja con la base de efectivo, registra ingresos o retiros y ciérrala al final del turno.">
+      <a *hasPermission="'cash:read'" pButton routerLink="/app/caja/historial" label="Historial de caja" icon="pi pi-history"
+         severity="secondary" [outlined]="true"></a>
+    </app-page-header>
 
     @if (loading()) {
       <p class="text-muted">Cargando…</p>
@@ -55,28 +58,14 @@ import { CASH_MOVEMENT_LABEL } from './labels';
         </div>
       </section>
 
-      <section class="card overflow-x-auto">
-        <table class="w-full text-sm">
-          <thead class="bg-surface-alt text-left">
-            <tr>
-              <th class="p-3">Hora</th><th class="p-3">Tipo</th><th class="p-3">Detalle</th>
-              <th class="p-3 text-right">Valor</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (m of movements(); track m.id) {
-              <tr class="border-t">
-                <td class="p-3 whitespace-nowrap">{{ m.createdAt | date: 'shortTime' }}</td>
-                <td class="p-3">{{ movementLabel[m.type] }}</td>
-                <td class="p-3">{{ m.reason }}</td>
-                <td class="p-3 text-right" [class.text-danger]="m.amount < 0">{{ cop(m.amount) }}</td>
-              </tr>
-            } @empty {
-              <tr><td colspan="4" class="p-6 text-center text-muted">Sin movimientos de efectivo todavía.</td></tr>
-            }
-          </tbody>
-        </table>
-      </section>
+      <app-data-table [columns]="movementColumns" [items]="movements()" [trackBy]="movementId" [pageSizeOptions]="[]"
+                      caption="Movimientos de efectivo de esta caja" emptyIcon="pi pi-money-bill"
+                      emptyTitle="Sin movimientos de efectivo todavía"
+                      emptyMessage="Las ventas en efectivo, los ingresos, egresos y retiros aparecen aquí.">
+        <ng-template appCell="amount" let-row>
+          <span [class.text-danger]="row.amount < 0">{{ cop(row.amount) }}</span>
+        </ng-template>
+      </app-data-table>
     } @else {
       <section class="card p-4">
         <p class="mb-3">No tienes una caja abierta. Elige la caja y cuenta la base de efectivo.</p>
@@ -165,7 +154,13 @@ export class CashComponent implements OnInit {
   private readonly messages = inject(MessageService);
 
   protected readonly cop = formatCop;
-  protected readonly movementLabel = CASH_MOVEMENT_LABEL;
+  protected readonly movementId = (row: CashMovement): string => row.id;
+  protected readonly movementColumns: ColumnDef<CashMovement>[] = [
+    { header: 'Hora', cell: (m) => formatTime(m.createdAt), cellClass: 'whitespace-nowrap' },
+    { header: 'Tipo', cell: (m) => CASH_MOVEMENT_LABEL[m.type] },
+    { header: 'Detalle', cell: (m) => m.reason },
+    { header: 'Valor', cell: (m) => m.amount, kind: 'money', template: 'amount' },
+  ];
   protected readonly loading = signal(true);
   protected readonly session = signal<CashSession | null>(null);
   protected readonly registers = signal<RegisterOption[]>([]);
