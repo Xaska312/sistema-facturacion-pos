@@ -5,7 +5,24 @@
   <title>POS Híbrido</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <meta name="description" content="Punto de venta e inventario para tiendas y negocios pequeños.">
+  <meta name="theme-color" content="#0f766e">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="alternate icon" href="favicon.ico">
+  <script>
+    // Aplica el modo oscuro antes del primer render (sin parpadeo). Debe coincidir con ThemeService.
+    (function () {
+      try {
+        var mode = localStorage.getItem('pos.theme');
+        var system = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (mode === 'dark' || (mode !== 'light' && system)) {
+          document.documentElement.classList.add('app-dark');
+        }
+      } catch (e) {
+        // Sin almacenamiento: se queda en claro hasta que arranque la app.
+      }
+    })();
+  </script>
 </head>
 <body>
   <app-root></app-root>

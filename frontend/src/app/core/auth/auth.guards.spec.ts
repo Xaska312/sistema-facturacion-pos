@@ -31,10 +31,10 @@ describe('guards', () => {
     expect(run(tenantGuard)).toBeTrue();
   });
 
-  it('permissionGuard bloquea sin el permiso de la ruta', () => {
+  it('permissionGuard bloquea sin el permiso de la ruta y lleva a "sin permiso"', () => {
     auth.hasPermission.and.returnValue(false);
     const result = run(permissionGuard, { permission: 'branches:manage' }) as UrlTree;
-    expect(TestBed.inject(Router).serializeUrl(result)).toBe('/app');
+    expect(TestBed.inject(Router).serializeUrl(result)).toBe('/app/sin-permiso');
   });
 
   it('permissionGuard deja pasar con el permiso', () => {

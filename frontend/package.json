@@ -7,7 +7,8 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "test:ci": "ng test --watch=false --browsers=ChromeHeadless"
+    "test:ci": "ng test --watch=false --browsers=ChromeHeadless",
+    "check:colors": "node ../tools/check-colors.mjs"
   },
   "private": true,
   "dependencies": {
@@ -19,7 +20,9 @@
     "@angular/platform-browser": "^19.0.0",
     "@angular/platform-browser-dynamic": "^19.0.0",
     "@angular/router": "^19.0.0",
+    "@fontsource/inter": "^5.2.0",
     "@primeng/themes": "^19.0.0",
+    "primeicons": "^7.0.0",
     "primeng": "^19.0.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",

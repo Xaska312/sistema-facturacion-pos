@@ -27,9 +27,9 @@ import { STATUS_LABEL } from './labels';
     </div>
 
     @if (alerts().length > 0) {
-      <section class="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 text-sm">
-        <p class="font-medium text-amber-900">{{ alerts().length }} producto(s) en o por debajo del mínimo</p>
-        <ul class="mt-1 text-amber-900">
+      <section class="bg-warning-soft border border-warning/40 rounded-xl p-3 mb-4 text-sm">
+        <p class="font-medium text-warning-soft-fg">{{ alerts().length }} producto(s) en o por debajo del mínimo</p>
+        <ul class="mt-1 text-warning-soft-fg">
           @for (a of alerts().slice(0, 5); track a.branchId + a.productId) {
             <li>{{ a.name }} — {{ q(a.quantity) }} {{ a.unitCode }} (mín. {{ q(a.minStock) }}) · {{ a.branchName }}</li>
           }
@@ -62,7 +62,7 @@ import { STATUS_LABEL } from './labels';
     </app-data-table>
 
     <p-dialog [(visible)]="levelsOpen" [modal]="true" header="Niveles de existencia" [style]="{ width: '24rem' }">
-      <p class="text-sm text-slate-600 mb-3">{{ editing()?.name }} ({{ editing()?.unitCode }})</p>
+      <p class="text-sm text-muted mb-3">{{ editing()?.name }} ({{ editing()?.unitCode }})</p>
       <div class="grid grid-cols-2 gap-3">
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Mínimo</span>
@@ -73,7 +73,7 @@ import { STATUS_LABEL } from './labels';
           <input pInputText type="number" min="0" [(ngModel)]="maxStock" />
         </label>
       </div>
-      <p class="text-xs text-slate-500 mt-2">Deja vacío para no usar alerta.</p>
+      <p class="text-xs text-muted mt-2">Deja vacío para no usar alerta.</p>
       <div class="flex justify-end gap-2 mt-4">
         <p-button label="Cancelar" [text]="true" severity="secondary" (onClick)="levelsOpen = false" />
         <p-button label="Guardar" (onClick)="saveLevels()" />

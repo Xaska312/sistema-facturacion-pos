@@ -16,7 +16,7 @@ import { differenceLabel } from './labels';
           Informe {{ r.session.status === 'OPEN' ? 'parcial (X)' : 'de cierre (Z)' }} · {{ r.session.registerCode }}
           · {{ r.session.branchName }}
         </p>
-        <p class="text-slate-600">
+        <p class="text-muted">
           Abrió {{ r.session.openedByName }} el {{ r.session.openedAt | date: 'short' }}
           @if (r.session.closedAt) {
             · cerró {{ r.session.closedByName }} el {{ r.session.closedAt | date: 'short' }}
@@ -30,10 +30,10 @@ import { differenceLabel } from './labels';
         <p class="flex justify-between"><span>Anuladas ({{ r.voidedCount }})</span><span>-{{ cop(r.voidedTotal) }}</span></p>
         <p class="flex justify-between font-medium"><span>Ventas netas</span><span>{{ cop(r.netSales) }}</span></p>
         @for (m of r.byMethod; track m.paymentMethodId) {
-          <p class="flex justify-between pl-3 text-slate-600"><span>{{ m.name }} ({{ m.count }})</span><span>{{ cop(m.amount) }}</span></p>
+          <p class="flex justify-between pl-3 text-muted"><span>{{ m.name }} ({{ m.count }})</span><span>{{ cop(m.amount) }}</span></p>
         }
         @if (r.voidsHereCount > 0) {
-          <p class="text-slate-600">Anulaciones con devolución de efectivo en esta caja: {{ r.voidsHereCount }}</p>
+          <p class="text-muted">Anulaciones con devolución de efectivo en esta caja: {{ r.voidsHereCount }}</p>
         }
       </section>
 
@@ -52,13 +52,13 @@ import { differenceLabel } from './labels';
           <p class="flex justify-between font-medium"><span>Contado</span><span>{{ cop(r.cash.counted) }}</span></p>
         }
         @if (r.auditView && r.cash.difference !== null) {
-          <p class="flex justify-between font-semibold" [class.text-red-700]="r.cash.difference < 0"
-             [class.text-green-700]="r.cash.difference > 0">
+          <p class="flex justify-between font-semibold" [class.text-danger]="r.cash.difference < 0"
+             [class.text-success]="r.cash.difference > 0">
             <span>{{ difference(r.cash.difference) }}</span><span>{{ cop(r.cash.difference) }}</span>
           </p>
         }
         @if (!r.auditView) {
-          <p class="text-xs text-slate-500 mt-1">El efectivo esperado y la diferencia los revisa el administrador.</p>
+          <p class="text-xs text-muted mt-1">El efectivo esperado y la diferencia los revisa el administrador.</p>
         }
       </section>
       @if (r.session.closingNotes) {

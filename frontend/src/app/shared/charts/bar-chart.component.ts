@@ -13,14 +13,14 @@ import { BarItem, barPercents } from './bar-scale';
         @for (bar of bars(); track $index) {
           <div class="flex-1 min-w-0 flex flex-col items-center justify-end h-full group"
                [title]="bar.label + ': ' + format()(bar.value)">
-            <div class="w-full rounded-t bg-emerald-500 group-hover:bg-emerald-600 transition-colors"
+            <div class="w-full rounded-t bg-brand group-hover:bg-brand-hover transition-colors"
                  [style.height.%]="bar.percent"></div>
           </div>
         }
       </div>
       <div class="flex gap-1 w-full mt-1">
         @for (bar of bars(); track $index; let i = $index) {
-          <span class="flex-1 min-w-0 text-[10px] text-slate-500 text-center truncate">
+          <span class="flex-1 min-w-0 text-[10px] text-muted text-center truncate">
             {{ i % labelEvery() === 0 ? bar.label : '' }}
           </span>
         }
@@ -33,15 +33,15 @@ import { BarItem, barPercents } from './bar-scale';
               <span class="truncate">{{ bar.label }}</span>
               <span class="whitespace-nowrap font-medium">{{ format()(bar.value) }}</span>
             </div>
-            <div class="h-2 bg-slate-100 rounded">
-              <div class="h-2 rounded bg-emerald-500" [style.width.%]="bar.percent"></div>
+            <div class="h-2 bg-surface-alt rounded">
+              <div class="h-2 rounded bg-brand" [style.width.%]="bar.percent"></div>
             </div>
             @if (bar.hint) {
-              <p class="text-xs text-slate-500">{{ bar.hint }}</p>
+              <p class="text-xs text-muted">{{ bar.hint }}</p>
             }
           </li>
         } @empty {
-          <li class="text-sm text-slate-500">Sin datos.</li>
+          <li class="text-sm text-muted">Sin datos.</li>
         }
       </ul>
     }

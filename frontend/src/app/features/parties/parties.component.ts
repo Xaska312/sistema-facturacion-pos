@@ -78,7 +78,7 @@ import { DOCUMENT_TYPES, PartyDraft, draftDv, draftOf, draftProblem, emptyDraft,
           <div class="flex items-center gap-2">
             <input pInputText class="flex-1" [(ngModel)]="draft.documentNumber" />
             @if (draft.documentType === 'NIT') {
-              <span class="text-sm text-slate-600" title="Dígito de verificación (calculado)">DV {{ dv() ?? '—' }}</span>
+              <span class="text-sm text-muted" title="Dígito de verificación (calculado)">DV {{ dv() ?? '—' }}</span>
             }
           </div>
         </label>
@@ -145,7 +145,7 @@ import { DOCUMENT_TYPES, PartyDraft, draftDv, draftOf, draftProblem, emptyDraft,
         }
       </div>
       @if (problem(); as message) {
-        <p class="text-sm text-amber-700 mt-3">{{ message }}</p>
+        <p class="text-sm text-warning mt-3">{{ message }}</p>
       }
       <div class="flex justify-end gap-2 mt-4">
         <p-button label="Cancelar" [text]="true" severity="secondary" (onClick)="dialogOpen = false" />

@@ -13,51 +13,51 @@ import { formatCop, formatPercent } from '../../shared/money';
   template: `
     @if (data(); as d) {
       <div class="grid gap-3 grid-cols-2 lg:grid-cols-4 mb-4">
-        <div class="bg-white rounded-xl shadow p-4">
-          <p class="text-sm text-slate-500">Ventas de hoy</p>
+        <div class="card p-4">
+          <p class="text-sm text-muted">Ventas de hoy</p>
           <p class="text-2xl font-semibold">{{ cop(d.today.total) }}</p>
-          <p class="text-xs" [class.text-green-700]="change() >= 0" [class.text-red-700]="change() < 0">
+          <p class="text-xs" [class.text-success]="change() >= 0" [class.text-danger]="change() < 0">
             {{ changeText() }}
           </p>
         </div>
-        <div class="bg-white rounded-xl shadow p-4">
-          <p class="text-sm text-slate-500">Número de ventas</p>
+        <div class="card p-4">
+          <p class="text-sm text-muted">Número de ventas</p>
           <p class="text-2xl font-semibold">{{ d.today.salesCount }}</p>
           @if (d.today.voidedCount > 0) {
-            <p class="text-xs text-slate-500">{{ d.today.voidedCount }} anulada(s)</p>
+            <p class="text-xs text-muted">{{ d.today.voidedCount }} anulada(s)</p>
           }
         </div>
-        <div class="bg-white rounded-xl shadow p-4">
-          <p class="text-sm text-slate-500">Ticket promedio</p>
+        <div class="card p-4">
+          <p class="text-sm text-muted">Ticket promedio</p>
           <p class="text-2xl font-semibold">{{ cop(d.today.averageTicket) }}</p>
         </div>
-        <div class="bg-white rounded-xl shadow p-4">
-          <p class="text-sm text-slate-500">Utilidad de hoy</p>
+        <div class="card p-4">
+          <p class="text-sm text-muted">Utilidad de hoy</p>
           <p class="text-2xl font-semibold">{{ cop(d.today.profit) }}</p>
-          <p class="text-xs text-slate-500">Margen {{ pct(d.today.marginPercent) }}</p>
+          <p class="text-xs text-muted">Margen {{ pct(d.today.marginPercent) }}</p>
         </div>
       </div>
 
       <div class="grid gap-3 lg:grid-cols-2 mb-4">
-        <section class="bg-white rounded-xl shadow p-4">
+        <section class="card p-4">
           <h2 class="font-medium mb-3">Ventas por hora (hoy)</h2>
           <app-bar-chart orientation="vertical" [items]="hours()" [format]="cop" [labelEvery]="3"
                          ariaLabel="Ventas por hora de hoy" />
         </section>
-        <section class="bg-white rounded-xl shadow p-4">
+        <section class="card p-4">
           <h2 class="font-medium mb-3">Últimos 7 días</h2>
           <app-bar-chart orientation="vertical" [items]="week()" [format]="cop" ariaLabel="Ventas de los últimos 7 días" />
         </section>
-        <section class="bg-white rounded-xl shadow p-4">
+        <section class="card p-4">
           <h2 class="font-medium mb-3">Productos más vendidos hoy</h2>
           <app-bar-chart [items]="top()" [format]="cop" ariaLabel="Productos más vendidos hoy" />
         </section>
-        <section class="bg-white rounded-xl shadow p-4">
+        <section class="card p-4">
           <h2 class="font-medium mb-3">Medios de pago hoy</h2>
           <app-bar-chart [items]="methods()" [format]="cop" ariaLabel="Medios de pago de hoy" />
         </section>
       </div>
-      <a routerLink="/app/reportes" class="text-sm text-blue-700 hover:underline">Ver todos los reportes</a>
+      <a routerLink="/app/reportes" class="text-sm text-brand hover:underline">Ver todos los reportes</a>
     }
   `,
 })

@@ -15,7 +15,7 @@ import { safeReturnUrl } from '../../core/auth/return-url';
   template: `
     <main class="min-h-screen flex items-center justify-center p-4">
       <form [formGroup]="form" (ngSubmit)="submit()"
-            class="w-full max-w-sm bg-white rounded-xl shadow p-6 flex flex-col gap-4">
+            class="w-full max-w-sm card p-6 flex flex-col gap-4">
         <h1 class="text-2xl font-semibold text-center">Crear cuenta</h1>
 
         <label class="flex flex-col gap-1">
@@ -38,13 +38,13 @@ import { safeReturnUrl } from '../../core/auth/return-url';
         </label>
 
         @if (error()) {
-          <p class="text-sm text-red-600" role="alert">{{ error() }}</p>
+          <p class="text-sm text-danger" role="alert">{{ error() }}</p>
         }
 
         <p-button type="submit" label="Registrarme" [loading]="loading()" [disabled]="form.invalid" styleClass="w-full" />
         <p class="text-sm text-center">
           ¿Ya tienes cuenta? <a routerLink="/login" [queryParams]="returnUrl ? { returnUrl: returnUrl } : {}"
-                                class="text-blue-600 hover:underline">Inicia sesión</a>
+                                class="text-brand hover:underline">Inicia sesión</a>
         </p>
       </form>
     </main>

@@ -16,11 +16,11 @@ const STATUS_LABEL: Record<TenantSummary['status'], string> = {
   imports: [RouterLink, ButtonModule],
   template: `
     <main class="min-h-screen flex items-center justify-center p-4">
-      <section class="w-full max-w-lg bg-white rounded-xl shadow p-6 flex flex-col gap-4">
+      <section class="w-full max-w-lg card p-6 flex flex-col gap-4">
         <header class="flex items-center justify-between">
           <div>
             <h1 class="text-xl font-semibold">Hola, {{ auth.user()?.fullName }}</h1>
-            <p class="text-slate-500 text-sm">Elige el negocio con el que vas a trabajar</p>
+            <p class="text-muted text-sm">Elige el negocio con el que vas a trabajar</p>
           </div>
           <p-button label="Salir" [text]="true" severity="secondary" (onClick)="logout()" />
         </header>
@@ -29,7 +29,7 @@ const STATUS_LABEL: Record<TenantSummary['status'], string> = {
           <div class="border rounded-lg p-4 flex items-center justify-between gap-3">
             <div>
               <p class="font-medium">{{ tenant.tradeName }}</p>
-              <p class="text-xs text-slate-500">{{ tenant.legalName }} · {{ statusLabel[tenant.status] }}</p>
+              <p class="text-xs text-muted">{{ tenant.legalName }} · {{ statusLabel[tenant.status] }}</p>
             </div>
             @if (tenant.status === 'ACTIVE') {
               <p-button label="Entrar" [loading]="selecting() === tenant.id" (onClick)="select(tenant)" />
@@ -38,10 +38,10 @@ const STATUS_LABEL: Record<TenantSummary['status'], string> = {
             }
           </div>
         } @empty {
-          <p class="text-slate-500 text-center py-6">Aún no perteneces a ningún negocio.</p>
+          <p class="text-muted text-center py-6">Aún no perteneces a ningún negocio.</p>
         }
 
-        <a routerLink="/negocios/nuevo" class="text-center text-blue-600 hover:underline">+ Crear un negocio</a>
+        <a routerLink="/negocios/nuevo" class="text-center text-brand hover:underline">+ Crear un negocio</a>
       </section>
     </main>
   `,

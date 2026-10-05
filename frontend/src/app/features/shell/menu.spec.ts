@@ -1,4 +1,4 @@
-import { MENU, visibleMenu, withHeadings } from './menu';
+import { MENU, initials, visibleMenu, withHeadings } from './menu';
 
 describe('visibleMenu', () => {
   it('oculta opciones sin permiso', () => {
@@ -41,5 +41,21 @@ describe('withHeadings', () => {
     const headings = withHeadings(MENU).map((e) => e.heading);
     expect(headings).toEqual([null, 'Ventas', null, null, null, 'Reportes', 'Catálogo', null, 'Inventario', null,
       'Terceros', null, 'Configuración', null, null, null, null]);
+  });
+});
+
+describe('MENU', () => {
+  it('cada opción tiene icono de PrimeIcons y una ruta única', () => {
+    expect(MENU.every((m) => /^pi pi-[a-z-]+$/.test(m.icon))).toBeTrue();
+    expect(new Set(MENU.map((m) => m.route)).size).toBe(MENU.length);
+  });
+});
+
+describe('initials', () => {
+  it('toma la primera letra del primer y del último nombre', () => {
+    expect(initials('Ana María Pérez')).toBe('AP');
+    expect(initials('  carlos  ')).toBe('C');
+    expect(initials('')).toBe('?');
+    expect(initials(null)).toBe('?');
   });
 });

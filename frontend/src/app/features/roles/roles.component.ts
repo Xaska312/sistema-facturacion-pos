@@ -32,23 +32,23 @@ const MODULE_LABEL: Record<string, string> = {
 
     <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
       @for (role of roles(); track role.id) {
-        <article class="bg-white rounded-xl shadow p-4 flex flex-col gap-2">
+        <article class="card p-4 flex flex-col gap-2">
           <header class="flex items-start justify-between gap-2">
             <div>
               <h2 class="font-medium">{{ role.name }}</h2>
-              <p class="text-xs font-mono text-slate-500">{{ role.code }}</p>
+              <p class="text-xs font-mono text-muted">{{ role.code }}</p>
             </div>
             @if (role.systemRole) {
               <p-tag value="Sistema" severity="secondary" />
             }
           </header>
-          <p class="text-sm text-slate-600">{{ role.description ?? '' }}</p>
-          <p class="text-xs text-slate-500">{{ role.permissions.length }} permisos · {{ role.memberCount }} usuario(s)</p>
+          <p class="text-sm text-muted">{{ role.description ?? '' }}</p>
+          <p class="text-xs text-muted">{{ role.permissions.length }} permisos · {{ role.memberCount }} usuario(s)</p>
           <div class="flex gap-2 mt-auto">
             @if (role.editable) {
               <p-button label="Editar" size="small" [text]="true" (onClick)="openEdit(role)" />
             } @else {
-              <span class="text-xs text-slate-500">No editable</span>
+              <span class="text-xs text-muted">No editable</span>
             }
             @if (!role.systemRole) {
               <p-button label="Eliminar" size="small" [text]="true" severity="danger"
@@ -76,7 +76,7 @@ const MODULE_LABEL: Record<string, string> = {
           <span class="text-sm font-medium">Descripción</span>
           <input pInputText [(ngModel)]="description" />
         </label>
-        <p class="text-xs text-slate-500">Solo puedes otorgar permisos que tú tienes.</p>
+        <p class="text-xs text-muted">Solo puedes otorgar permisos que tú tienes.</p>
         <div class="grid gap-3 md:grid-cols-2 max-h-80 overflow-y-auto">
           @for (group of groups(); track group.module) {
             <fieldset>
@@ -87,7 +87,7 @@ const MODULE_LABEL: Record<string, string> = {
                          [disabled]="!auth.hasPermission(permission.code)"
                          (change)="selected.set(toggle(selected(), permission.code))" />
                   <span>{{ permission.description }}
-                    <span class="block text-xs font-mono text-slate-400">{{ permission.code }}</span></span>
+                    <span class="block text-xs font-mono text-muted">{{ permission.code }}</span></span>
                 </label>
               }
             </fieldset>

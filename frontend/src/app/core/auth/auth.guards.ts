@@ -19,14 +19,14 @@ export const tenantGuard: CanActivateFn = () => {
   return auth.hasTenant() ? true : inject(Router).createUrlTree(['/negocios']);
 };
 
-/** Exige el permiso indicado en {@code data.permission} de la ruta. */
+/** Exige el permiso indicado en {@code data.permission} de la ruta; sin él, muestra la página "sin permiso". */
 export const permissionGuard: CanActivateFn = (route) => {
   const auth = inject(AuthService);
   const permission = route.data['permission'] as string | undefined;
   if (!permission || auth.hasPermission(permission)) {
     return true;
   }
-  return inject(Router).createUrlTree(['/app']);
+  return inject(Router).createUrlTree(['/app/sin-permiso']);
 };
 
 /** Para login/registro: si ya hay sesión, no mostrar el formulario. */
