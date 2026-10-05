@@ -50,7 +50,8 @@ docker compose up --build
 7. **Móvil** (menos de 768 px): las listas se ven como tarjetas con las acciones abajo.
 8. **Estados**: Ventas muestra "Registrada"/"Anulada" e Historial de caja muestra "Abierta", "Cerrada", "Cuadrada" o "Faltante $ …" con los mismos colores en claro y oscuro. Sin el permiso `cash:audit`, el arqueo sale "—" (cierre ciego).
 9. **Confirmaciones**: desactiva un producto. El botón dice "Desactivar producto", es rojo y el foco queda en "Cancelar".
-10. **E2E**: `cd e2e; npx playwright test`. Los selectores no cambiaron.
+10. **E2E** (con la app levantada): `cd e2e; npm install; npx playwright install chromium; npx playwright test`
+    (`npm install` y `playwright install` solo la primera vez). Los selectores no cambiaron.
 
 ## Notas
 

@@ -5,7 +5,7 @@ POS web multi-negocio para comercios en Colombia. Backend Spring Boot 4.1 (Java 
 - Arquitectura: [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md)
 - API: [`docs/API.md`](docs/API.md)
 - Decisiones: [`docs/DECISIONES.md`](docs/DECISIONES.md)
-- Mejora de interfaz (UX): [`docs/UX-1.md`](docs/UX-1.md), [`docs/UX-2.md`](docs/UX-2.md)
+- Mejora de interfaz (UX): [`docs/UX-1.md`](docs/UX-1.md), [`docs/UX-2.md`](docs/UX-2.md), [`docs/UX-3.md`](docs/UX-3.md)
 
 ## Estado de las fases
 | Fase | Estado |

@@ -57,6 +57,14 @@ describe('FormDialogComponent', () => {
     fixture.detectChanges();
   });
 
+  // p-dialog anima al cerrarse: se espera a que termine antes de destruir el módulo de pruebas. Si no, el
+  // callback de la animación corre con el inyector ya destruido (NG0205) y falla otra prueba al azar.
+  afterEach(async () => {
+    host.open = false;
+    fixture.detectChanges();
+    await fixture.whenStable();
+  });
+
   const element = (): HTMLElement => fixture.nativeElement as HTMLElement;
   const formElement = (): HTMLFormElement => element().querySelector('form') as HTMLFormElement;
   const submit = (): void => {
