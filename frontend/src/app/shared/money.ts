@@ -22,3 +22,24 @@ const PERCENT = new Intl.NumberFormat('es-CO', { minimumFractionDigits: 0, maxim
 export function formatPercent(value: number | null | undefined): string {
   return value === null || value === undefined ? '—' : `${PERCENT.format(value)} %`;
 }
+
+const ONE_DECIMAL = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 1 });
+
+/**
+ * Pesos abreviados para ejes de gráficas: 1250000 → "$ 1,3 M", 85000 → "$ 85 mil", 900 → "$ 900".
+ * (Se arma a mano: la notación compacta de Intl cambia entre navegadores: "mil", "k", "K".)
+ */
+export function formatCompactCop(value: number | null | undefined): string {
+  if (value === null || value === undefined) {
+    return '—';
+  }
+  const abs = Math.abs(value);
+  const sign = value < 0 ? '-' : '';
+  if (abs >= 1_000_000) {
+    return `${sign}$ ${ONE_DECIMAL.format(abs / 1_000_000)} M`;
+  }
+  if (abs >= 1_000) {
+    return `${sign}$ ${ONE_DECIMAL.format(Math.round(abs / 100) / 10)} mil`;
+  }
+  return `${sign}$ ${ONE_DECIMAL.format(abs)}`;
+}

@@ -25,6 +25,8 @@ npm run build          # producción
 npm run test:ci
 cd ..
 docker compose up --build
+# En otra terminal, con la app levantada (npm install y playwright install solo la primera vez):
+cd e2e; npm install; npx playwright install chromium; npx playwright test; cd ..
 ```
 
 1. Entra con un usuario demo (`node tools/demo/seed-demo.mjs`, clave `DemoPos2026`).

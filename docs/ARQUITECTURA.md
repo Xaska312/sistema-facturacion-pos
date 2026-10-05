@@ -110,7 +110,7 @@ que implementa el módulo de ventas.
 `reporting` es un modelo de lectura: consultas SQL nativas (agregaciones con CTE `filtered` = ventas registradas del
 rango y `costs` = costo de lo vendido por venta) sobre la conexión del negocio actual. No escribe ni llama a otros
 módulos. Las fechas se agrupan con `created_at AT TIME ZONE <zona del negocio>`. Los CSV se arman con
-`shared/csv/CsvWriter` (Excel en español). En el frontend, todas las gráficas pasan por `shared/charts/bar-chart`.
+`shared/csv/CsvWriter` (Excel en español). En el frontend, todas las gráficas pasan por `shared/charts/chart.component` (Chart.js, UX-3).
 
 ## Frontend: sistema de diseño
 Los colores viven solo en `frontend/src/styles.css` como tokens CSS (`--surface`, `--text`, `--brand`, `--success`,

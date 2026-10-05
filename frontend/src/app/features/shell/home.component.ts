@@ -1,50 +1,49 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
-import { StockAlert } from '../../core/api/api.models';
-import { InventoryApi } from '../../core/api/inventory.api';
+import { SkeletonModule } from 'primeng/skeleton';
 import { AuthService } from '../../core/auth/auth.service';
 import { HasPermissionDirective } from '../../shared/has-permission.directive';
+import { PageHeaderComponent } from '../../shared/page-header.component';
 import { DashboardComponent } from '../dashboard/dashboard.component';
 import { MyDayComponent } from '../dashboard/my-day.component';
-import { formatQuantity } from '../../shared/money';
+import { StockAlertsComponent } from '../dashboard/stock-alerts.component';
 
 @Component({
   selector: 'app-home',
-  imports: [RouterLink, ButtonModule, HasPermissionDirective, DashboardComponent, MyDayComponent],
+  imports: [RouterLink, ButtonModule, SkeletonModule, HasPermissionDirective, PageHeaderComponent, DashboardComponent,
+    MyDayComponent, StockAlertsComponent],
   template: `
-    <h1 class="text-2xl font-semibold mb-2">Bienvenido, {{ auth.user()?.fullName }}</h1>
-    <p class="text-muted mb-6">
-      Estás trabajando en <strong>{{ auth.currentTenant()?.tradeName ?? 'tu negocio' }}</strong>.
-    </p>
+    <app-page-header [title]="'Hola, ' + (auth.user()?.fullName ?? '')"
+                     [description]="'Estás trabajando en ' + (auth.currentTenant()?.tradeName ?? 'tu negocio') + '.'">
+      <a *hasPermission="'sales:create'" pButton routerLink="/pos" label="Vender" icon="pi pi-shopping-cart"></a>
+      <a *hasPermission="'cash:operate'" pButton routerLink="/app/caja" label="Mi caja" icon="pi pi-wallet"
+         severity="secondary" [outlined]="true"></a>
+      <a *hasPermission="'reports:read'" pButton routerLink="/app/reportes" label="Reportes" icon="pi pi-chart-bar"
+         severity="secondary" [outlined]="true"></a>
+    </app-page-header>
 
-    <div class="flex flex-wrap gap-2 mb-4">
-      <a *hasPermission="'sales:create'" routerLink="/pos"><p-button label="Vender" size="large" /></a>
-      <a *hasPermission="'cash:operate'" routerLink="/app/caja">
-        <p-button label="Mi caja" size="large" severity="secondary" [outlined]="true" />
-      </a>
-    </div>
-
+    <!-- Las gráficas (Chart.js) se cargan aparte, después de pintar la página. -->
     @if (auth.hasPermission('reports:read')) {
-      <app-dashboard />
-    } @else if (auth.hasPermission('sales:read')) {
-      <app-my-day />
-    }
-
-    @if (alerts().length > 0) {
-      <section class="bg-warning-soft border border-warning/40 rounded-xl p-4 mb-4">
-        <h2 class="font-medium text-warning-soft-fg">Alertas de existencias</h2>
-        <p class="text-sm text-warning-soft-fg mb-2">{{ alerts().length }} producto(s) en o por debajo del mínimo.</p>
-        <ul class="text-sm text-warning-soft-fg">
-          @for (a of alerts().slice(0, 5); track a.branchId + a.productId) {
-            <li>{{ a.name }}: {{ q(a.quantity) }} {{ a.unitCode }} (mín. {{ q(a.minStock) }}) · {{ a.branchName }}</li>
+      @defer {
+        <app-dashboard />
+      } @placeholder (minimum 200ms) {
+        <div class="card p-4 mb-4"><p-skeleton height="20rem" /></div>
+      }
+    } @else {
+      <div class="flex flex-col gap-4 mb-4">
+        @if (auth.hasPermission('sales:read')) {
+          @defer {
+            <app-my-day />
+          } @placeholder (minimum 200ms) {
+            <div class="card p-4"><p-skeleton height="6rem" /></div>
           }
-        </ul>
-        <a routerLink="/app/inventario" class="text-sm text-brand hover:underline">Ver existencias</a>
-      </section>
+        }
+        <app-stock-alerts class="max-w-xl" />
+      </div>
     }
 
-    <section class="card p-4">
+    <section class="card p-4 mt-4">
       <h2 class="font-medium mb-2">Tus permisos en este negocio</h2>
       <ul class="flex flex-wrap gap-2">
         @for (permission of permissions(); track permission) {
@@ -54,17 +53,8 @@ import { formatQuantity } from '../../shared/money';
     </section>
   `,
 })
-export class HomeComponent implements OnInit {
+export class HomeComponent {
   protected readonly auth = inject(AuthService);
-  private readonly inventory = inject(InventoryApi);
-  protected readonly alerts = signal<StockAlert[]>([]);
-  protected readonly q = formatQuantity;
-
-  ngOnInit(): void {
-    if (this.auth.hasPermission('inventory:read')) {
-      this.inventory.alerts(null).subscribe((list) => this.alerts.set(list));
-    }
-  }
 
   protected permissions(): string[] {
     return [...this.auth.permissions()].sort();
