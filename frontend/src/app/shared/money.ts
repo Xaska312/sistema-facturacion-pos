@@ -15,3 +15,10 @@ export function formatCop(value: number | null | undefined): string {
 export function formatQuantity(value: number | null | undefined): string {
   return value === null || value === undefined ? '—' : DECIMAL.format(value);
 }
+
+const PERCENT = new Intl.NumberFormat('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+
+/** Porcentaje con coma decimal: 67.45 → "67,45 %". */
+export function formatPercent(value: number | null | undefined): string {
+  return value === null || value === undefined ? '—' : `${PERCENT.format(value)} %`;
+}

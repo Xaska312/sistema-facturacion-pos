@@ -14,8 +14,9 @@ POS web multi-negocio para comercios en Colombia. Backend Spring Boot 4.1 (Java 
 | 2 — Acceso y organización | ✅ Completada (validada en local el 2026-10-01: 46 tests en verde y app probada) |
 | 3 — Catálogo y terceros | ✅ Completada (validada en local el 2026-10-02: tests en verde y app probada) |
 | 4 — Inventario | ✅ Completada (validada en local el 2026-10-03: tests en verde y app probada) |
-| 5 — Caja y ventas | 🧪 Entregada, pendiente de validar en local |
-| 6 — Reportes y dashboard | ⏳ Siguiente |
+| 5 — Caja y ventas | ✅ Completada (probada en local el 2026-10-05 con la cuenta demo) |
+| 6 — Reportes y dashboard | 🧪 Entregada, pendiente de validar en local |
+| 7 — Endurecimiento para producción | ⏳ Siguiente |
 
 ## Requisitos
 - **Docker Desktop** (o Docker Engine + Compose). Debe estar en estado *Engine running* antes de levantar el proyecto o correr los tests.
@@ -241,7 +242,7 @@ Validada en local: 46 tests en verde; invitación por enlace, menú por permisos
 7. Abre el *Kardex* del producto: el saldo de cada línea es el anterior más la cantidad.
 8. Como vendedor o cajero: ve existencias y kardex, pero no registra ajustes ni traslados.
 
-## Fase 5 — Caja y ventas 🧪
+## Fase 5 — Caja y ventas ✅
 
 **Incluye**
 - **Caja**: abrir con base de efectivo (una sesión abierta por caja y por usuario; solo en cajas de las sucursales asignadas), ingresos, egresos y retiros con motivo, **cierre con arqueo ciego**: el cajero cuenta sin ver el esperado; el sistema calcula esperado = base + movimientos en efectivo y guarda la diferencia. Una sesión cerrada no se reabre.
@@ -272,3 +273,33 @@ Validada en local: 46 tests en verde; invitación por enlace, menú por permisos
 5. *Ventas → Ventas*: abre la venta, reimprímela y anúlala con un motivo. Revisa que la existencia volvió.
 6. *Mi caja*: registra un retiro y *Cerrar caja* contando el efectivo. Como dueño, *Historial de caja* muestra el esperado y la diferencia; como cajero, no.
 7. Como vendedor (sin `cash:operate`): ve la pantalla de venta pero no puede cobrar sin caja abierta; no ve *Mi caja* ni puede anular.
+
+## Fase 6 — Reportes y dashboard 🧪
+
+**Incluye**
+- **Tablero en Inicio** (permiso `reports:read`: dueño, administrador, contador): ventas de hoy frente a ayer, número de ventas, ticket promedio, utilidad y margen; gráficas de ventas por hora, últimos 7 días, productos más vendidos y medios de pago.
+- **Mis ventas de hoy** en Inicio para quien no tiene reportes (cajero, vendedor): total, número de ventas, ticket promedio y medios de pago de sus propias ventas.
+- **Reportes** (*Reportes* en el menú), con rango de fechas (atajos: hoy, ayer, 7 días, este mes, mes anterior), sucursal y vendedor:
+  - Resumen: ventas brutas, descuentos, base, impuestos, total, ticket promedio, **utilidad** (base − costo promedio guardado en cada venta) y margen; anuladas aparte.
+  - Por día, por sucursal, por vendedor y por medio de pago.
+  - **Productos más vendidos** (por valor o cantidad) y por **categoría**, con utilidad y margen.
+  - **Impuestos**: base e impuesto por tipo y tarifa (IVA 19 %, 5 %, INC…).
+  - **Inventario valorizado**: existencias × costo promedio por sucursal.
+- **Exportar CSV** en cada reporte, listo para Excel en español (separador `;`, coma decimal, tildes correctas) y protegido contra fórmulas maliciosas. También el detalle de ventas una a una.
+- Gráficas propias (HTML/CSS, sin librerías) en un solo componente (`app-bar-chart`), para poder cambiarlas por una librería más adelante.
+- Índices nuevos para las consultas por fecha, vendedor, producto y medio de pago (`V8`).
+
+**Tests**
+| Qué | Test |
+|---|---|
+| Cifras de todos los reportes sobre un escenario conocido (5 ventas, 1 anulada, 2 sucursales, 2 vendedores, IVA 19 y 5) | `ReportsIT.reportsMatchTheRegisteredSales` |
+| CSV: BOM, `;`, coma decimal, nombre de archivo, todos los reportes | `ReportsIT.csvExportsAreReadyForExcelInSpanish` |
+| Rango inválido, permisos por rol, aislamiento entre negocios, token sin negocio | `ReportsIT.periodValidationPermissionsAndIsolation` |
+| Formato CSV e inyección de fórmulas; rangos y márgenes | `CsvWriterTest`, `ReportPeriodTest` |
+| Gráficas, rangos rápidos, nombre del archivo descargado, API | `bar-scale.spec`, `periods.spec`, `download.spec`, `reports.api.spec` |
+
+**Probar a mano**
+1. Ejecuta `node tools/demo/seed-demo.mjs` (crea un negocio demo nuevo con ventas de hoy).
+2. Entra como `dueno@tienda-demo.test`: en *Inicio* aparece el tablero del día.
+3. *Reportes*: revisa cada pestaña, cambia el rango y la sucursal, y exporta el CSV; ábrelo en Excel.
+4. Entra como `cajero@tienda-demo.test`: en *Inicio* ve solo *Mis ventas de hoy* y no tiene *Reportes*.

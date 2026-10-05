@@ -91,6 +91,11 @@ public class BusinessSettingsService implements BusinessSettingsApi {
         } catch (DateTimeException | NullPointerException ex) {
             throw new BusinessRuleException("Zona horaria no válida: " + s.timezone());
         }
+        // Solo zonas con nombre (America/Bogota): los desplazamientos fijos (-05:00) los interpreta distinto
+        // PostgreSQL en AT TIME ZONE y los reportes agruparían mal por día y hora.
+        if (!ZoneId.getAvailableZoneIds().contains(s.timezone())) {
+            throw new BusinessRuleException("Usa una zona horaria con nombre, por ejemplo America/Bogota.");
+        }
         if (!CURRENCIES.contains(s.currency())) {
             throw new BusinessRuleException("Moneda no soportada. Por ahora solo se admite COP.");
         }

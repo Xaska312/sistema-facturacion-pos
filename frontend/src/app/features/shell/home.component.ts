@@ -5,16 +5,17 @@ import { StockAlert } from '../../core/api/api.models';
 import { InventoryApi } from '../../core/api/inventory.api';
 import { AuthService } from '../../core/auth/auth.service';
 import { HasPermissionDirective } from '../../shared/has-permission.directive';
+import { DashboardComponent } from '../dashboard/dashboard.component';
+import { MyDayComponent } from '../dashboard/my-day.component';
 import { formatQuantity } from '../../shared/money';
 
 @Component({
   selector: 'app-home',
-  imports: [RouterLink, ButtonModule, HasPermissionDirective],
+  imports: [RouterLink, ButtonModule, HasPermissionDirective, DashboardComponent, MyDayComponent],
   template: `
     <h1 class="text-2xl font-semibold mb-2">Bienvenido, {{ auth.user()?.fullName }}</h1>
     <p class="text-slate-600 mb-6">
       Estás trabajando en <strong>{{ auth.currentTenant()?.tradeName ?? 'tu negocio' }}</strong>.
-      El panel con ventas llega en la Fase 6.
     </p>
 
     <div class="flex flex-wrap gap-2 mb-4">
@@ -23,6 +24,12 @@ import { formatQuantity } from '../../shared/money';
         <p-button label="Mi caja" size="large" severity="secondary" [outlined]="true" />
       </a>
     </div>
+
+    @if (auth.hasPermission('reports:read')) {
+      <app-dashboard />
+    } @else if (auth.hasPermission('sales:read')) {
+      <app-my-day />
+    }
 
     @if (alerts().length > 0) {
       <section class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">

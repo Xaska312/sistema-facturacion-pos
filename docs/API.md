@@ -180,3 +180,19 @@ Cuerpo de venta:
 - `customerId` nulo = consumidor final. `unitId` nulo = unidad base. `unitPrice` y `expectedTotal` (opcionales) son lo que mostró la pantalla: si difieren de lo que calcula el servidor → **409** con `changes[{line, sku, name, expectedPrice, currentPrice}]`, `expectedTotal` y `currentTotal`.
 - Pagos: `amount` es lo entregado. La suma debe cubrir el total; tarjeta y transferencia no pueden superarlo (el cambio solo sale del efectivo).
 - 422: sin caja abierta, existencias insuficientes (indica producto y disponible), cantidades con decimales en unidades enteras, pagos inválidos. 403: descuento por encima del límite sin `sales:discount`.
+
+## Reportes (Fase 6)
+Permiso `reports:read` (salvo `my-day`: `sales:read`). Filtros: `from`, `to` (`AAAA-MM-DD`, zona horaria del negocio; sin fechas = hoy; máximo 367 días; 422 si `to` < `from`), `branchId`, `sellerId`. Solo cuentan las ventas registradas; las anuladas se informan en el resumen.
+| Método | Ruta | Respuesta |
+|---|---|---|
+| GET | `/reports/dashboard?branchId=` | `{date, today: Summary, yesterdayTotal, byHour[24], last7Days[7], topProducts[≤5], byPaymentMethod[]}` |
+| GET | `/reports/my-day` | Ventas propias de hoy `{salesCount, total, averageTicket, byPaymentMethod[]}` |
+| GET | `/reports/sales/summary` | `{salesCount, grossTotal, discountTotal, subtotal, taxTotal, total, averageTicket, cost, profit, marginPercent, voidedCount, voidedTotal}` |
+| GET | `/reports/sales/by-day` · `/by-branch` · `/by-seller` | `[{key, label, salesCount, subtotal, taxTotal, total, averageTicket, cost, profit, marginPercent}]` |
+| GET | `/reports/sales/by-payment-method` | `[{paymentMethodId, code, name, count, amount}]` |
+| GET | `/reports/products?orderBy=total\|quantity&limit=50` | `[{productId, sku, name, categoryName, unitCode, quantity, subtotal, total, cost, profit, marginPercent}]` |
+| GET | `/reports/categories` | Igual por categoría |
+| GET | `/reports/taxes` | `[{taxType, taxRate, salesCount, taxableBase, taxAmount}]` |
+| GET | `/reports/inventory/valuation?branchId=` | `{rows[{branch, product, quantity, averageCost, value}], totalValue, productCount}` (existencias actuales) |
+
+**CSV**: agrega `.csv` a cualquiera de las rutas anteriores (salvo `dashboard`, `my-day` y `summary`), más `/reports/sales.csv` (ventas una a una, con anuladas). `text/csv; charset=UTF-8` con BOM, separador `;`, coma decimal, fechas `AAAA-MM-DD HH:mm` en la hora del negocio y `Content-Disposition: attachment` (expuesto por CORS). `sales.csv` responde 422 si el rango tiene más de 100.000 ventas. Los textos que empiezan por `= + - @` se escriben con `'` delante (protección contra inyección de fórmulas).
