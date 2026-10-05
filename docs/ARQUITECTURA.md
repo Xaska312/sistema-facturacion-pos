@@ -17,6 +17,7 @@ com.poshibrido
   inventory/     saldos por sucursal, movimientos (kardex), documentos, costo promedio
   cash/          medios de pago, sesiones de caja, movimientos de efectivo, informe X/Z
   sales/         ventas (tiquete POS), cálculo, pagos, consecutivos, anulación, eventos
+  reporting/     reportes y tablero (solo lectura, SQL nativo sobre las tablas del negocio), CSV
   location/      catálogo DIVIPOLA (departamentos y municipios)       -> platform.*
   audit/         registro de auditoría (audit_log del negocio)
 ```
@@ -104,3 +105,9 @@ POST /sales (Idempotency-Key) ── ¿clave ya usada? ──▶ devuelve esa ve
 ```
 La caja no depende de ventas: el informe de cierre pide el resumen de ventas por la interfaz `SessionSalesSummary`,
 que implementa el módulo de ventas.
+
+## Reportes
+`reporting` es un modelo de lectura: consultas SQL nativas (agregaciones con CTE `filtered` = ventas registradas del
+rango y `costs` = costo de lo vendido por venta) sobre la conexión del negocio actual. No escribe ni llama a otros
+módulos. Las fechas se agrupan con `created_at AT TIME ZONE <zona del negocio>`. Los CSV se arman con
+`shared/csv/CsvWriter` (Excel en español). En el frontend, todas las gráficas pasan por `shared/charts/bar-chart`.

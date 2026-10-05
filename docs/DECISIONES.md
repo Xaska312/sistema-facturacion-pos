@@ -114,3 +114,17 @@ La fase se escribió en un entorno sin acceso a Maven Central, npm ni Docker Hub
 82. **Evento `SaleCompleted`/`SaleVoided`**: se publican dentro de la transacción (Spring `ApplicationEventPublisher`). La emisión electrónica futura los escuchará con `@TransactionalEventListener(AFTER_COMMIT)`.
 83. **Pantalla de venta fuera del menú lateral** (`/pos`) para aprovechar la pantalla en tablet horizontal. El ancho del papel (58/80 mm) es una preferencia del equipo guardada en el navegador, no un ajuste del negocio.
 84. **E2E**: proyecto aparte `e2e/` con `@playwright/test` 1.56.0 (para no tocar el lockfile del frontend). Corre contra la app levantada con docker compose; en GitHub Actions es un flujo manual (no bloquea los PR).
+
+## Fase 6 — Reportes y dashboard
+
+85. **Reportes incluidos** (decisión del equipo): además de ventas por rango, sucursal, vendedor y medio de pago, productos más vendidos y por categoría, utilidad (margen), impuestos e inventario valorizado.
+86. **Modelo de lectura**: el módulo `reporting` consulta con SQL nativo (solo lectura) las tablas de ventas, catálogo, inventario y caja del negocio, sin pasar por los servicios de esos módulos. Es la excepción a "los módulos se hablan por interfaces": agrega datos de varios módulos y nunca escribe.
+87. **Qué cuenta**: solo ventas COMPLETED; las anuladas se informan aparte (cantidad y total) en el resumen. Las fechas son las de registro de la venta en la zona horaria del negocio; la anulación no cambia la fecha de la venta.
+88. **Utilidad** = base (sin impuestos ni descuentos) − costo de lo vendido, con el costo promedio que quedó guardado en cada línea al vender (no el costo de hoy). Margen = utilidad / base.
+89. **Inventario valorizado**: existencias actuales × costo promedio actual del producto, por sucursal. El valor a una fecha pasada queda para después (requiere reconstruir saldos desde el kardex).
+90. **Rango máximo** de 367 días por consulta (un año completo comparable) para acotar el costo de las consultas.
+91. **Gráficas sin librerías** (decisión del equipo, revisable): barras con HTML/CSS en un único componente `app-bar-chart`; cambiar a una librería (p. ej. Chart.js) solo toca ese componente.
+92. **Tablero**: con `reports:read` se ve el del negocio; sin él pero con `sales:read` (cajero, vendedor) se ven "Mis ventas de hoy". El bodeguero no ve ventas.
+93. **CSV para Excel en español** (decisión del equipo): `;`, coma decimal, sin separador de miles, UTF-8 con BOM. Los textos que empiezan por `= + - @`, tabulador o retorno llevan `'` delante (inyección de CSV). El detalle de ventas admite hasta 100.000 filas; si el rango tiene más, responde 422 pidiendo un rango más corto (no se corta en silencio).
+94. **Índices** (`V8`): ventas COMPLETED por fecha (parcial), ventas por vendedor y fecha, líneas por venta y producto, pagos por medio y venta.
+95. **Zona horaria con nombre**: los ajustes solo aceptan zonas IANA (`America/Bogota`, `UTC`…), no desplazamientos fijos (`-05:00`), porque PostgreSQL interpreta el signo de esos desplazamientos al revés en `AT TIME ZONE` y los reportes agruparían mal por día y hora.

@@ -704,3 +704,113 @@ export interface PriceChange {
   expectedPrice: number;
   currentPrice: number;
 }
+
+// ---------------------------------------------------------------- Reportes (Fase 6)
+
+export interface ReportSummary {
+  from: string;
+  to: string;
+  salesCount: number;
+  grossTotal: number;
+  discountTotal: number;
+  subtotal: number;
+  taxTotal: number;
+  total: number;
+  averageTicket: number;
+  cost: number;
+  profit: number;
+  marginPercent: number;
+  voidedCount: number;
+  voidedTotal: number;
+}
+
+/** Fila agrupada por día, sucursal o vendedor. */
+export interface SalesReportRow {
+  key: string;
+  label: string;
+  salesCount: number;
+  subtotal: number;
+  taxTotal: number;
+  total: number;
+  averageTicket: number;
+  cost: number;
+  profit: number;
+  marginPercent: number;
+}
+
+export interface PaymentReportRow {
+  paymentMethodId: string;
+  code: string;
+  name: string;
+  count: number;
+  amount: number;
+}
+
+export interface ProductReportRow {
+  productId: string;
+  sku: string;
+  name: string;
+  categoryName: string | null;
+  unitCode: string;
+  quantity: number;
+  subtotal: number;
+  total: number;
+  cost: number;
+  profit: number;
+  marginPercent: number;
+}
+
+export interface CategoryReportRow {
+  categoryId: string | null;
+  categoryName: string;
+  subtotal: number;
+  total: number;
+  cost: number;
+  profit: number;
+  marginPercent: number;
+}
+
+export interface TaxReportRow {
+  taxType: string;
+  taxRate: number;
+  salesCount: number;
+  taxableBase: number;
+  taxAmount: number;
+}
+
+export interface InventoryValuationRow {
+  branchId: string;
+  branchName: string;
+  productId: string;
+  sku: string;
+  name: string;
+  categoryName: string | null;
+  unitCode: string;
+  quantity: number;
+  averageCost: number;
+  value: number;
+}
+
+export interface InventoryValuation {
+  rows: InventoryValuationRow[];
+  totalValue: number;
+  productCount: number;
+}
+
+export interface Dashboard {
+  date: string;
+  today: ReportSummary;
+  yesterdayTotal: number;
+  byHour: { hour: number; salesCount: number; total: number }[];
+  last7Days: { date: string; salesCount: number; total: number }[];
+  topProducts: ProductReportRow[];
+  byPaymentMethod: PaymentReportRow[];
+}
+
+export interface MyDay {
+  date: string;
+  salesCount: number;
+  total: number;
+  averageTicket: number;
+  byPaymentMethod: PaymentReportRow[];
+}
