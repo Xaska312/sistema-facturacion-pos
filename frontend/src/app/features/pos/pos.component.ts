@@ -86,8 +86,8 @@ const STOCK_PAGES = 5;
           <section class="h-[55dvh] md:h-auto md:flex-1 min-w-0 min-h-0 flex flex-col gap-2" aria-label="Productos">
             <div class="flex gap-2 shrink-0">
               <div class="relative flex-1 min-w-0">
-                <i class="pi pi-barcode absolute left-3 top-1/2 -translate-y-1/2 text-muted" aria-hidden="true"></i>
-                <input #scanner pInputText class="w-full h-12 pl-10 text-lg" [(ngModel)]="code" (keydown.enter)="scan()"
+                <i class="pi pi-barcode absolute left-3 top-1/2 -translate-y-1/2 z-10 pointer-events-none text-muted" aria-hidden="true"></i>
+                <input #scanner pInputText class="scanner-input w-full h-12" [(ngModel)]="code" (keydown.enter)="scan()"
                        (blur)="keepFocus()" autocomplete="off" aria-label="Código de barras o SKU"
                        [attr.inputmode]="keyboard() ? null : 'none'"
                        placeholder="Escanea o escribe el código / SKU y Enter (3*código = 3 unidades)" />
@@ -329,6 +329,11 @@ const STOCK_PAGES = 5;
     }
   `,
   styles: `
+    /* Los estilos de PrimeNG (sin capa) ganan a las utilidades de Tailwind: el espacio del icono va aquí. */
+    .scanner-input {
+      padding-left: 2.5rem;
+      font-size: 1.125rem;
+    }
     .tool-btn {
       display: inline-flex;
       align-items: center;
