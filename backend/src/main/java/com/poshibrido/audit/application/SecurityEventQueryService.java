@@ -80,11 +80,11 @@ public class SecurityEventQueryService {
             args.add(pattern);
             args.add(pattern);
         }
-        String from = " FROM platform.security_events e"
+        String tables = " FROM platform.security_events e"
                 + " LEFT JOIN platform.users u ON u.id = e.user_id"
                 + " LEFT JOIN platform.tenants t ON t.id = e.tenant_id";
 
-        Long total = jdbc.queryForObject("SELECT count(*)" + from + where, Long.class, args.toArray());
+        Long total = jdbc.queryForObject("SELECT count(*)" + tables + where, Long.class, args.toArray());
         long count = total == null ? 0 : total;
         List<SecurityEventView> rows = List.of();
         if (count > 0) {
@@ -94,7 +94,7 @@ public class SecurityEventQueryService {
             rows = jdbc.query("""
                     SELECT e.id, e.occurred_at, e.event, e.user_id, coalesce(e.email, u.email) AS email,
                            u.full_name, e.tenant_id, t.trade_name, e.ip, e.user_agent, CAST(e.details AS text) AS details
-                    """ + from + where + " ORDER BY e.occurred_at DESC, e.id DESC LIMIT ? OFFSET ?",
+                    """ + tables + where + " ORDER BY e.occurred_at DESC, e.id DESC LIMIT ? OFFSET ?",
                     (rs, i) -> new SecurityEventView(
                             rs.getObject("id", UUID.class),
                             rs.getTimestamp("occurred_at").toInstant(),
