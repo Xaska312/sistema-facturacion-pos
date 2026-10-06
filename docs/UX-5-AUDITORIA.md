@@ -70,9 +70,8 @@ tienen su propia validación (decisión 123).
 
 ### Build
 
-- El aviso de presupuesto del paquete inicial (~683 kB > 500 kB) ya existía antes de UX-1 (decisión pendiente: subir el
-  aviso a 750 kB). UX-5 agrega al paquete inicial la capa del recorrido y el panel de ayuda (pocos kB); el resto va en
-  rutas diferidas.
+- Presupuesto del paquete inicial: el aviso pasó de 500 kB a 750 kB (decisión 155); el aviso de 500 kB ya salía antes de
+  UX-1 (~683 kB). Con eso, `ng build` de producción queda sin advertencias. El error sigue en 1 MB.
 
 ## 2. Lighthouse (por completar al probar)
 
