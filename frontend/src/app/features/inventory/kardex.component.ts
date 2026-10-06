@@ -10,13 +10,18 @@ import { CellTemplateDirective } from '../../shared/table/cell-template.directiv
 import { DataTableComponent } from '../../shared/table/data-table.component';
 import { ColumnDef, TableQuery, initialQuery } from '../../shared/table/table';
 import { MOVEMENT_LABEL, documentNumber } from './labels';
+import { TermComponent } from '../../shared/help/term.component';
 
 /** Kardex de un producto: movimientos con saldo después de cada uno. */
 @Component({
   selector: 'app-kardex',
-  imports: [FormsModule, DataTableComponent, CellTemplateDirective, PageHeaderComponent],
+  imports: [TermComponent, FormsModule, DataTableComponent, CellTemplateDirective, PageHeaderComponent],
   template: `
     <app-page-header title="Kardex" [description]="subtitle()" />
+    <p class="text-sm text-muted -mt-3 mb-4">
+      El <app-term term="kardex">kardex</app-term> muestra cada entrada y salida del producto y la existencia después de
+      cada una.
+    </p>
 
     <app-data-table [columns]="columns" [page]="page()" [loading]="loading()" [trackBy]="trackByEntry" [pageSize]="50"
                     [pageSizeOptions]="[20, 50, 100]" caption="Movimientos del producto, del más reciente al más antiguo"

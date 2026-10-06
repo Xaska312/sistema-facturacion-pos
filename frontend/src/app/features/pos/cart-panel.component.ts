@@ -108,8 +108,10 @@ const UNDO_MS = 6000;
         <p class="flex justify-between items-baseline text-3xl font-semibold mt-1">
           <span class="text-lg">Total</span><span>{{ cop(totals().total) }}</span>
         </p>
-        <p-button styleClass="w-full min-h-14 text-xl font-semibold mt-2" size="large" icon="pi pi-wallet"
-                  label="Cobrar (F4)" [disabled]="!canCharge()" (onClick)="charge.emit()" />
+        <div data-tour="charge" class="mt-2">
+          <p-button styleClass="w-full min-h-14 text-xl font-semibold" size="large" icon="pi pi-wallet"
+                    label="Cobrar (F4)" [disabled]="!canCharge()" (onClick)="charge.emit()" />
+        </div>
         <div class="flex items-center justify-between gap-2">
           <button type="button" class="pos-btn text-muted" [disabled]="lines().length === 0" (click)="cancel.emit()">
             Cancelar venta (Esc)

@@ -200,7 +200,7 @@ const SEARCH_DEBOUNCE_MS = 350;
                          actionLabel="Limpiar búsqueda" actionIcon="pi pi-times" (action)="clearSearch()" />
       } @else {
         <app-empty-state [icon]="emptyIcon()" [title]="emptyTitle()" [message]="emptyMessage()"
-                         [actionLabel]="emptyActionLabel()" (action)="emptyAction.emit()" />
+                         [actionLabel]="emptyActionLabel()" [actionIcon]="emptyActionIcon()" (action)="emptyAction.emit()" />
       }
     </ng-template>
   `,
@@ -243,6 +243,7 @@ export class DataTableComponent<T> {
   readonly emptyIcon = input('pi pi-inbox');
   /** Acción del estado vacío (p. ej. "Crear producto"); sin texto no hay botón. */
   readonly emptyActionLabel = input<string | null>(null);
+  readonly emptyActionIcon = input('pi pi-plus');
 
   readonly queryChange = output<TableQuery>();
   readonly emptyAction = output<void>();

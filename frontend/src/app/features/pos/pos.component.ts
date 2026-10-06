@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, ElementRef, HostListener, OnInit, computed, inject, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
@@ -32,10 +32,12 @@ import { HasPermissionDirective } from '../../shared/has-permission.directive';
 import { formatCop } from '../../shared/money';
 import { ReceiptComponent } from '../../shared/receipt/receipt.component';
 import { ReceiptWidth, loadReceiptWidth, printReceipt, saveReceiptWidth } from '../../shared/receipt/receipt-prefs';
+import { TourService } from '../../shared/tour/tour.service';
 import { CartPanelComponent, LineDiscountChange, LineQuantityChange, RemovedLine } from './cart-panel.component';
 import { loadFavorites, saveFavorites, toggleFavorite } from './favorites';
 import { OpenCashComponent } from './open-cash.component';
 import { POS_SHORTCUTS, methodIcon, methodLabel } from './pos-labels';
+import { POS_TOUR } from './pos-tour';
 import { PosHeaderComponent } from './pos-header.component';
 import { ProductGridComponent } from './product-grid.component';
 import {
@@ -85,7 +87,7 @@ const STOCK_PAGES = 5;
         <div class="flex-1 min-h-0 flex flex-col md:flex-row gap-3 p-3">
           <section class="h-[55dvh] md:h-auto md:flex-1 min-w-0 min-h-0 flex flex-col gap-2" aria-label="Productos">
             <div class="flex gap-2 shrink-0">
-              <div class="relative flex-1 min-w-0">
+              <div class="relative flex-1 min-w-0" data-tour="scanner">
                 <i class="pi pi-barcode absolute left-3 top-1/2 -translate-y-1/2 z-10 pointer-events-none text-muted" aria-hidden="true"></i>
                 <input #scanner pInputText class="scanner-input w-full h-12" [(ngModel)]="code" (keydown.enter)="scan()"
                        (blur)="keepFocus()" autocomplete="off" aria-label="Código de barras o SKU"
@@ -103,11 +105,11 @@ const STOCK_PAGES = 5;
                 <span class="sr-only sm:hidden">Buscar producto</span>
               </button>
             </div>
-            <app-product-grid class="flex-1" [favoriteIds]="favorites()" [stock]="stock()"
+            <app-product-grid class="flex-1" data-tour="products" [favoriteIds]="favorites()" [stock]="stock()"
                               (pick)="pickProduct($event)" (favoriteToggle)="toggleFavorite($event)" />
           </section>
 
-          <app-cart-panel class="md:w-[22rem] lg:w-[26rem] shrink-0" [lines]="lines()" [totals]="totals()"
+          <app-cart-panel class="md:w-[22rem] lg:w-[26rem] shrink-0" data-tour="cart" [lines]="lines()" [totals]="totals()"
                           [pricesIncludeTax]="config()?.pricesIncludeTax ?? true" [shortages]="shortages()"
                           [maxDiscount]="maxDiscount()" [customerName]="customer().name"
                           [canCharge]="lines().length > 0" [lastSaleNumber]="lastSale()?.documentNumber ?? null"
@@ -322,6 +324,10 @@ const STOCK_PAGES = 5;
       </dl>
       <p class="text-sm text-muted mt-3">En tablet, toca los productos de la lista; tocar una línea del carrito permite
         cambiar la cantidad o el descuento.</p>
+      @if (session()) {
+        <p-button label="Ver recorrido guiado" icon="pi pi-directions" [outlined]="true" styleClass="min-h-11 mt-4"
+                  (onClick)="replayTour()" />
+      }
     </p-dialog>
 
     @if (lastSale(); as sale) {
@@ -392,7 +398,7 @@ const STOCK_PAGES = 5;
     }
   `,
 })
-export class PosComponent implements OnInit {
+export class PosComponent implements OnInit, OnDestroy {
   protected readonly auth = inject(AuthService);
   private readonly cash = inject(CashApi);
   private readonly sales = inject(SalesApi);
@@ -402,6 +408,8 @@ export class PosComponent implements OnInit {
   private readonly messages = inject(MessageService);
   private readonly confirm = inject(ConfirmService);
   protected readonly online = inject(OnlineService).online;
+  private readonly tours = inject(TourService);
+  private tourTimer: ReturnType<typeof setTimeout> | null = null;
 
   private readonly scanner = viewChild<ElementRef<HTMLInputElement>>('scanner');
   private readonly search = viewChild<ElementRef<HTMLInputElement>>('search');
@@ -466,6 +474,7 @@ export class PosComponent implements OnInit {
         if (session) {
           this.loadStock(session.branchId);
           this.focusScanner();
+          this.offerTour();
         }
       },
       error: () => this.session.set(null),
@@ -501,6 +510,7 @@ export class PosComponent implements OnInit {
     this.session.set(session);
     this.loadStock(session.branchId);
     this.focusScanner();
+    this.offerTour();
   }
 
   /**
@@ -856,6 +866,30 @@ export class PosComponent implements OnInit {
     const width: ReceiptWidth = Number(value) === 58 ? 58 : 80;
     this.width.set(width);
     saveReceiptWidth(width);
+  }
+
+  /** La primera vez que este usuario ve la pantalla de venta (con la caja abierta) en este equipo. */
+  private offerTour(): void {
+    this.clearTourTimer();
+    this.tourTimer = setTimeout(() => this.tours.offer(POS_TOUR), 500);
+  }
+
+  replayTour(): void {
+    this.helpOpen = false;
+    this.clearTourTimer();
+    // Después de que se cierre el diálogo de atajos.
+    this.tourTimer = setTimeout(() => this.tours.start(POS_TOUR), 250);
+  }
+
+  ngOnDestroy(): void {
+    this.clearTourTimer();
+  }
+
+  private clearTourTimer(): void {
+    if (this.tourTimer !== null) {
+      clearTimeout(this.tourTimer);
+      this.tourTimer = null;
+    }
   }
 
   openHelp(): void {

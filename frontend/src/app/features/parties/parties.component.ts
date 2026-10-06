@@ -15,11 +15,12 @@ import { StatusKey, activeStatus } from '../../shared/status';
 import { DataTableComponent } from '../../shared/table/data-table.component';
 import { ColumnDef, TableQuery, initialQuery, toPageQuery } from '../../shared/table/table';
 import { DOCUMENT_TYPES, PartyDraft, draftDv, draftOf, draftProblem, emptyDraft, toPartyInput } from './party-form';
+import { TermComponent } from '../../shared/help/term.component';
 
 /** Clientes o proveedores (según {@code kind} en los datos de la ruta). */
 @Component({
   selector: 'app-parties',
-  imports: [FormsModule, ButtonModule, InputTextModule, DataTableComponent, PageHeaderComponent, FormDialogComponent],
+  imports: [TermComponent, FormsModule, ButtonModule, InputTextModule, DataTableComponent, PageHeaderComponent, FormDialogComponent],
   template: `
     <app-page-header [title]="isCustomers() ? 'Clientes' : 'Proveedores'"
                      [description]="isCustomers()
@@ -134,7 +135,10 @@ import { DOCUMENT_TYPES, PartyDraft, draftDv, draftOf, draftProblem, emptyDraft,
         </div>
         @if (isCustomers()) {
           <div class="flex flex-col gap-1">
-            <label for="party-list" class="text-sm font-medium">Lista de precios</label>
+            <span class="flex items-center gap-1">
+              <label for="party-list" class="text-sm font-medium">Lista de precios</label>
+              <app-term term="lista-precios" />
+            </span>
             <select id="party-list" class="border rounded-md px-2 py-2" [(ngModel)]="draft.priceListId">
               <option value="">General</option>
               @for (l of extraLists(); track l.id) {

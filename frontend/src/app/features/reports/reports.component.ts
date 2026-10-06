@@ -30,6 +30,7 @@ import { ColumnDef } from '../../shared/table/table';
 import { dayChart, paymentChart } from '../dashboard/dashboard-data';
 import { PeriodKey, PeriodSelection, periodFromParams, periodLabel, periodToParams, resolvePeriod } from './periods';
 import { ReportTab, csvFor, salesTotals } from './report-views';
+import { TermComponent } from '../../shared/help/term.component';
 
 const TABS: { id: ReportTab; label: string }[] = [
   { id: 'summary', label: 'Resumen' },
@@ -58,7 +59,7 @@ const REPORT_PERIODS: readonly PeriodKey[] = ['today', 'yesterday', 'last7', 'la
  */
 @Component({
   selector: 'app-reports',
-  imports: [NgTemplateOutlet, ButtonModule, SkeletonModule, ChartComponent, PageHeaderComponent, PeriodFilterComponent,
+  imports: [TermComponent, NgTemplateOutlet, ButtonModule, SkeletonModule, ChartComponent, PageHeaderComponent, PeriodFilterComponent,
     StatCardComponent, DataTableComponent, CellTemplateDirective],
   template: `
     <app-page-header title="Reportes"
@@ -178,7 +179,9 @@ const REPORT_PERIODS: readonly PeriodKey[] = ['today', 'yesterday', 'last7', 'la
         @case ('payments') {
           <div class="grid gap-4 lg:grid-cols-2">
             <section class="card p-4">
-              <h2 class="font-semibold mb-3">Distribución</h2>
+              <h2 class="font-semibold mb-3">
+                Distribución por <app-term term="medios-pago">medio de pago</app-term>
+              </h2>
               @if (paymentData().labels.length === 0) {
                 <p class="text-sm text-muted">Sin pagos en el periodo.</p>
               } @else {

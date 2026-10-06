@@ -1,27 +1,42 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
 import { SkeletonModule } from 'primeng/skeleton';
 import { AuthService } from '../../core/auth/auth.service';
-import { HasPermissionDirective } from '../../shared/has-permission.directive';
 import { PageHeaderComponent } from '../../shared/page-header.component';
 import { DashboardComponent } from '../dashboard/dashboard.component';
 import { MyDayComponent } from '../dashboard/my-day.component';
 import { StockAlertsComponent } from '../dashboard/stock-alerts.component';
+import { FirstStepsComponent } from '../onboarding/first-steps.component';
+import { describeCapabilities, firstName, greeting, joinSpanish, quickActions } from './capabilities';
 
+/**
+ * Inicio: saludo, accesos rápidos según permisos, primeros pasos (dueño de un negocio nuevo), tablero o "Mi día",
+ * y lo que el usuario puede hacer en lenguaje natural (el detalle técnico, plegado, solo para quien administra roles).
+ */
 @Component({
   selector: 'app-home',
-  imports: [RouterLink, ButtonModule, SkeletonModule, HasPermissionDirective, PageHeaderComponent, DashboardComponent,
-    MyDayComponent, StockAlertsComponent],
+  imports: [RouterLink, SkeletonModule, PageHeaderComponent, DashboardComponent, MyDayComponent, StockAlertsComponent,
+    FirstStepsComponent],
   template: `
-    <app-page-header [title]="'Hola, ' + (auth.user()?.fullName ?? '')"
-                     [description]="'Estás trabajando en ' + (auth.currentTenant()?.tradeName ?? 'tu negocio') + '.'">
-      <a *hasPermission="'sales:create'" pButton routerLink="/pos" label="Vender" icon="pi pi-shopping-cart"></a>
-      <a *hasPermission="'cash:operate'" pButton routerLink="/app/caja" label="Mi caja" icon="pi pi-wallet"
-         severity="secondary" [outlined]="true"></a>
-      <a *hasPermission="'reports:read'" pButton routerLink="/app/reportes" label="Reportes" icon="pi pi-chart-bar"
-         severity="secondary" [outlined]="true"></a>
-    </app-page-header>
+    <app-page-header [title]="title" [description]="'Estás en ' + (auth.currentTenant()?.tradeName ?? 'tu negocio') + '.'" />
+
+    @if (actions().length > 0) {
+      <nav data-tour="quick-actions" aria-label="Accesos rápidos" class="mb-5">
+        <ul class="grid gap-3 grid-cols-2 sm:grid-cols-3 xl:grid-cols-6">
+          @for (a of actions(); track a.route; let first = $first) {
+            <li>
+              <a [routerLink]="a.route" class="action-card" [class.action-card--primary]="first">
+                <i [class]="a.icon + ' text-xl'" aria-hidden="true"></i>
+                <span class="font-semibold">{{ a.label }}</span>
+                <span class="text-xs action-hint">{{ a.hint }}</span>
+              </a>
+            </li>
+          }
+        </ul>
+      </nav>
+    }
+
+    <app-first-steps class="block mb-5" />
 
     <!-- Las gráficas (Chart.js) se cargan aparte, después de pintar la página. -->
     @if (auth.hasPermission('reports:read')) {
@@ -43,20 +58,75 @@ import { StockAlertsComponent } from '../dashboard/stock-alerts.component';
       </div>
     }
 
-    <section class="card p-4 mt-4">
-      <h2 class="font-medium mb-2">Tus permisos en este negocio</h2>
-      <ul class="flex flex-wrap gap-2">
-        @for (permission of permissions(); track permission) {
-          <li class="text-xs font-mono bg-surface-alt rounded px-2 py-1">{{ permission }}</li>
-        }
-      </ul>
+    <section class="card p-4 mt-4" aria-labelledby="capabilities-title">
+      <h2 id="capabilities-title" class="font-semibold">Lo que puedes hacer en este negocio</h2>
+      @if (capabilities().length > 0) {
+        <p class="text-sm mt-1">Puedes {{ capabilitiesText() }}.</p>
+      } @else {
+        <p class="text-sm mt-1">Aún no tienes permisos en este negocio. Pide a quien lo administra que te asigne un rol.</p>
+      }
+      @if (auth.hasPermission('roles:manage')) {
+        <details class="mt-2">
+          <summary class="text-sm text-brand cursor-pointer min-h-11 inline-flex items-center">
+            Ver el detalle técnico de tus permisos
+          </summary>
+          <ul class="flex flex-wrap gap-2 mt-1">
+            @for (permission of permissions(); track permission) {
+              <li class="text-xs font-mono bg-surface-alt rounded px-2 py-1">{{ permission }}</li>
+            }
+          </ul>
+          <a routerLink="/app/roles" class="inline-block mt-2 text-sm text-brand hover:underline">Administrar roles y permisos</a>
+        </details>
+      }
     </section>
+  `,
+  styles: `
+    .action-card {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      height: 100%;
+      min-height: 6rem;
+      padding: 1rem;
+      border-radius: 0.75rem;
+      border: 1px solid var(--surface-border);
+      background: var(--surface);
+      box-shadow: var(--elevation-card);
+      color: var(--text);
+      text-decoration: none;
+      transition: border-color 150ms, transform 150ms;
+    }
+    .action-card .pi {
+      color: var(--brand);
+    }
+    .action-card:hover {
+      border-color: var(--brand);
+    }
+    .action-card:active {
+      transform: scale(0.98);
+    }
+    .action-hint {
+      color: var(--text-muted);
+    }
+    .action-card--primary {
+      background: var(--brand);
+      border-color: var(--brand);
+      color: var(--brand-contrast);
+    }
+    .action-card--primary .pi,
+    .action-card--primary .action-hint {
+      color: var(--brand-contrast);
+    }
+    .action-card--primary:hover {
+      background: var(--brand-hover);
+    }
   `,
 })
 export class HomeComponent {
   protected readonly auth = inject(AuthService);
-
-  protected permissions(): string[] {
-    return [...this.auth.permissions()].sort();
-  }
+  protected readonly title = `${greeting()}${firstName(this.auth.user()?.fullName) ? ', ' + firstName(this.auth.user()?.fullName) : ''}`;
+  protected readonly actions = computed(() => quickActions(this.auth.permissions()));
+  protected readonly capabilities = computed(() => describeCapabilities(this.auth.permissions()));
+  protected readonly capabilitiesText = computed(() => joinSpanish(this.capabilities()));
+  protected readonly permissions = computed(() => [...this.auth.permissions()].sort());
 }

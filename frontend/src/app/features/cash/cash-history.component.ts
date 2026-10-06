@@ -1,10 +1,11 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { CashReport, CashSession, PageResponse } from '../../core/api/api.models';
 import { CashApi, CashSessionFilters } from '../../core/api/cash.api';
+import { AuthService } from '../../core/auth/auth.service';
 import { formatCop } from '../../shared/money';
 import { PageHeaderComponent } from '../../shared/page-header.component';
 import { cashDifferenceStatus } from '../../shared/status';
@@ -12,20 +13,27 @@ import { DataTableComponent } from '../../shared/table/data-table.component';
 import { ColumnDef, TableQuery, initialQuery } from '../../shared/table/table';
 import { CashReportComponent } from './cash-report.component';
 import { differenceLabel } from './labels';
+import { TermComponent } from '../../shared/help/term.component';
 
 /** Historial de sesiones de caja con su informe (permiso cash:read). */
 @Component({
   selector: 'app-cash-history',
-  imports: [FormsModule, RouterLink, ButtonModule, DialogModule, DataTableComponent, CashReportComponent,
+  imports: [TermComponent, FormsModule, RouterLink, ButtonModule, DialogModule, DataTableComponent, CashReportComponent,
     PageHeaderComponent],
   template: `
     <app-page-header title="Historial de caja" description="Aperturas y cierres de todas las cajas, con su arqueo.">
       <a pButton routerLink="/app/caja" label="Mi caja" icon="pi pi-wallet" severity="secondary" [outlined]="true"></a>
     </app-page-header>
 
+    <p class="text-sm text-muted -mt-3 mb-4">
+      La columna <app-term term="arqueo">Arqueo</app-term> dice si cada caja cerró cuadrada, con faltante o con sobrante.
+    </p>
+
     <app-data-table [columns]="columns" [page]="page()" [loading]="loading()" [trackBy]="trackById"
                     caption="Sesiones de caja" emptyIcon="pi pi-history" emptyTitle="No hay sesiones de caja"
                     emptyMessage="Cuando alguien abra una caja, aparecerá aquí con su informe."
+                    [emptyActionLabel]="canOperate ? 'Ir a Mi caja' : null" emptyActionIcon="pi pi-wallet"
+                    (emptyAction)="goToCash()"
                     (queryChange)="load($event)">
       <label tableToolbar class="flex items-center gap-2 text-sm">
         <span>Estado</span>
@@ -57,6 +65,8 @@ import { differenceLabel } from './labels';
 })
 export class CashHistoryComponent implements OnInit {
   private readonly cash = inject(CashApi);
+  private readonly router = inject(Router);
+  protected readonly canOperate = inject(AuthService).hasPermission('cash:operate');
 
   protected readonly page = signal<PageResponse<CashSession> | null>(null);
   protected readonly loading = signal(true);
@@ -81,6 +91,10 @@ export class CashHistoryComponent implements OnInit {
       statusLabel: (s) => arqueoText(s.difference),
     },
   ];
+
+  goToCash(): void {
+    void this.router.navigate(['/app/caja']);
+  }
 
   ngOnInit(): void {
     this.load(this.query);

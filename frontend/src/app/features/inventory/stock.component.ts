@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -14,13 +14,14 @@ import { PageHeaderComponent } from '../../shared/page-header.component';
 import { StatusKey } from '../../shared/status';
 import { DataTableComponent } from '../../shared/table/data-table.component';
 import { ColumnDef, TableQuery, initialQuery, toPageQuery } from '../../shared/table/table';
+import { TermComponent } from '../../shared/help/term.component';
 
 const STOCK_STATUS: Record<StockStatus, StatusKey> = { LOW: 'stock-low', OK: 'stock-ok', OVER: 'stock-over' };
 
 /** Existencias por sucursal, alertas de mínimo y niveles mínimo/máximo. */
 @Component({
   selector: 'app-stock',
-  imports: [FormsModule, RouterLink, ButtonModule, DialogModule, InputTextModule, DataTableComponent, PageHeaderComponent],
+  imports: [TermComponent, FormsModule, RouterLink, ButtonModule, DialogModule, InputTextModule, DataTableComponent, PageHeaderComponent],
   template: `
     <app-page-header title="Existencias" description="Cuánto hay de cada producto en cada sucursal y cuánto vale.">
       <a pButton routerLink="/app/inventario/movimientos" label="Movimientos" icon="pi pi-arrow-right-arrow-left"
@@ -45,6 +46,8 @@ const STOCK_STATUS: Record<StockStatus, StatusKey> = { LOW: 'stock-low', OK: 'st
                     initialSort="name,asc" caption="Existencias por producto" searchPlaceholder="Buscar por nombre, SKU o código"
                     emptyIcon="pi pi-warehouse" emptyTitle="No hay productos con control de inventario"
                     emptyMessage="Los productos que marques con “controla inventario” aparecen aquí con su existencia."
+                    [emptyActionLabel]="canManageProducts ? 'Ir a productos' : null" emptyActionIcon="pi pi-box"
+                    (emptyAction)="goToProducts()"
                     (queryChange)="load($event)">
       <label tableToolbar class="flex items-center gap-2 text-sm">
         <span class="sr-only">Sucursal</span>
@@ -75,8 +78,8 @@ const STOCK_STATUS: Record<StockStatus, StatusKey> = { LOW: 'stock-low', OK: 'st
           <input pInputText type="number" min="0" [(ngModel)]="maxStock" />
         </label>
       </div>
-      <p class="text-xs text-muted mt-2">Con mínimo, recibes una alerta cuando la existencia llega a ese valor. Deja vacío
-        para no usar alerta.</p>
+      <p class="text-xs text-muted mt-2">Con una <app-term term="stock-minimo">existencia mínima</app-term>, recibes una
+        alerta cuando la existencia llega a ese valor. Deja vacío para no usar alerta.</p>
       <div class="flex justify-end gap-2 mt-4">
         <p-button label="Cancelar" [text]="true" severity="secondary" (onClick)="levelsOpen = false" />
         <p-button label="Guardar" icon="pi pi-check" (onClick)="saveLevels()" />
@@ -89,6 +92,8 @@ export class StockComponent implements OnInit {
   private readonly organization = inject(OrganizationApi);
   private readonly messages = inject(MessageService);
   protected readonly canAdjust = inject(AuthService).hasPermission('inventory:adjust');
+  protected readonly canManageProducts = inject(AuthService).hasPermission('products:manage');
+  private readonly router = inject(Router);
 
   protected readonly q = formatQuantity;
   protected readonly branches = signal<Branch[]>([]);
@@ -112,6 +117,10 @@ export class StockComponent implements OnInit {
     { header: 'Valor', cell: (r) => r.stockValue, kind: 'money' },
     { header: 'Estado', cell: (r) => STOCK_STATUS[r.status], kind: 'status' },
   ];
+
+  goToProducts(): void {
+    void this.router.navigate(['/app/productos']);
+  }
 
   ngOnInit(): void {
     this.organization.branches({ page: 0, size: 100, sort: 'code,asc' }).subscribe((p) => {

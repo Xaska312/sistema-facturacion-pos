@@ -135,3 +135,8 @@ POS (UX-4): `features/pos/pos.component` orquesta carrito, cobro, tiquete, atajo
 `open-cash` (apertura guiada) son presentacionales o de una sola consulta. El cálculo vive en `sale-math.ts`
 (totales, pagos, `stepQuantity`, `stockShortages`, `paymentsMissingReference`). `core/network/online.service` expone la
 conexión del navegador.
+
+Ayudas (UX-5): `shared/help` (glosario y `app-term`, consejos por ruta en `screen-help.ts` y `app-help-panel`, que el
+shell muestra en un cajón) y `shared/tour` (recorrido guiado: `TourService` con el estado y lo ya visto, y
+`app-tour-overlay` en la raíz de la app; cada pantalla define sus pasos y marca sus elementos con `data-tour`). Los
+primeros pasos del inicio están en `features/onboarding`.

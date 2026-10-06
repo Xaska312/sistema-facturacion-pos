@@ -6,6 +6,7 @@ import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
+import { SkeletonModule } from 'primeng/skeleton';
 import {
   CashMovement,
   CashReport,
@@ -24,11 +25,12 @@ import { DataTableComponent } from '../../shared/table/data-table.component';
 import { ColumnDef } from '../../shared/table/table';
 import { CashReportComponent } from './cash-report.component';
 import { CASH_MOVEMENT_LABEL } from './labels';
+import { TermComponent } from '../../shared/help/term.component';
 
 /** Mi caja: abrir con base, registrar ingresos/egresos/retiros y cerrar con arqueo ciego. */
 @Component({
   selector: 'app-cash',
-  imports: [FormsModule, RouterLink, DatePipe, ButtonModule, DialogModule, InputTextModule, HasPermissionDirective,
+  imports: [TermComponent, SkeletonModule, FormsModule, RouterLink, DatePipe, ButtonModule, DialogModule, InputTextModule, HasPermissionDirective,
     CashReportComponent, PageHeaderComponent, DataTableComponent, CellTemplateDirective],
   template: `
     <app-page-header title="Mi caja" description="Abre tu caja con la base de efectivo, registra ingresos o retiros y ciérrala al final del turno.">
@@ -37,7 +39,7 @@ import { CASH_MOVEMENT_LABEL } from './labels';
     </app-page-header>
 
     @if (loading()) {
-      <p class="text-muted">Cargando…</p>
+      <div class="card p-4" aria-busy="true" aria-label="Cargando tu caja"><p-skeleton height="5rem" /></div>
     } @else {
     @if (session(); as s) {
       <section class="card p-4 mb-4">
@@ -68,7 +70,8 @@ import { CASH_MOVEMENT_LABEL } from './labels';
       </app-data-table>
     } @else {
       <section class="card p-4">
-        <p class="mb-3">No tienes una caja abierta. Elige la caja y cuenta la base de efectivo.</p>
+        <p class="mb-3">No tienes una caja abierta. Elige la caja y cuenta la
+          <app-term term="base-efectivo">base de efectivo</app-term>.</p>
         @if (registers().length === 0) {
           <p class="text-sm text-muted">No hay cajas disponibles en tus sucursales.</p>
         }
@@ -122,8 +125,9 @@ import { CASH_MOVEMENT_LABEL } from './labels';
 
     <p-dialog header="Cerrar caja" [(visible)]="closeOpen" [modal]="true" [style]="{ width: '28rem' }">
       <p class="text-sm text-muted mb-3">
-        Cuenta el efectivo que hay en la caja (billetes y monedas) y escribe el total. El sistema calcula si hay
-        faltante o sobrante.
+        Cuenta el efectivo que hay en la caja (billetes y monedas) y escribe el total. Es un
+        <app-term term="cierre-ciego">cierre ciego</app-term>: no ves cuánto debería haber. Con lo que cuentes se
+        hace el <app-term term="arqueo">arqueo</app-term> y verás si cuadra, falta o sobra.
       </p>
       <div class="flex flex-col gap-3">
         <label class="flex flex-col gap-1">

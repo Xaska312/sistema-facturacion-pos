@@ -92,4 +92,24 @@ describe('ShellComponent', () => {
     expect(crumbs).toEqual(['Inicio', 'Configuración', 'Sucursales']);
     expect(element.querySelector('[aria-current="page"]')?.textContent?.trim()).toBe('Sucursales');
   });
+
+  it('ofrece la ayuda de cada pantalla con sus consejos', async () => {
+    const fixture = TestBed.createComponent(ShellComponent);
+    fixture.detectChanges();
+    await TestBed.inject(Router).navigateByUrl('/app/sucursales');
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+    const help = element.querySelector('button[aria-label="Ayuda de esta pantalla"]') as HTMLButtonElement;
+    expect(help).not.toBeNull();
+    help.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(document.body.textContent).toContain('Ayuda: Sucursales');
+    expect(document.body.textContent).toContain('Crea una sucursal por cada local');
+
+    // Cerrar el panel y esperar su animación antes de destruir el módulo de pruebas.
+    await TestBed.inject(Router).navigateByUrl('/app');
+    fixture.detectChanges();
+    await fixture.whenStable();
+  });
 });

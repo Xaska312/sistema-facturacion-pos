@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
@@ -12,6 +12,7 @@ import { ChartComponent } from '../../shared/charts/chart.component';
 import { EmptyStateComponent } from '../../shared/empty-state.component';
 import { PeriodFilterComponent } from '../../shared/period-filter.component';
 import { StatCardComponent } from '../../shared/stat-card.component';
+import { TourService } from '../../shared/tour/tour.service';
 import {
   DateRange,
   PeriodSelection,
@@ -23,6 +24,7 @@ import {
   resolvePeriod,
 } from '../reports/periods';
 import { ChartData, KpiCard, buildKpis, dayChart, hourChart, paymentChart, topProductsChart } from './dashboard-data';
+import { DASHBOARD_TOUR } from './dashboard-tour';
 import { StockAlertsComponent } from './stock-alerts.component';
 
 interface DashboardView {
@@ -48,7 +50,7 @@ interface DashboardView {
   imports: [RouterLink, ButtonModule, SkeletonModule, PeriodFilterComponent, StatCardComponent, ChartComponent,
     EmptyStateComponent, StockAlertsComponent],
   template: `
-    <app-period-filter [selection]="selection()" [branches]="branches()" [showBranch]="branches().length > 1"
+    <app-period-filter data-tour="period" [selection]="selection()" [branches]="branches()" [showBranch]="branches().length > 1"
                        (selectionChange)="select($event)" />
 
     <div class="mt-4 flex flex-col gap-4" [attr.aria-busy]="loading()">
@@ -61,7 +63,7 @@ interface DashboardView {
         </div>
       } @else {
       @if (view(); as v) {
-        <section aria-label="Indicadores" class="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4"
+        <section aria-label="Indicadores" data-tour="kpis" class="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4"
                  [class.opacity-60]="loading()">
           @for (k of v.kpis; track k.label) {
             <app-stat-card [label]="k.label" [value]="k.value" [icon]="k.icon" [change]="k.change"
@@ -70,7 +72,7 @@ interface DashboardView {
         </section>
 
         <div class="grid gap-4 lg:grid-cols-3" [class.opacity-60]="loading()">
-          <section class="card p-4 lg:col-span-2 min-w-0" aria-labelledby="main-chart-title">
+          <section class="card p-4 lg:col-span-2 min-w-0" aria-labelledby="main-chart-title" data-tour="main-chart">
             <header class="flex flex-wrap items-center justify-between gap-2 mb-3">
               <h2 id="main-chart-title" class="font-semibold">{{ mainTitle() }}</h2>
               @if (v.hours) {
@@ -129,7 +131,7 @@ interface DashboardView {
             }
           </section>
 
-          <app-stock-alerts class="min-w-0" [branchId]="selection().branchId" />
+          <app-stock-alerts class="min-w-0" data-tour="stock-alerts" [branchId]="selection().branchId" />
         </div>
 
         <div>
@@ -160,6 +162,9 @@ export class DashboardComponent {
   private readonly organization = inject(OrganizationApi);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly tours = inject(TourService);
+  private tourOffered = false;
+  private tourTimer: ReturnType<typeof setTimeout> | null = null;
   protected readonly canSell = inject(AuthService).hasPermission('sales:create');
 
   protected readonly selection = signal<PeriodSelection>({ period: 'today', from: null, to: null, branchId: null });
@@ -179,6 +184,17 @@ export class DashboardComponent {
   });
 
   constructor() {
+    inject(DestroyRef).onDestroy(() => {
+      if (this.tourTimer !== null) {
+        clearTimeout(this.tourTimer);
+      }
+    });
+    // "Ver recorrido guiado" desde la ayuda o el menú de usuario.
+    effect(() => {
+      if (this.tours.replayRequests()?.id === DASHBOARD_TOUR.id && this.view()) {
+        this.tours.takeReplay(DASHBOARD_TOUR);
+      }
+    });
     this.organization.branches({ page: 0, size: 100, sort: 'code,asc' })
       .subscribe((p) => this.branches.set(p.content.filter((b) => b.active)));
     this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe((params) => {
@@ -236,6 +252,7 @@ export class DashboardComponent {
           payments: paymentChart(r.payments),
         });
         this.loading.set(false);
+        this.offerTour();
       },
       error: () => {
         if (seq === this.requestSeq) {
@@ -244,6 +261,14 @@ export class DashboardComponent {
         }
       },
     });
+  }
+
+  /** La primera vez que se ve el tablero con datos, después de pintarlo (los pasos señalan sus partes). */
+  private offerTour(): void {
+    if (!this.tourOffered) {
+      this.tourOffered = true;
+      this.tourTimer = setTimeout(() => this.tours.offer(DASHBOARD_TOUR), 400);
+    }
   }
 
   goSell(): void {
