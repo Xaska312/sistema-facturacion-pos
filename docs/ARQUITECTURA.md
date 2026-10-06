@@ -117,8 +117,8 @@ Los colores viven solo en `frontend/src/styles.css` como tokens CSS (`--surface`
 `--warning`, `--danger`…) con su versión oscura bajo `.app-dark`. Tailwind los expone con `@theme`
 (`bg-surface`, `text-muted`, `text-brand`, `bg-danger-soft`… y la utilidad `card`) y quita sus paletas propias;
 PrimeNG usa la misma paleta con el preset `core/theme/app-preset.ts` (`definePreset(Aura, …)`,
-`darkModeSelector: '.app-dark'`). `ThemeService` guarda claro/oscuro/sistema en `localStorage` y `index.html` aplica la
-clase antes del primer render. `tools/check-colors.mjs` (en CI) rechaza colores literales en `src/app`.
+`darkModeSelector: '.app-dark'`). `ThemeService` guarda claro/oscuro/sistema en `localStorage` y `public/theme-init.js`
+(cargado desde `index.html`, sin scripts en línea por la CSP) aplica la clase antes del primer render. `tools/check-colors.mjs` (en CI) rechaza colores literales en `src/app`.
 
 El `ShellComponent` arma la estructura: menú lateral por permisos (`features/shell/menu.ts`, contraíble a iconos y
 cajón en móvil), barra superior con migas de pan (`breadcrumbs.ts`, derivadas de la URL y del menú), tema y menú de
@@ -140,3 +140,11 @@ Ayudas (UX-5): `shared/help` (glosario y `app-term`, consejos por ruta en `scree
 shell muestra en un cajón) y `shared/tour` (recorrido guiado: `TourService` con el estado y lo ya visto, y
 `app-tour-overlay` en la raíz de la app; cada pantalla define sus pasos y marca sus elementos con `data-tour`). Los
 primeros pasos del inicio están en `features/onboarding`.
+
+## Producción
+Un servidor con `docker compose` (`deploy/docker-compose.prod.yml`): **web** (Caddy con la app Angular compilada:
+HTTPS automático, cabeceras de seguridad y `/api/*` → backend en el mismo dominio), **backend**, **postgres-db** y
+**backup** (pg_dump diario cifrado a Google Drive con rclone y prueba de restauración semanal). Solo Caddy publica
+puertos. El backend toma la IP real de `X-Forwarded-For` (`FORWARD_HEADERS_STRATEGY=native`) para los límites de
+intentos y la auditoría, y se conecta con un usuario de PostgreSQL sin privilegios de superusuario. Las imágenes se
+publican en ghcr.io desde GitHub Actions. Guía: [`DESPLIEGUE.md`](DESPLIEGUE.md); decisiones 156–167.

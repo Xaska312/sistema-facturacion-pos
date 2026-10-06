@@ -22,3 +22,7 @@ node_modules/
 # Resultados de Playwright (e2e)
 test-results/
 playwright-report/
+
+# Producción: acceso a Google Drive y claves de cifrado de los respaldos
+deploy/rclone/*
+!deploy/rclone/README.md
