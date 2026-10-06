@@ -23,6 +23,7 @@ public final class CsvWriter {
 
     private final StringBuilder out = new StringBuilder();
     private final ZoneId zone;
+    private int rows;
 
     /**
      * @param zone zona horaria del negocio para escribir fechas y horas
@@ -39,7 +40,13 @@ public final class CsvWriter {
             out.append(cell(values[i]));
         }
         out.append("\r\n");
+        rows++;
         return this;
+    }
+
+    /** Filas escritas sin contar el encabezado (la primera). */
+    public int dataRows() {
+        return Math.max(rows - 1, 0);
     }
 
     public byte[] toBytes() {

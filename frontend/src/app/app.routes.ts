@@ -82,6 +82,13 @@ export const routes: Routes = [
         loadComponent: () => import('./features/reports/reports.component').then((m) => m.ReportsComponent),
       },
       {
+        path: 'auditoria',
+        title: 'Auditoría',
+        canActivate: [permissionGuard],
+        data: { permission: 'audit:read' },
+        loadComponent: () => import('./features/audit/audit.component').then((m) => m.AuditComponent),
+      },
+      {
         path: 'productos',
         title: 'Productos',
         canActivate: [permissionGuard],

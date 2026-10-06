@@ -18,6 +18,7 @@ const RULES: readonly CapabilityRule[] = [
   { permission: 'cash:read', text: 'ver el historial de caja' },
   { permission: 'cash:audit', text: 'ver las diferencias de los arqueos' },
   { permission: 'reports:read', text: 'ver el tablero y los reportes' },
+  { permission: 'audit:read', text: 'consultar la auditoría (quién hizo qué y cuándo)' },
   { permission: 'products:manage', text: 'administrar productos, categorías y precios' },
   { permission: 'products:read', text: 'consultar productos', coveredBy: 'products:manage' },
   { permission: 'inventory:adjust', text: 'registrar saldos iniciales, ajustes y conteos' },

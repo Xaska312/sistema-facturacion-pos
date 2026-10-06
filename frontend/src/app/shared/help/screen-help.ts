@@ -61,6 +61,15 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     ],
     terms: ['medios-pago', 'costo-promedio'],
   },
+  '/app/auditoria': {
+    title: 'Auditoría',
+    tips: [
+      'Cada fila es algo que alguien hizo en el negocio: vender, anular, abrir o cerrar caja, cambiar precios o permisos, entrar al sistema.',
+      'Filtra por fechas, usuario o módulo; la búsqueda encuentra nombres, números de venta y códigos dentro de los datos.',
+      'En "Ver", lo resaltado es lo que cambió (antes y después).',
+      'Los registros no se pueden modificar ni borrar, y exportar la auditoría o un reporte también queda registrado.',
+    ],
+  },
   '/app/productos': {
     title: 'Productos',
     tips: [

@@ -141,6 +141,13 @@ shell muestra en un cajón) y `shared/tour` (recorrido guiado: `TourService` con
 `app-tour-overlay` en la raíz de la app; cada pantalla define sus pasos y marca sus elementos con `data-tour`). Los
 primeros pasos del inicio están en `features/onboarding`.
 
+## Auditoría
+Dos registros, ambos solo inserción (triggers): el `audit_log` de cada negocio (cambios, ventas, cajas, entradas y
+salidas del negocio, exportaciones; pantalla **Auditoría** con `audit:read`) y `platform.security_events`
+(inicios de sesión, intentos fallidos, bloqueos, límites superados, negocios creados; solo administradores de
+plataforma). Los eventos de error se guardan en la transacción del caso de uso, que no se revierte con ese error
+(sin una segunda conexión por intento). Decisiones 168–178.
+
 ## Producción
 Un servidor con `docker compose` (`deploy/docker-compose.prod.yml`): **web** (Caddy con la app Angular compilada:
 HTTPS automático, cabeceras de seguridad y `/api/*` → backend en el mismo dominio), **backend**, **postgres-db** y

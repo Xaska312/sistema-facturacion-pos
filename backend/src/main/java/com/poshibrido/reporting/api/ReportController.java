@@ -1,5 +1,6 @@
 package com.poshibrido.reporting.api;
 
+import com.poshibrido.audit.application.AuditLogger;
 import com.poshibrido.reporting.application.ReportFilter;
 import com.poshibrido.reporting.application.ReportPeriod;
 import com.poshibrido.reporting.application.ReportQueryService;
@@ -30,7 +31,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -44,6 +47,7 @@ import java.util.UUID;
 public class ReportController {
 
     private final ReportQueryService reports;
+    private final AuditLogger audit;
 
     // ---------------------------------------------------------------- JSON
 
@@ -253,7 +257,8 @@ public class ReportController {
                     r.value());
         }
         w.row("Total", null, null, null, null, null, null, valuation.totalValue());
-        return file("inventario-valorizado_" + reports.today(), w);
+        // Sin contar la fila de total.
+        return file("inventario-valorizado_" + reports.today(), w, valuation.rows().size());
     }
 
     // ---------------------------------------------------------------- apoyo
@@ -274,11 +279,16 @@ public class ReportController {
         return w;
     }
 
-    private static ResponseEntity<byte[]> csv(String name, ReportPeriod period, CsvWriter writer) {
-        return file(name + "_" + period.label(), writer);
+    private ResponseEntity<byte[]> csv(String name, ReportPeriod period, CsvWriter writer) {
+        return file(name + "_" + period.label(), writer, writer.dataRows());
     }
 
-    private static ResponseEntity<byte[]> file(String baseName, CsvWriter writer) {
+    /** Descarga del CSV. Cada exportación queda en la auditoría (REPORT_EXPORTED): datos que salen del sistema. */
+    private ResponseEntity<byte[]> file(String baseName, CsvWriter writer, int rows) {
+        Map<String, Object> exported = new LinkedHashMap<>();
+        exported.put("file", baseName + ".csv");
+        exported.put("rows", rows);
+        audit.logDetached("REPORT_EXPORTED", "report", null, exported);
         ContentDisposition disposition = ContentDisposition.attachment()
                 .filename(baseName + ".csv", StandardCharsets.UTF_8)
                 .build();
