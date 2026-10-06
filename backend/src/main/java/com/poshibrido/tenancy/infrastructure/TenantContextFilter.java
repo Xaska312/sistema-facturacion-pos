@@ -1,6 +1,6 @@
 package com.poshibrido.tenancy.infrastructure;
 
-import com.poshibrido.shared.error.ForbiddenException;
+import com.poshibrido.shared.error.TenantUnavailableException;
 import com.poshibrido.tenancy.application.TenantApi;
 import com.poshibrido.tenancy.application.TenantRef;
 import jakarta.servlet.FilterChain;
@@ -52,8 +52,7 @@ public class TenantContextFilter extends OncePerRequestFilter {
             }
             Optional<TenantRef> tenant = parse(tid).flatMap(tenantApi::findActive);
             if (tenant.isEmpty()) {
-                exceptionResolver.resolveException(request, response, null,
-                        new ForbiddenException("El negocio no está disponible."));
+                exceptionResolver.resolveException(request, response, null, new TenantUnavailableException());
                 return;
             }
             TenantContext.set(tenant.get());

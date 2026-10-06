@@ -2,6 +2,7 @@ package com.poshibrido.tenancy.api;
 
 import com.poshibrido.shared.security.CurrentActor;
 import com.poshibrido.tenancy.application.CreateTenantCommand;
+import com.poshibrido.tenancy.application.TenantAdministrationService;
 import com.poshibrido.tenancy.application.TenantApi;
 import com.poshibrido.tenancy.application.TenantProvisioningService;
 import com.poshibrido.tenancy.application.TenantSummary;
@@ -30,6 +31,7 @@ public class TenantController {
 
     private final TenantApi tenantApi;
     private final TenantProvisioningService provisioning;
+    private final TenantAdministrationService administration;
 
     @GetMapping
     public List<TenantSummary> myTenants() {
@@ -46,5 +48,16 @@ public class TenantController {
     @PostMapping("/{tenantId}/retry-provisioning")
     public TenantSummary retry(@PathVariable UUID tenantId) {
         return provisioning.retry(CurrentActor.requireUserId(), tenantId);
+    }
+
+    /**
+     * El dueño cierra ("elimina") su negocio: queda suspendido con todos sus datos y se cierran las sesiones de sus
+     * miembros. Solo el administrador de plataforma lo puede reactivar.
+     */
+    @PostMapping("/{tenantId}/close")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void close(@PathVariable UUID tenantId, @Valid @RequestBody CloseTenantRequest request) {
+        administration.closeByOwner(tenantId, CurrentActor.requireUserId(), request.confirmation(),
+                request.password(), request.reason());
     }
 }

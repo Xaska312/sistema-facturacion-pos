@@ -8,6 +8,7 @@ import com.poshibrido.identity.infrastructure.UserRepository;
 import com.poshibrido.shared.error.ForbiddenException;
 import com.poshibrido.shared.error.NotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +26,7 @@ public class IdentityQueryService implements UserApi, MembershipApi {
 
     private final UserRepository users;
     private final MembershipRepository memberships;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional(readOnly = true)
@@ -50,6 +52,15 @@ public class IdentityQueryService implements UserApi, MembershipApi {
     @Transactional(readOnly = true)
     public Optional<UserSummary> findByEmail(String email) {
         return users.findByEmail(User.normalizeEmail(email)).map(u -> UserSummary.of(u));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean passwordMatches(UUID userId, String rawPassword) {
+        if (rawPassword == null || rawPassword.isEmpty()) {
+            return false;
+        }
+        return users.findById(userId).map(u -> passwordEncoder.matches(rawPassword, u.getPasswordHash())).orElse(false);
     }
 
     @Override

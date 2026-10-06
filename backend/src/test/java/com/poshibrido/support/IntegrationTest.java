@@ -1,5 +1,7 @@
 package com.poshibrido.support;
 
+import com.poshibrido.identity.application.PlatformAdmins;
+import com.poshibrido.support.TestApi.Session;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -53,6 +55,9 @@ public abstract class IntegrationTest {
         registry.add("app.security.jwt-secret", () -> "clave-de-pruebas-con-mas-de-32-bytes-0123456789");
         registry.add("app.rate-limit.login-per-minute", () -> "10000");
         registry.add("app.rate-limit.register-per-minute", () -> "10000");
+        registry.add("app.rate-limit.api-per-minute", () -> "100000");
+        registry.add("app.rate-limit.heavy-per-minute", () -> "100000");
+        registry.add("app.platform.admin-emails", () -> TestApi.PLATFORM_ADMIN_EMAIL);
     }
 
     @Autowired
@@ -60,6 +65,9 @@ public abstract class IntegrationTest {
 
     @Autowired
     private DataSource dataSource;
+
+    @Autowired
+    private PlatformAdmins platformAdmins;
 
     protected MockMvc mvc;
     protected TestApi api;
@@ -70,5 +78,15 @@ public abstract class IntegrationTest {
         mvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
         api = new TestApi(mvc);
         jdbc = new JdbcTemplate(dataSource);
+    }
+
+    /**
+     * Sesión del administrador de plataforma: registra la cuenta configurada (si falta), aplica
+     * {@code PLATFORM_ADMIN_EMAILS} como al arrancar el backend e inicia sesión.
+     */
+    protected Session platformAdmin() throws Exception {
+        api.registerPlatformAdmin();
+        platformAdmins.syncConfiguredAdmins();
+        return api.login(TestApi.PLATFORM_ADMIN_EMAIL);
     }
 }

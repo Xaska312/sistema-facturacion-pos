@@ -26,6 +26,8 @@ public class TestApi {
 
     public static final String PASSWORD = "ClaveSegura123";
     public static final String REFRESH_COOKIE = "pos_refresh";
+    /** Administrador de plataforma de los tests (app.platform.admin-emails en IntegrationTest). */
+    public static final String PLATFORM_ADMIN_EMAIL = "admin@plataforma.test";
 
     private final MockMvc mvc;
 
@@ -72,6 +74,22 @@ public class TestApi {
 
     public Session login(String email) throws Exception {
         return session(loginRaw(email, PASSWORD).andExpect(status().isOk()).andReturn());
+    }
+
+    /**
+     * Registra la cuenta del administrador de plataforma si aún no existe (la base es compartida entre tests).
+     * El permiso se aplica con {@code PlatformAdmins.syncConfiguredAdmins()}: ver {@code IntegrationTest#platformAdmin}.
+     */
+    public void registerPlatformAdmin() throws Exception {
+        int status = mvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"%s","password":"%s","fullName":"Soporte de la plataforma"}
+                                """.formatted(PLATFORM_ADMIN_EMAIL, PASSWORD)))
+                .andReturn().getResponse().getStatus();
+        if (status != 201 && status != 409) {
+            throw new AssertionError("No se pudo registrar el administrador de plataforma: " + status);
+        }
     }
 
     public Session registerAndLogin(String prefix) throws Exception {

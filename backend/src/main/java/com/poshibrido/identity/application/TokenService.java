@@ -33,6 +33,7 @@ public class TokenService {
 
     private final JwtEncoder encoder;
     private final AuthProperties properties;
+    private final PlatformAdmins platformAdmins;
 
     public IssuedToken platformToken(User user) {
         return encode(baseClaims(user).claim(CLAIM_TYPE, TYPE_PLATFORM));
@@ -53,7 +54,7 @@ public class TokenService {
                 .id(UUID.randomUUID().toString())
                 .issuedAt(now)
                 .expiresAt(now.plus(properties.accessTokenTtl()));
-        if (user.isPlatformAdmin()) {
+        if (platformAdmins.isAdmin(user)) {
             builder.claim(CLAIM_PLATFORM_ADMIN, true);
         }
         return builder;

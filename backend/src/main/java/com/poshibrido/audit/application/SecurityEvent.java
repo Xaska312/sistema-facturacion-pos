@@ -22,5 +22,12 @@ public enum SecurityEvent {
     /** Una IP superó el límite de intentos ({@code details.path}). Uno por IP y ventana de un minuto. */
     RATE_LIMITED,
     TENANT_CREATED,
-    TENANT_PROVISIONING_FAILED
+    TENANT_PROVISIONING_FAILED,
+    /** El administrador de plataforma suspendió el negocio ({@code details.reason}). */
+    TENANT_SUSPENDED,
+    TENANT_REACTIVATED,
+    /** El dueño cerró ("eliminó") su negocio: queda suspendido y solo el administrador lo reactiva. */
+    TENANT_CLOSED,
+    /** Intento de cerrar un negocio con la contraseña equivocada (posible sesión robada). */
+    TENANT_CLOSE_DENIED
 }

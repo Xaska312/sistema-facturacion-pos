@@ -70,6 +70,10 @@ services:
       OPENAPI_ENABLED: "false"
       # La IP real del cliente viene de Caddy (X-Forwarded-For): límites de intentos y auditoría por IP real.
       FORWARD_HEADERS_STRATEGY: native
+      # Administradores de plataforma (consola /plataforma), separados por coma.
+      PLATFORM_ADMIN_EMAILS: ${PLATFORM_ADMIN_EMAILS:-}
+      RATE_LIMIT_API: ${RATE_LIMIT_API:-300}
+      RATE_LIMIT_HEAVY: ${RATE_LIMIT_HEAVY:-20}
     depends_on:
       postgres-db:
         condition: service_healthy

@@ -47,13 +47,14 @@ public class AuthService {
     private final AuthProperties properties;
     private final SecurityEventLogger securityEvents;
     private final AuditLogger audit;
+    private final PlatformAdmins platformAdmins;
     /** Hash señuelo para igualar tiempos cuando el correo no existe (evita enumeración de cuentas). */
     private final String dummyHash;
 
     public AuthService(UserRepository users, MembershipRepository memberships, RefreshTokenService refreshTokens,
                        TokenService tokens, PasswordEncoder passwordEncoder, TenantApi tenantApi,
                        AccessApi accessApi, AuthProperties properties, SecurityEventLogger securityEvents,
-                       AuditLogger audit) {
+                       AuditLogger audit, PlatformAdmins platformAdmins) {
         this.users = users;
         this.memberships = memberships;
         this.refreshTokens = refreshTokens;
@@ -64,6 +65,7 @@ public class AuthService {
         this.properties = properties;
         this.securityEvents = securityEvents;
         this.audit = audit;
+        this.platformAdmins = platformAdmins;
         this.dummyHash = passwordEncoder.encode("dummy-password-" + UUID.randomUUID());
     }
 
@@ -77,7 +79,7 @@ public class AuthService {
                 command.fullName(), command.phone()));
         log.info("Usuario registrado {}", user.getId());
         securityEvents.record(SecurityEvent.REGISTERED, user.getId(), email, null, null);
-        return UserSummary.of(user);
+        return summary(user);
     }
 
     /**
@@ -115,7 +117,7 @@ public class AuthService {
         user.registerSuccessfulLogin();
         securityEvents.record(SecurityEvent.LOGIN_SUCCEEDED, user.getId(), user.getEmail(), null, null);
         String refresh = refreshTokens.create(user.getId(), null);
-        return new SessionResult(tokens.platformToken(user), refresh, UserSummary.of(user), null, List.of(),
+        return new SessionResult(tokens.platformToken(user), refresh, summary(user), null, List.of(),
                 tenantApi.listVisibleTo(user.getId()));
     }
 
@@ -139,7 +141,7 @@ public class AuthService {
         securityEvents.record(SecurityEvent.TENANT_ENTERED, userId, user.getEmail(), tenantId, null);
         audit.logIn(access.tenant().schema(), userId, "SESSION_STARTED", "session", userId, null, null);
         return new SessionResult(tokens.tenantToken(user, tenantId, access.permissions()), refresh,
-                UserSummary.of(user), tenantId, access.permissions(), List.of());
+                summary(user), tenantId, access.permissions(), List.of());
     }
 
     /** Rota el refresh token y emite un nuevo access token del mismo tipo (plataforma o negocio). */
@@ -155,7 +157,7 @@ public class AuthService {
             throw new UnauthorizedException(SESSION_EXPIRED);
         }
         if (rotation.tenantId() == null) {
-            return new SessionResult(tokens.platformToken(user), rotation.newRawToken(), UserSummary.of(user),
+            return new SessionResult(tokens.platformToken(user), rotation.newRawToken(), summary(user),
                     null, List.of(), List.of());
         }
         TenantAccess access = resolveTenantAccess(user, rotation.tenantId()).orElse(null);
@@ -164,7 +166,7 @@ public class AuthService {
             throw new UnauthorizedException(SESSION_EXPIRED);
         }
         return new SessionResult(tokens.tenantToken(user, rotation.tenantId(), access.permissions()),
-                rotation.newRawToken(), UserSummary.of(user), rotation.tenantId(), access.permissions(), List.of());
+                rotation.newRawToken(), summary(user), rotation.tenantId(), access.permissions(), List.of());
     }
 
     @Transactional
@@ -182,8 +184,12 @@ public class AuthService {
     @Transactional(readOnly = true)
     public UserSummary currentUser(UUID userId) {
         return users.findById(userId)
-                .map(UserSummary::of)
+                .map(this::summary)
                 .orElseThrow(() -> new UnauthorizedException(SESSION_EXPIRED));
+    }
+
+    private UserSummary summary(User user) {
+        return UserSummary.of(user, platformAdmins.isAdmin(user));
     }
 
     /** Intento de login fallido (la transacción de login no se revierte con sus errores). */

@@ -31,6 +31,7 @@ services:
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:4200}
       REFRESH_COOKIE_SECURE: ${REFRESH_COOKIE_SECURE:-true}
       OPENAPI_ENABLED: ${OPENAPI_ENABLED:-false}
+      PLATFORM_ADMIN_EMAILS: ${PLATFORM_ADMIN_EMAILS:-}
     depends_on:
       postgres-db:
         condition: service_healthy

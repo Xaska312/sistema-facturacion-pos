@@ -18,6 +18,7 @@ describe('ShellComponent', () => {
     permissions,
     user: signal({ id: 'u1', email: 'ana@tienda.test', fullName: 'Ana Pérez', platformAdmin: false }),
     currentTenant: signal({ tradeName: 'Tienda Demo' }),
+    isPlatformAdmin: signal(false),
     hasPermission: (p: string) => permissions().has(p),
     logout: jasmine.createSpy('logout').and.returnValue(of(undefined)),
   };

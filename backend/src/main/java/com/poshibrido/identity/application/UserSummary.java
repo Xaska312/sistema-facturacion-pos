@@ -9,4 +9,9 @@ public record UserSummary(UUID id, String email, String fullName, boolean platfo
     public static UserSummary of(User user) {
         return new UserSummary(user.getId(), user.getEmail(), user.getFullName(), user.isPlatformAdmin());
     }
+
+    /** Con el permiso de plataforma ya resuelto ({@link PlatformAdmins}: base o configuración). */
+    public static UserSummary of(User user, boolean platformAdmin) {
+        return new UserSummary(user.getId(), user.getEmail(), user.getFullName(), platformAdmin);
+    }
 }

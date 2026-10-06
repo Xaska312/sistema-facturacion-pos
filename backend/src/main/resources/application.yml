@@ -51,6 +51,12 @@ app:
   rate-limit:
     login-per-minute: ${RATE_LIMIT_LOGIN:10}
     register-per-minute: ${RATE_LIMIT_REGISTER:5}
+    # Toda la API, por usuario (o por IP sin sesión). "heavy": exportar CSV, importar productos y cerrar un negocio.
+    api-per-minute: ${RATE_LIMIT_API:300}
+    heavy-per-minute: ${RATE_LIMIT_HEAVY:20}
+  platform:
+    # Correos de los administradores de plataforma, separados por coma (consola /plataforma).
+    admin-emails: ${PLATFORM_ADMIN_EMAILS:}
 
 springdoc:
   api-docs:

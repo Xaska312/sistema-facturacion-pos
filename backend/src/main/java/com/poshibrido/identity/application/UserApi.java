@@ -14,4 +14,7 @@ public interface UserApi {
     Map<UUID, UserSummary> findSummaries(Collection<UUID> userIds);
 
     Optional<UserSummary> findByEmail(String email);
+
+    /** La contraseña coincide con la del usuario (para confirmar acciones delicadas, p. ej. cerrar un negocio). */
+    boolean passwordMatches(UUID userId, String rawPassword);
 }

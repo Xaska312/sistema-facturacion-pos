@@ -150,6 +150,7 @@ nano .env
 | `APP_VERSION` | `0.7.0` o `latest` |
 | `POSTGRES_ADMIN_PASSWORD`, `DB_PASSWORD`, `JWT_SECRET` | las tres claves generadas (distintas) |
 | `BACKUP_REMOTE` | `posdrive-crypt:` (paso 6) |
+| `PLATFORM_ADMIN_EMAILS` | déjalo vacío por ahora: se llena en el paso 7, después de registrarte |
 
 - **`JWT_SECRET` nuevo**: nunca el de desarrollo ni uno que se haya compartido por chat o correo.
 - Evita `$` en las claves: Docker Compose lo interpreta como variable (el comando de arriba no lo genera).
@@ -206,6 +207,12 @@ docker compose -f docker-compose.prod.yml logs -f web # ver el certificado: "cer
 
 Abre `https://pos.midominio.com`, regístrate y crea tu negocio. `https://pos.midominio.com/healthz` debe
 responder `{"status":"UP"}`.
+
+**Consola de plataforma** (suspender negocios, ver eventos de seguridad): ya registrado, pon tu correo en
+`PLATFORM_ADMIN_EMAILS` del `.env` y reinicia el backend con `docker compose -f docker-compose.prod.yml up -d backend`.
+Al arrancar, el backend le da el permiso a las cuentas que ya existen con esos correos (por eso va después de
+registrarte: así nadie puede registrarse antes con tu correo y quedar como administrador). Vuelve a iniciar sesión y
+entra a `https://pos.midominio.com/plataforma`.
 
 Para no escribir `-f docker-compose.prod.yml` cada vez: `echo 'COMPOSE_FILE=docker-compose.prod.yml' >> .env`.
 Desde aquí los comandos se escriben así: `docker compose ps`.

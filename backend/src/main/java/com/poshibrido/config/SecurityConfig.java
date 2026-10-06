@@ -90,6 +90,9 @@ public class SecurityConfig {
                         .authenticationEntryPoint(entryPoint)
                         .accessDeniedHandler(deniedHandler))
                 .addFilterBefore(new RateLimitFilter(rateLimits, resolver, securityEvents), BearerTokenAuthenticationFilter.class)
+                // Después de autenticar (cuenta por usuario) y antes de autorizar.
+                .addFilterAfter(new ApiRateLimitFilter(rateLimits, resolver, securityEvents),
+                        BearerTokenAuthenticationFilter.class)
                 .addFilterAfter(new TenantContextFilter(tenantApi, resolver), AuthorizationFilter.class);
         return http.build();
     }
