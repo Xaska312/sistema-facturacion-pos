@@ -1,0 +1,5 @@
+# Scripts y configuración que se ejecutan en Linux (contenedores y servidor): siempre con saltos de línea LF,
+# también al clonar en Windows. Con CRLF, "/bin/sh^M" no existe y el contenedor no arranca.
+*.sh text eol=lf
+Caddyfile text eol=lf
+deploy/** text eol=lf

@@ -7,7 +7,8 @@ const DARK_QUERY = '(prefers-color-scheme: dark)';
 
 /**
  * Modo claro/oscuro/sistema. La preferencia se guarda en localStorage (no es sensible) y la clase
- * {@link DARK_CLASS} se aplica en <html>. index.html la aplica antes del primer render para evitar el parpadeo;
+ * {@link DARK_CLASS} se aplica en <html>. public/theme-init.js (cargado en index.html) la aplica antes del
+ * primer render para evitar el parpadeo;
  * este servicio la mantiene al día (cambio manual o cambio del sistema operativo).
  */
 @Injectable({ providedIn: 'root' })

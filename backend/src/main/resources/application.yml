@@ -1,5 +1,10 @@
 server:
   port: ${SERVER_PORT:8080}
+  # Detrás de Caddy (producción) usar "native": la IP real y el https salen de X-Forwarded-For/-Proto,
+  # que Tomcat solo acepta si la petición viene de una red privada (la red interna de Docker).
+  forward-headers-strategy: ${FORWARD_HEADERS_STRATEGY:none}
+  # Al detener el contenedor, termina las peticiones en curso (una venta a medio guardar) antes de salir.
+  shutdown: graceful
   error:
     include-message: never
     include-stacktrace: never
@@ -7,6 +12,8 @@ server:
 spring:
   application:
     name: poshibrido-backend
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/pos_hibrido}
     username: ${DB_USER:pos_user}

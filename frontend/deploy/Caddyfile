@@ -1,0 +1,69 @@
+# Caddy en producción: HTTPS automático (Let's Encrypt), la app Angular y el API en el mismo dominio.
+# El navegador habla solo con este dominio, así la cookie de refresh (SameSite=Strict) funciona sin CORS.
+#
+# Variables (las pone docker-compose.prod.yml desde .env):
+#   DOMAIN      pos.midominio.com  (o http://localhost para probar sin certificado)
+#   ACME_EMAIL  correo para avisos de Let's Encrypt (vencimiento de certificados)
+
+{
+	email {$ACME_EMAIL}
+}
+
+{$DOMAIN} {
+	encode zstd gzip
+
+	header {
+		# Sin "Server: Caddy" (no anunciar el software).
+		-Server
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "same-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+		Cross-Origin-Opener-Policy "same-origin"
+		# style-src necesita 'unsafe-inline': PrimeNG y Angular insertan <style> en tiempo de ejecución.
+		# Scripts: solo archivos propios (por eso el modo oscuro inicial está en theme-init.js).
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+	}
+
+	# API: solo /api. Actuator y Swagger del backend no quedan expuestos a internet.
+	handle /api/* {
+		request_body {
+			max_size 10MB
+		}
+		reverse_proxy backend:8080 {
+			# Si el backend se reinicia (actualización), reintenta unos segundos antes de responder 502.
+			lb_try_duration 10s
+		}
+	}
+
+	# Estado para monitores externos (UptimeRobot…): solo {"status":"UP"} o "DOWN", sin detalles.
+	handle /healthz {
+		rewrite * /actuator/health
+		reverse_proxy backend:8080
+	}
+
+	handle {
+		root * /srv
+
+		# Archivos con huella en el nombre (main-ABCD1234.js) que existen: no cambian nunca, caché de un año.
+		@hashed {
+			path_regexp hashed -[A-Z0-9]{8}\.(js|css|woff2?|ttf|eot|svg)$
+			file
+		}
+		header @hashed Cache-Control "public, max-age=31536000, immutable"
+		# Todo lo demás (index.html, theme-init.js, iconos): se revalida en cada carga para ver la versión nueva.
+		@fresh not path_regexp -[A-Z0-9]{8}\.(js|css|woff2?|ttf|eot|svg)$
+		header @fresh Cache-Control "no-cache"
+
+		# Rutas de Angular (/app/caja, /pos…): sin extensión y sin archivo → index.html.
+		# Un archivo con extensión que no existe (p. ej. un chunk de otra versión) da 404, no index.html:
+		# así el navegador no guarda HTML como si fuera JavaScript.
+		@spa {
+			not file
+			not path_regexp \.[A-Za-z0-9]+$
+		}
+		rewrite @spa /index.html
+		file_server
+	}
+}

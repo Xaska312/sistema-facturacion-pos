@@ -30,7 +30,7 @@ export const appConfig: ApplicationConfig = {
     }),
     MessageService,
     ConfirmationService,
-    // Mantiene sincronizada la clase del modo oscuro (index.html ya la aplicó antes del primer render).
+    // Mantiene sincronizada la clase del modo oscuro (public/theme-init.js ya la aplicó antes del primer render).
     provideAppInitializer(() => {
       inject(ThemeService);
     }),
