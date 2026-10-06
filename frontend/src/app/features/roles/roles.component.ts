@@ -22,6 +22,7 @@ const MODULE_LABEL: Record<string, string> = {
   cash: 'Caja',
   sales: 'Ventas',
   reporting: 'Reportes',
+  audit: 'Auditoría',
 };
 
 @Component({

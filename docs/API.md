@@ -84,8 +84,8 @@ Paginación: `{ content, page, size, totalElements, totalPages }`.
 
 ## Permisos sembrados
 `settings:read|manage`, `branches:read|manage`, `cash-registers:manage`, `members:read|manage`, `roles:manage`,
-`products:read|manage`, `parties:read|manage`, `inventory:read|adjust|transfer`, `cash:operate|read`,
-`sales:create|read|void|discount`, `reports:read`.
+`products:read|manage`, `parties:read|manage`, `inventory:read|adjust|transfer`, `cash:operate|read|audit`,
+`sales:create|read|void|discount`, `reports:read`, `audit:read` (Fase 7-2: OWNER, ADMIN y ACCOUNTANT).
 Roles: OWNER y ADMIN (todos), CASHIER, SELLER, WAREHOUSE, ACCOUNTANT (ver `db/tenant/V2__seed_access_and_organization.sql`).
 
 ## Catálogo (Fase 3)
@@ -196,3 +196,24 @@ Permiso `reports:read` (salvo `my-day`: `sales:read`). Filtros: `from`, `to` (`A
 | GET | `/reports/inventory/valuation?branchId=` | `{rows[{branch, product, quantity, averageCost, value}], totalValue, productCount}` (existencias actuales) |
 
 **CSV**: agrega `.csv` a cualquiera de las rutas anteriores (salvo `dashboard`, `my-day` y `summary`), más `/reports/sales.csv` (ventas una a una, con anuladas). `text/csv; charset=UTF-8` con BOM, separador `;`, coma decimal, fechas `AAAA-MM-DD HH:mm` en la hora del negocio y `Content-Disposition: attachment` (expuesto por CORS). `sales.csv` responde 422 si el rango tiene más de 100.000 ventas. Los textos que empiezan por `= + - @` se escriben con `'` delante (protección contra inyección de fórmulas).
+Cada descarga de CSV queda en la auditoría del negocio (`REPORT_EXPORTED`, con el nombre del archivo y las filas).
+
+## Auditoría (Fase 7-2)
+Permiso `audit:read` (Dueño, Administrador y Contador). Solo lectura: los registros no se pueden modificar ni borrar (trigger). Filtros: `from`, `to` (`AAAA-MM-DD`, zona del negocio; **sin fechas = últimos 7 días**; máximo 367 días; 422 si `to` < `from`), `actorId`, `entity`, `action`, `q` (id exacto del registro o texto dentro de los datos guardados).
+| Método | Ruta | Respuesta |
+|---|---|---|
+| GET | `/audit?page=&size=` (50 por defecto, máx. 100) | Página de `{id, createdAt, actorId, actorName, action, entity, entityId, label, ip, hasData}`, más reciente primero. `label`: nombre, número, código o correo del registro |
+| GET | `/audit/{id}` | Lo mismo con `before` y `after` (objetos JSON tal como se guardaron, o `null`); 404 si no existe |
+| GET | `/audit/actions` | `[{entity, action, count}]` presentes en el negocio (para los filtros) |
+| GET | `/audit/actors` | `[{id, name}]` autores presentes (para los filtros) |
+| GET | `/audit/export.csv` | CSV (mismo formato que los reportes; acciones y módulos en español). 422 si supera 50.000 filas. La exportación queda auditada (`AUDIT_EXPORTED`) |
+
+Acciones que se registran además de los cambios de cada módulo: `BUSINESS_CREATED` (al crear el negocio), `SESSION_STARTED` (entrar al negocio), `SESSION_ENDED` (cerrar sesión), `REPORT_EXPORTED`, `AUDIT_EXPORTED`.
+
+## Eventos de seguridad (plataforma, Fase 7-2)
+Solo administradores de plataforma (`platform_admin`; token con `padm`). Tabla `platform.security_events`, solo inserción.
+| Método | Ruta | Respuesta |
+|---|---|---|
+| GET | `/platform/security-events?from=&to=&event=&userId=&q=&page=&size=` | Página de `{id, occurredAt, event, userId, email, userName, tenantId, tenantName, ip, userAgent, details}`. `from`/`to` en ISO-8601 (`2026-10-06T00:00:00Z`; sin fechas = últimos 7 días). `q`: correo o IP (contiene). 422 con un `event` desconocido |
+
+Eventos: `REGISTERED`, `LOGIN_SUCCEEDED`, `LOGIN_FAILED` (`details.reason`: `UNKNOWN_EMAIL`, `BAD_PASSWORD`, `LOCKED`, `INACTIVE`), `ACCOUNT_LOCKED` (`details.until`), `LOGOUT`, `TENANT_ENTERED`, `TENANT_ACCESS_DENIED`, `REFRESH_TOKEN_REUSED`, `RATE_LIMITED` (`details.path`; uno por IP y minuto), `TENANT_CREATED`, `TENANT_PROVISIONING_FAILED`.

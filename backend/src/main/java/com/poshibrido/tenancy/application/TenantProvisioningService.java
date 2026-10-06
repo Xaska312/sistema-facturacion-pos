@@ -1,5 +1,8 @@
 package com.poshibrido.tenancy.application;
 
+import com.poshibrido.audit.application.AuditLogger;
+import com.poshibrido.audit.application.SecurityEvent;
+import com.poshibrido.audit.application.SecurityEventLogger;
 import com.poshibrido.identity.application.MembershipApi;
 import com.poshibrido.identity.application.UserApi;
 import com.poshibrido.identity.application.UserSummary;
@@ -16,6 +19,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -39,10 +44,13 @@ public class TenantProvisioningService {
     private final UserApi users;
     private final TenantDirectory directory;
     private final TransactionTemplate tx;
+    private final SecurityEventLogger securityEvents;
+    private final AuditLogger audit;
 
     public TenantProvisioningService(TenantRepository tenants, TenantSchemaManager schemaManager,
                                      TenantDataSeeder seeder, MembershipApi memberships, UserApi users,
-                                     TenantDirectory directory, PlatformTransactionManager transactionManager) {
+                                     TenantDirectory directory, PlatformTransactionManager transactionManager,
+                                     SecurityEventLogger securityEvents, AuditLogger audit) {
         this.tenants = tenants;
         this.schemaManager = schemaManager;
         this.seeder = seeder;
@@ -50,6 +58,8 @@ public class TenantProvisioningService {
         this.users = users;
         this.directory = directory;
         this.tx = new TransactionTemplate(transactionManager);
+        this.securityEvents = securityEvents;
+        this.audit = audit;
     }
 
     public TenantSummary create(UUID ownerId, CreateTenantCommand command) {
@@ -96,6 +106,15 @@ public class TenantProvisioningService {
                 Tenant t = tenants.findById(tenantId).orElseThrow();
                 memberships.grantActive(owner.id(), tenantId);
                 t.markActive();
+                Map<String, Object> data = new LinkedHashMap<>();
+                data.put("slug", t.getSlug());
+                data.put("legalName", t.getLegalName());
+                data.put("tradeName", t.getTradeName());
+                data.put("businessType", t.getBusinessType());
+                securityEvents.record(SecurityEvent.TENANT_CREATED, owner.id(), owner.email(), tenantId, data);
+                // Auditoría del negocio: quién lo creó y con qué datos (el sembrado del dueño ya dejó
+                // TENANT_PROVISIONED, sin datos).
+                audit.logIn(schema, owner.id(), "BUSINESS_CREATED", "business", tenantId, null, data);
                 return t;
             });
             directory.evict(tenantId);
@@ -104,8 +123,18 @@ public class TenantProvisioningService {
         } catch (RuntimeException ex) {
             log.error("Falló el aprovisionamiento del negocio {} (schema {})", tenantId, schema, ex);
             rollbackProvisioning(tenantId, schema, ex);
+            recordFailure(owner, tenantId, ex);
             throw new ServiceUnavailableException(
                     "No fue posible crear el negocio en este momento. Puedes reintentar la operación.");
+        }
+    }
+
+    private void recordFailure(UserSummary owner, UUID tenantId, RuntimeException cause) {
+        try {
+            tx.executeWithoutResult(status -> securityEvents.record(SecurityEvent.TENANT_PROVISIONING_FAILED,
+                    owner.id(), owner.email(), tenantId, Map.of("reason", cause.getClass().getSimpleName())));
+        } catch (RuntimeException ex) {
+            log.error("No se pudo registrar el fallo de aprovisionamiento del negocio {}", tenantId, ex);
         }
     }
 

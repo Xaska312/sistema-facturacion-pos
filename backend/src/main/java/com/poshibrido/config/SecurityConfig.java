@@ -1,5 +1,6 @@
 package com.poshibrido.config;
 
+import com.poshibrido.audit.application.SecurityEventLogger;
 import com.poshibrido.identity.application.TokenService;
 import com.poshibrido.tenancy.application.TenantApi;
 import com.poshibrido.tenancy.infrastructure.TenantContextFilter;
@@ -52,7 +53,7 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain apiSecurity(HttpSecurity http, JwtDecoder jwtDecoder, TenantApi tenantApi,
-                                           RateLimitProperties rateLimits,
+                                           RateLimitProperties rateLimits, SecurityEventLogger securityEvents,
                                            @Qualifier("corsConfigurationSource") CorsConfigurationSource corsSource,
                                            @Qualifier("handlerExceptionResolver") HandlerExceptionResolver resolver)
             throws Exception {
@@ -88,7 +89,7 @@ public class SecurityConfig {
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(entryPoint)
                         .accessDeniedHandler(deniedHandler))
-                .addFilterBefore(new RateLimitFilter(rateLimits, resolver), BearerTokenAuthenticationFilter.class)
+                .addFilterBefore(new RateLimitFilter(rateLimits, resolver, securityEvents), BearerTokenAuthenticationFilter.class)
                 .addFilterAfter(new TenantContextFilter(tenantApi, resolver), AuthorizationFilter.class);
         return http.build();
     }

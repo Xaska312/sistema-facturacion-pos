@@ -19,6 +19,7 @@ export const MENU: MenuItem[] = [
   { label: 'Ventas', route: '/app/ventas', icon: 'pi pi-receipt', permission: 'sales:read', section: 'Ventas' },
   { label: 'Historial de caja', route: '/app/caja/historial', icon: 'pi pi-history', permission: 'cash:read', section: 'Ventas' },
   { label: 'Reportes', route: '/app/reportes', icon: 'pi pi-chart-bar', permission: 'reports:read', section: 'Reportes' },
+  { label: 'Auditoría', route: '/app/auditoria', icon: 'pi pi-eye', permission: 'audit:read', section: 'Reportes' },
   { label: 'Productos', route: '/app/productos', icon: 'pi pi-box', permission: 'products:read', section: 'Catálogo' },
   { label: 'Ajustes de catálogo', route: '/app/catalogo', icon: 'pi pi-tags', permission: 'products:manage', section: 'Catálogo' },
   { label: 'Existencias', route: '/app/inventario', icon: 'pi pi-warehouse', permission: 'inventory:read', section: 'Inventario' },

@@ -22,16 +22,16 @@ describe('visibleMenu', () => {
 
   it('el propietario ve toda la configuración', () => {
     const labels = visibleMenu(() => true).map((m) => m.label);
-    expect(labels).toEqual(['Inicio', 'Vender', 'Mi caja', 'Ventas', 'Historial de caja', 'Reportes', 'Productos',
-      'Ajustes de catálogo', 'Existencias', 'Movimientos', 'Clientes', 'Proveedores', 'Sucursales', 'Cajas', 'Usuarios',
+    expect(labels).toEqual(['Inicio', 'Vender', 'Mi caja', 'Ventas', 'Historial de caja', 'Reportes', 'Auditoría',
+      'Productos', 'Ajustes de catálogo', 'Existencias', 'Movimientos', 'Clientes', 'Proveedores', 'Sucursales', 'Cajas', 'Usuarios',
       'Roles y permisos', 'Ajustes']);
   });
 
-  it('el contador ve reportes, ventas e historial de caja, pero no vende', () => {
+  it('el contador ve reportes, auditoría, ventas e historial de caja, pero no vende', () => {
     const accountant = new Set(['branches:read', 'settings:read', 'products:read', 'parties:read', 'inventory:read',
-      'cash:read', 'cash:audit', 'sales:read', 'reports:read']);
+      'cash:read', 'cash:audit', 'sales:read', 'reports:read', 'audit:read']);
     const labels = visibleMenu((p) => accountant.has(p)).map((m) => m.label);
-    expect(labels).toEqual(['Inicio', 'Ventas', 'Historial de caja', 'Reportes', 'Productos', 'Existencias',
+    expect(labels).toEqual(['Inicio', 'Ventas', 'Historial de caja', 'Reportes', 'Auditoría', 'Productos', 'Existencias',
       'Movimientos', 'Clientes', 'Proveedores', 'Sucursales', 'Ajustes']);
   });
 });
@@ -39,7 +39,7 @@ describe('visibleMenu', () => {
 describe('withHeadings', () => {
   it('pone el título de sección solo en el primer elemento del grupo', () => {
     const headings = withHeadings(MENU).map((e) => e.heading);
-    expect(headings).toEqual([null, 'Ventas', null, null, null, 'Reportes', 'Catálogo', null, 'Inventario', null,
+    expect(headings).toEqual([null, 'Ventas', null, null, null, 'Reportes', null, 'Catálogo', null, 'Inventario', null,
       'Terceros', null, 'Configuración', null, null, null, null]);
   });
 });

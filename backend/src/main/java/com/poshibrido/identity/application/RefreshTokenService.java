@@ -1,5 +1,7 @@
 package com.poshibrido.identity.application;
 
+import com.poshibrido.audit.application.SecurityEvent;
+import com.poshibrido.audit.application.SecurityEventLogger;
 import com.poshibrido.identity.domain.RefreshToken;
 import com.poshibrido.identity.infrastructure.RefreshTokenRepository;
 import com.poshibrido.shared.error.UnauthorizedException;
@@ -29,8 +31,13 @@ public class RefreshTokenService implements SessionApi {
 
     private final RefreshTokenRepository repository;
     private final AuthProperties properties;
+    private final SecurityEventLogger securityEvents;
 
     public record Rotation(UUID userId, UUID tenantId, String newRawToken) {
+    }
+
+    /** Sesión cerrada al revocar su refresh token ({@code tenantId} nulo = sesión de plataforma). */
+    public record ClosedSession(UUID userId, UUID tenantId) {
     }
 
     public String create(UUID userId, UUID tenantId) {
@@ -47,6 +54,8 @@ public class RefreshTokenService implements SessionApi {
             log.warn("Reutilización de refresh token detectada para el usuario {}: se revocan sus sesiones",
                     current.getUserId());
             repository.revokeAllActive(current.getUserId(), now);
+            securityEvents.record(SecurityEvent.REFRESH_TOKEN_REUSED, current.getUserId(), null,
+                    current.getTenantId(), null);
             throw new UnauthorizedException(INVALID);
         }
         if (current.isExpired(now)) {
@@ -60,14 +69,22 @@ public class RefreshTokenService implements SessionApi {
         return new Rotation(current.getUserId(), current.getTenantId(), raw);
     }
 
-    /** Revoca el token si existe y pertenece al usuario indicado (o a cualquiera si userId es nulo). */
-    public void revoke(String rawToken, UUID expectedUserId) {
+    /**
+     * Revoca el token si existe, sigue activo y pertenece al usuario indicado (o a cualquiera si userId es nulo).
+     *
+     * @return la sesión que se cerró (vacío si el token no existía o ya estaba revocado)
+     */
+    public Optional<ClosedSession> revoke(String rawToken, UUID expectedUserId) {
         if (rawToken == null || rawToken.isBlank()) {
-            return;
+            return Optional.empty();
         }
-        find(rawToken)
+        return find(rawToken)
                 .filter(t -> expectedUserId == null || t.getUserId().equals(expectedUserId))
-                .ifPresent(t -> t.revoke(Instant.now()));
+                .filter(t -> !t.isRevoked())
+                .map(t -> {
+                    t.revoke(Instant.now());
+                    return new ClosedSession(t.getUserId(), t.getTenantId());
+                });
     }
 
     public void revokeAll(UUID userId) {

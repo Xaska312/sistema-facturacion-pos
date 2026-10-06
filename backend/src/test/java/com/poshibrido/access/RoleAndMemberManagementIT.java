@@ -19,7 +19,7 @@ class RoleAndMemberManagementIT extends IntegrationTest {
     @Test
     void roleLifecycle() throws Exception {
         Owned owner = api.newTenant("roles");
-        api.getWith(owner.tenant(), "/api/v1/permissions").andExpect(jsonPath("$.length()").value(23));
+        api.getWith(owner.tenant(), "/api/v1/permissions").andExpect(jsonPath("$.length()").value(24));
 
         String created = api.postWith(owner.tenant(), "/api/v1/roles", """
                 {"code":"auditor","name":"Auditor","description":"Solo lectura","permissions":["sales:read","reports:read"]}
