@@ -1,6 +1,6 @@
 # API (v1)
 
-Base: `/api/v1`. Errores en `application/problem+json` (RFC 9457). Swagger UI en `/swagger-ui.html` con `OPENAPI_ENABLED=true`.
+Base: `/api/v1`. Errores en `application/problem+json` (RFC 9457). **Dinero en pesos enteros** (Fase 7-6b): el total de cada línea de venta se redondea al peso; pagos, base de apertura, conteo y movimientos de caja con centavos → 400. Swagger UI en `/swagger-ui.html` con `OPENAPI_ENABLED=true`.
 
 ## Autenticación (plataforma)
 | Método | Ruta | Token | Descripción |
@@ -255,3 +255,8 @@ Los correos salen **después de confirmar la transacción**, en segundo plano (2
 | `negocio-suspendido` · `negocio-reactivado` · `negocio-cerrado` | Suspender/reactivar (plataforma) o cerrar (dueño) | El dueño |
 
 Envío: **Resend** (API HTTP) si hay `RESEND_API_KEY`; si no, **SMTP** si hay `SPRING_MAIL_HOST` (Mailpit en desarrollo); si no, **el log** del backend. Los enlaces de un solo uso se guardan como hash SHA-256 en `platform.user_tokens`; pedir uno nuevo invalida los anteriores del mismo tipo. Eventos de seguridad: `EMAIL_VERIFIED`, `PASSWORD_RESET_REQUESTED`, `PASSWORD_RESET`. Límites por IP: `verify-email` y `password-reset/confirm` como el login (10/min), `password-reset/request` como el registro (5/min).
+
+## Cambios de la Fase 7-6b
+- `POST /cash/sessions/{id}/movements`: un egreso o retiro mayor que el efectivo que debería haber en la caja → **422** (el mensaje no revela el esperado: cierre ciego).
+- `GET /cash/sessions/{id}/report`: en una caja cerrada, `voidedCount`, `voidedTotal`, `netSales` y `byMethod` quedan como al cierre; las ventas anuladas después se informan en `voidedAfterCloseCount` y `voidedAfterCloseTotal`.
+- `GET /reports/products.csv`: trae todos los productos vendidos del periodo (antes se cortaba en 1.000); el parámetro `limit` ya no aplica al CSV.

@@ -16,11 +16,12 @@ import { DataTableComponent } from '../../shared/table/data-table.component';
 import { ColumnDef, TableQuery, initialQuery, toPageQuery } from '../../shared/table/table';
 import { DOCUMENT_TYPES, PartyDraft, draftDv, draftOf, draftProblem, emptyDraft, toPartyInput } from './party-form';
 import { TermComponent } from '../../shared/help/term.component';
+import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
 
 /** Clientes o proveedores (según {@code kind} en los datos de la ruta). */
 @Component({
   selector: 'app-parties',
-  imports: [TermComponent, FormsModule, ButtonModule, InputTextModule, DataTableComponent, PageHeaderComponent, FormDialogComponent],
+  imports: [TermComponent, FormsModule, PesosInputDirective, ButtonModule, InputTextModule, DataTableComponent, PageHeaderComponent, FormDialogComponent],
   template: `
     <app-page-header [title]="isCustomers() ? 'Clientes' : 'Proveedores'"
                      [description]="isCustomers()
@@ -148,7 +149,7 @@ import { TermComponent } from '../../shared/help/term.component';
           </div>
           <div class="flex flex-col gap-1">
             <label for="party-credit" class="text-sm font-medium">Cupo de crédito</label>
-            <input pInputText id="party-credit" type="number" min="0" step="1000" [(ngModel)]="draft.creditLimit" />
+            <input pInputText id="party-credit" appPesos [(ngModel)]="draft.creditLimit" />
             <small class="text-xs text-muted">Valor máximo que puede quedar debiendo. 0 = no se le fía.</small>
           </div>
         }

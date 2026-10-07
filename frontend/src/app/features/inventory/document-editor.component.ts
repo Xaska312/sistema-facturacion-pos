@@ -12,6 +12,7 @@ import { formatQuantity } from '../../shared/money';
 import { DraftLine, baseQuantity, draftLine, linesProblem, toLineInputs } from './document-lines';
 import { DOCUMENT_LABEL, documentNumber, documentTypeFromRoute } from './labels';
 import { PageHeaderComponent } from '../../shared/page-header.component';
+import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
 
 /**
  * Editor de documentos de inventario: saldo inicial, ajuste, traslado o conteo físico.
@@ -19,7 +20,7 @@ import { PageHeaderComponent } from '../../shared/page-header.component';
  */
 @Component({
   selector: 'app-inventory-document-editor',
-  imports: [FormsModule, RouterLink, ButtonModule, InputTextModule, PageHeaderComponent],
+  imports: [FormsModule, PesosInputDirective, RouterLink, ButtonModule, InputTextModule, PageHeaderComponent],
   template: `
     @if (type(); as t) {
       <app-page-header [title]="labels[t]" [description]="help[t]" />
@@ -115,7 +116,7 @@ import { PageHeaderComponent } from '../../shared/page-header.component';
                   @if (t === 'INITIAL' || t === 'ADJUSTMENT') {
                     <td class="p-2">
                       @if (t === 'INITIAL' || line.direction === 'IN') {
-                        <input pInputText type="number" min="0" step="0.01" class="w-32" [(ngModel)]="line.unitCost"
+                        <input pInputText appPesos="2" class="w-32" [(ngModel)]="line.unitCost"
                                [placeholder]="t === 'ADJUSTMENT' ? 'Costo promedio' : ''" />
                       } @else {
                         <span class="text-muted text-xs">Costo promedio</span>

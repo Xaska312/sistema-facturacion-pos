@@ -17,7 +17,7 @@ import { formatDateTime } from '../../shared/format';
 import { PageHeaderComponent } from '../../shared/page-header.component';
 import { DataTableComponent } from '../../shared/table/data-table.component';
 import { ColumnDef, TableQuery, initialQuery } from '../../shared/table/table';
-import { addDays, isoDate } from '../reports/periods';
+import { addDays, businessToday, isoDate } from '../reports/periods';
 import { DataRow, actionLabel, actionOptions, dataRows, entityLabel, entityOptions } from './audit-labels';
 
 /** Nombre del autor; sin autor es una acción del sistema. */
@@ -194,7 +194,7 @@ export class AuditComponent implements OnInit {
   ];
 
   /** Últimos 7 días (hoy incluido), igual que el servidor cuando no recibe fechas. */
-  static defaultFilters(today: Date = new Date()): AuditFilters {
+  static defaultFilters(today: Date = businessToday()): AuditFilters {
     const to = isoDate(today);
     return { from: addDays(to, -6), to, actorId: null, entity: null, action: null, q: null };
   }

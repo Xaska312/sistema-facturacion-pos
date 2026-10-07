@@ -1,4 +1,18 @@
-/** Rangos rápidos de fechas para los reportes (fechas AAAA-MM-DD del calendario local). */
+/** Rangos rápidos de fechas para los reportes (fechas AAAA-MM-DD del calendario del negocio). */
+
+/** Zona horaria de los negocios (Colombia); el servidor usa la de los ajustes del negocio. */
+export const BUSINESS_TIME_ZONE = 'America/Bogota';
+
+/**
+ * Hoy en la zona del negocio, como fecha local a medianoche. Con el reloj del equipo en otra zona (o en UTC), "Hoy"
+ * pedía otro día después de las 7 p. m. y el tablero quedaba en cero (QA DIN-6).
+ */
+export function businessToday(now: Date = new Date(), timeZone: string = BUSINESS_TIME_ZONE): Date {
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' })
+    .formatToParts(now);
+  const part = (type: Intl.DateTimeFormatPartTypes) => Number(parts.find((p) => p.type === type)?.value);
+  return new Date(part('year'), part('month') - 1, part('day'));
+}
 export type QuickRange = 'today' | 'yesterday' | 'last7' | 'last30' | 'thisMonth' | 'lastMonth';
 
 export function isoDate(date: Date): string {
@@ -8,7 +22,7 @@ export function isoDate(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
-export function quickRange(range: QuickRange, today: Date = new Date()): { from: string; to: string } {
+export function quickRange(range: QuickRange, today: Date = businessToday()): { from: string; to: string } {
   const y = today.getFullYear();
   const m = today.getMonth();
   const d = today.getDate();
@@ -38,7 +52,10 @@ export function daysBetween(from: string, to: string): string[] {
     return [];
   }
   const days: string[] = [];
-  for (let d = start; d <= end && days.length < 367; d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)) {
+  for (let d = start; d <= end; d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)) {
+    if (days.length >= MAX_RANGE_DAYS) {
+      return []; // más de un año: el servidor lo rechaza; la URL cae en el periodo predeterminado (QA UI-9)
+    }
     days.push(isoDate(d));
   }
   return days;
@@ -101,7 +118,7 @@ export function periodToParams(selection: PeriodSelection): Record<string, strin
 }
 
 /** Fechas del periodo; un rango personalizado inválido cae en "hoy". */
-export function resolvePeriod(selection: PeriodSelection, today: Date = new Date()): DateRange {
+export function resolvePeriod(selection: PeriodSelection, today: Date = businessToday()): DateRange {
   if (selection.period === 'custom') {
     if (selection.from && selection.to && daysBetween(selection.from, selection.to).length > 0) {
       return { from: selection.from, to: selection.to };

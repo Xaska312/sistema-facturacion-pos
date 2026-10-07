@@ -194,12 +194,11 @@ public class ReportController {
                                               @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
                                               @RequestParam(required = false) UUID branchId,
                                               @RequestParam(required = false) UUID sellerId,
-                                              @RequestParam(defaultValue = "1000") int limit,
                                               @RequestParam(defaultValue = "total") String orderBy) {
         ReportFilter f = filter(from, to, branchId, sellerId);
         CsvWriter w = writer().row("SKU", "Producto", "Categoría", "Unidad", "Cantidad", "Base", "Total", "Costo",
                 "Utilidad", "Margen %");
-        reports.topProducts(f, limit, "quantity".equals(orderBy)).forEach(r -> w.row(r.sku(), r.name(),
+        reports.allProducts(f, "quantity".equals(orderBy)).forEach(r -> w.row(r.sku(), r.name(),
                 r.categoryName(), r.unitCode(), r.quantity(), r.subtotal(), r.total(), r.cost(), r.profit(),
                 r.marginPercent()));
         return csv("productos-vendidos", f.period(), w);

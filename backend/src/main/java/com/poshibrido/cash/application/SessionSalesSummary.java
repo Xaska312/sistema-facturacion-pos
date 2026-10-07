@@ -1,6 +1,7 @@
 package com.poshibrido.cash.application;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -18,14 +19,21 @@ public interface SessionSalesSummary {
      * @param voidedCount  de esas, las anuladas
      * @param byMethod     cobrado por medio de pago en ventas no anuladas
      * @param voidsHereCount anulaciones cuyo efectivo se devolvió en esta sesión (de esta u otras sesiones)
+     * @param voidedAfterCloseCount ventas de la sesión anuladas después de cerrarla: no cambian el cierre (su
+     *                              devolución salió de otra caja) y se informan aparte
      */
     record Summary(long salesCount, BigDecimal salesTotal, long voidedCount, BigDecimal voidedTotal,
-                   List<MethodTotal> byMethod, long voidsHereCount) {
+                   List<MethodTotal> byMethod, long voidsHereCount, long voidedAfterCloseCount,
+                   BigDecimal voidedAfterCloseTotal) {
 
         public BigDecimal netSales() {
             return salesTotal.subtract(voidedTotal);
         }
     }
 
-    Summary summarize(UUID cashSessionId);
+    /**
+     * @param closedAt cierre de la sesión (null si sigue abierta): el informe de una caja cerrada queda como se
+     *                 cerró aunque después se anule una de sus ventas (QA DIN-3)
+     */
+    Summary summarize(UUID cashSessionId, Instant closedAt);
 }

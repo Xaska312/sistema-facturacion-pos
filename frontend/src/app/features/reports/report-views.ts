@@ -27,7 +27,7 @@ export function csvFor(tab: ReportTab, productOrder: 'total' | 'quantity'):
     case 'payments':
       return { report: 'sales/by-payment-method', extra: {} };
     case 'products':
-      return { report: 'products', extra: { orderBy: productOrder, limit: 1000 } };
+      return { report: 'products', extra: { orderBy: productOrder } }; // el CSV trae todos (QA DIN-5)
     case 'categories':
       return { report: 'categories', extra: {} };
     case 'taxes':

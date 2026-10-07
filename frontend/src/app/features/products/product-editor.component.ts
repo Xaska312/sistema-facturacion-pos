@@ -13,11 +13,12 @@ import { barcodeGroup, conversionGroup, fillForm, listPriceGroup, productForm, t
 import { PageHeaderComponent } from '../../shared/page-header.component';
 import { StatusBadgeComponent } from '../../shared/status-badge.component';
 import { TermComponent } from '../../shared/help/term.component';
+import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
 
 /** Alta y edición de un producto: datos, presentaciones, códigos de barras y precios por lista. */
 @Component({
   selector: 'app-product-editor',
-  imports: [TermComponent, ReactiveFormsModule, RouterLink, ButtonModule, InputTextModule, PageHeaderComponent, StatusBadgeComponent],
+  imports: [TermComponent, ReactiveFormsModule, PesosInputDirective, RouterLink, ButtonModule, InputTextModule, PageHeaderComponent, StatusBadgeComponent],
   template: `
     <app-page-header [title]="isNew() ? 'Nuevo producto' : (product()?.name ?? 'Producto')">
       @if (product()?.active === false) {
@@ -25,7 +26,7 @@ import { TermComponent } from '../../shared/help/term.component';
       }
     </app-page-header>
 
-    <form [formGroup]="form" (ngSubmit)="save()" class="flex flex-col gap-4 max-w-4xl">
+    <form [formGroup]="form" (ngSubmit)="save()" (keydown.enter)="ignoreEnter($event)" class="flex flex-col gap-4 max-w-4xl">
       <fieldset [disabled]="!canEdit" class="flex flex-col gap-4">
         <!-- Datos básicos -->
         <section class="card p-4 grid gap-3 md:grid-cols-2">
@@ -67,7 +68,7 @@ import { TermComponent } from '../../shared/help/term.component';
           </label>
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">Costo</span>
-            <input pInputText type="number" min="0" step="0.01" formControlName="cost"
+            <input pInputText appPesos="2" formControlName="cost"
                    [readonly]="product()?.costLocked === true" />
             @if (product()?.costLocked) {
               <small class="text-muted">
@@ -77,7 +78,7 @@ import { TermComponent } from '../../shared/help/term.component';
           </label>
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">Precio de venta (lista General)</span>
-            <input pInputText type="number" min="0" step="0.01" formControlName="salePrice" />
+            <input pInputText appPesos="2" formControlName="salePrice" />
             <small class="text-muted">{{ formatCop(form.controls.salePrice.value) }} por {{ unitCode(form.controls.baseUnitId.value) }}</small>
           </label>
           <label class="flex flex-col gap-1 md:col-span-2">
@@ -115,7 +116,7 @@ import { TermComponent } from '../../shared/help/term.component';
               </label>
               <label class="col-span-3 flex flex-col gap-1">
                 <span class="text-xs">Precio (opcional)</span>
-                <input pInputText type="number" min="0" step="0.01" formControlName="salePrice"
+                <input pInputText appPesos="2" formControlName="salePrice"
                        [placeholder]="formatCop(form.controls.salePrice.value * group.controls.factor.value)" />
               </label>
               @if (canEdit) {
@@ -202,7 +203,7 @@ import { TermComponent } from '../../shared/help/term.component';
                 </label>
                 <label class="col-span-3 flex flex-col gap-1">
                   <span class="text-xs">Precio</span>
-                  <input pInputText type="number" min="0" step="0.01" formControlName="price" />
+                  <input pInputText appPesos="2" formControlName="price" />
                 </label>
                 @if (canEdit) {
                   <p-button class="col-span-2" label="Quitar" size="small" [text]="true" severity="danger"
@@ -314,6 +315,16 @@ export class ProductEditorComponent implements OnInit {
       },
       error: () => this.generating.set(false),
     });
+  }
+
+  /**
+   * Enter en un campo no guarda: el lector de códigos termina cada lectura con Enter y guardaba el producto a medio
+   * crear (QA UI-1). Se guarda solo con el botón "Guardar".
+   */
+  protected ignoreEnter(event: Event): void {
+    if (event.target instanceof HTMLInputElement) {
+      event.preventDefault();
+    }
   }
 
   save(): void {

@@ -7,6 +7,7 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { CashSession, RegisterOption } from '../../core/api/api.models';
 import { CashApi } from '../../core/api/cash.api';
 import { AuthService } from '../../core/auth/auth.service';
+import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
 
 /**
  * Apertura guiada desde el POS: elegir la caja (si hay más de una libre), contar la base de efectivo y "Abrir caja",
@@ -14,7 +15,7 @@ import { AuthService } from '../../core/auth/auth.service';
  */
 @Component({
   selector: 'app-open-cash',
-  imports: [FormsModule, RouterLink, ButtonModule, SkeletonModule],
+  imports: [FormsModule, PesosInputDirective, RouterLink, ButtonModule, SkeletonModule],
   template: `
     <section class="card w-full max-w-xl p-6 flex flex-col gap-5" aria-labelledby="open-cash-title">
       <div class="flex items-start gap-3">
@@ -64,7 +65,7 @@ import { AuthService } from '../../core/auth/auth.service';
         <form class="flex flex-col gap-4" (ngSubmit)="open()">
           <div class="flex flex-col gap-1">
             <label for="opening-amount" class="font-medium">Base de efectivo</label>
-            <input id="opening-amount" name="openingAmount" type="number" inputmode="numeric" min="0" step="any"
+            <input id="opening-amount" name="openingAmount" appPesos
                    class="h-14 border rounded-xl px-4 text-2xl text-right" [(ngModel)]="openingAmount"
                    aria-describedby="opening-hint" />
             <span id="opening-hint" class="text-sm text-muted">El dinero que hay en el cajón antes de la primera venta.</span>

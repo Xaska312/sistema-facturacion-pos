@@ -12,6 +12,7 @@ import com.poshibrido.shared.api.PageResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
+import com.poshibrido.shared.validation.WholePesos;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -58,7 +59,7 @@ public class SaleController {
 
     public record PaymentRequest(@NotNull UUID paymentMethodId,
                                  @NotNull @DecimalMin(value = "0", inclusive = false)
-                                 @Digits(integer = 12, fraction = 2) BigDecimal amount,
+                                 @Digits(integer = 12, fraction = 2) @WholePesos BigDecimal amount,
                                  @Size(max = 60) String reference) {
     }
 

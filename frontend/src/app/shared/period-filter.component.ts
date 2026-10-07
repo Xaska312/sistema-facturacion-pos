@@ -5,6 +5,7 @@ import {
   PERIOD_OPTIONS,
   PeriodKey,
   PeriodSelection,
+  businessToday,
   daysBetween,
   isoDate,
 } from '../features/reports/periods';
@@ -76,7 +77,7 @@ export class PeriodFilterComponent {
   readonly showPeriod = input(true);
   readonly selectionChange = output<PeriodSelection>();
 
-  protected readonly today = isoDate(new Date());
+  protected readonly today = isoDate(businessToday());
   protected readonly editingRange = signal(false);
   protected readonly draftFrom = signal('');
   protected readonly draftTo = signal('');
@@ -119,7 +120,8 @@ export function rangeProblem(from: string, to: string): string | null {
   }
   const days = daysBetween(from, to).length;
   if (days === 0) {
-    return 'La fecha final debe ser igual o posterior a la inicial.';
+    // daysBetween también da vacío si el rango pasa de un año.
+    return from > to ? 'La fecha final debe ser igual o posterior a la inicial.' : 'El rango máximo es de un año.';
   }
   if (days > MAX_RANGE_DAYS - 1) {
     return 'El rango máximo es de un año.';

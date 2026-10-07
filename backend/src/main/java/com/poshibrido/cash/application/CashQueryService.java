@@ -129,11 +129,12 @@ public class CashQueryService {
                         session.getCountedAmount(), session.getDifference())
                 : new CashSection(session.getOpeningAmount(), null, null, null, null, null, null,
                         session.getCountedAmount(), null);
-        Summary summary = salesSummary.summarize(session.getId());
+        Summary summary = salesSummary.summarize(session.getId(), session.getClosedAt());
         SessionView view = toView(session, registerMap(), names(List.of(session)));
         return new SessionReport(view, summary.salesCount(), summary.salesTotal(), summary.voidedCount(),
                 summary.voidedTotal(), summary.netSales(), audit ? summary.byMethod() : List.of(),
-                summary.voidsHereCount(), cash, audit);
+                summary.voidsHereCount(), summary.voidedAfterCloseCount(), summary.voidedAfterCloseTotal(), cash,
+                audit);
     }
 
     public SessionView toView(CashSession session) {

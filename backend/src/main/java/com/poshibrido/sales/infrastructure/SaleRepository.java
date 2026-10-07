@@ -51,5 +51,21 @@ public interface SaleRepository extends JpaRepository<Sale, UUID> {
     List<Object[]> totalsBySession(@Param("sessionId") UUID sessionId, @Param("anyStatus") boolean anyStatus,
                                    @Param("status") SaleStatus status);
 
+    /** {@code [count, sum(total)]} de las ventas de la sesión anuladas hasta ese momento (inclusive). */
+    @Query("""
+            select count(s), coalesce(sum(s.total), 0) from Sale s
+            where s.cashSessionId = :sessionId and s.status = com.poshibrido.sales.domain.SaleStatus.VOIDED
+              and s.voidedAt <= :cutoff
+            """)
+    List<Object[]> voidedUntil(@Param("sessionId") UUID sessionId, @Param("cutoff") Instant cutoff);
+
+    /** {@code [count, sum(total)]} de las ventas de la sesión anuladas después de ese momento. */
+    @Query("""
+            select count(s), coalesce(sum(s.total), 0) from Sale s
+            where s.cashSessionId = :sessionId and s.status = com.poshibrido.sales.domain.SaleStatus.VOIDED
+              and s.voidedAt > :cutoff
+            """)
+    List<Object[]> voidedAfter(@Param("sessionId") UUID sessionId, @Param("cutoff") Instant cutoff);
+
     long countByVoidCashSessionId(UUID voidCashSessionId);
 }
