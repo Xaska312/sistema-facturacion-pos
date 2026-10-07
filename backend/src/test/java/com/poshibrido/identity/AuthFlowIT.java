@@ -97,9 +97,15 @@ class AuthFlowIT extends IntegrationTest {
         String rotated = TestApi.refreshCookieValue(first);
         assertThat(rotated).isNotEqualTo(session.refreshToken());
 
-        // Reutilizar el token viejo = posible robo: 401 y se revoca toda la familia
+        // Reutilizarlo en seguida = otra pestaña del mismo navegador: 401, pero la sesión nueva sigue viva (QA SEG-5)
         api.refreshRaw(session.refreshToken()).andExpect(status().isUnauthorized());
-        api.refreshRaw(rotated).andExpect(status().isUnauthorized());
+        MvcResult second = api.refreshRaw(rotated).andExpect(status().isOk()).andReturn();
+        String latest = TestApi.refreshCookieValue(second);
+
+        // Reutilizar un token viejo pasado el margen = posible robo: 401 y se revoca toda la familia
+        api.ageRefreshRotations();
+        api.refreshRaw(session.refreshToken()).andExpect(status().isUnauthorized());
+        api.refreshRaw(latest).andExpect(status().isUnauthorized());
     }
 
     @Test

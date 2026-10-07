@@ -6,6 +6,7 @@ import com.poshibrido.identity.domain.User;
 import com.poshibrido.identity.infrastructure.InvitationRepository;
 import com.poshibrido.shared.error.ConflictException;
 import com.poshibrido.shared.error.NotFoundException;
+import com.poshibrido.shared.error.TooManyRequestsException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -25,6 +26,15 @@ public class InvitationService implements InvitationApi {
 
     static final Duration VALIDITY = Duration.ofDays(7);
 
+    /** Mínimo entre dos envíos de la misma invitación (QA SEG-6: evitar ráfagas de correos a una persona). */
+    static final Duration RESEND_COOLDOWN = Duration.ofSeconds(60);
+
+    /**
+     * Máximo de invitaciones (nuevas o reenviadas) por negocio en 24 horas. Cada una envía un correo: sin tope, un
+     * negocio podría usar las invitaciones para enviar spam y agotar la cuota diaria de correos de todos (QA SEG-6).
+     */
+    static final int DAILY_LIMIT = 50;
+
     private final InvitationRepository invitations;
 
     @Override
@@ -32,6 +42,7 @@ public class InvitationService implements InvitationApi {
     public Created create(UUID tenantId, String email, Set<UUID> roleIds, Set<UUID> branchIds, UUID invitedBy) {
         String normalized = User.normalizeEmail(email);
         Instant now = Instant.now();
+        requireDailyQuota(tenantId, now);
         Optional<Invitation> pending = invitations.findByTenantIdAndEmailAndStatus(tenantId, normalized,
                 InvitationStatus.PENDING);
         if (pending.isPresent()) {
@@ -58,6 +69,11 @@ public class InvitationService implements InvitationApi {
         if (!previous.isPending()) {
             throw new ConflictException("Solo se puede reenviar una invitación pendiente.");
         }
+        Instant sentAt = previous.getCreatedAt();
+        if (sentAt != null && sentAt.isAfter(Instant.now().minus(RESEND_COOLDOWN))) {
+            throw new TooManyRequestsException("Acabamos de enviar esta invitación. Espera un minuto para reenviarla.");
+        }
+        requireDailyQuota(tenantId, Instant.now());
         previous.revoke();
         // Igual que en create: el índice único de pendientes exige escribir la revocación antes del INSERT.
         invitations.flush();
@@ -66,6 +82,13 @@ public class InvitationService implements InvitationApi {
         Invitation saved = invitations.save(Invitation.create(tenantId, previous.getEmail(), SecureTokens.sha256(raw),
                 previous.getRoleIds(), previous.getBranchIds(), invitedBy, now.plus(VALIDITY)));
         return new Created(InvitationView.of(saved, now), raw);
+    }
+
+    private void requireDailyQuota(UUID tenantId, Instant now) {
+        if (invitations.countByTenantIdAndCreatedAtAfter(tenantId, now.minus(Duration.ofDays(1))) >= DAILY_LIMIT) {
+            throw new TooManyRequestsException("Llegaste al máximo de " + DAILY_LIMIT + " invitaciones por día."
+                    + " Inténtalo mañana o escríbenos si necesitas más.");
+        }
     }
 
     @Override

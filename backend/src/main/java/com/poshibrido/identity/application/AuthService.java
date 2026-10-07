@@ -5,6 +5,7 @@ import com.poshibrido.audit.application.AuditLogger;
 import com.poshibrido.audit.application.SecurityEvent;
 import com.poshibrido.audit.application.SecurityEventLogger;
 import com.poshibrido.identity.domain.User;
+import com.poshibrido.identity.infrastructure.LoginAttemptStore;
 import com.poshibrido.identity.infrastructure.MembershipRepository;
 import com.poshibrido.identity.infrastructure.UserRepository;
 import com.poshibrido.shared.error.AccountLockedException;
@@ -49,13 +50,15 @@ public class AuthService {
     private final AuditLogger audit;
     private final PlatformAdmins platformAdmins;
     private final AccountService accounts;
+    private final LoginAttemptStore loginAttempts;
     /** Hash señuelo para igualar tiempos cuando el correo no existe (evita enumeración de cuentas). */
     private final String dummyHash;
 
     public AuthService(UserRepository users, MembershipRepository memberships, RefreshTokenService refreshTokens,
                        TokenService tokens, PasswordEncoder passwordEncoder, TenantApi tenantApi,
                        AccessApi accessApi, AuthProperties properties, SecurityEventLogger securityEvents,
-                       AuditLogger audit, PlatformAdmins platformAdmins, AccountService accounts) {
+                       AuditLogger audit, PlatformAdmins platformAdmins, AccountService accounts,
+                       LoginAttemptStore loginAttempts) {
         this.users = users;
         this.memberships = memberships;
         this.refreshTokens = refreshTokens;
@@ -68,6 +71,7 @@ public class AuthService {
         this.audit = audit;
         this.platformAdmins = platformAdmins;
         this.accounts = accounts;
+        this.loginAttempts = loginAttempts;
         this.dummyHash = passwordEncoder.encode("dummy-password-" + UUID.randomUUID());
     }
 
@@ -106,11 +110,13 @@ public class AuthService {
                     "Cuenta bloqueada temporalmente por intentos fallidos. Intenta más tarde.");
         }
         if (!passwordEncoder.matches(password, user.getPasswordHash())) {
-            user.registerFailedLogin(properties.maxFailedAttempts(), properties.lockDuration(), now);
+            // Contador atómico en SQL (no en la entidad): los intentos en paralelo cuentan todos (QA SEG-4).
+            Instant lockedUntil = loginAttempts.registerFailure(user.getId(), properties.maxFailedAttempts(),
+                    properties.lockDuration(), now);
             loginFailed(user.getId(), user.getEmail(), "BAD_PASSWORD");
-            if (user.isLocked(now)) {
+            if (lockedUntil != null) {
                 securityEvents.record(SecurityEvent.ACCOUNT_LOCKED, user.getId(), user.getEmail(), null,
-                        Map.of("until", user.getLockedUntil()));
+                        Map.of("until", lockedUntil));
             }
             throw new UnauthorizedException(BAD_CREDENTIALS);
         }

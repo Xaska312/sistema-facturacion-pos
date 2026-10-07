@@ -7,11 +7,11 @@ import { DashboardComponent } from '../dashboard/dashboard.component';
 import { MyDayComponent } from '../dashboard/my-day.component';
 import { StockAlertsComponent } from '../dashboard/stock-alerts.component';
 import { FirstStepsComponent } from '../onboarding/first-steps.component';
-import { describeCapabilities, firstName, greeting, joinSpanish, quickActions } from './capabilities';
+import { describeCapabilities, firstName, greeting, quickActions } from './capabilities';
 
 /**
- * Inicio: saludo, accesos rápidos según permisos, primeros pasos (dueño de un negocio nuevo), tablero o "Mi día",
- * y lo que el usuario puede hacer en lenguaje natural (el detalle técnico, plegado, solo para quien administra roles).
+ * Inicio: saludo, accesos rápidos según permisos, primeros pasos (dueño de un negocio nuevo) y tablero o "Mi día".
+ * Sin ningún permiso, un aviso para pedir un rol.
  */
 @Component({
   selector: 'app-home',
@@ -58,27 +58,13 @@ import { describeCapabilities, firstName, greeting, joinSpanish, quickActions } 
       </div>
     }
 
-    <section class="card p-4 mt-4" aria-labelledby="capabilities-title">
-      <h2 id="capabilities-title" class="font-semibold">Lo que puedes hacer en este negocio</h2>
-      @if (capabilities().length > 0) {
-        <p class="text-sm mt-1">Puedes {{ capabilitiesText() }}.</p>
-      } @else {
-        <p class="text-sm mt-1">Aún no tienes permisos en este negocio. Pide a quien lo administra que te asigne un rol.</p>
-      }
-      @if (auth.hasPermission('roles:manage')) {
-        <details class="mt-2">
-          <summary class="text-sm text-brand cursor-pointer min-h-11 inline-flex items-center">
-            Ver el detalle técnico de tus permisos
-          </summary>
-          <ul class="flex flex-wrap gap-2 mt-1">
-            @for (permission of permissions(); track permission) {
-              <li class="text-xs font-mono bg-surface-alt rounded px-2 py-1">{{ permission }}</li>
-            }
-          </ul>
-          <a routerLink="/app/roles" class="inline-block mt-2 text-sm text-brand hover:underline">Administrar roles y permisos</a>
-        </details>
-      }
-    </section>
+    <!-- La lista "Lo que puedes hacer en este negocio" se quitó (pedido del usuario): solo se avisa si no hay
+         ningún permiso, porque entonces el inicio queda vacío. -->
+    @if (capabilities().length === 0) {
+      <section class="card p-4 mt-4" role="status">
+        <p class="text-sm">Aún no tienes permisos en este negocio. Pide a quien lo administra que te asigne un rol.</p>
+      </section>
+    }
   `,
   styles: `
     .action-card {
@@ -127,6 +113,4 @@ export class HomeComponent {
   protected readonly title = `${greeting()}${firstName(this.auth.user()?.fullName) ? ', ' + firstName(this.auth.user()?.fullName) : ''}`;
   protected readonly actions = computed(() => quickActions(this.auth.permissions()));
   protected readonly capabilities = computed(() => describeCapabilities(this.auth.permissions()));
-  protected readonly capabilitiesText = computed(() => joinSpanish(this.capabilities()));
-  protected readonly permissions = computed(() => [...this.auth.permissions()].sort());
 }

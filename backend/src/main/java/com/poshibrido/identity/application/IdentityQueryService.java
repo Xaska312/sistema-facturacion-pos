@@ -1,10 +1,14 @@
 package com.poshibrido.identity.application;
 
+import com.poshibrido.audit.application.SecurityEvent;
+import com.poshibrido.audit.application.SecurityEventLogger;
 import com.poshibrido.identity.domain.Membership;
 import com.poshibrido.identity.domain.MembershipStatus;
 import com.poshibrido.identity.domain.User;
+import com.poshibrido.identity.infrastructure.LoginAttemptStore;
 import com.poshibrido.identity.infrastructure.MembershipRepository;
 import com.poshibrido.identity.infrastructure.UserRepository;
+import com.poshibrido.shared.error.AccountLockedException;
 import com.poshibrido.shared.error.ForbiddenException;
 import com.poshibrido.shared.error.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +32,9 @@ public class IdentityQueryService implements UserApi, MembershipApi {
     private final UserRepository users;
     private final MembershipRepository memberships;
     private final PasswordEncoder passwordEncoder;
+    private final LoginAttemptStore loginAttempts;
+    private final AuthProperties properties;
+    private final SecurityEventLogger securityEvents;
 
     @Override
     @Transactional(readOnly = true)
@@ -55,19 +62,31 @@ public class IdentityQueryService implements UserApi, MembershipApi {
         return users.findByEmail(User.normalizeEmail(email)).map(u -> UserSummary.of(u));
     }
 
+    /**
+     * Una contraseña errada cuenta como intento fallido (igual que en el login) y con la cuenta bloqueada se rechaza:
+     * con una sesión robada no se pueden probar contraseñas sin límite en las acciones que la piden (QA SEG-9).
+     */
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public boolean passwordMatches(UUID userId, String rawPassword) {
-        if (rawPassword == null || rawPassword.isEmpty()) {
+        User user = users.findById(userId).orElse(null);
+        if (user == null) {
             return false;
         }
-        return users.findById(userId).map(u -> passwordEncoder.matches(rawPassword, u.getPasswordHash())).orElse(false);
-    }
-
-    @Override
-    @Transactional(propagation = Propagation.MANDATORY)
-    public void markEmailVerified(UUID userId) {
-        users.findById(userId).ifPresent(u -> u.markEmailVerified(Instant.now()));
+        Instant now = Instant.now();
+        if (user.isLocked(now)) {
+            throw new AccountLockedException("Cuenta bloqueada temporalmente por intentos fallidos. Intenta más tarde.");
+        }
+        if (rawPassword != null && !rawPassword.isEmpty() && passwordEncoder.matches(rawPassword, user.getPasswordHash())) {
+            return true;
+        }
+        Instant lockedUntil = loginAttempts.registerFailure(userId, properties.maxFailedAttempts(),
+                properties.lockDuration(), now);
+        if (lockedUntil != null) {
+            securityEvents.record(SecurityEvent.ACCOUNT_LOCKED, userId, user.getEmail(), null,
+                    Map.of("until", lockedUntil));
+        }
+        return false;
     }
 
     @Override

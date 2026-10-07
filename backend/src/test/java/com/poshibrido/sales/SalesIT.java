@@ -369,13 +369,16 @@ class SalesIT extends IntegrationTest {
         api.getWith(warehouse, "/api/v1/cash/sessions/" + session + "/movements").andExpect(status().isForbidden());
         api.getWith(warehouse, "/api/v1/cash/sessions/" + session + "/report").andExpect(status().isForbidden());
 
-        // Vendedor: vende y consulta, pero no opera caja (sin caja no puede cobrar) ni anula
+        // Vendedor: abre su propia caja y vende (V10); no ve el historial de cajas ni anula
         Session seller = api.joinAs(s, owner.tenantId(), "SELLER").session();
         api.getWith(seller, "/api/v1/sales").andExpect(status().isOk());
         api.getWith(seller, "/api/v1/sales/config").andExpect(status().isOk());
-        pos.openCashRaw(seller, CAJA_1, "0").andExpect(status().isForbidden());
-        pos.sellCash(seller, product, "1", "1000").andExpect(status().is(422));
+        pos.sellCash(seller, product, "1", "1000").andExpect(status().is(422)); // sin caja abierta
+        UUID caja2 = pos.newRegister(s, api.principalBranchId(s), "CAJA2");
+        pos.openCashRaw(seller, caja2, "0").andExpect(status().isCreated());
+        pos.sellCash(seller, product, "1", "1000").andExpect(status().isCreated());
         api.getWith(seller, "/api/v1/cash/sessions").andExpect(status().isForbidden());
+        api.postWith(seller, "/api/v1/sales/" + sale + "/void", "{\"reason\":\"x\"}").andExpect(status().isForbidden());
 
         // Contador: consulta ventas y caja, no vende
         Session accountant = api.joinAs(s, owner.tenantId(), "ACCOUNTANT").session();

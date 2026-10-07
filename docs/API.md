@@ -8,7 +8,7 @@ Base: `/api/v1`. Errores en `application/problem+json` (RFC 9457). Swagger UI en
 | POST | `/auth/register` | — | Crea la cuenta. `{email, password, fullName, phone?}` → 201. Envía el correo "Confirma tu correo" |
 | POST | `/auth/login` | — | `{email, password}` → token de plataforma + cookie `pos_refresh` + `tenants[]`. 401 credenciales, 423 bloqueado |
 | POST | `/auth/select-tenant` | cualquiera | `{tenantId}` → token de negocio + cookie. 403 sin membresía/negocio inactivo |
-| POST | `/auth/refresh` | cookie | Rota la cookie y devuelve nuevo access token. 401 si expiró o fue reutilizada |
+| POST | `/auth/refresh` | cookie | Rota la cookie y devuelve nuevo access token. 401 si expiró o fue reutilizada. Un token rotado hace menos de 30 s responde 401 sin cerrar las demás sesiones (otra pestaña); pasado ese margen se trata como robo |
 | POST | `/auth/logout` | cookie | Revoca la cookie. 204 |
 | GET | `/auth/me` | cualquiera | Usuario, `tenantId` y permisos del token |
 | POST | `/auth/verify-email` | — | `{token}` del enlace del correo → 204. 422 si no existe, venció (24 h) o ya se usó |
@@ -35,7 +35,7 @@ El token viaja en el cuerpo, nunca en la URL de la API.
 | Método | Ruta | Token | Descripción |
 |---|---|---|---|
 | POST | `/invitations/preview` | — (público) | `{token}` → `{tenantName, email, invitedByName, status, expired, expiresAt}`. 404 si no existe |
-| POST | `/invitations/accept` | cualquiera | `{token}` → `{tenantId, tenantName}`. 403 si el correo de la sesión no coincide, 409 usada/revocada o ya miembro, 422 vencida. Aceptar da el correo por confirmado (la invitación llegó a ese correo) |
+| POST | `/invitations/accept` | cualquiera | `{token}` → `{tenantId, tenantName}`. 403 si el correo de la sesión no coincide, 409 usada/revocada o ya miembro, 422 vencida. Aceptar **no** confirma el correo (el token también lo tiene quien invita) |
 
 ## Catálogo DIVIPOLA (cualquier sesión)
 | Método | Ruta | Descripción |
@@ -79,8 +79,10 @@ El token viaja en el cuerpo, nunca en la URL de la API.
 | POST | `/members/{id}/deactivate` · `/activate` | `members:manage` | Desactivar revoca sus sesiones en el negocio |
 | GET | `/members/invitations?pending=true` | `members:read` | Invitaciones (pendientes por defecto) |
 | POST | `/members/invitations` | `members:manage` | `{email, roleIds[], branchIds[]}` → 201 `{invitation, token}`. Envía el correo de invitación; el token también se entrega **una sola vez** para compartir el enlace `<origen>/invitacion/<token>`. 409 si ya hay una pendiente o ya es miembro activo |
-| POST | `/members/invitations/{id}/resend` | `members:manage` | → 200 `{invitation, token}`: revoca la invitación y crea otra igual (mismos roles y sucursales, 7 días más) con enlace nuevo, y la envía por correo. 409 si no está pendiente. Auditoría `INVITATION_RESENT` |
+| POST | `/members/invitations/{id}/resend` | `members:manage` | → 200 `{invitation, token}`: revoca la invitación y crea otra igual (mismos roles y sucursales, 7 días más) con enlace nuevo, y la envía por correo. 409 si no está pendiente, **429** si se envió hace menos de un minuto. Auditoría `INVITATION_RESENT` |
 | POST | `/members/invitations/{id}/revoke` | `members:manage` | 409 si no está pendiente |
+
+Máximo **50 invitaciones** (nuevas o reenviadas) por negocio cada 24 horas: después, 429. Volver a invitar a un miembro desactivado exige poder gestionarlo (403 si tiene permisos que quien invita no tiene).
 
 **Reglas anti-escalada** (403): nadie otorga, quita ni edita permisos que no tiene; el rol OWNER no se asigna;
 el propietario no se modifica; nadie se modifica a sí mismo (422).
@@ -234,7 +236,7 @@ Administradores de plataforma: `platform_admin = true` en la base; `PLATFORM_ADM
 Suspender revoca los refresh tokens de todos los miembros del negocio; los access tokens vigentes reciben 403 ("El negocio no está disponible.", `code: TENANT_UNAVAILABLE`). Queda en los eventos (`TENANT_SUSPENDED`, `TENANT_REACTIVATED`) y en la auditoría del negocio (`BUSINESS_SUSPENDED`, `BUSINESS_REACTIVATED`, sin autor).
 
 ## Eliminar (cerrar) un negocio — dueño (Fase 7-3)
-`POST /tenants/{id}/close` `{confirmation, password, reason?}` → 204. Solo el dueño (403 para los demás). `confirmation` es el nombre comercial (sin distinguir mayúsculas). Nombre o contraseña incorrectos → **422** (no 401). El negocio queda `SUSPENDED` con `closedByOwner = true`; los datos se conservan y solo el administrador de plataforma lo reactiva. Evento `TENANT_CLOSED`, auditoría `BUSINESS_CLOSED`.
+`POST /tenants/{id}/close` `{confirmation, password, reason?}` → 204. Solo el dueño (403 para los demás). `confirmation` es el nombre comercial (sin distinguir mayúsculas). Nombre o contraseña incorrectos → **422** (no 401); cada contraseña errada cuenta para el bloqueo de la cuenta (5 → 423 por 15 min). El negocio queda `SUSPENDED` con `closedByOwner = true`; los datos se conservan y solo el administrador de plataforma lo reactiva. Evento `TENANT_CLOSED`, auditoría `BUSINESS_CLOSED`.
 
 `GET /tenants` incluye ahora `suspensionReason` y `closedByOwner` en cada negocio.
 

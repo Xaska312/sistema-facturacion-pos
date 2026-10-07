@@ -77,6 +77,12 @@ public class MemberInvitationService {
                 && members.findById(existing.get().id()).map(m -> m.isActive()).orElse(false)) {
             throw new ConflictException("Esa persona ya es miembro activo del negocio.");
         }
+        // Volver a invitar a un miembro desactivado lo reactiva al aceptar: quien invita debe poder gestionarlo, igual
+        // que para "Activar" (QA SEG-8).
+        existing.flatMap(u -> members.findById(u.id())).filter(m -> !m.isActive()).ifPresent(m ->
+                guard.requireHolds(roles.findAllById(m.getRoleIds()).stream()
+                        .flatMap(r -> r.getPermissionCodes().stream())
+                        .collect(Collectors.toSet()), "volver a invitar a este usuario"));
 
         InvitationApi.Created created = invitations.create(tenant.id(), email, roleIds, branchIds,
                 CurrentActor.requireUserId());

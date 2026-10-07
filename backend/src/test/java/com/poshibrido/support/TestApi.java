@@ -144,6 +144,15 @@ public class TestApi {
         return session(selectTenantRaw(session, tenantId).andExpect(status().isOk()).andReturn());
     }
 
+    /**
+     * Hace como si las rotaciones de refresh hubieran pasado hace un minuto: fuera del margen en que una
+     * reutilización se toma como otra pestaña y no como robo ({@code RefreshTokenService.REUSE_GRACE}).
+     */
+    public void ageRefreshRotations() {
+        jdbc.update("UPDATE platform.refresh_tokens SET revoked_at = revoked_at - interval '1 minute'"
+                + " WHERE replaced_by IS NOT NULL AND revoked_at > now() - interval '1 minute'");
+    }
+
     public ResultActions refreshRaw(String refreshToken) throws Exception {
         return mvc.perform(post("/api/v1/auth/refresh").cookie(new Cookie(REFRESH_COOKIE, refreshToken)));
     }

@@ -49,13 +49,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return !"POST".equals(request.getMethod()) || !limits.containsKey(request.getRequestURI());
+        return !"POST".equals(request.getMethod()) || !limits.containsKey(RequestPaths.normalized(request));
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
-        String path = request.getRequestURI();
+        String path = RequestPaths.normalized(request);
         int limit = limits.get(path);
         long now = System.currentTimeMillis();
         String key = path + "|" + request.getRemoteAddr();
