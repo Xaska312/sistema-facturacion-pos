@@ -3,6 +3,7 @@ import { Router, RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { TenantSummary } from '../../core/api/api.models';
 import { AuthService } from '../../core/auth/auth.service';
+import { VerifyEmailBannerComponent } from '../auth/verify-email-banner.component';
 import { suspendedMessage } from '../platform/platform-labels';
 
 const STATUS_LABEL: Record<TenantSummary['status'], string> = {
@@ -14,7 +15,7 @@ const STATUS_LABEL: Record<TenantSummary['status'], string> = {
 
 @Component({
   selector: 'app-select-tenant',
-  imports: [RouterLink, ButtonModule],
+  imports: [RouterLink, ButtonModule, VerifyEmailBannerComponent],
   template: `
     <main class="min-h-screen flex items-center justify-center p-4">
       <section class="w-full max-w-lg card p-6 flex flex-col gap-4">
@@ -25,6 +26,8 @@ const STATUS_LABEL: Record<TenantSummary['status'], string> = {
           </div>
           <p-button label="Salir" [text]="true" severity="secondary" (onClick)="logout()" />
         </header>
+
+        <app-verify-email-banner />
 
         @for (tenant of auth.tenants(); track tenant.id) {
           <div class="border rounded-lg p-4 flex items-center justify-between gap-3">

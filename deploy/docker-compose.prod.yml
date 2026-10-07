@@ -74,6 +74,11 @@ services:
       PLATFORM_ADMIN_EMAILS: ${PLATFORM_ADMIN_EMAILS:-}
       RATE_LIMIT_API: ${RATE_LIMIT_API:-300}
       RATE_LIMIT_HEAVY: ${RATE_LIMIT_HEAVY:-20}
+      # Correos (verificación, invitaciones, contraseña) por Resend. Sin clave quedan en el log del backend.
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      MAIL_FROM: ${MAIL_FROM:-POS Híbrido <onboarding@resend.dev>}
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL:-https://${DOMAIN}}
+      EMAIL_VERIFICATION_REQUIRED: ${EMAIL_VERIFICATION_REQUIRED:-true}
     depends_on:
       postgres-db:
         condition: service_healthy

@@ -76,7 +76,12 @@ export class RegisterComponent {
     const value = this.form.getRawValue();
     this.auth.register({ ...value, phone: value.phone || null }).subscribe({
       next: () => {
-        this.messages.add({ severity: 'success', summary: 'Cuenta creada', detail: 'Ya puedes iniciar sesión.' });
+        this.messages.add({
+          severity: 'success',
+          summary: 'Cuenta creada',
+          detail: `Te enviamos un correo a ${value.email} para confirmarlo. Ya puedes iniciar sesión.`,
+          life: 8000,
+        });
         void this.router.navigate(['/login'], { queryParams: this.returnUrl ? { returnUrl: this.returnUrl } : {} });
       },
       error: (err: unknown) => {

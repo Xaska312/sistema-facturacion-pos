@@ -39,7 +39,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
         this.limits = Map.of(
                 "/api/v1/auth/login", properties.loginPerMinute(),
                 "/api/v1/auth/register", properties.registerPerMinute(),
-                "/api/v1/invitations/preview", properties.loginPerMinute());
+                "/api/v1/invitations/preview", properties.loginPerMinute(),
+                "/api/v1/auth/verify-email", properties.loginPerMinute(),
+                "/api/v1/auth/password-reset/request", properties.registerPerMinute(),
+                "/api/v1/auth/password-reset/confirm", properties.loginPerMinute());
         this.exceptionResolver = exceptionResolver;
         this.securityEvents = securityEvents;
     }

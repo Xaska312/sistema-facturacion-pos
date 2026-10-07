@@ -54,19 +54,21 @@ public class PlatformAdmins {
         }
         List<String> list = new ArrayList<>(emails);
         String placeholders = String.join(", ", Collections.nCopies(list.size(), "?"));
-        int granted = jdbc.update("UPDATE platform.users SET platform_admin = TRUE WHERE NOT platform_admin AND email IN ("
-                + placeholders + ")", list.toArray());
+        // Solo cuentas con el correo confirmado: nadie puede registrarse con un correo ajeno y quedar como admin.
+        int granted = jdbc.update("UPDATE platform.users SET platform_admin = TRUE WHERE NOT platform_admin"
+                + " AND email_verified_at IS NOT NULL AND email IN (" + placeholders + ")", list.toArray());
         int revoked = jdbc.update("UPDATE platform.users SET platform_admin = FALSE WHERE platform_admin AND email NOT IN ("
                 + placeholders + ")", list.toArray());
-        Set<String> existing = new TreeSet<>(jdbc.queryForList(
-                "SELECT email FROM platform.users WHERE email IN (" + placeholders + ")", String.class, list.toArray()));
+        Set<String> existing = new TreeSet<>(jdbc.queryForList("SELECT email FROM platform.users"
+                + " WHERE email_verified_at IS NOT NULL AND email IN (" + placeholders + ")", String.class,
+                list.toArray()));
         Set<String> missing = new TreeSet<>(emails);
         missing.removeAll(existing);
         log.info("Administradores de plataforma: {} configurados, {} con permiso nuevo, {} sin permiso ahora",
                 emails.size(), granted, revoked);
         if (!missing.isEmpty()) {
-            log.warn("PLATFORM_ADMIN_EMAILS tiene correos sin cuenta ({}): regístralos en la app y reinicia el backend",
-                    missing);
+            log.warn("PLATFORM_ADMIN_EMAILS tiene correos sin cuenta o sin confirmar ({}): regístralos, confirma el"
+                    + " correo y reinicia el backend", missing);
         }
     }
 }

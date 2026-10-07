@@ -65,6 +65,8 @@ type Tab = 'members' | 'invitations';
                       (emptyAction)="openInvite()"
                       (queryChange)="loadInvitations($event)">
         <ng-template #actions let-row>
+          <p-button *hasPermission="'members:manage'" label="Reenviar" icon="pi pi-send" size="small" [text]="true"
+                    (onClick)="resend(row)" />
           <p-button *hasPermission="'members:manage'" label="Revocar" icon="pi pi-times" size="small" [text]="true"
                     severity="danger" (onClick)="revoke(row)" />
         </ng-template>
@@ -75,8 +77,9 @@ type Tab = 'members' | 'invitations';
     <p-dialog [(visible)]="inviteOpen" [modal]="true" header="Invitar usuario" [style]="{ width: '34rem' }">
       @if (createdLink(); as link) {
         <div class="flex flex-col gap-3">
-          <p>Comparte este enlace con <strong>{{ invitedEmail() }}</strong> (WhatsApp, correo…). Vence en 7 días y
-            solo se muestra ahora.</p>
+          <p>Le enviamos un correo a <strong>{{ invitedEmail() }}</strong> con la invitación. Si no le llega (revisa
+            también la carpeta de spam), compártele este enlace por WhatsApp. Vence en 7 días y solo se muestra
+            ahora.</p>
           <input pInputText readonly class="w-full font-mono text-xs" [value]="link" />
           <div class="flex justify-end gap-2">
             <p-button label="Copiar enlace" (onClick)="copy(link)" />
@@ -111,7 +114,7 @@ type Tab = 'members' | 'invitations';
           </fieldset>
           <div class="flex justify-end gap-2">
             <p-button label="Cancelar" [text]="true" severity="secondary" (onClick)="inviteOpen = false" />
-            <p-button label="Generar enlace" [loading]="saving()" [disabled]="!canInvite()" (onClick)="invite()" />
+            <p-button label="Enviar invitación" [loading]="saving()" [disabled]="!canInvite()" (onClick)="invite()" />
           </div>
         </div>
       }
@@ -287,6 +290,23 @@ export class MembersComponent implements OnInit {
     this.messages.add(ok
       ? { severity: 'success', summary: 'Enlace copiado' }
       : { severity: 'warn', summary: 'No se pudo copiar', detail: 'Selecciona el enlace y cópialo manualmente.' });
+  }
+
+  /** Reenvía el correo con un enlace nuevo (el anterior deja de funcionar) y muestra el enlace para compartir. */
+  resend(invitation: Invitation): void {
+    this.confirm.ask({
+      header: 'Reenviar invitación',
+      message: `¿Reenviar la invitación a ${invitation.email}? Le llegará un correo con un enlace nuevo y el anterior `
+        + 'dejará de funcionar.',
+      acceptLabel: 'Reenviar invitación',
+      accept: () =>
+        this.access.resendInvitation(invitation.id).subscribe((created) => {
+          this.invitedEmail.set(created.invitation.email);
+          this.createdLink.set(invitationLink(window.location.origin, created.token));
+          this.inviteOpen = true;
+          this.loadInvitations(this.invitationQuery);
+        }),
+    });
   }
 
   revoke(invitation: Invitation): void {

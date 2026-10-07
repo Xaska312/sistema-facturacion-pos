@@ -5,6 +5,7 @@ import com.poshibrido.support.TestApi.Session;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -23,6 +24,7 @@ import static org.springframework.security.test.web.servlet.setup.SecurityMockMv
  * esa base en lugar de levantar un contenedor (útil en entornos sin Docker).
  */
 @SpringBootTest
+@Import(TestMailConfig.class)
 public abstract class IntegrationTest {
 
     /** Contenedor compartido por toda la ejecución; Testcontainers (Ryuk) lo detiene al terminar la JVM. */
@@ -58,6 +60,9 @@ public abstract class IntegrationTest {
         registry.add("app.rate-limit.api-per-minute", () -> "100000");
         registry.add("app.rate-limit.heavy-per-minute", () -> "100000");
         registry.add("app.platform.admin-emails", () -> TestApi.PLATFORM_ADMIN_EMAIL);
+        // Los correos se "envían" en la misma petición (después del commit) para poder leerlos en el test.
+        registry.add("app.mail.async", () -> "false");
+        registry.add("app.mail.public-url", () -> "http://pos.test");
     }
 
     @Autowired
@@ -67,7 +72,10 @@ public abstract class IntegrationTest {
     private DataSource dataSource;
 
     @Autowired
-    private PlatformAdmins platformAdmins;
+    protected PlatformAdmins platformAdmins;
+
+    @Autowired
+    protected RecordingMailSender mailbox;
 
     protected MockMvc mvc;
     protected TestApi api;
@@ -76,8 +84,8 @@ public abstract class IntegrationTest {
     @BeforeEach
     void setUpMockMvc() {
         mvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
-        api = new TestApi(mvc);
         jdbc = new JdbcTemplate(dataSource);
+        api = new TestApi(mvc, jdbc);
     }
 
     /**

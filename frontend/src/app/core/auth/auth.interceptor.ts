@@ -13,11 +13,20 @@ export function isTenantUnavailable(error: unknown): boolean {
     && (error.error as { code?: unknown } | null)?.code === TENANT_UNAVAILABLE;
 }
 
-/** Endpoints que no llevan Bearer ni disparan refresh ante un 401. */
-const PUBLIC_AUTH_ENDPOINTS = ['/login', '/register', '/refresh', '/logout'].map((p) => AUTH_API + p);
+/** Endpoints que no llevan Bearer ni disparan refresh ante un 401 (ojo: verify-email/resend sí lleva sesión). */
+const PUBLIC_AUTH_ENDPOINTS = [
+  '/login',
+  '/register',
+  '/refresh',
+  '/logout',
+  '/verify-email',
+  '/password-reset/request',
+  '/password-reset/confirm',
+].map((p) => AUTH_API + p);
 
-function isPublicAuth(url: string): boolean {
-  return PUBLIC_AUTH_ENDPOINTS.some((endpoint) => url.startsWith(endpoint));
+export function isPublicAuth(url: string): boolean {
+  const path = url.split('?')[0];
+  return PUBLIC_AUTH_ENDPOINTS.includes(path);
 }
 
 function withToken(request: HttpRequest<unknown>, token: string | null): HttpRequest<unknown> {

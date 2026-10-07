@@ -1,10 +1,18 @@
-import { Component, inject, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { AuthService } from '../../core/auth/auth.service';
+import { VerifyEmailBannerComponent } from '../auth/verify-email-banner.component';
 import { slugify } from './slugify';
+
+/** 403 del backend al crear un negocio sin haber confirmado el correo. */
+export function isEmailNotVerified(error: unknown): boolean {
+  return error instanceof HttpErrorResponse && error.status === 403
+    && (error.error as { code?: unknown } | null)?.code === 'EMAIL_NOT_VERIFIED';
+}
 
 /**
  * Asistente de creación de negocio en dos pasos: datos del negocio y confirmación.
@@ -12,7 +20,7 @@ import { slugify } from './slugify';
  */
 @Component({
   selector: 'app-create-tenant',
-  imports: [ReactiveFormsModule, RouterLink, ButtonModule, InputTextModule],
+  imports: [ReactiveFormsModule, RouterLink, ButtonModule, InputTextModule, VerifyEmailBannerComponent],
   template: `
     <main class="min-h-screen flex items-center justify-center p-4">
       <section class="w-full max-w-lg card p-6 flex flex-col gap-4">
@@ -20,6 +28,8 @@ import { slugify } from './slugify';
           <p class="text-xs text-muted">Paso {{ step() }} de 2</p>
           <h1 class="text-xl font-semibold">Crear negocio</h1>
         </header>
+
+        <app-verify-email-banner />
 
         <form [formGroup]="form" class="flex flex-col gap-4">
           @if (step() === 1) {
@@ -55,7 +65,7 @@ import { slugify } from './slugify';
             </p>
             <div class="flex justify-between">
               <p-button label="Atrás" [text]="true" severity="secondary" (onClick)="step.set(1)" />
-              <p-button label="Crear negocio" [loading]="saving()" (onClick)="create()" />
+              <p-button label="Crear negocio" [loading]="saving()" [disabled]="!verified()" (onClick)="create()" />
             </div>
           }
         </form>
@@ -69,6 +79,8 @@ export class CreateTenantComponent {
 
   readonly step = signal<1 | 2>(1);
   readonly saving = signal(false);
+  /** Sin el correo confirmado el backend no deja crear el negocio (403 EMAIL_NOT_VERIFIED). */
+  readonly verified = computed(() => this.auth.user()?.emailVerified !== false);
   slugTouched = false;
 
   readonly form = inject(FormBuilder).nonNullable.group({
@@ -92,8 +104,13 @@ export class CreateTenantComponent {
           next: () => void this.router.navigate(['/app']),
           error: () => void this.router.navigate(['/negocios']),
         }),
-      error: () => {
+      error: (err: unknown) => {
         this.saving.set(false);
+        if (isEmailNotVerified(err)) {
+          // La sesión decía "confirmado" pero el servidor no: refresca la cuenta para mostrar el aviso.
+          this.auth.reloadUser().subscribe();
+          return;
+        }
         this.step.set(1);
       },
     });

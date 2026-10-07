@@ -57,6 +57,17 @@ app:
   platform:
     # Correos de los administradores de plataforma, separados por coma (consola /plataforma).
     admin-emails: ${PLATFORM_ADMIN_EMAILS:}
+  mail:
+    # Remitente. Sin dominio propio, Resend solo permite onboarding@resend.dev y enviar a tu propio correo.
+    from: ${MAIL_FROM:POS Híbrido <onboarding@resend.dev>}
+    # Con clave, los correos salen por Resend. Sin clave: SMTP si hay spring.mail.host (Mailpit), si no, al log.
+    resend-api-key: ${RESEND_API_KEY:}
+    # Dirección pública de la app, para los enlaces de los correos.
+    public-url: ${APP_PUBLIC_URL:http://localhost:4200}
+    async: true
+  auth:
+    # Exigir correo confirmado para crear un negocio.
+    require-email-verification: ${EMAIL_VERIFICATION_REQUIRED:true}
 
 springdoc:
   api-docs:
@@ -65,6 +76,10 @@ springdoc:
     enabled: ${OPENAPI_ENABLED:false}
 
 management:
+  health:
+    # El buzón de pruebas (Mailpit) caído no debe marcar el backend como caído.
+    mail:
+      enabled: false
   endpoints:
     web:
       exposure:

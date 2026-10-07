@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Observable, catchError, finalize, map, of, shareReplay, tap } from 'rxjs';
+import { Observable, catchError, finalize, map, of, shareReplay, switchMap, tap } from 'rxjs';
 import {
   CreateTenantRequest,
   RegisterRequest,
@@ -53,6 +53,46 @@ export class AuthService {
 
   register(request: RegisterRequest): Observable<UserSummary> {
     return this.http.post<UserSummary>(`${AUTH_API}/register`, request);
+  }
+
+  /**
+   * Confirma el correo con el token del enlace (funciona con o sin sesión). Con sesión vuelve a leer la cuenta: el
+   * enlace podría ser de otra cuenta distinta a la abierta en este navegador.
+   */
+  verifyEmail(token: string): Observable<void> {
+    return this.http.post<void>(`${AUTH_API}/verify-email`, { token }).pipe(
+      switchMap(() => (this.isAuthenticated() ? this.reloadUser().pipe(map(() => undefined)) : of(undefined))),
+    );
+  }
+
+  /** Reenvía el correo de confirmación a la cuenta de la sesión (429 si se pidió hace menos de un minuto). */
+  resendVerification(): Observable<void> {
+    return this.http.post<void>(`${AUTH_API}/verify-email/resend`, null);
+  }
+
+  /** "¿Olvidaste tu contraseña?": siempre responde igual, exista o no la cuenta. */
+  requestPasswordReset(email: string): Observable<void> {
+    return this.http.post<void>(`${AUTH_API}/password-reset/request`, { email });
+  }
+
+  /** Nueva contraseña con el token del enlace; cierra todas las sesiones de la cuenta. */
+  confirmPasswordReset(token: string, password: string): Observable<void> {
+    return this.http.post<void>(`${AUTH_API}/password-reset/confirm`, { token, password });
+  }
+
+  /** Vuelve a leer la cuenta (p. ej. después de confirmar el correo en otra pestaña). */
+  reloadUser(): Observable<UserSummary> {
+    return this.http.get<{ user: UserSummary }>(`${AUTH_API}/me`).pipe(
+      map((me) => me.user),
+      tap((user) => this.session.update((current) => (current ? { ...current, user } : current))),
+    );
+  }
+
+  /** Marca el correo como confirmado en la sesión actual (si la hay). */
+  markEmailVerified(): void {
+    this.session.update((current) =>
+      current ? { ...current, user: { ...current.user, emailVerified: true } } : current,
+    );
   }
 
   login(email: string, password: string): Observable<SessionResponse> {

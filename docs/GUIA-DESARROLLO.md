@@ -7,19 +7,22 @@ Tres herramientas distintas que conviene no confundir:
 | **Consola de plataforma** | Administrar el SaaS: negocios de todos los dueños, suspender/reactivar, eventos de seguridad | `http://localhost:4200/plataforma` (pantalla de la app) |
 | **Base de datos** (pgAdmin, DBeaver o psql) | Mirar tablas y datos como ingeniero | PostgreSQL en `localhost:5432` |
 | **Backend** (logs, Swagger, salud) | Ver qué hace la API, probar endpoints, diagnosticar errores | `docker compose logs`, `http://localhost:8080` |
+| **Buzón de prueba** (Mailpit) | Ver los correos que envía la app (confirmar cuenta, invitaciones…) | `http://localhost:8025` |
 
 ## 1. Consola de plataforma
 
 Es una pantalla web de la app, no una herramienta de base de datos. Solo la ven los administradores de plataforma.
 
-1. Regístrate en la app con tu cuenta (si aún no existe).
+1. Regístrate en la app con tu cuenta (si aún no existe) y **confirma el correo** con el enlace que llega al buzón
+   de prueba (sección 4).
 2. En el `.env` de la raíz: `PLATFORM_ADMIN_EMAILS=tu-correo@ejemplo.com` (el mismo correo de la cuenta).
 3. Reconstruye/reinicia el backend: `docker compose up -d --build backend`.
 4. En los logs debe aparecer `Administradores de plataforma: 1 configurados…`:
    ```powershell
    docker compose logs backend | Select-String "Administradores de plataforma|PLATFORM_ADMIN_EMAILS"
    ```
-   Si dice "correos sin cuenta", el correo del `.env` no coincide con ninguna cuenta registrada.
+   Si dice "correos sin cuenta o sin confirmar", el correo del `.env` no coincide con ninguna cuenta registrada o
+   esa cuenta aún no confirmó su correo.
 5. **Sal de la app y vuelve a iniciar sesión** (el permiso viaja en el token). En "Elegir negocio" aparece
    "Consola de plataforma" debajo de "+ Crear un negocio", y también en el menú de usuario dentro de un negocio.
 
@@ -127,7 +130,23 @@ Errores frecuentes:
 | 422 | Regla de negocio (sin existencias, caja cerrada, confirmación incorrecta…) |
 | 429 | Demasiadas solicitudes por minuto; esperar los segundos de `Retry-After` |
 
-## 4. En producción
+## 4. Correos en desarrollo (Mailpit)
+
+`docker compose up` levanta también **Mailpit**, un buzón de prueba: atrapa todos los correos del backend y nada
+sale a internet. Ábrelo en `http://localhost:8025`.
+
+- Al registrarte llega "Confirma tu correo": ábrelo en Mailpit y pulsa el botón (lleva a `localhost:4200`).
+  Sin confirmar no se puede crear un negocio.
+- También llegan ahí las invitaciones, "¿Olvidaste tu contraseña?", "Tu contraseña cambió" y los avisos de
+  negocio suspendido o reactivado. Sirve cualquier correo inventado (`cajero@prueba.test`).
+- Las cuentas que ya tenías antes de esta versión quedaron confirmadas.
+- Para probar con correos reales, pon `RESEND_API_KEY` en el `.env` de la raíz (sin dominio verificado, Resend solo
+  entrega a tu propio correo; ver `DESPLIEGUE.md`, sección 13) y `docker compose up -d backend`.
+- Datos de demostración: `node tools/demo/seed-demo.mjs` confirma solo el correo del dueño leyendo Mailpit.
+- En los logs: `docker compose logs backend | Select-String "Correo"` muestra cada envío (con el correo
+  enmascarado) y los errores.
+
+## 5. En producción
 
 La base **no** tiene puerto abierto a internet. Se entra por SSH al servidor y desde ahí:
 

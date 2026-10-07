@@ -55,6 +55,7 @@ const ACTIONS: Readonly<Record<string, string>> = {
   INVENTORY_DOCUMENT_CREATED: 'Registró un documento de inventario',
   INVITATION_ACCEPTED: 'Aceptó una invitación',
   INVITATION_CREATED: 'Invitó a una persona',
+  INVITATION_RESENT: 'Reenvió una invitación',
   INVITATION_REVOKED: 'Anuló una invitación',
   PRODUCTS_IMPORTED: 'Importó productos',
   REPORT_EXPORTED: 'Exportó un reporte',

@@ -8,6 +8,7 @@ import com.poshibrido.identity.application.UserApi;
 import com.poshibrido.identity.application.UserSummary;
 import com.poshibrido.shared.error.BusinessRuleException;
 import com.poshibrido.shared.error.ConflictException;
+import com.poshibrido.shared.error.EmailNotVerifiedException;
 import com.poshibrido.shared.error.NotFoundException;
 import com.poshibrido.shared.error.ServiceUnavailableException;
 import com.poshibrido.tenancy.domain.Tenant;
@@ -15,6 +16,7 @@ import com.poshibrido.tenancy.domain.TenantSchemas;
 import com.poshibrido.tenancy.domain.TenantStatus;
 import com.poshibrido.tenancy.infrastructure.TenantRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -46,11 +48,14 @@ public class TenantProvisioningService {
     private final TransactionTemplate tx;
     private final SecurityEventLogger securityEvents;
     private final AuditLogger audit;
+    private final boolean requireEmailVerification;
 
     public TenantProvisioningService(TenantRepository tenants, TenantSchemaManager schemaManager,
                                      TenantDataSeeder seeder, MembershipApi memberships, UserApi users,
                                      TenantDirectory directory, PlatformTransactionManager transactionManager,
-                                     SecurityEventLogger securityEvents, AuditLogger audit) {
+                                     SecurityEventLogger securityEvents, AuditLogger audit,
+                                     @Value("${app.auth.require-email-verification:true}")
+                                     boolean requireEmailVerification) {
         this.tenants = tenants;
         this.schemaManager = schemaManager;
         this.seeder = seeder;
@@ -60,6 +65,7 @@ public class TenantProvisioningService {
         this.tx = new TransactionTemplate(transactionManager);
         this.securityEvents = securityEvents;
         this.audit = audit;
+        this.requireEmailVerification = requireEmailVerification;
     }
 
     public TenantSummary create(UUID ownerId, CreateTenantCommand command) {
@@ -71,6 +77,10 @@ public class TenantProvisioningService {
             throw new BusinessRuleException("El tipo de negocio " + command.businessType() + " aún no está disponible.");
         }
         UserSummary owner = users.requireActive(ownerId);
+        // Solo con el correo confirmado: un negocio a nombre de un correo ajeno no debe poder existir.
+        if (requireEmailVerification && !owner.emailVerified()) {
+            throw new EmailNotVerifiedException();
+        }
 
         Tenant created = tx.execute(status -> {
             if (tenants.existsBySlug(command.slug())) {

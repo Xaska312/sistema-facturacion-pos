@@ -107,6 +107,14 @@ public class MemberController {
         return new InvitationCreatedResponse(created.invitation(), created.token());
     }
 
+    /** Reenvía el correo con un enlace nuevo (el anterior deja de servir). */
+    @PostMapping("/invitations/{id}/resend")
+    @PreAuthorize("hasAuthority('members:manage')")
+    public InvitationCreatedResponse resend(@PathVariable UUID id) {
+        MemberInvitationService.Created created = invitations.resend(id);
+        return new InvitationCreatedResponse(created.invitation(), created.token());
+    }
+
     @PostMapping("/invitations/{id}/revoke")
     @PreAuthorize("hasAuthority('members:manage')")
     public InvitationDetails revoke(@PathVariable UUID id) {

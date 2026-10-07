@@ -83,6 +83,8 @@ public class InvitationAcceptanceService {
         writer.upsertMember(schema, userId, user.fullName(), roleIds, branchIds, invitation.invitedBy());
         memberships.grantActive(userId, tenant.id());
         invitations.markAccepted(invitation.id(), userId);
+        // La invitación llegó a ese correo (o su dueño la compartió con esa persona): cuenta como confirmado.
+        users.markEmailVerified(userId);
         audit.logIn(schema, userId, "INVITATION_ACCEPTED", "invitation", invitation.id(), null,
                 Map.of("memberId", userId, "roles", roleIds, "branches", branchIds));
         return new Accepted(tenant.id(), tenant.tradeName());

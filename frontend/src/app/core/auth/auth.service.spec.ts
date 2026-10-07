@@ -10,7 +10,7 @@ function session(payload: object): SessionResponse {
     accessToken: fakeToken(payload),
     tokenType: 'Bearer',
     expiresIn: 900,
-    user: { id: 'u1', email: 'ana@test.co', fullName: 'Ana', platformAdmin: false },
+    user: { id: 'u1', email: 'ana@test.co', fullName: 'Ana', platformAdmin: false, emailVerified: true },
     tenantId: null,
     permissions: [],
     tenants: [],
@@ -64,5 +64,43 @@ describe('AuthService', () => {
     http.expectOne('/api/v1/auth/refresh').flush({}, { status: 401, statusText: 'Unauthorized' });
     expect(result).toBeFalse();
     expect(service.isAuthenticated()).toBeFalse();
+  });
+
+  it('confirmar el correo con sesión lo marca como confirmado sin volver a iniciar sesión', () => {
+    service.login('ana@test.co', 'Clave12345678').subscribe();
+    const unverified = session({ sub: 'u1', exp: 9999999999, typ: 'platform' });
+    unverified.user = { ...unverified.user, emailVerified: false };
+    http.expectOne('/api/v1/auth/login').flush(unverified);
+    expect(service.user()?.emailVerified).toBeFalse();
+
+    service.verifyEmail('tok').subscribe();
+    const request = http.expectOne('/api/v1/auth/verify-email');
+    expect(request.request.body).toEqual({ token: 'tok' });
+    request.flush(null, { status: 204, statusText: 'No Content' });
+    http.expectOne('/api/v1/auth/me').flush({
+      user: { id: 'u1', email: 'ana@test.co', fullName: 'Ana', platformAdmin: false, emailVerified: true },
+      tenantId: null,
+      permissions: [],
+    });
+    expect(service.user()?.emailVerified).toBeTrue();
+  });
+
+  it('reloadUser actualiza la cuenta de la sesión', () => {
+    service.login('ana@test.co', 'Clave12345678').subscribe();
+    http.expectOne('/api/v1/auth/login').flush(session({ sub: 'u1', exp: 9999999999, typ: 'platform' }));
+    service.reloadUser().subscribe();
+    http.expectOne('/api/v1/auth/me').flush({
+      user: { id: 'u1', email: 'ana@test.co', fullName: 'Ana María', platformAdmin: false, emailVerified: true },
+      tenantId: null,
+      permissions: [],
+    });
+    expect(service.user()?.fullName).toBe('Ana María');
+  });
+
+  it('pedir el enlace de contraseña nueva envía solo el correo', () => {
+    service.requestPasswordReset('ana@test.co').subscribe();
+    const request = http.expectOne('/api/v1/auth/password-reset/request');
+    expect(request.request.body).toEqual({ email: 'ana@test.co' });
+    request.flush(null, { status: 204, statusText: 'No Content' });
   });
 });

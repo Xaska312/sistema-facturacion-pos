@@ -6,6 +6,7 @@
 //   POS_API        URL del backend (por defecto http://localhost:8080)
 //   DEMO_SLUG      identificador del negocio (por defecto tienda_demo)
 //   DEMO_PASSWORD  contraseña de los usuarios demo (por defecto DemoPos2026)
+//   MAILPIT_URL    buzón de prueba para confirmar el correo del dueño (por defecto http://localhost:8025)
 //
 // Solo usa la API pública (no toca la base de datos). Requiere Node 18 o superior.
 
@@ -15,6 +16,7 @@ const BASE = (process.env.POS_API ?? 'http://localhost:8080').replace(/\/$/, '')
 const SLUG = process.env.DEMO_SLUG ?? 'tienda_demo';
 const PASSWORD = process.env.DEMO_PASSWORD ?? 'DemoPos2026';
 const DOMAIN = 'tienda-demo.test';
+const MAILPIT = (process.env.MAILPIT_URL ?? 'http://localhost:8025').replace(/\/$/, '');
 
 // IDs sembrados en todo negocio nuevo (db/tenant V2, V5 y V7)
 const ID = {
@@ -100,7 +102,43 @@ async function ensureUser(user) {
     expect: [409],
   });
   const { data } = await api('POST', '/api/v1/auth/login', { body: { email: user.email, password: PASSWORD } });
-  return data.accessToken;
+  return { token: data.accessToken, verified: data.user.emailVerified };
+}
+
+/**
+ * Confirma el correo con el enlace que llegó al buzón de prueba (Mailpit del docker compose de desarrollo).
+ * Los correos salen en segundo plano: se reintenta unos segundos.
+ */
+async function confirmEmail(email, token) {
+  for (let attempt = 1; attempt <= 20; attempt++) {
+    if (attempt === 6) {
+      // El buzón pudo vaciarse (Mailpit no guarda correos al recrear el contenedor): se pide uno nuevo.
+      await api('POST', '/api/v1/auth/verify-email/resend', { token, expect: [429] });
+    }
+    try {
+      const search = await fetch(`${MAILPIT}/api/v1/search?query=${encodeURIComponent(`to:"${email}"`)}`);
+      const { messages } = await search.json();
+      const found = messages.find((m) => m.Subject.includes('Confirma tu correo')); // el más reciente primero
+      if (found) {
+        const message = await (await fetch(`${MAILPIT}/api/v1/message/${found.ID}`)).json();
+        const link = /verificar-correo\?token=([A-Za-z0-9_-]+)/.exec(message.Text)?.[1];
+        const { status } = link
+          ? await api('POST', '/api/v1/auth/verify-email', { body: { token: link }, expect: [422] })
+          : { status: 0 };
+        if (status === 204) {
+          return;
+        }
+      }
+    } catch (error) {
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      // Mailpit no responde todavía (o no existe): se reintenta y al final se explica qué hacer.
+    }
+    await sleep(1000);
+  }
+  throw new Error(`No llegó el correo de confirmación de ${email} a ${MAILPIT}. Levanta la app con docker compose `
+    + '(incluye Mailpit) o define EMAIL_VERIFICATION_REQUIRED=false en el backend para la demo.');
 }
 
 async function selectTenant(platformToken, tenantId) {
@@ -114,7 +152,12 @@ async function main() {
   console.log(`Creando el negocio de demostración en ${BASE} …\n`);
 
   // Fase 1: dueño y negocio
-  const ownerPlatform = await ensureUser(USERS.owner);
+  const ownerAccount = await ensureUser(USERS.owner);
+  if (!ownerAccount.verified) {
+    await confirmEmail(USERS.owner.email, ownerAccount.token);
+    step(`Correo de ${USERS.owner.email} confirmado (enlace del buzón de prueba)`);
+  }
+  const ownerPlatform = ownerAccount.token;
   const { data: mine } = await api('GET', '/api/v1/tenants', { token: ownerPlatform });
   // Si ya existe (p. ej. de una ejecución anterior incompleta), se crea otro: tienda_demo_2, _3…
   let slug = SLUG;
@@ -164,7 +207,7 @@ async function main() {
     const { data: invitation } = await api('POST', '/api/v1/members/invitations', {
       token: owner, body: { email: user.email, roleIds: [roleId(user.role)], branchIds },
     });
-    const platform = await ensureUser(user);
+    const { token: platform } = await ensureUser(user);
     await api('POST', '/api/v1/invitations/accept', { token: platform, body: { token: invitation.token } });
     tokens[key] = await selectTenant(platform, tenant.id);
   }

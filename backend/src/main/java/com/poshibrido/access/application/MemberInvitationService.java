@@ -9,12 +9,16 @@ import com.poshibrido.identity.application.InvitationView;
 import com.poshibrido.identity.application.MembershipApi;
 import com.poshibrido.identity.application.UserApi;
 import com.poshibrido.identity.application.UserSummary;
+import com.poshibrido.mail.MailTemplates;
+import com.poshibrido.mail.Mailer;
 import com.poshibrido.organization.application.BranchApi;
 import com.poshibrido.organization.application.BranchApi.BranchRef;
 import com.poshibrido.shared.error.BusinessRuleException;
 import com.poshibrido.shared.error.ConflictException;
 import com.poshibrido.shared.security.CurrentActor;
 import com.poshibrido.tenancy.application.CurrentTenant;
+import com.poshibrido.tenancy.application.TenantApi;
+import com.poshibrido.tenancy.application.TenantInfo;
 import com.poshibrido.tenancy.application.TenantRef;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -35,8 +39,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Invitaciones del negocio actual: crear (devuelve el token una sola vez), listar y revocar.
- * El envío del enlace es manual (WhatsApp, correo); el envío automático llega en Fase 7.
+ * Invitaciones del negocio actual: crear (devuelve el token una sola vez), reenviar, listar y revocar.
+ * El enlace se envía por correo al invitado (después de guardar) y además se devuelve para compartirlo a mano.
  */
 @Service
 @RequiredArgsConstructor
@@ -51,6 +55,9 @@ public class MemberInvitationService {
     private final MembershipApi memberships;
     private final PrivilegeGuard guard;
     private final AuditLogger audit;
+    private final TenantApi tenants;
+    private final Mailer mailer;
+    private final MailTemplates templates;
 
     public record Created(InvitationDetails invitation, String token) {
     }
@@ -78,7 +85,33 @@ public class MemberInvitationService {
         after.put("roles", new TreeSet<>(roleIds));
         after.put("branches", new TreeSet<>(branchIds));
         audit.log("INVITATION_CREATED", "invitation", created.invitation().id(), null, after);
+        sendInvitation(tenant, created, assigned);
         return new Created(toDetails(List.of(created.invitation())).getFirst(), created.rawToken());
+    }
+
+    /**
+     * Reenvía una invitación pendiente: genera un enlace nuevo (el anterior deja de servir), lo envía por correo y
+     * lo devuelve para compartirlo. Quien reenvía debe poder asignar esos roles.
+     */
+    @Transactional
+    public Created resend(UUID invitationId) {
+        TenantRef tenant = CurrentTenant.require();
+        InvitationApi.Created created = invitations.reissue(tenant.id(), invitationId, CurrentActor.requireUserId());
+        List<Role> assigned = roleService.requireAll(created.invitation().roleIds());
+        guard.requireCanAssign(assigned);
+        audit.log("INVITATION_RESENT", "invitation", created.invitation().id(), null,
+                Map.of("email", created.invitation().email(), "previousId", invitationId));
+        sendInvitation(tenant, created, assigned);
+        return new Created(toDetails(List.of(created.invitation())).getFirst(), created.rawToken());
+    }
+
+    private void sendInvitation(TenantRef tenant, InvitationApi.Created created, List<Role> roles) {
+        String businessName = tenants.findInfo(tenant.id()).map(TenantInfo::tradeName).orElse(tenant.slug());
+        UUID inviterId = CurrentActor.requireUserId();
+        UserSummary inviter = users.findSummaries(Set.of(inviterId)).get(inviterId);
+        List<String> roleNames = roles.stream().map(Role::getName).sorted().toList();
+        mailer.send(templates.invitation(created.invitation().email(), inviter == null ? null : inviter.fullName(),
+                businessName, roleNames, created.rawToken(), created.invitation().expiresAt()));
     }
 
     @Transactional(readOnly = true)
