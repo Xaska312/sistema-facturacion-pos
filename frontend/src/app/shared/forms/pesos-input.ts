@@ -8,7 +8,7 @@
  * @returns el número, o null si está vacío o no es un monto válido (negativos incluidos).
  */
 export function parsePesos(raw: string | null | undefined, decimals = 0): number | null {
-  let text = (raw ?? '').replace(/cop/gi, '').replace(/[\s$ ]/g, '');
+  let text = (raw ?? '').replace(/cop/gi, '').replace(/[\s$]/g, '');
   if (!text) {
     return null;
   }
