@@ -65,6 +65,11 @@ export class AccessApi {
     return this.http.post<Invitation>(`/api/v1/members/invitations/${id}/revoke`, null);
   }
 
+  /** Reenvía la invitación por correo con un enlace nuevo (el anterior deja de funcionar). */
+  resendInvitation(id: string): Observable<InvitationCreated> {
+    return this.http.post<InvitationCreated>(`/api/v1/members/invitations/${id}/resend`, null);
+  }
+
   previewInvitation(token: string): Observable<InvitationPreview> {
     return this.http.post<InvitationPreview>('/api/v1/invitations/preview', { token });
   }

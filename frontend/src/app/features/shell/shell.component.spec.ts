@@ -16,7 +16,7 @@ describe('ShellComponent', () => {
   const permissions = signal(new Set(['sales:create', 'cash:operate', 'branches:read']));
   const auth = {
     permissions,
-    user: signal({ id: 'u1', email: 'ana@tienda.test', fullName: 'Ana Pérez', platformAdmin: false }),
+    user: signal({ id: 'u1', email: 'ana@tienda.test', fullName: 'Ana Pérez', platformAdmin: false, emailVerified: true }),
     currentTenant: signal({ tradeName: 'Tienda Demo' }),
     isPlatformAdmin: signal(false),
     hasPermission: (p: string) => permissions().has(p),

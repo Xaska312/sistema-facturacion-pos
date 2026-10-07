@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
@@ -61,6 +62,12 @@ public class IdentityQueryService implements UserApi, MembershipApi {
             return false;
         }
         return users.findById(userId).map(u -> passwordEncoder.matches(rawPassword, u.getPasswordHash())).orElse(false);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void markEmailVerified(UUID userId) {
+        users.findById(userId).ifPresent(u -> u.markEmailVerified(Instant.now()));
     }
 
     @Override

@@ -51,6 +51,24 @@ public class InvitationService implements InvitationApi {
     }
 
     @Override
+    @Transactional
+    public Created reissue(UUID tenantId, UUID invitationId, UUID invitedBy) {
+        Invitation previous = invitations.findByIdAndTenantId(invitationId, tenantId)
+                .orElseThrow(() -> new NotFoundException("Invitación no encontrada."));
+        if (!previous.isPending()) {
+            throw new ConflictException("Solo se puede reenviar una invitación pendiente.");
+        }
+        previous.revoke();
+        // Igual que en create: el índice único de pendientes exige escribir la revocación antes del INSERT.
+        invitations.flush();
+        Instant now = Instant.now();
+        String raw = SecureTokens.newToken();
+        Invitation saved = invitations.save(Invitation.create(tenantId, previous.getEmail(), SecureTokens.sha256(raw),
+                previous.getRoleIds(), previous.getBranchIds(), invitedBy, now.plus(VALIDITY)));
+        return new Created(InvitationView.of(saved, now), raw);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public Page<InvitationView> listForTenant(UUID tenantId, boolean onlyPending, Pageable pageable) {
         Instant now = Instant.now();

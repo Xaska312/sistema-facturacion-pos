@@ -57,6 +57,7 @@ public final class AuditLabels {
             Map.entry("INVENTORY_DOCUMENT_CREATED", "Registró un documento de inventario"),
             Map.entry("INVITATION_ACCEPTED", "Aceptó una invitación"),
             Map.entry("INVITATION_CREATED", "Invitó a una persona"),
+            Map.entry("INVITATION_RESENT", "Reenvió una invitación"),
             Map.entry("INVITATION_REVOKED", "Anuló una invitación"),
             Map.entry("PRODUCTS_IMPORTED", "Importó productos"),
             Map.entry("REPORT_EXPORTED", "Exportó un reporte"),

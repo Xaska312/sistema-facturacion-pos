@@ -19,6 +19,9 @@ export const EVENT_LABEL: Readonly<Record<string, string>> = {
   TENANT_REACTIVATED: 'Negocio reactivado',
   TENANT_CLOSED: 'Negocio cerrado por su dueño',
   TENANT_CLOSE_DENIED: 'Contraseña errada al cerrar un negocio',
+  EMAIL_VERIFIED: 'Correo confirmado',
+  PASSWORD_RESET_REQUESTED: 'Pidió restablecer la contraseña',
+  PASSWORD_RESET: 'Contraseña restablecida',
 };
 
 /** Eventos que merecen atención (se resaltan en la lista). */

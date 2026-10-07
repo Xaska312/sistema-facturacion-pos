@@ -32,9 +32,26 @@ services:
       REFRESH_COOKIE_SECURE: ${REFRESH_COOKIE_SECURE:-true}
       OPENAPI_ENABLED: ${OPENAPI_ENABLED:-false}
       PLATFORM_ADMIN_EMAILS: ${PLATFORM_ADMIN_EMAILS:-}
+      # Correos: sin RESEND_API_KEY van al buzón de prueba (Mailpit, http://localhost:8025); con la clave, por Resend.
+      SPRING_MAIL_HOST: mailpit
+      SPRING_MAIL_PORT: 1025
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      MAIL_FROM: ${MAIL_FROM:-POS Híbrido <onboarding@resend.dev>}
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL:-http://localhost:4200}
+      EMAIL_VERIFICATION_REQUIRED: ${EMAIL_VERIFICATION_REQUIRED:-true}
     depends_on:
       postgres-db:
         condition: service_healthy
+      mailpit:
+        condition: service_started
+
+  # Buzón de prueba: atrapa todos los correos del backend (nada sale a internet). Bandeja en http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: poshibrido-mailpit
+    ports:
+      - "8025:8025"
+      - "1025:1025"
 
   frontend:
     build:

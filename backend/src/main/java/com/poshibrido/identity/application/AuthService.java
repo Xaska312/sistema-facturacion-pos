@@ -48,13 +48,14 @@ public class AuthService {
     private final SecurityEventLogger securityEvents;
     private final AuditLogger audit;
     private final PlatformAdmins platformAdmins;
+    private final AccountService accounts;
     /** Hash señuelo para igualar tiempos cuando el correo no existe (evita enumeración de cuentas). */
     private final String dummyHash;
 
     public AuthService(UserRepository users, MembershipRepository memberships, RefreshTokenService refreshTokens,
                        TokenService tokens, PasswordEncoder passwordEncoder, TenantApi tenantApi,
                        AccessApi accessApi, AuthProperties properties, SecurityEventLogger securityEvents,
-                       AuditLogger audit, PlatformAdmins platformAdmins) {
+                       AuditLogger audit, PlatformAdmins platformAdmins, AccountService accounts) {
         this.users = users;
         this.memberships = memberships;
         this.refreshTokens = refreshTokens;
@@ -66,6 +67,7 @@ public class AuthService {
         this.securityEvents = securityEvents;
         this.audit = audit;
         this.platformAdmins = platformAdmins;
+        this.accounts = accounts;
         this.dummyHash = passwordEncoder.encode("dummy-password-" + UUID.randomUUID());
     }
 
@@ -75,10 +77,12 @@ public class AuthService {
         if (users.existsByEmail(email)) {
             throw new ConflictException("Ya existe una cuenta registrada con ese correo.");
         }
-        User user = users.save(User.register(email, passwordEncoder.encode(command.password()),
+        // saveAndFlush: el enlace de confirmación (JdbcTemplate) referencia al usuario, que debe existir ya en la base.
+        User user = users.saveAndFlush(User.register(email, passwordEncoder.encode(command.password()),
                 command.fullName(), command.phone()));
         log.info("Usuario registrado {}", user.getId());
         securityEvents.record(SecurityEvent.REGISTERED, user.getId(), email, null, null);
+        accounts.sendVerification(user);
         return summary(user);
     }
 

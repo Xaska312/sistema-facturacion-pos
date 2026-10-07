@@ -20,6 +20,12 @@ public interface InvitationApi {
     /** Lanza 409 si ya hay una invitación pendiente para ese correo en el negocio. */
     Created create(UUID tenantId, String email, Set<UUID> roleIds, Set<UUID> branchIds, UUID invitedBy);
 
+    /**
+     * Reenvío: revoca la invitación pendiente y crea otra igual con un enlace nuevo (solo se guarda el hash del
+     * token, así que el enlace anterior no se puede volver a mostrar). El enlace anterior deja de servir.
+     */
+    Created reissue(UUID tenantId, UUID invitationId, UUID invitedBy);
+
     Page<InvitationView> listForTenant(UUID tenantId, boolean onlyPending, Pageable pageable);
 
     /** Revoca una invitación pendiente del negocio (404 si no es de ese negocio). */

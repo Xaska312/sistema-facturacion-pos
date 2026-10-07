@@ -5,17 +5,21 @@ Base: `/api/v1`. Errores en `application/problem+json` (RFC 9457). Swagger UI en
 ## Autenticación (plataforma)
 | Método | Ruta | Token | Descripción |
 |---|---|---|---|
-| POST | `/auth/register` | — | Crea la cuenta. `{email, password, fullName, phone?}` → 201 |
+| POST | `/auth/register` | — | Crea la cuenta. `{email, password, fullName, phone?}` → 201. Envía el correo "Confirma tu correo" |
 | POST | `/auth/login` | — | `{email, password}` → token de plataforma + cookie `pos_refresh` + `tenants[]`. 401 credenciales, 423 bloqueado |
 | POST | `/auth/select-tenant` | cualquiera | `{tenantId}` → token de negocio + cookie. 403 sin membresía/negocio inactivo |
 | POST | `/auth/refresh` | cookie | Rota la cookie y devuelve nuevo access token. 401 si expiró o fue reutilizada |
 | POST | `/auth/logout` | cookie | Revoca la cookie. 204 |
 | GET | `/auth/me` | cualquiera | Usuario, `tenantId` y permisos del token |
+| POST | `/auth/verify-email` | — | `{token}` del enlace del correo → 204. 422 si no existe, venció (24 h) o ya se usó |
+| POST | `/auth/verify-email/resend` | cualquiera | Reenvía el correo (el enlace anterior deja de servir) → 204; nada si ya está confirmado. 429 si se pidió hace menos de un minuto |
+| POST | `/auth/password-reset/request` | — | `{email}` → 204 **siempre** (no revela si la cuenta existe). Si existe, envía el enlace (vence en 1 h; máx. uno por minuto) |
+| POST | `/auth/password-reset/confirm` | — | `{token, password}` → 204. Cambia la contraseña, desbloquea la cuenta, da el correo por confirmado, **cierra todas las sesiones** y avisa por correo. 422 enlace inválido/vencido/usado, 400 contraseña débil |
 
 Respuesta de sesión:
 ```json
 { "accessToken": "...", "tokenType": "Bearer", "expiresIn": 900,
-  "user": {"id": "...", "email": "...", "fullName": "...", "platformAdmin": false},
+  "user": {"id": "...", "email": "...", "fullName": "...", "platformAdmin": false, "emailVerified": true},
   "tenantId": null, "permissions": [], "tenants": [ ... ] }
 ```
 
@@ -23,7 +27,7 @@ Respuesta de sesión:
 | Método | Ruta | Descripción |
 |---|---|---|
 | GET | `/tenants` | Negocios donde soy miembro activo o dueño |
-| POST | `/tenants` | `{slug, legalName, tradeName, businessType:"RETAIL"}` → 201. 409 slug repetido, 422 tipo no disponible, 503 falló el aprovisionamiento |
+| POST | `/tenants` | `{slug, legalName, tradeName, businessType:"RETAIL"}` → 201. **403 `code: EMAIL_NOT_VERIFIED`** si el dueño no ha confirmado su correo, 409 slug repetido, 422 tipo no disponible, 503 falló el aprovisionamiento |
 | POST | `/tenants/{id}/retry-provisioning` | Solo el dueño y solo si está `FAILED` (409 si no; 404 si no es suyo) |
 
 ## Invitaciones (lado del invitado)
@@ -31,7 +35,7 @@ El token viaja en el cuerpo, nunca en la URL de la API.
 | Método | Ruta | Token | Descripción |
 |---|---|---|---|
 | POST | `/invitations/preview` | — (público) | `{token}` → `{tenantName, email, invitedByName, status, expired, expiresAt}`. 404 si no existe |
-| POST | `/invitations/accept` | cualquiera | `{token}` → `{tenantId, tenantName}`. 403 si el correo de la sesión no coincide, 409 usada/revocada o ya miembro, 422 vencida |
+| POST | `/invitations/accept` | cualquiera | `{token}` → `{tenantId, tenantName}`. 403 si el correo de la sesión no coincide, 409 usada/revocada o ya miembro, 422 vencida. Aceptar da el correo por confirmado (la invitación llegó a ese correo) |
 
 ## Catálogo DIVIPOLA (cualquier sesión)
 | Método | Ruta | Descripción |
@@ -74,7 +78,8 @@ El token viaja en el cuerpo, nunca en la URL de la API.
 | PUT | `/members/{id}` | `members:manage` | `{roleIds[], branchIds[], defaultBranchId?}` |
 | POST | `/members/{id}/deactivate` · `/activate` | `members:manage` | Desactivar revoca sus sesiones en el negocio |
 | GET | `/members/invitations?pending=true` | `members:read` | Invitaciones (pendientes por defecto) |
-| POST | `/members/invitations` | `members:manage` | `{email, roleIds[], branchIds[]}` → 201 `{invitation, token}`. El token se entrega **una sola vez**; el enlace es `<origen>/invitacion/<token>`. 409 si ya hay una pendiente o ya es miembro activo |
+| POST | `/members/invitations` | `members:manage` | `{email, roleIds[], branchIds[]}` → 201 `{invitation, token}`. Envía el correo de invitación; el token también se entrega **una sola vez** para compartir el enlace `<origen>/invitacion/<token>`. 409 si ya hay una pendiente o ya es miembro activo |
+| POST | `/members/invitations/{id}/resend` | `members:manage` | → 200 `{invitation, token}`: revoca la invitación y crea otra igual (mismos roles y sucursales, 7 días más) con enlace nuevo, y la envía por correo. 409 si no está pendiente. Auditoría `INVITATION_RESENT` |
 | POST | `/members/invitations/{id}/revoke` | `members:manage` | 409 si no está pendiente |
 
 **Reglas anti-escalada** (403): nadie otorga, quita ni edita permisos que no tiene; el rol OWNER no se asigna;
@@ -219,7 +224,7 @@ Solo administradores de plataforma (`platform_admin`; token con `padm`). Tabla `
 Eventos: `REGISTERED`, `LOGIN_SUCCEEDED`, `LOGIN_FAILED` (`details.reason`: `UNKNOWN_EMAIL`, `BAD_PASSWORD`, `LOCKED`, `INACTIVE`), `ACCOUNT_LOCKED` (`details.until`), `LOGOUT`, `TENANT_ENTERED`, `TENANT_ACCESS_DENIED`, `REFRESH_TOKEN_REUSED`, `RATE_LIMITED` (`details.path`; uno por IP y minuto), `TENANT_CREATED`, `TENANT_PROVISIONING_FAILED`.
 
 ## Consola de plataforma (Fase 7-3)
-Administradores de plataforma: `platform_admin = true` en la base; `PLATFORM_ADMIN_EMAILS` lo aplica al arrancar a las cuentas que ya existen con esos correos (y se lo quita a las demás si la lista no está vacía). Su token trae `padm` y `/auth/me` devuelve `user.platformAdmin = true`.
+Administradores de plataforma: `platform_admin = true` en la base; `PLATFORM_ADMIN_EMAILS` lo aplica al arrancar a las cuentas que ya existen con esos correos **y con el correo confirmado** (y se lo quita a las demás si la lista no está vacía). Su token trae `padm` y `/auth/me` devuelve `user.platformAdmin = true`.
 | Método | Ruta | Respuesta |
 |---|---|---|
 | GET | `/platform/tenants?q=&status=&page=&size=` | Página de `{id, slug, legalName, tradeName, businessType, status, ownerId, ownerEmail, ownerName, activeMembers, createdAt, suspendedAt, suspensionReason, closedByOwner}`. `q`: nombre, razón social, identificador o correo del dueño |
@@ -235,3 +240,16 @@ Suspender revoca los refresh tokens de todos los miembros del negocio; los acces
 
 ## Límites de solicitudes (Fase 7-3)
 Por usuario (o por IP sin sesión), ventana de un minuto: **300** solicitudes a `/api/**` (`RATE_LIMIT_API`) y **20** operaciones pesadas (`RATE_LIMIT_HEAVY`: descargas `.csv`, `POST /products/import`, `POST /tenants/{id}/close`). Al superarlo: **429** con `Retry-After` (segundos). Login (10/min) y registro (5/min) por IP siguen igual.
+
+## Correos (Fase 7-4)
+Los correos salen **después de confirmar la transacción**, en segundo plano (2 hilos) y con 3 intentos (0, 2 y 8 s; solo errores temporales: 429, 5xx, red). Si fallan, la operación ya quedó hecha y el error queda en el log (correo enmascarado: `a***@dominio.com`).
+
+| Tipo (`kind`) | Cuándo | A quién |
+|---|---|---|
+| `verificacion` | Registro y "Reenviar correo" | La cuenta nueva (enlace `<APP_PUBLIC_URL>/verificar-correo?token=`, 24 h) |
+| `restablecer-clave` | "¿Olvidaste tu contraseña?" | La cuenta (enlace `/restablecer-clave?token=`, 1 h) |
+| `clave-cambiada` | Contraseña restablecida | La cuenta |
+| `invitacion` | Invitar y reenviar invitación | El invitado (enlace `/invitacion/<token>`, 7 días) |
+| `negocio-suspendido` · `negocio-reactivado` · `negocio-cerrado` | Suspender/reactivar (plataforma) o cerrar (dueño) | El dueño |
+
+Envío: **Resend** (API HTTP) si hay `RESEND_API_KEY`; si no, **SMTP** si hay `SPRING_MAIL_HOST` (Mailpit en desarrollo); si no, **el log** del backend. Los enlaces de un solo uso se guardan como hash SHA-256 en `platform.user_tokens`; pedir uno nuevo invalida los anteriores del mismo tipo. Eventos de seguridad: `EMAIL_VERIFIED`, `PASSWORD_RESET_REQUESTED`, `PASSWORD_RESET`. Límites por IP: `verify-email` y `password-reset/confirm` como el login (10/min), `password-reset/request` como el registro (5/min).

@@ -1,5 +1,6 @@
 package com.poshibrido.identity.api;
 
+import com.poshibrido.identity.application.AccountService;
 import com.poshibrido.identity.application.AuthService;
 import com.poshibrido.identity.application.RegisterCommand;
 import com.poshibrido.identity.application.SessionResult;
@@ -30,6 +31,7 @@ import java.util.UUID;
 public class AuthController {
 
     private final AuthService authService;
+    private final AccountService accounts;
     private final RefreshCookies cookies;
 
     @PostMapping("/register")
@@ -64,6 +66,34 @@ public class AuthController {
         return ResponseEntity.noContent()
                 .header(HttpHeaders.SET_COOKIE, cookies.clear().toString())
                 .build();
+    }
+
+    /** Confirma el correo con el enlace recibido (no necesita sesión). 422 si el enlace no sirve. */
+    @PostMapping("/verify-email")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void verifyEmail(@Valid @RequestBody TokenRequest request) {
+        accounts.verifyEmail(request.token());
+    }
+
+    /** Reenvía el correo de confirmación a la cuenta de la sesión (máximo uno por minuto). */
+    @PostMapping("/verify-email/resend")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void resendVerification() {
+        accounts.resendVerification(CurrentActor.requireUserId());
+    }
+
+    /** "Olvidé mi contraseña": siempre 204, exista o no la cuenta. */
+    @PostMapping("/password-reset/request")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void requestPasswordReset(@Valid @RequestBody PasswordResetRequest request) {
+        accounts.requestPasswordReset(request.email());
+    }
+
+    /** Nueva contraseña con el enlace del correo. Cierra todas las sesiones de la cuenta. */
+    @PostMapping("/password-reset/confirm")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void resetPassword(@Valid @RequestBody PasswordResetConfirmRequest request) {
+        accounts.resetPassword(request.token(), request.password());
     }
 
     @GetMapping("/me")

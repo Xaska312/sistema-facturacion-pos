@@ -1,4 +1,5 @@
 import { APIRequestContext, expect, test } from '@playwright/test';
+import { confirmEmail } from './mailpit';
 
 const UND = '01920000-0000-7000-8000-000000000301';
 const IVA19 = '01920000-0000-7000-8000-000000000401';
@@ -22,6 +23,8 @@ async function prepareBusiness(request: APIRequestContext): Promise<Setup> {
   expect((await request.post('/api/v1/auth/register', {
     data: { email, password: PASSWORD, fullName: 'Cajero E2E' },
   })).status()).toBe(201);
+  // Sin el correo confirmado no se puede crear el negocio: se abre el enlace que llegó a Mailpit.
+  await confirmEmail(request, email);
   const login = await request.post('/api/v1/auth/login', { data: { email, password: PASSWORD } });
   expect(login.ok()).toBeTruthy();
   const session = await login.json();

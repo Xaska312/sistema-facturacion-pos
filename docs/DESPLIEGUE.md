@@ -151,6 +151,7 @@ nano .env
 | `POSTGRES_ADMIN_PASSWORD`, `DB_PASSWORD`, `JWT_SECRET` | las tres claves generadas (distintas) |
 | `BACKUP_REMOTE` | `posdrive-crypt:` (paso 6) |
 | `PLATFORM_ADMIN_EMAILS` | déjalo vacío por ahora: se llena en el paso 7, después de registrarte |
+| `RESEND_API_KEY`, `MAIL_FROM` | correos de la app (sección 13). Sin clave, los enlaces quedan en el log del backend |
 
 - **`JWT_SECRET` nuevo**: nunca el de desarrollo ni uno que se haya compartido por chat o correo.
 - Evita `$` en las claves: Docker Compose lo interpreta como variable (el comando de arriba no lo genera).
@@ -205,10 +206,10 @@ docker compose -f docker-compose.prod.yml ps          # todos "running"; backend
 docker compose -f docker-compose.prod.yml logs -f web # ver el certificado: "certificate obtained successfully"
 ```
 
-Abre `https://pos.midominio.com`, regístrate y crea tu negocio. `https://pos.midominio.com/healthz` debe
+Abre `https://pos.midominio.com`, regístrate, **confirma tu correo** con el enlace que te llega y crea tu negocio. `https://pos.midominio.com/healthz` debe
 responder `{"status":"UP"}`.
 
-**Consola de plataforma** (suspender negocios, ver eventos de seguridad): ya registrado, pon tu correo en
+**Consola de plataforma** (suspender negocios, ver eventos de seguridad): ya registrado y con el correo confirmado, pon tu correo en
 `PLATFORM_ADMIN_EMAILS` del `.env` y reinicia el backend con `docker compose -f docker-compose.prod.yml up -d backend`.
 Al arrancar, el backend le da el permiso a las cuentas que ya existen con esos correos (por eso va después de
 registrarte: así nadie puede registrarse antes con tu correo y quedar como administrador). Vuelve a iniciar sesión y
@@ -282,6 +283,39 @@ docker compose -f docker-compose.prod.yml -f docker-compose.build.yml up -d --bu
 
 Abre `http://localhost:8081`. Para borrar todo: `docker compose -f docker-compose.prod.yml down -v`.
 
+Sin `RESEND_API_KEY` los correos no salen: el enlace para confirmar tu cuenta aparece en el log del backend
+(descomenta también `APP_PUBLIC_URL=http://localhost:8081`):
+
+```powershell
+docker compose -f docker-compose.prod.yml logs backend | Select-String "verificar-correo"
+```
+
+## 13. Correos con Resend
+
+La app envía correos para confirmar la cuenta, invitar usuarios, restablecer la contraseña y avisar al dueño si su
+negocio se suspende. Salen por [Resend](https://resend.com) (plan gratis: 100 por día, 3.000 por mes).
+
+1. Crea la cuenta en resend.com con tu correo.
+2. **Domains → Add Domain** → `midominio.com` (o un subdominio, p. ej. `correo.midominio.com`). Región: la que
+   sugiera (us-east-1 está bien).
+3. Resend muestra 3 o 4 registros DNS (SPF `TXT`/`MX` en `send…` y DKIM `TXT` en `resend._domainkey…`). Créalos en el
+   panel DNS de donde compraste el dominio, copiándolos tal cual, y pulsa **Verify**. Suele tardar minutos (hasta
+   24 h). Recomendado además un registro DMARC: `TXT` en `_dmarc` con `v=DMARC1; p=none;`.
+4. **API Keys → Create API Key** → permiso *Sending access*, solo para ese dominio. Cópiala (se muestra una vez).
+5. En el `.env` del servidor:
+   ```bash
+   RESEND_API_KEY=re_xxxxxxxx
+   MAIL_FROM=POS Híbrido <no-responder@midominio.com>
+   ```
+6. `docker compose up -d backend` y revisa: `docker compose logs backend | grep "Correos:"` debe decir
+   `Correos: Resend`. Prueba con "¿Olvidaste tu contraseña?" en tu cuenta.
+
+- Mientras el dominio no esté verificado, Resend solo acepta `MAIL_FROM` con `onboarding@resend.dev` y **solo
+  entrega a tu propio correo** (el de la cuenta de Resend): sirve para probar, no para clientes.
+- La clave va solo en `.env` (nunca en el repositorio ni por chat). Si se filtra, bórrala en Resend y crea otra.
+- En **Emails** de Resend ves cada correo enviado, entregado o rebotado. Si alguien no recibe la invitación, el
+  dueño puede copiar el enlace que aparece al invitar y mandarlo por WhatsApp.
+
 ## Lista de seguridad antes de abrir a clientes
 
 - [ ] `JWT_SECRET`, `DB_PASSWORD` y `POSTGRES_ADMIN_PASSWORD` nuevos y distintos; `.env` con permisos 600.
@@ -289,6 +323,7 @@ Abre `http://localhost:8081`. Para borrar todo: `docker compose -f docker-compos
 - [ ] `https://` con candado; `http://` redirige a `https://`.
 - [ ] Primer respaldo en Drive y prueba de restauración correcta; contraseñas de cifrado guardadas fuera del servidor.
 - [ ] Monitores de healthchecks.io y UptimeRobot activos.
+- [ ] Dominio verificado en Resend y `MAIL_FROM` con ese dominio; un correo de prueba llega a la bandeja (no a spam).
 - [ ] Swagger apagado (`OPENAPI_ENABLED=false`, ya fijo en producción) y `/actuator` no accesible desde internet
       (solo `/healthz`).
 

@@ -29,5 +29,11 @@ public enum SecurityEvent {
     /** El dueño cerró ("eliminó") su negocio: queda suspendido y solo el administrador lo reactiva. */
     TENANT_CLOSED,
     /** Intento de cerrar un negocio con la contraseña equivocada (posible sesión robada). */
-    TENANT_CLOSE_DENIED
+    TENANT_CLOSE_DENIED,
+    /** Confirmó su correo con el enlace. */
+    EMAIL_VERIFIED,
+    /** Pidió restablecer la contraseña (con {@code user_id} nulo si el correo no existe). */
+    PASSWORD_RESET_REQUESTED,
+    /** Cambió la contraseña con el enlace del correo (se cierran todas sus sesiones). */
+    PASSWORD_RESET
 }

@@ -26,6 +26,23 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/register.component').then((m) => m.RegisterComponent),
   },
   {
+    // Sin guestGuard: también se llega desde "Pedir un enlace nuevo" con la sesión abierta.
+    path: 'recuperar-clave',
+    title: 'Recuperar contraseña',
+    loadComponent: () => import('./features/auth/forgot-password.component').then((m) => m.ForgotPasswordComponent),
+  },
+  {
+    // Enlaces de los correos: funcionan con o sin sesión.
+    path: 'restablecer-clave',
+    title: 'Contraseña nueva',
+    loadComponent: () => import('./features/auth/reset-password.component').then((m) => m.ResetPasswordComponent),
+  },
+  {
+    path: 'verificar-correo',
+    title: 'Confirmar correo',
+    loadComponent: () => import('./features/auth/verify-email.component').then((m) => m.VerifyEmailComponent),
+  },
+  {
     path: 'negocios',
     canActivate: [authGuard],
     children: [

@@ -40,6 +40,11 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
+        <!-- Correo por SMTP (Mailpit en desarrollo). En producción se usa la API HTTP de Resend (sin dependencia). -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
 
         <!-- Seguridad: JWT HS256 firmado/validado con Nimbus (Spring Security OAuth2 JOSE).
              Se usan los módulos de Spring Security directamente (versión gestionada por el BOM de Boot)

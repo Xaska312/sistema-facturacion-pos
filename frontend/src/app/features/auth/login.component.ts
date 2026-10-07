@@ -28,6 +28,8 @@ import { safeReturnUrl } from '../../core/auth/return-url';
           <p-password formControlName="password" [feedback]="false" [toggleMask]="true"
                       autocomplete="current-password" styleClass="w-full" inputStyleClass="w-full" />
         </label>
+        <a routerLink="/recuperar-clave" [queryParams]="form.controls.email.valid ? { email: form.controls.email.value } : {}"
+           class="text-sm text-brand hover:underline self-end -mt-2">¿Olvidaste tu contraseña?</a>
 
         @if (error()) {
           <p class="text-sm text-danger" role="alert">{{ error() }}</p>

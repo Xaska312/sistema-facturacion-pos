@@ -5,6 +5,7 @@ import jakarta.servlet.http.Cookie;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
@@ -31,7 +32,10 @@ public class TestApi {
 
     private final MockMvc mvc;
 
-    public TestApi(MockMvc mvc) {
+    private final JdbcTemplate jdbc;
+
+    public TestApi(MockMvc mvc, JdbcTemplate jdbc) {
+        this.jdbc = jdbc;
         this.mvc = mvc;
     }
 
@@ -53,7 +57,18 @@ public class TestApi {
         return prefix + "_" + UUID.randomUUID().toString().replace("-", "").substring(0, 10);
     }
 
+    /**
+     * Registra y da el correo por confirmado (como si hubiera abierto el enlace), para que pueda crear negocios.
+     * Para probar la confirmación de verdad: {@link #registerUnverified}.
+     */
     public UUID register(String email) throws Exception {
+        UUID id = registerUnverified(email);
+        jdbc.update("UPDATE platform.users SET email_verified_at = now() WHERE id = ?", id);
+        return id;
+    }
+
+    /** Registra sin confirmar el correo (queda pendiente el enlace del correo de bienvenida). */
+    public UUID registerUnverified(String email) throws Exception {
         MvcResult result = mvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -90,6 +105,9 @@ public class TestApi {
         if (status != 201 && status != 409) {
             throw new AssertionError("No se pudo registrar el administrador de plataforma: " + status);
         }
+        // Solo cuentas con el correo confirmado pueden ser administradoras.
+        jdbc.update("UPDATE platform.users SET email_verified_at = coalesce(email_verified_at, now()) WHERE email = ?",
+                PLATFORM_ADMIN_EMAIL);
     }
 
     public Session registerAndLogin(String prefix) throws Exception {

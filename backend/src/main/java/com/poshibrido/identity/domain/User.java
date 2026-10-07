@@ -55,6 +55,10 @@ public class User extends AuditableEntity {
     @Column(name = "locked_until")
     private Instant lockedUntil;
 
+    /** Cuándo confirmó su correo (nulo = sin confirmar). */
+    @Column(name = "email_verified_at")
+    private Instant emailVerifiedAt;
+
     public static User register(String email, String passwordHash, String fullName, String phone) {
         User user = new User();
         user.id = Ids.newId();
@@ -92,5 +96,23 @@ public class User extends AuditableEntity {
     public void registerSuccessfulLogin() {
         failedAttempts = 0;
         lockedUntil = null;
+    }
+
+    public boolean isEmailVerified() {
+        return emailVerifiedAt != null;
+    }
+
+    /** Confirma el correo (abrió el enlace del correo, aceptó una invitación enviada a él o restableció la clave). */
+    public void markEmailVerified(Instant now) {
+        if (emailVerifiedAt == null) {
+            emailVerifiedAt = now;
+        }
+    }
+
+    /** Nueva contraseña (ya hasheada): también desbloquea la cuenta. */
+    public void changePassword(String newPasswordHash) {
+        this.passwordHash = newPasswordHash;
+        this.failedAttempts = 0;
+        this.lockedUntil = null;
     }
 }

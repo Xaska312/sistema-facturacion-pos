@@ -20,7 +20,7 @@ POS web multi-negocio para comercios en Colombia. Backend Spring Boot 4.1 (Java 
 | 5 — Caja y ventas | ✅ Completada (probada en local el 2026-10-05 con la cuenta demo) |
 | 6 — Reportes y dashboard | ✅ Completada (validada en local el 2026-10-05) |
 | Mejora de UX (UX-1 a UX-5) | ✅ Completada (validada el 2026-10-05) |
-| 7 — Endurecimiento para producción | 🚧 En curso: 7-1 producción y respaldos ([`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md)), 7-2 auditoría completa, 7-3 consola de plataforma y límites |
+| 7 — Endurecimiento para producción | 🚧 En curso: 7-1 producción y respaldos ([`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md)), 7-2 auditoría completa, 7-3 consola de plataforma y límites, 7-4 correos (confirmar cuenta, invitaciones, contraseña olvidada) |
 
 ## Requisitos
 - **Docker Desktop** (o Docker Engine + Compose). Debe estar en estado *Engine running* antes de levantar el proyecto o correr los tests.
@@ -54,8 +54,9 @@ La primera vez tarda varios minutos. Deja la terminal abierta; `Ctrl+C` la detie
 | Aplicación | http://localhost:4200 |
 | Salud del backend | http://localhost:8080/actuator/health → `{"status":"UP"}` |
 | Swagger (con `OPENAPI_ENABLED=true`) | http://localhost:8080/swagger-ui.html |
+| Buzón de prueba (correos de la app) | http://localhost:8025 |
 
-Flujo para probar: **Regístrate → inicia sesión → crea un negocio → Entrar**. Verás el menú según tus permisos y la sede principal en *Sucursales*.
+Flujo para probar: **Regístrate → confirma el correo (llega a http://localhost:8025) → inicia sesión → crea un negocio → Entrar**. Verás el menú según tus permisos y la sede principal en *Sucursales*.
 
 Comandos útiles:
 ```bash
@@ -72,7 +73,7 @@ node tools/demo/seed-demo.mjs
 ```
 Sin Node instalado, con Docker:
 ```powershell
-docker run --rm -v "${PWD}/tools:/tools" -e POS_API=http://host.docker.internal:8080 node:22-alpine node /tools/demo/seed-demo.mjs
+docker run --rm -v "${PWD}/tools:/tools" -e POS_API=http://host.docker.internal:8080 -e MAILPIT_URL=http://host.docker.internal:8025 node:22-alpine node /tools/demo/seed-demo.mjs
 ```
 Usuarios (contraseña `DemoPos2026`): `dueno@tienda-demo.test`, `cajero@tienda-demo.test`, `vendedor@tienda-demo.test`,
 `bodega@tienda-demo.test`. Para otro negocio demo: `DEMO_SLUG=otro_nombre`.

@@ -5,6 +5,10 @@ import com.poshibrido.audit.application.SecurityEvent;
 import com.poshibrido.audit.application.SecurityEventLogger;
 import com.poshibrido.identity.application.SessionApi;
 import com.poshibrido.identity.application.UserApi;
+import com.poshibrido.identity.application.UserSummary;
+import com.poshibrido.mail.MailMessage;
+import com.poshibrido.mail.MailTemplates;
+import com.poshibrido.mail.Mailer;
 import com.poshibrido.shared.api.PageRequests;
 import com.poshibrido.shared.api.PageResponse;
 import com.poshibrido.shared.error.BusinessRuleException;
@@ -27,6 +31,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.UUID;
 
 /**
@@ -57,10 +63,12 @@ public class TenantAdministrationService {
     private final SecurityEventLogger securityEvents;
     private final AuditLogger audit;
     private final JdbcTemplate jdbc;
+    private final Mailer mailer;
+    private final MailTemplates templates;
 
     public TenantAdministrationService(TenantRepository tenants, TenantDirectory directory, SessionApi sessions,
                                        UserApi users, SecurityEventLogger securityEvents, AuditLogger audit,
-                                       DataSource dataSource) {
+                                       DataSource dataSource, Mailer mailer, MailTemplates templates) {
         this.tenants = tenants;
         this.directory = directory;
         this.sessions = sessions;
@@ -68,6 +76,8 @@ public class TenantAdministrationService {
         this.securityEvents = securityEvents;
         this.audit = audit;
         this.jdbc = new JdbcTemplate(dataSource);
+        this.mailer = mailer;
+        this.templates = templates;
     }
 
     // ---------------------------------------------------------------- consola de plataforma
@@ -148,6 +158,8 @@ public class TenantAdministrationService {
                 Map.of("reason", tenant.getSuspensionReason()));
         audit.logIn(tenant.getSchemaName(), null, "BUSINESS_SUSPENDED", "business", tenantId,
                 Map.of("status", "ACTIVE"), suspensionData(tenant, "plataforma"));
+        notifyOwner(tenant, owner -> templates.tenantSuspended(owner.email(), owner.fullName(), tenant.getTradeName(),
+                tenant.getSuspensionReason()));
         return TenantSummary.of(tenant, adminId);
     }
 
@@ -163,6 +175,8 @@ public class TenantAdministrationService {
         securityEvents.record(SecurityEvent.TENANT_REACTIVATED, adminId, null, tenantId, null);
         audit.logIn(tenant.getSchemaName(), null, "BUSINESS_REACTIVATED", "business", tenantId, before,
                 Map.of("status", "ACTIVE"));
+        notifyOwner(tenant, owner -> templates.tenantReactivated(owner.email(), owner.fullName(),
+                tenant.getTradeName()));
         return TenantSummary.of(tenant, adminId);
     }
 
@@ -199,9 +213,19 @@ public class TenantAdministrationService {
                 Map.of("reason", tenant.getSuspensionReason()));
         audit.logIn(tenant.getSchemaName(), ownerId, "BUSINESS_CLOSED", "business", tenantId,
                 Map.of("status", "ACTIVE"), suspensionData(tenant, "dueño"));
+        notifyOwner(tenant, owner -> templates.tenantClosed(owner.email(), owner.fullName(), tenant.getTradeName()));
     }
 
     // ---------------------------------------------------------------- apoyo
+
+    /** Correo al dueño (sale después de confirmar la transacción). */
+    private void notifyOwner(Tenant tenant, Function<UserSummary, MailMessage> message) {
+        UUID ownerId = tenant.getOwnerUserId();
+        UserSummary owner = users.findSummaries(Set.of(ownerId)).get(ownerId);
+        if (owner != null) {
+            mailer.send(message.apply(owner));
+        }
+    }
 
     private Tenant require(UUID tenantId) {
         return tenants.findById(tenantId).orElseThrow(() -> new NotFoundException("Negocio no encontrado."));

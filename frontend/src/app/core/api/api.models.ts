@@ -8,6 +8,8 @@ export interface UserSummary {
   email: string;
   fullName: string;
   platformAdmin: boolean;
+  /** Confirmó su correo con el enlace que le llegó (requisito para crear un negocio). */
+  emailVerified: boolean;
 }
 
 export interface TenantSummary {

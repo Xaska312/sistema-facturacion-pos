@@ -17,4 +17,10 @@ public interface UserApi {
 
     /** La contraseña coincide con la del usuario (para confirmar acciones delicadas, p. ej. cerrar un negocio). */
     boolean passwordMatches(UUID userId, String rawPassword);
+
+    /**
+     * Da por confirmado el correo (p. ej. al aceptar una invitación que llegó a ese correo). Dentro de una
+     * transacción.
+     */
+    void markEmailVerified(UUID userId);
 }
