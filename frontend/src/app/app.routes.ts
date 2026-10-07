@@ -1,5 +1,5 @@
 import { ResolveFn, Routes } from '@angular/router';
-import { authGuard, guestGuard, permissionGuard, tenantGuard } from './core/auth/auth.guards';
+import { authGuard, guestGuard, permissionGuard, platformAdminGuard, tenantGuard } from './core/auth/auth.guards';
 import { FORBIDDEN_DATA, NOT_FOUND_DATA } from './features/errors/error-data';
 import { DOCUMENT_LABEL, documentTypeFromRoute } from './features/inventory/labels';
 
@@ -40,6 +40,28 @@ export const routes: Routes = [
         title: 'Nuevo negocio',
         loadComponent: () =>
           import('./features/tenants/create-tenant.component').then((m) => m.CreateTenantComponent),
+      },
+    ],
+  },
+  {
+    // Consola de plataforma (solo administradores): negocios y eventos de seguridad.
+    path: 'plataforma',
+    canActivate: [authGuard, platformAdminGuard],
+    loadComponent: () =>
+      import('./features/platform/platform-layout.component').then((m) => m.PlatformLayoutComponent),
+    children: [
+      { path: '', pathMatch: 'full', redirectTo: 'negocios' },
+      {
+        path: 'negocios',
+        title: 'Plataforma: negocios',
+        loadComponent: () =>
+          import('./features/platform/platform-tenants.component').then((m) => m.PlatformTenantsComponent),
+      },
+      {
+        path: 'seguridad',
+        title: 'Plataforma: eventos de seguridad',
+        loadComponent: () =>
+          import('./features/platform/platform-events.component').then((m) => m.PlatformEventsComponent),
       },
     ],
   },

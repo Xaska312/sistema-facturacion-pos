@@ -45,7 +45,10 @@ const NOUNS: Readonly<Record<string, string>> = {
 
 const ACTIONS: Readonly<Record<string, string>> = {
   AUDIT_EXPORTED: 'Exportó la auditoría',
+  BUSINESS_CLOSED: 'Eliminó (cerró) el negocio',
   BUSINESS_CREATED: 'Creó el negocio',
+  BUSINESS_REACTIVATED: 'Reactivó el negocio',
+  BUSINESS_SUSPENDED: 'Suspendió el negocio',
   CASH_MOVEMENT_CREATED: 'Registró un movimiento de caja',
   CASH_SESSION_CLOSED: 'Cerró caja',
   CASH_SESSION_OPENED: 'Abrió caja',
@@ -80,6 +83,7 @@ const FIELDS: Readonly<Record<string, string>> = {
   amount: 'Monto',
   branches: 'Sucursales',
   businessType: 'Tipo de negocio',
+  by: 'Quién',
   cashRegisterId: 'Caja (id)',
   cashSessionId: 'Turno de caja (id)',
   categoryId: 'Categoría (id)',
@@ -111,6 +115,7 @@ const FIELDS: Readonly<Record<string, string>> = {
   rows: 'Filas',
   sku: 'SKU',
   slug: 'Identificador',
+  status: 'Estado',
   timezone: 'Zona horaria',
   to: 'Hasta',
   total: 'Total',

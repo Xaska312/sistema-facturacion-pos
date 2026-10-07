@@ -2,6 +2,7 @@ import { HttpContextToken, HttpErrorResponse, HttpInterceptorFn } from '@angular
 import { inject } from '@angular/core';
 import { MessageService } from 'primeng/api';
 import { catchError, throwError } from 'rxjs';
+import { isTenantUnavailable } from '../auth/auth.interceptor';
 import { InlineErrorScope } from './inline-errors';
 import { problemMessage, problemTitle } from './problem';
 
@@ -20,7 +21,8 @@ export const errorInterceptor: HttpInterceptorFn = (request, next) => {
     catchError((error: unknown) => {
       const clientError = error instanceof HttpErrorResponse && error.status >= 400 && error.status < 500;
       const silent = clientError && (request.context.get(SILENT_CLIENT_ERRORS) || inline.active);
-      if (error instanceof HttpErrorResponse && error.status !== 401 && !silent) {
+      // Negocio suspendido: el interceptor de autenticación avisa una sola vez y lleva al login.
+      if (error instanceof HttpErrorResponse && error.status !== 401 && !silent && !isTenantUnavailable(error)) {
         messages.add({
           severity: error.status >= 500 || error.status === 0 ? 'error' : 'warn',
           summary: problemTitle(error),

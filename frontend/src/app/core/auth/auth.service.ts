@@ -35,6 +35,8 @@ export class AuthService {
   readonly tenantId = computed(() => this.session()?.claims.tid ?? null);
   readonly hasTenant = computed(() => this.tenantId() !== null);
   readonly permissions = computed(() => new Set(this.session()?.claims.perms ?? []));
+  /** Administrador de plataforma (claim padm): ve la consola /plataforma. */
+  readonly isPlatformAdmin = computed(() => this.session()?.claims.padm === true);
   readonly tenants = this.tenantList.asReadonly();
   readonly currentTenant = computed(() => {
     const id = this.tenantId();
@@ -120,6 +122,14 @@ export class AuthService {
     return this.http.post<TenantSummary>(`/api/v1/tenants/${tenantId}/retry-provisioning`, null).pipe(
       tap((tenant) => this.tenantList.update((list) => list.map((t) => (t.id === tenant.id ? tenant : t)))),
     );
+  }
+
+  /**
+   * El dueño cierra ("elimina") su negocio: queda suspendido con sus datos y se cierran todas sus sesiones,
+   * así que después hay que volver a iniciar sesión.
+   */
+  closeTenant(tenantId: string, confirmation: string, password: string, reason: string | null): Observable<void> {
+    return this.http.post<void>(`/api/v1/tenants/${tenantId}/close`, { confirmation, password, reason });
   }
 
   logout(): Observable<void> {

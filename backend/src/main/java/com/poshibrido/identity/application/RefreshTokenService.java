@@ -50,6 +50,10 @@ public class RefreshTokenService implements SessionApi {
     public Rotation rotate(String rawToken) {
         Instant now = Instant.now();
         RefreshToken current = find(rawToken).orElseThrow(() -> new UnauthorizedException(INVALID));
+        if (current.isRevoked() && current.getReplacedBy() == null) {
+            // Revocado por cierre de sesión o por la suspensión del negocio (no rotado): no es un robo.
+            throw new UnauthorizedException(INVALID);
+        }
         if (current.isRevoked()) {
             log.warn("Reutilización de refresh token detectada para el usuario {}: se revocan sus sesiones",
                     current.getUserId());
@@ -94,6 +98,11 @@ public class RefreshTokenService implements SessionApi {
     @Override
     public void revokeTenantSessions(UUID userId, UUID tenantId) {
         repository.revokeActiveForTenant(userId, tenantId, Instant.now());
+    }
+
+    @Override
+    public void revokeAllTenantSessions(UUID tenantId) {
+        repository.revokeAllActiveForTenant(tenantId, Instant.now());
     }
 
     private Optional<RefreshToken> find(String rawToken) {

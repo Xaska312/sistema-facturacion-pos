@@ -6,6 +6,7 @@ POS web multi-negocio para comercios en Colombia. Backend Spring Boot 4.1 (Java 
 - API: [`docs/API.md`](docs/API.md)
 - Decisiones: [`docs/DECISIONES.md`](docs/DECISIONES.md)
 - Despliegue en producción (Hetzner, HTTPS, respaldos en Google Drive): [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md)
+- Ver la app por dentro (consola de plataforma, pgAdmin, logs, Swagger): [`docs/GUIA-DESARROLLO.md`](docs/GUIA-DESARROLLO.md)
 - Mejora de interfaz (UX): [`docs/UX-1.md`](docs/UX-1.md), [`docs/UX-2.md`](docs/UX-2.md), [`docs/UX-3.md`](docs/UX-3.md), [`docs/UX-4.md`](docs/UX-4.md), [`docs/UX-5.md`](docs/UX-5.md) (auditoría: [`docs/UX-5-AUDITORIA.md`](docs/UX-5-AUDITORIA.md))
 
 ## Estado de las fases
@@ -19,7 +20,7 @@ POS web multi-negocio para comercios en Colombia. Backend Spring Boot 4.1 (Java 
 | 5 — Caja y ventas | ✅ Completada (probada en local el 2026-10-05 con la cuenta demo) |
 | 6 — Reportes y dashboard | ✅ Completada (validada en local el 2026-10-05) |
 | Mejora de UX (UX-1 a UX-5) | ✅ Completada (validada el 2026-10-05) |
-| 7 — Endurecimiento para producción | 🚧 En curso: 7-1 producción y respaldos ([`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md)), 7-2 auditoría completa |
+| 7 — Endurecimiento para producción | 🚧 En curso: 7-1 producción y respaldos ([`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md)), 7-2 auditoría completa, 7-3 consola de plataforma y límites |
 
 ## Requisitos
 - **Docker Desktop** (o Docker Engine + Compose). Debe estar en estado *Engine running* antes de levantar el proyecto o correr los tests.

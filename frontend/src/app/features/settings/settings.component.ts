@@ -1,14 +1,22 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { OrganizationApi } from '../../core/api/organization.api';
 import { AuthService } from '../../core/auth/auth.service';
+import { FormDialogComponent } from '../../shared/forms/form-dialog.component';
 import { PageHeaderComponent } from '../../shared/page-header.component';
+import { Observable } from 'rxjs';
 
 /** Zonas horarias de Colombia y vecinas más usadas; el backend acepta cualquier zona IANA válida. */
 export const TIMEZONES = ['America/Bogota', 'America/Panama', 'America/Lima', 'America/Guayaquil', 'America/Caracas'];
+
+/** El nombre escrito para confirmar coincide con el del negocio (sin distinguir mayúsculas ni espacios extremos). */
+export function confirmsName(typed: string, tradeName: string | null | undefined): boolean {
+  return !!tradeName && typed.trim().toLocaleLowerCase('es-CO') === tradeName.trim().toLocaleLowerCase('es-CO');
+}
 
 /** Nombre para el usuario (el valor guardado sigue siendo la zona IANA). */
 const TIMEZONE_LABEL: Record<string, string> = {
@@ -21,7 +29,7 @@ const TIMEZONE_LABEL: Record<string, string> = {
 
 @Component({
   selector: 'app-settings',
-  imports: [ReactiveFormsModule, ButtonModule, InputTextModule, PageHeaderComponent],
+  imports: [ReactiveFormsModule, FormsModule, ButtonModule, InputTextModule, PageHeaderComponent, FormDialogComponent],
   template: `
     <app-page-header title="Ajustes del negocio" description="Cómo funciona tu negocio: inventario, impuestos, zona horaria, moneda y tiquete." />
     <form [formGroup]="form" (ngSubmit)="save()" class="card p-4 md:p-6 flex flex-col gap-4 max-w-2xl">
@@ -77,12 +85,56 @@ const TIMEZONE_LABEL: Record<string, string> = {
         <p class="text-sm text-muted">Solo lectura: no tienes permiso para modificar los ajustes.</p>
       }
     </form>
+
+    @if (isOwner()) {
+      <section class="card p-4 md:p-6 mt-6 max-w-2xl border border-danger" aria-labelledby="danger-title">
+        <h2 id="danger-title" class="text-base font-semibold text-danger">Eliminar el negocio</h2>
+        <p class="text-sm text-muted mt-1">
+          El negocio queda suspendido: nadie podrá entrar y se cierran todas las sesiones abiertas. Los datos no se
+          borran (ventas, inventario, clientes); para recuperarlo hay que pedirlo a soporte.
+        </p>
+        <div class="mt-3">
+          <p-button label="Eliminar negocio…" icon="pi pi-trash" severity="danger" [outlined]="true" (onClick)="openClose()" />
+        </div>
+      </section>
+    }
+
+    <app-form-dialog [(visible)]="closeOpen" header="Eliminar el negocio" width="30rem" submitLabel="Eliminar negocio"
+                     submitIcon="pi pi-trash" [destructive]="true" [dirty]="closeName.length > 0 || closePassword.length > 0"
+                     [invalidMessage]="closeInvalid()" [save]="closeRequest" successMessage="Negocio eliminado"
+                     (saved)="afterClose()"
+                     description="Para confirmar, escribe el nombre del negocio y tu contraseña. Tendrás que volver a iniciar sesión.">
+      <div class="flex flex-col gap-4">
+        <div class="flex flex-col gap-1">
+          <label for="close-name" class="text-sm font-medium">Nombre del negocio</label>
+          <input pInputText id="close-name" autocomplete="off" [(ngModel)]="closeName" [placeholder]="tradeName() ?? ''" />
+          <small class="text-muted">Escribe: <strong>{{ tradeName() }}</strong></small>
+        </div>
+        <div class="flex flex-col gap-1">
+          <label for="close-password" class="text-sm font-medium">Tu contraseña</label>
+          <input pInputText id="close-password" type="password" autocomplete="current-password" [(ngModel)]="closePassword" />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label for="close-reason" class="text-sm font-medium">Motivo (opcional)</label>
+          <input pInputText id="close-reason" maxlength="300" [(ngModel)]="closeReason" placeholder="Cerré el local" />
+        </div>
+      </div>
+    </app-form-dialog>
   `,
 })
 export class SettingsComponent implements OnInit {
   private readonly api = inject(OrganizationApi);
   private readonly messages = inject(MessageService);
-  protected readonly canEdit = inject(AuthService).hasPermission('settings:manage');
+  private readonly router = inject(Router);
+  private readonly auth = inject(AuthService);
+  protected readonly canEdit = this.auth.hasPermission('settings:manage');
+  /** Solo el dueño puede eliminar (cerrar) el negocio; el backend lo vuelve a comprobar. */
+  protected readonly isOwner = computed(() => this.auth.currentTenant()?.owner === true);
+  protected readonly tradeName = computed(() => this.auth.currentTenant()?.tradeName ?? null);
+  protected closeOpen = false;
+  protected closeName = '';
+  protected closePassword = '';
+  protected closeReason = '';
   protected readonly timezones = TIMEZONES;
   protected timezoneLabel(zone: string): string {
     return TIMEZONE_LABEL[zone] ?? zone;
@@ -114,5 +166,33 @@ export class SettingsComponent implements OnInit {
       },
       error: () => this.saving.set(false),
     });
+  }
+
+  openClose(): void {
+    this.closeName = '';
+    this.closePassword = '';
+    this.closeReason = '';
+    this.closeOpen = true;
+  }
+
+  protected closeInvalid(): string | null {
+    if (!confirmsName(this.closeName, this.tradeName())) {
+      return 'Escribe el nombre del negocio tal como aparece.';
+    }
+    return this.closePassword ? null : 'Escribe tu contraseña.';
+  }
+
+  protected readonly closeRequest = (): Observable<void> => {
+    const tenantId = this.auth.tenantId();
+    if (!tenantId) {
+      throw new Error('Sin negocio');
+    }
+    return this.auth.closeTenant(tenantId, this.closeName.trim(), this.closePassword, this.closeReason.trim() || null);
+  };
+
+  /** Las sesiones del negocio quedaron cerradas: se vuelve a iniciar sesión. */
+  afterClose(): void {
+    this.closePassword = '';
+    this.auth.logout().subscribe(() => void this.router.navigate(['/login']));
   }
 }

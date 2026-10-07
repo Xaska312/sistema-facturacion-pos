@@ -18,6 +18,10 @@ export interface TenantSummary {
   businessType: BusinessType;
   status: TenantStatus;
   owner: boolean;
+  /** Motivo de la suspensión (solo si está suspendido). */
+  suspensionReason?: string | null;
+  /** Suspendido porque su dueño lo cerró ("eliminó"). */
+  closedByOwner?: boolean;
 }
 
 export interface SessionResponse {

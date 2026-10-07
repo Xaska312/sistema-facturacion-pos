@@ -217,3 +217,21 @@ Solo administradores de plataforma (`platform_admin`; token con `padm`). Tabla `
 | GET | `/platform/security-events?from=&to=&event=&userId=&q=&page=&size=` | Página de `{id, occurredAt, event, userId, email, userName, tenantId, tenantName, ip, userAgent, details}`. `from`/`to` en ISO-8601 (`2026-10-06T00:00:00Z`; sin fechas = últimos 7 días). `q`: correo o IP (contiene). 422 con un `event` desconocido |
 
 Eventos: `REGISTERED`, `LOGIN_SUCCEEDED`, `LOGIN_FAILED` (`details.reason`: `UNKNOWN_EMAIL`, `BAD_PASSWORD`, `LOCKED`, `INACTIVE`), `ACCOUNT_LOCKED` (`details.until`), `LOGOUT`, `TENANT_ENTERED`, `TENANT_ACCESS_DENIED`, `REFRESH_TOKEN_REUSED`, `RATE_LIMITED` (`details.path`; uno por IP y minuto), `TENANT_CREATED`, `TENANT_PROVISIONING_FAILED`.
+
+## Consola de plataforma (Fase 7-3)
+Administradores de plataforma: `platform_admin = true` en la base; `PLATFORM_ADMIN_EMAILS` lo aplica al arrancar a las cuentas que ya existen con esos correos (y se lo quita a las demás si la lista no está vacía). Su token trae `padm` y `/auth/me` devuelve `user.platformAdmin = true`.
+| Método | Ruta | Respuesta |
+|---|---|---|
+| GET | `/platform/tenants?q=&status=&page=&size=` | Página de `{id, slug, legalName, tradeName, businessType, status, ownerId, ownerEmail, ownerName, activeMembers, createdAt, suspendedAt, suspensionReason, closedByOwner}`. `q`: nombre, razón social, identificador o correo del dueño |
+| POST | `/platform/tenants/{id}/suspend` `{reason}` | `TenantSummary`. Motivo obligatorio (máx. 300; lo ven los miembros). 409 si no está activo |
+| POST | `/platform/tenants/{id}/reactivate` | `TenantSummary`. 409 si no está suspendido |
+
+Suspender revoca los refresh tokens de todos los miembros del negocio; los access tokens vigentes reciben 403 ("El negocio no está disponible.", `code: TENANT_UNAVAILABLE`). Queda en los eventos (`TENANT_SUSPENDED`, `TENANT_REACTIVATED`) y en la auditoría del negocio (`BUSINESS_SUSPENDED`, `BUSINESS_REACTIVATED`, sin autor).
+
+## Eliminar (cerrar) un negocio — dueño (Fase 7-3)
+`POST /tenants/{id}/close` `{confirmation, password, reason?}` → 204. Solo el dueño (403 para los demás). `confirmation` es el nombre comercial (sin distinguir mayúsculas). Nombre o contraseña incorrectos → **422** (no 401). El negocio queda `SUSPENDED` con `closedByOwner = true`; los datos se conservan y solo el administrador de plataforma lo reactiva. Evento `TENANT_CLOSED`, auditoría `BUSINESS_CLOSED`.
+
+`GET /tenants` incluye ahora `suspensionReason` y `closedByOwner` en cada negocio.
+
+## Límites de solicitudes (Fase 7-3)
+Por usuario (o por IP sin sesión), ventana de un minuto: **300** solicitudes a `/api/**` (`RATE_LIMIT_API`) y **20** operaciones pesadas (`RATE_LIMIT_HEAVY`: descargas `.csv`, `POST /products/import`, `POST /tenants/{id}/close`). Al superarlo: **429** con `Retry-After` (segundos). Login (10/min) y registro (5/min) por IP siguen igual.

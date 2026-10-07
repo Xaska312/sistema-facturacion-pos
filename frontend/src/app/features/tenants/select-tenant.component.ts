@@ -3,6 +3,7 @@ import { Router, RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { TenantSummary } from '../../core/api/api.models';
 import { AuthService } from '../../core/auth/auth.service';
+import { suspendedMessage } from '../platform/platform-labels';
 
 const STATUS_LABEL: Record<TenantSummary['status'], string> = {
   ACTIVE: 'Activo',
@@ -30,6 +31,9 @@ const STATUS_LABEL: Record<TenantSummary['status'], string> = {
             <div>
               <p class="font-medium">{{ tenant.tradeName }}</p>
               <p class="text-xs text-muted">{{ tenant.legalName }} · {{ statusLabel[tenant.status] }}</p>
+              @if (tenant.status === 'SUSPENDED') {
+                <p class="text-xs text-danger mt-1">{{ suspended(tenant) }}</p>
+              }
             </div>
             @if (tenant.status === 'ACTIVE') {
               <p-button label="Entrar" [loading]="selecting() === tenant.id" (onClick)="select(tenant)" />
@@ -42,6 +46,11 @@ const STATUS_LABEL: Record<TenantSummary['status'], string> = {
         }
 
         <a routerLink="/negocios/nuevo" class="text-center text-brand hover:underline">+ Crear un negocio</a>
+        @if (auth.isPlatformAdmin()) {
+          <a routerLink="/plataforma" class="text-center text-sm text-muted hover:text-fg hover:underline">
+            <i class="pi pi-server text-xs mr-1" aria-hidden="true"></i>Consola de plataforma
+          </a>
+        }
       </section>
     </main>
   `,
@@ -71,6 +80,10 @@ export class SelectTenantComponent implements OnInit {
       next: () => this.selecting.set(null),
       error: () => this.selecting.set(null),
     });
+  }
+
+  protected suspended(tenant: TenantSummary): string {
+    return suspendedMessage(tenant.suspensionReason, tenant.closedByOwner);
   }
 
   logout(): void {

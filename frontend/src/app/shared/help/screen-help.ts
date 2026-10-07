@@ -189,6 +189,7 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
       'Si vendes sin inventario exacto, puedes permitir ventas sin existencias.',
       'Indica si tus precios ya incluyen el IVA.',
       'El pie del recibo sale al final de cada tiquete (por ejemplo, horarios o redes sociales).',
+      'Si eres el dueño, al final puedes eliminar el negocio: queda suspendido y sus datos se conservan.',
     ],
   },
 };

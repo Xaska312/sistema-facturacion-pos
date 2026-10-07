@@ -301,6 +301,9 @@ export class ShellComponent {
           ? [{ label: 'Ver recorrido guiado', icon: 'pi pi-directions', command: () => this.startTour(this.tourAvailable() ?? undefined) }]
           : []),
         { label: 'Cambiar negocio', icon: 'pi pi-sync', command: () => this.switchTenant() },
+        ...(this.auth.isPlatformAdmin()
+          ? [{ label: 'Consola de plataforma', icon: 'pi pi-server', command: () => void this.router.navigate(['/plataforma']) }]
+          : []),
         { separator: true },
         { label: 'Salir', icon: 'pi pi-sign-out', command: () => this.logout() },
       ],

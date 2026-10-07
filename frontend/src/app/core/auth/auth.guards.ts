@@ -29,6 +29,12 @@ export const permissionGuard: CanActivateFn = (route) => {
   return inject(Router).createUrlTree(['/app/sin-permiso']);
 };
 
+/** Consola de plataforma: solo administradores (claim padm). El backend lo vuelve a exigir en cada petición. */
+export const platformAdminGuard: CanActivateFn = () => {
+  const auth = inject(AuthService);
+  return auth.isPlatformAdmin() ? true : inject(Router).createUrlTree(['/negocios']);
+};
+
 /** Para login/registro: si ya hay sesión, no mostrar el formulario. */
 export const guestGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
