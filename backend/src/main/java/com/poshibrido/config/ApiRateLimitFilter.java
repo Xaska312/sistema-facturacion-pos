@@ -61,14 +61,14 @@ public class ApiRateLimitFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return generalLimit <= 0 || !request.getRequestURI().startsWith("/api/")
+        return generalLimit <= 0 || !RequestPaths.normalized(request).startsWith("/api/")
                 || "OPTIONS".equals(request.getMethod());
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
-        String path = request.getRequestURI();
+        String path = RequestPaths.normalized(request);
         String who = clientKey(request);
         long now = System.currentTimeMillis();
         cleanUpIfNeeded(now);

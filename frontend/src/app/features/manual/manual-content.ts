@@ -103,7 +103,7 @@ export const MANUAL: readonly ManualChapter[] = [
           'Cada persona abre su propia caja y solo puede tener una abierta a la vez.',
           'Una caja la usa una persona a la vez; si tienes dos puntos de cobro, crea dos cajas en Configuración → Cajas.',
         ],
-        who: 'Propietario, Administrador y Cajero.',
+        who: 'Propietario, Administrador, Cajero y Vendedor.',
       },
       {
         id: 'registrar-venta',
@@ -359,7 +359,7 @@ export const MANUAL: readonly ManualChapter[] = [
             ['Propietario', 'Todo. Es quien creó el negocio y no se puede quitar.'],
             ['Administrador', 'Todo lo del negocio: productos, inventario, ventas, caja, usuarios, reportes y ajustes.'],
             ['Cajero', 'Abre y cierra su caja, vende, registra clientes y consulta productos y existencias.'],
-            ['Vendedor', 'Consulta productos, existencias y ventas. Para cobrar necesita un rol con caja (como Cajero).'],
+            ['Vendedor', 'Abre su propia caja y vende; consulta productos y existencias. No registra clientes ni anula ventas.'],
             ['Bodeguero', 'Gestiona productos e inventario: saldos, ajustes, conteos y traslados.'],
             ['Contador', 'Consulta ventas, cajas (con la diferencia del arqueo), reportes y auditoría. No modifica nada.'],
           ],

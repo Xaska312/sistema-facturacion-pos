@@ -6,10 +6,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
 public interface InvitationRepository extends JpaRepository<Invitation, UUID> {
+
+    /** Invitaciones creadas (o reenviadas) por el negocio desde esa fecha: tope diario de correos. */
+    long countByTenantIdAndCreatedAtAfter(UUID tenantId, Instant since);
 
     Optional<Invitation> findByTokenHash(String tokenHash);
 

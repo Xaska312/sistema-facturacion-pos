@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, catchError, finalize, map, of, shareReplay, switchMap, tap } from 'rxjs';
 import {
@@ -9,6 +9,9 @@ import {
   UserSummary,
 } from '../api/api.models';
 import { AccessClaims, decodeAccessToken } from './jwt';
+import { REFRESH_LOCK } from './refresh-lock';
+
+export type RefreshOutcome = 'renewed' | 'tenant-changed' | 'expired' | 'unreachable';
 
 export const AUTH_API = '/api/v1/auth';
 
@@ -28,7 +31,8 @@ export class AuthService {
 
   private readonly session = signal<SessionState | null>(null);
   private readonly tenantList = signal<TenantSummary[]>([]);
-  private refreshInFlight: Observable<boolean> | null = null;
+  private readonly refreshLock = inject(REFRESH_LOCK);
+  private refreshInFlight: Observable<RefreshOutcome> | null = null;
 
   readonly user = computed(() => this.session()?.user ?? null);
   readonly isAuthenticated = computed(() => this.session() !== null);
@@ -113,25 +117,44 @@ export class AuthService {
   }
 
   /**
-   * Renueva el access token con la cookie de refresh. Si ya hay una renovación en curso,
-   * todas las peticiones esperan la misma (cola de peticiones del interceptor).
+   * Renueva el access token con la cookie de refresh. Si ya hay una renovación en curso, todas las peticiones
+   * esperan la misma (cola de peticiones del interceptor); entre pestañas se ejecuta de a una ({@link REFRESH_LOCK}).
+   *
+   * - `renewed`: sesión renovada, mismo negocio.
+   * - `tenant-changed`: la cookie es de otro negocio (se eligió otro en otra pestaña). La sesión queda en ese negocio
+   *   y la petición que falló NO se repite: se escribiría en el negocio equivocado (QA SEG-2).
+   * - `expired`: la sesión terminó (401/403): se limpia.
+   * - `unreachable`: sin conexión o servidor caído: la sesión se conserva para reintentar (QA SEG-7).
    */
-  refresh(): Observable<boolean> {
+  renew(): Observable<RefreshOutcome> {
     if (!this.refreshInFlight) {
-      this.refreshInFlight = this.http
-        .post<SessionResponse>(`${AUTH_API}/refresh`, null, { withCredentials: true })
-        .pipe(
-          tap((response) => this.applySession(response)),
-          map(() => true),
-          catchError(() => {
+      const current = this.session();
+      const previousTenant = current ? (current.claims.tid ?? null) : undefined;
+      this.refreshInFlight = this.refreshLock(
+        this.http.post<SessionResponse>(`${AUTH_API}/refresh`, null, { withCredentials: true }),
+      ).pipe(
+        map((response): RefreshOutcome => {
+          const nextTenant = decodeAccessToken(response.accessToken)?.tid ?? null;
+          this.applySession(response);
+          return previousTenant !== undefined && nextTenant !== previousTenant ? 'tenant-changed' : 'renewed';
+        }),
+        catchError((error: unknown) => {
+          if (error instanceof HttpErrorResponse && (error.status === 401 || error.status === 403)) {
             this.clear();
-            return of(false);
-          }),
-          finalize(() => (this.refreshInFlight = null)),
-          shareReplay(1),
-        );
+            return of<RefreshOutcome>('expired');
+          }
+          return of<RefreshOutcome>('unreachable');
+        }),
+        finalize(() => (this.refreshInFlight = null)),
+        shareReplay(1),
+      );
     }
     return this.refreshInFlight;
+  }
+
+  /** {@link renew} como sí/no (al cargar la app y en los guards). */
+  refresh(): Observable<boolean> {
+    return this.renew().pipe(map((outcome) => outcome === 'renewed' || outcome === 'tenant-changed'));
   }
 
   /** Intenta recuperar la sesión al cargar la app (la cookie sobrevive a recargar la página). */

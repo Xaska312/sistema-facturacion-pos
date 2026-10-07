@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
@@ -28,6 +29,12 @@ import java.util.UUID;
 public class RefreshTokenService implements SessionApi {
 
     private static final String INVALID = "La sesión expiró. Inicia sesión nuevamente.";
+
+    /**
+     * Un token rotado hace menos de esto no se trata como robo: es otra pestaña del mismo navegador que renovó con
+     * la cookie anterior (QA SEG-5). Responde 401 sin cerrar las demás sesiones.
+     */
+    static final Duration REUSE_GRACE = Duration.ofSeconds(30);
 
     private final RefreshTokenRepository repository;
     private final AuthProperties properties;
@@ -49,9 +56,13 @@ public class RefreshTokenService implements SessionApi {
 
     public Rotation rotate(String rawToken) {
         Instant now = Instant.now();
-        RefreshToken current = find(rawToken).orElseThrow(() -> new UnauthorizedException(INVALID));
+        RefreshToken current = findForUpdate(rawToken).orElseThrow(() -> new UnauthorizedException(INVALID));
         if (current.isRevoked() && current.getReplacedBy() == null) {
             // Revocado por cierre de sesión o por la suspensión del negocio (no rotado): no es un robo.
+            throw new UnauthorizedException(INVALID);
+        }
+        if (current.isRevoked() && current.getRevokedAt().isAfter(now.minus(REUSE_GRACE))) {
+            // Rotado hace segundos: dos pestañas renovando a la vez, no un robo.
             throw new UnauthorizedException(INVALID);
         }
         if (current.isRevoked()) {
@@ -110,6 +121,13 @@ public class RefreshTokenService implements SessionApi {
             return Optional.empty();
         }
         return repository.findByTokenHash(hash(rawToken));
+    }
+
+    private Optional<RefreshToken> findForUpdate(String rawToken) {
+        if (!SecureTokens.looksValid(rawToken)) {
+            return Optional.empty();
+        }
+        return repository.findByTokenHashForUpdate(hash(rawToken));
     }
 
     private static String newRawToken() {

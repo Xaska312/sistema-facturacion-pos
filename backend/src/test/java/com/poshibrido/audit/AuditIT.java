@@ -84,6 +84,9 @@ class AuditIT extends IntegrationTest {
         Session session = api.login(email);
         api.refreshRaw(session.refreshToken()).andExpect(status().isOk());
         api.refreshRaw(session.refreshToken()).andExpect(status().isUnauthorized());
+        assertThat(events(userId)).doesNotContain("REFRESH_TOKEN_REUSED"); // otra pestaña, no un robo
+        api.ageRefreshRotations();
+        api.refreshRaw(session.refreshToken()).andExpect(status().isUnauthorized());
         assertThat(events(userId)).contains("REFRESH_TOKEN_REUSED");
     }
 

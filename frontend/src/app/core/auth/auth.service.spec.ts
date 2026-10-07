@@ -4,6 +4,9 @@ import { TestBed } from '@angular/core/testing';
 import { SessionResponse } from '../api/api.models';
 import { AuthService } from './auth.service';
 import { fakeToken } from './jwt.testing';
+import { REFRESH_LOCK, RefreshLock } from './refresh-lock';
+
+const passthrough: RefreshLock = (source) => source;
 
 function session(payload: object): SessionResponse {
   return {
@@ -22,7 +25,10 @@ describe('AuthService', () => {
   let http: HttpTestingController;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    TestBed.configureTestingModule({
+      // Sin Web Locks en las pruebas: la petición sale en el acto (refresh-lock.spec prueba el candado).
+      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: REFRESH_LOCK, useValue: passthrough }],
+    });
     service = TestBed.inject(AuthService);
     http = TestBed.inject(HttpTestingController);
   });
@@ -102,5 +108,29 @@ describe('AuthService', () => {
     const request = http.expectOne('/api/v1/auth/password-reset/request');
     expect(request.request.body).toEqual({ email: 'ana@test.co' });
     request.flush(null, { status: 204, statusText: 'No Content' });
+  });
+
+  it('sin conexión al renovar conserva la sesión (no se pierde el carrito)', () => {
+    service.login('ana@test.co', 'Clave12345678').subscribe();
+    http.expectOne('/api/v1/auth/login').flush(session({ sub: 'u1', exp: 9999999999, typ: 'platform' }));
+    let outcome: string | undefined;
+    service.renew().subscribe((o) => (outcome = o));
+    http.expectOne('/api/v1/auth/refresh').error(new ProgressEvent('error'), { status: 0 });
+    expect(outcome).toBe('unreachable');
+    expect(service.isAuthenticated()).toBeTrue();
+  });
+
+  it('si otra pestaña eligió otro negocio, avisa en vez de seguir como si nada', () => {
+    service.selectTenant('t1').subscribe();
+    http.expectOne('/api/v1/auth/select-tenant').flush(
+      session({ sub: 'u1', exp: 9999999999, typ: 'tenant', tid: 't1', perms: [] }),
+    );
+    let outcome: string | undefined;
+    service.renew().subscribe((o) => (outcome = o));
+    http.expectOne('/api/v1/auth/refresh').flush(
+      session({ sub: 'u1', exp: 9999999999, typ: 'tenant', tid: 't2', perms: [] }),
+    );
+    expect(outcome).toBe('tenant-changed');
+    expect(service.tenantId()).toBe('t2');
   });
 });

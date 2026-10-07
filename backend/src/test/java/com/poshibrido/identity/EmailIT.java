@@ -104,21 +104,27 @@ class EmailIT extends IntegrationTest {
         assertThat(first.subject()).contains("Tienda " + owner.slug());
         assertThat(first.text()).contains("Cajero");
 
-        String body = api.postEmpty(owner.tenant(), "/api/v1/members/invitations/" + invite.invitationId() + "/resend")
+        // Reenviar en seguida: 429 (QA SEG-6). Pasado un minuto, sí.
+        String resend = "/api/v1/members/invitations/" + invite.invitationId() + "/resend";
+        api.postEmpty(owner.tenant(), resend).andExpect(status().isTooManyRequests());
+        jdbc.update("UPDATE platform.invitations SET created_at = created_at - interval '2 minutes' WHERE id = ?",
+                invite.invitationId());
+        String body = api.postEmpty(owner.tenant(), resend)
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         String newToken = com.jayway.jsonpath.JsonPath.read(body, "$.token");
         assertThat(newToken).isNotEqualTo(invite.token());
         assertThat(RecordingMailSender.tokenIn(mailbox.last(email, "invitacion").orElseThrow())).isEqualTo(newToken);
 
-        // Sin confirmar su correo, al aceptar la invitación (que llegó a ese correo) queda confirmado.
+        // Se puede aceptar sin confirmar el correo, pero aceptar NO lo confirma: quien invita también recibe el token
+        // (QA SEG-1: registrarse con un correo ajeno, invitarse y aceptarse no debe "confirmarlo").
         UUID userId = api.registerUnverified(email);
         Session invited = api.login(email);
         api.acceptRaw(invited, invite.token()).andExpect(status().isConflict());
         api.acceptRaw(invited, newToken).andExpect(status().isOk());
         Boolean verified = jdbc.queryForObject("SELECT email_verified_at IS NOT NULL FROM platform.users WHERE id = ?",
                 Boolean.class, userId);
-        assertThat(verified).isTrue();
+        assertThat(verified).isFalse();
     }
 
     @Test
