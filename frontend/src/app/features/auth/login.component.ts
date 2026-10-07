@@ -41,6 +41,9 @@ import { safeReturnUrl } from '../../core/auth/return-url';
           ¿No tienes cuenta? <a routerLink="/registro" [queryParams]="returnUrl ? { returnUrl: returnUrl } : {}"
                                 class="text-brand hover:underline">Regístrate</a>
         </p>
+        <a routerLink="/manual" class="text-sm text-center text-muted hover:text-fg hover:underline">
+          <i class="pi pi-book text-xs mr-1" aria-hidden="true"></i>Manual de uso
+        </a>
       </form>
     </main>
   `,

@@ -24,6 +24,11 @@ public class TenantSchemaManager {
         migrator.migrateTenant(safe);
     }
 
+    /** Aplica las migraciones pendientes del negocio (p. ej. al reactivarlo). */
+    public void migrate(String schema) {
+        migrator.migrateTenant(TenantSchemas.requireTenantSchema(schema));
+    }
+
     public void drop(String schema) {
         String safe = TenantSchemas.requireTenantSchema(schema);
         new JdbcTemplate(dataSource).execute("DROP SCHEMA IF EXISTS " + safe + " CASCADE");

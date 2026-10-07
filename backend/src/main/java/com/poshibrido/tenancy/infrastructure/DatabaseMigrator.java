@@ -11,8 +11,9 @@ import javax.sql.DataSource;
 import java.util.List;
 
 /**
- * Al arrancar: migra {@code platform}, luego la plantilla de tenant y luego todos los negocios
- * en estado ACTIVE. El EntityManagerFactory depende de este bean ({@link MigrationOrderConfig}),
+ * Al arrancar: migra {@code platform}, luego la plantilla de tenant y luego todos los negocios activos y
+ * suspendidos (un suspendido se puede reactivar en cualquier momento y su auditoría sigue recibiendo registros).
+ * Los FAILED se migran al reintentar el aprovisionamiento. El EntityManagerFactory depende de este bean ({@link MigrationOrderConfig}),
  * por lo que Hibernate valida el modelo sobre un schema ya migrado.
  */
 @Slf4j
@@ -31,11 +32,11 @@ public class DatabaseMigrator implements InitializingBean {
         migrator.migrateTenant(TenantSchemas.TEMPLATE_SCHEMA);
 
         List<String> schemas = new JdbcTemplate(dataSource).queryForList(
-                "SELECT schema_name FROM platform.tenants WHERE status = 'ACTIVE' ORDER BY created_at",
+                "SELECT schema_name FROM platform.tenants WHERE status IN ('ACTIVE', 'SUSPENDED') ORDER BY created_at",
                 String.class);
         for (String schema : schemas) {
             migrator.migrateTenant(TenantSchemas.requireTenantSchema(schema));
         }
-        log.info("Migración de {} negocios activos completada", schemas.size());
+        log.info("Migración de {} negocios (activos y suspendidos) completada", schemas.size());
     }
 }

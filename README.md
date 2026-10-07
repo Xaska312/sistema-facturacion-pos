@@ -20,7 +20,7 @@ POS web multi-negocio para comercios en Colombia. Backend Spring Boot 4.1 (Java 
 | 5 — Caja y ventas | ✅ Completada (probada en local el 2026-10-05 con la cuenta demo) |
 | 6 — Reportes y dashboard | ✅ Completada (validada en local el 2026-10-05) |
 | Mejora de UX (UX-1 a UX-5) | ✅ Completada (validada el 2026-10-05) |
-| 7 — Endurecimiento para producción | 🚧 En curso: 7-1 producción y respaldos ([`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md)), 7-2 auditoría completa, 7-3 consola de plataforma y límites, 7-4 correos (confirmar cuenta, invitaciones, contraseña olvidada) |
+| 7 — Endurecimiento para producción | 🚧 En curso: 7-1 producción y respaldos ([`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md)), 7-2 auditoría completa, 7-3 consola de plataforma y límites, 7-4 correos (confirmar cuenta, invitaciones, contraseña olvidada), 7-5 CI con lint y e2e en cada PR, manual de uso |
 
 ## Requisitos
 - **Docker Desktop** (o Docker Engine + Compose). Debe estar en estado *Engine running* antes de levantar el proyecto o correr los tests.
@@ -55,6 +55,7 @@ La primera vez tarda varios minutos. Deja la terminal abierta; `Ctrl+C` la detie
 | Salud del backend | http://localhost:8080/actuator/health → `{"status":"UP"}` |
 | Swagger (con `OPENAPI_ENABLED=true`) | http://localhost:8080/swagger-ui.html |
 | Buzón de prueba (correos de la app) | http://localhost:8025 |
+| Manual de uso (público, para clientes) | http://localhost:4200/manual |
 
 Flujo para probar: **Regístrate → confirma el correo (llega a http://localhost:8025) → inicia sesión → crea un negocio → Entrar**. Verás el menú según tus permisos y la sede principal en *Sucursales*.
 
@@ -83,6 +84,7 @@ Usuarios (contraseña `DemoPos2026`): `dueno@tienda-demo.test`, `cajero@tienda-d
 ```powershell
 cd backend; .\mvnw.cmd verify     # unitarios + integración (*IT) con Testcontainers (requiere Docker)
 cd frontend; npm run test:ci       # Karma + ChromeHeadless
+cd frontend; npm run lint          # ESLint + angular-eslint (también corre en el CI)
 ```
 **Linux / macOS**
 ```bash
@@ -94,7 +96,8 @@ cd frontend && npm run test:ci
 cd e2e; npm install; npx playwright install chromium; npx playwright test
 ```
 Crea un usuario y un negocio nuevos por la API y recorre login → abrir caja → vender → cerrar caja en el navegador.
-El reporte queda en `e2e/playwright-report`. En GitHub se puede lanzar a mano con el flujo *E2E POS Híbrido*.
+El reporte queda en `e2e/playwright-report`. En GitHub el flujo *E2E POS Híbrido* corre en cada PR hacia `main`
+(y a mano desde Actions); si falla, descarga el artefacto `playwright-report` con capturas y trazas.
 
 `mvnw verify` solo ejecuta las pruebas: levanta un PostgreSQL temporal, prueba y lo apaga; **no deja la aplicación corriendo** (para eso, `docker compose up`).
 

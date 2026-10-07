@@ -9,11 +9,14 @@ export interface HelpTopic {
   tour?: TourId;
   /** Permiso para ver la parte de la pantalla que recorre el tour (el tablero solo lo ve quien tiene reportes). */
   tourPermission?: string;
+  /** Sección del manual de uso (/manual#id) que explica la pantalla en detalle. */
+  manual?: string;
 }
 
 /** Por ruta; se usa la ruta más larga que coincide con la URL ("/app" solo en el inicio exacto). */
 export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
   '/app': {
+    manual: 'tablero',
     title: 'Inicio',
     tips: [
       'Los botones de arriba llevan a lo que más usas: vender, tu caja y los reportes.',
@@ -26,6 +29,7 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     tourPermission: 'reports:read',
   },
   '/app/caja': {
+    manual: 'cerrar-caja',
     title: 'Mi caja',
     tips: [
       'Abre la caja al empezar el turno contando el efectivo del cajón (la base).',
@@ -36,6 +40,7 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     terms: ['base-efectivo', 'cierre-ciego', 'arqueo'],
   },
   '/app/caja/historial': {
+    manual: 'cerrar-caja',
     title: 'Historial de caja',
     tips: [
       'Cada fila es un turno de caja, desde que se abrió hasta que se cerró.',
@@ -45,6 +50,7 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     terms: ['arqueo', 'cierre-ciego'],
   },
   '/app/ventas': {
+    manual: 'anular-venta',
     title: 'Ventas',
     tips: [
       'Busca por número de venta (POS-12) o por el nombre del cliente.',
@@ -53,6 +59,7 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     ],
   },
   '/app/reportes': {
+    manual: 'reportes',
     title: 'Reportes',
     tips: [
       'Elige el periodo y la sucursal arriba; cada pestaña muestra una vista del mismo periodo.',
@@ -62,6 +69,7 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     terms: ['medios-pago', 'costo-promedio'],
   },
   '/app/auditoria': {
+    manual: 'auditoria',
     title: 'Auditoría',
     tips: [
       'Cada fila es algo que alguien hizo en el negocio: vender, anular, abrir o cerrar caja, cambiar precios o permisos, entrar al sistema.',
@@ -71,6 +79,7 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     ],
   },
   '/app/productos': {
+    manual: 'crear-producto',
     title: 'Productos',
     tips: [
       'Crea productos uno a uno o impórtalos desde un archivo CSV (puedes abrirlo en Excel).',
@@ -81,6 +90,7 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     terms: ['costo-promedio', 'lista-precios'],
   },
   '/app/productos/importar': {
+    manual: 'importar-productos',
     title: 'Importar productos',
     tips: [
       'Descarga la plantilla, llénala en Excel y guárdala como CSV.',
@@ -89,6 +99,7 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     ],
   },
   '/app/catalogo': {
+    manual: 'catalogo',
     title: 'Ajustes de catálogo',
     tips: [
       'Las categorías agrupan tus productos en el POS y en los reportes.',
@@ -98,6 +109,7 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     terms: ['lista-precios'],
   },
   '/app/inventario': {
+    manual: 'existencias',
     title: 'Existencias',
     tips: [
       'Elige la sucursal para ver lo que hay en ella.',
@@ -107,6 +119,7 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     terms: ['stock-minimo', 'kardex'],
   },
   '/app/inventario/movimientos': {
+    manual: 'ajustes-traslados',
     title: 'Movimientos de inventario',
     tips: [
       'Empieza con un saldo inicial: lo que tienes hoy en el local.',
@@ -116,6 +129,7 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     terms: ['saldo-inicial', 'costo-promedio'],
   },
   '/app/inventario/kardex': {
+    manual: 'existencias',
     title: 'Kardex',
     tips: [
       'Cada fila es un movimiento: venta, ajuste, traslado o saldo inicial.',
@@ -125,6 +139,7 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     terms: ['kardex', 'costo-promedio'],
   },
   '/app/inventario/nuevo': {
+    manual: 'saldo-inicial',
     title: 'Documento de inventario',
     tips: [
       'Escanea o busca cada producto y escribe la cantidad.',
@@ -134,6 +149,7 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     terms: ['saldo-inicial', 'costo-promedio'],
   },
   '/app/clientes': {
+    manual: 'clientes',
     title: 'Clientes',
     tips: [
       'Registra a los clientes que te piden factura o tienen precios especiales.',
@@ -143,6 +159,7 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     terms: ['lista-precios'],
   },
   '/app/proveedores': {
+    manual: 'clientes',
     title: 'Proveedores',
     tips: [
       'Registra a quienes te venden mercancía para tener sus datos a mano.',
@@ -151,6 +168,7 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     ],
   },
   '/app/sucursales': {
+    manual: 'sucursales-cajas',
     title: 'Sucursales',
     tips: [
       'Crea una sucursal por cada local donde vendes o guardas mercancía.',
@@ -159,6 +177,7 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     ],
   },
   '/app/cajas': {
+    manual: 'sucursales-cajas',
     title: 'Cajas',
     tips: [
       'Crea una caja por cada punto donde se cobra al mismo tiempo.',
@@ -168,14 +187,16 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     terms: ['arqueo'],
   },
   '/app/usuarios': {
+    manual: 'invitar',
     title: 'Usuarios',
     tips: [
-      'Al invitar a alguien se genera un enlace: envíaselo para que cree su usuario y su clave.',
+      'Al invitar a alguien le llega un correo con el enlace; también puedes copiarlo y enviarlo por WhatsApp.',
       'El rol define qué puede hacer; las sucursales, dónde.',
       'Desactiva a quien ya no trabaja contigo: no podrá entrar, pero su historia se conserva.',
     ],
   },
   '/app/roles': {
+    manual: 'roles',
     title: 'Roles y permisos',
     tips: [
       'Los roles del sistema (Dueño, Administrador, Cajero…) no se pueden cambiar.',
@@ -184,6 +205,7 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     ],
   },
   '/app/ajustes': {
+    manual: 'ajustes',
     title: 'Ajustes del negocio',
     tips: [
       'Si vendes sin inventario exacto, puedes permitir ventas sin existencias.',

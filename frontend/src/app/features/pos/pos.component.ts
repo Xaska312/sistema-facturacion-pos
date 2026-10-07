@@ -115,7 +115,7 @@ const STOCK_PAGES = 5;
                           [canCharge]="lines().length > 0" [lastSaleNumber]="lastSale()?.documentNumber ?? null"
                           (quantityChange)="setQuantity($event)" (discountChange)="setDiscount($event)"
                           (removeLine)="removeLine($event)" (restoreLine)="restoreLine($event)"
-                          (charge)="openPayment()" (cancel)="cancelSale()" (customer)="openCustomers()"
+                          (charge)="openPayment()" (cancelSale)="cancelSale()" (customer)="openCustomers()"
                           (reprint)="receiptOpen = true" />
         </div>
       }
