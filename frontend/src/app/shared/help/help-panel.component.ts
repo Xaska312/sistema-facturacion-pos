@@ -34,6 +34,12 @@ import { HelpTopic } from './screen-help';
         </section>
       }
 
+      @if (topic().manual; as section) {
+        <a [href]="'/manual#' + section" target="_blank" rel="noopener" class="text-sm text-brand hover:underline">
+          <i class="pi pi-book text-xs mr-1" aria-hidden="true"></i>Leer más en el manual de uso
+        </a>
+      }
+
       @if (showTour()) {
         @if (topic().tour; as tour) {
           <button type="button" class="tour-start" (click)="startTour.emit(tour)">

@@ -65,10 +65,12 @@ public class TenantAdministrationService {
     private final JdbcTemplate jdbc;
     private final Mailer mailer;
     private final MailTemplates templates;
+    private final TenantSchemaManager schemas;
 
     public TenantAdministrationService(TenantRepository tenants, TenantDirectory directory, SessionApi sessions,
                                        UserApi users, SecurityEventLogger securityEvents, AuditLogger audit,
-                                       DataSource dataSource, Mailer mailer, MailTemplates templates) {
+                                       DataSource dataSource, Mailer mailer, MailTemplates templates,
+                                       TenantSchemaManager schemas) {
         this.tenants = tenants;
         this.directory = directory;
         this.sessions = sessions;
@@ -78,6 +80,7 @@ public class TenantAdministrationService {
         this.jdbc = new JdbcTemplate(dataSource);
         this.mailer = mailer;
         this.templates = templates;
+        this.schemas = schemas;
     }
 
     // ---------------------------------------------------------------- consola de plataforma
@@ -170,6 +173,9 @@ public class TenantAdministrationService {
             throw new ConflictException("Solo se puede reactivar un negocio suspendido.");
         }
         Map<String, Object> before = suspensionData(tenant, tenant.isClosedByOwner() ? "dueño" : "plataforma");
+        // Si hubo una versión nueva mientras estaba suspendido, su schema quedó atrás: se pone al día antes de
+        // abrirlo (Flyway no hace nada si ya está al día).
+        schemas.migrate(tenant.getSchemaName());
         tenant.reactivate();
         afterStatusChange(tenant);
         securityEvents.record(SecurityEvent.TENANT_REACTIVATED, adminId, null, tenantId, null);

@@ -266,6 +266,12 @@ export const routes: Routes = [
     loadComponent: () => import('./features/pos/pos.component').then((m) => m.PosComponent),
   },
   {
+    // Manual de uso público (con o sin sesión): se comparte con clientes, p. ej. /manual#cobrar.
+    path: 'manual',
+    title: 'Manual de uso',
+    loadComponent: () => import('./features/manual/manual.component').then((m) => m.ManualComponent),
+  },
+  {
     // Enlace público de invitación (con o sin sesión).
     path: 'invitacion/:token',
     title: 'Invitación',

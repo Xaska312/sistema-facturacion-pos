@@ -37,7 +37,7 @@ import { AuthService } from '../../core/auth/auth.service';
         <p-skeleton height="4.5rem" borderRadius="0.75rem" />
       } @else if (registers()!.length === 0) {
         <p class="text-sm" role="alert">No hay cajas disponibles en tus sucursales. Pide a un administrador que cree una
-          en Organización → Cajas.</p>
+          en Configuración → Cajas.</p>
       } @else {
         @if (registers()!.length > 1) {
           <fieldset class="flex flex-col gap-2">

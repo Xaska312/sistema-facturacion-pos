@@ -113,7 +113,7 @@ const UNDO_MS = 6000;
                     label="Cobrar (F4)" [disabled]="!canCharge()" (onClick)="charge.emit()" />
         </div>
         <div class="flex items-center justify-between gap-2">
-          <button type="button" class="pos-btn text-muted" [disabled]="lines().length === 0" (click)="cancel.emit()">
+          <button type="button" class="pos-btn text-muted" [disabled]="lines().length === 0" (click)="cancelSale.emit()">
             Cancelar venta (Esc)
           </button>
           @if (lastSaleNumber(); as number) {
@@ -202,7 +202,7 @@ export class CartPanelComponent {
   readonly removeLine = output<string>();
   readonly restoreLine = output<RemovedLine>();
   readonly charge = output<void>();
-  readonly cancel = output<void>();
+  readonly cancelSale = output<void>();
   readonly customer = output<void>();
   readonly reprint = output<void>();
 

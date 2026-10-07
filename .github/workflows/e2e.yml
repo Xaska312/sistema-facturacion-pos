@@ -1,9 +1,15 @@
 name: E2E POS Híbrido
 
-# Flujo de punta a punta (login → abrir caja → vender → cerrar caja) con la app levantada por docker compose.
-# Se ejecuta a mano desde la pestaña Actions; no bloquea los PR.
+# Flujo de punta a punta (registro y confirmación del correo → login → abrir caja → vender → cerrar caja) con la
+# app levantada por docker compose (incluye Mailpit). Corre en cada PR hacia main y también a mano desde Actions.
 on:
+  pull_request:
+    branches: [ "main" ]
   workflow_dispatch:
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   e2e:
@@ -29,10 +35,11 @@ jobs:
       - name: Levantar la aplicación
         run: docker compose up -d --build
 
-      - name: Esperar backend y frontend
+      - name: Esperar backend, frontend y buzón de prueba
         run: |
           for i in $(seq 1 90); do
-            if curl -fsS http://localhost:8080/actuator/health > /dev/null && curl -fsS http://localhost:4200 > /dev/null; then
+            if curl -fsS http://localhost:8080/actuator/health > /dev/null && curl -fsS http://localhost:4200 > /dev/null \
+              && curl -fsS http://localhost:8025/api/v1/info > /dev/null; then
               exit 0
             fi
             sleep 5
@@ -54,6 +61,10 @@ jobs:
       - name: Ejecutar E2E
         working-directory: ./e2e
         run: npx playwright test
+
+      - name: Logs de la aplicación
+        if: failure()
+        run: docker compose logs --no-color --tail=300
 
       - name: Reporte
         if: failure()
