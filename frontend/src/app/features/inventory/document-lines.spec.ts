@@ -1,5 +1,5 @@
 import { Product } from '../../core/api/api.models';
-import { baseQuantity, draftLine, linesProblem, toLineInputs } from './document-lines';
+import { addScan, baseQuantity, draftLine, linesProblem, toLineInputs } from './document-lines';
 
 const product: Product = {
   id: 'p1', sku: 'GAS', name: 'Gaseosa', description: null, categoryId: null, categoryName: null,
@@ -35,5 +35,20 @@ describe('document-lines', () => {
     expect(toLineInputs('ADJUSTMENT', [out])[0].unitCost).toBeNull();
     expect(toLineInputs('TRANSFER', [out])[0].unitCost).toBeUndefined();
     expect(toLineInputs('INITIAL', [out])[0].unitCost).toBe(500);
+  });
+
+  it('en conteos envía la existencia que había al empezar a contar (QA INV-2)', () => {
+    const counted = { ...draftLine(product, null), quantity: 45, currentQuantity: 50 };
+    expect(toLineInputs('COUNT', [counted])[0].expectedQuantity).toBe(50);
+    expect(toLineInputs('ADJUSTMENT', [counted])[0].expectedQuantity).toBeUndefined();
+  });
+
+  it('cada lectura del lector suma 1 en la misma unidad, sin mezclar unidades (QA UI-6)', () => {
+    const line = { ...draftLine(product, 'cj'), quantity: 1 };
+    expect(addScan(line, 'cj')?.quantity).toBe(2);
+    expect(addScan({ ...line, quantity: null }, 'cj')?.quantity).toBe(1);
+    expect(addScan(line, 'und')).toBeNull();
+    const units = { ...draftLine(product, null), quantity: 3 };
+    expect(addScan(units, 'desconocida')?.quantity).toBe(4);
   });
 });

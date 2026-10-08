@@ -5,7 +5,6 @@ import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { CashReport, CashSession, PageResponse } from '../../core/api/api.models';
 import { CashApi, CashSessionFilters } from '../../core/api/cash.api';
-import { AuthService } from '../../core/auth/auth.service';
 import { formatCop } from '../../shared/money';
 import { PageHeaderComponent } from '../../shared/page-header.component';
 import { cashDifferenceStatus } from '../../shared/status';
@@ -14,6 +13,8 @@ import { ColumnDef, TableQuery, initialQuery } from '../../shared/table/table';
 import { CashReportComponent } from './cash-report.component';
 import { differenceLabel } from './labels';
 import { TermComponent } from '../../shared/help/term.component';
+import { permissionFlag } from '../../core/auth/permission-flag';
+import { LatestRequest } from '../../shared/latest-request';
 
 /** Historial de sesiones de caja con su informe (permiso cash:read). */
 @Component({
@@ -32,7 +33,7 @@ import { TermComponent } from '../../shared/help/term.component';
     <app-data-table [columns]="columns" [page]="page()" [loading]="loading()" [trackBy]="trackById"
                     caption="Sesiones de caja" emptyIcon="pi pi-history" emptyTitle="No hay sesiones de caja"
                     emptyMessage="Cuando alguien abra una caja, aparecerá aquí con su informe."
-                    [emptyActionLabel]="canOperate ? 'Ir a Mi caja' : null" emptyActionIcon="pi pi-wallet"
+                    [emptyActionLabel]="canOperate() ? 'Ir a Mi caja' : null" emptyActionIcon="pi pi-wallet"
                     (emptyAction)="goToCash()"
                     (queryChange)="load($event)">
       <label tableToolbar class="flex items-center gap-2 text-sm">
@@ -64,9 +65,11 @@ import { TermComponent } from '../../shared/help/term.component';
   `,
 })
 export class CashHistoryComponent implements OnInit {
+  /** Cancela la petición anterior de la lista (QA UI-10). */
+  private readonly latest = new LatestRequest();
   private readonly cash = inject(CashApi);
   private readonly router = inject(Router);
-  protected readonly canOperate = inject(AuthService).hasPermission('cash:operate');
+  protected readonly canOperate = permissionFlag('cash:operate');
 
   protected readonly page = signal<PageResponse<CashSession> | null>(null);
   protected readonly loading = signal(true);
@@ -103,7 +106,7 @@ export class CashHistoryComponent implements OnInit {
   load(query: TableQuery): void {
     this.query = query;
     this.loading.set(true);
-    this.cash.sessions(this.filters, query.page, query.size).subscribe({
+    this.cash.sessions(this.filters, query.page, query.size).pipe(this.latest.only()).subscribe({
       next: (result) => {
         this.page.set(result);
         this.loading.set(false);

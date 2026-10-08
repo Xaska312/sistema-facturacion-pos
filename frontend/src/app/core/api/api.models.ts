@@ -451,6 +451,8 @@ export interface InventoryLineInput {
   quantity: number;
   direction?: Direction | null;
   unitCost?: number | null;
+  /** Conteos: existencia en unidad base que mostraba el sistema al empezar a contar ese producto. */
+  expectedQuantity?: number | null;
 }
 
 export interface ProductLookup {

@@ -64,6 +64,7 @@ public class ProductImportService {
     private final UnitRepository units;
     private final TaxRepository taxes;
     private final AuditLogger audit;
+    private final StockPresence stock;
 
     public record RowError(int row, String message) {
     }
@@ -184,7 +185,9 @@ public class ProductImportService {
                 boolean keepUnit = product != null && !columns.containsKey("unidad");
                 // El costo de un producto con movimientos lo calcula el inventario: el archivo no lo cambia.
                 boolean keepCost = product != null && (product.isCostLocked() || !columns.containsKey("costo"));
-                boolean keepTracking = product != null && !columns.containsKey("controla_inventario");
+                // Con existencias no se deja de controlar el inventario (QA INV-3): el archivo no lo apaga.
+                boolean keepTracking = product != null && (!columns.containsKey("controla_inventario")
+                        || (product.isTrackInventory() && !row.trackInventory() && stock.hasStock(product.getId())));
                 Product.Data data = new Product.Data(row.sku(), row.name(),
                         row.description() != null ? row.description() : product == null ? null : product.getDescription(),
                         category == null ? (product == null ? null : product.getCategoryId()) : category.getId(),

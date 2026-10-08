@@ -4,12 +4,12 @@ import { ButtonModule } from 'primeng/button';
 import { SkeletonModule } from 'primeng/skeleton';
 import { MyDay } from '../../core/api/api.models';
 import { ReportsApi } from '../../core/api/reports.api';
-import { AuthService } from '../../core/auth/auth.service';
 import { ChartComponent } from '../../shared/charts/chart.component';
 import { EmptyStateComponent } from '../../shared/empty-state.component';
 import { formatCop } from '../../shared/money';
 import { StatCardComponent } from '../../shared/stat-card.component';
 import { paymentChart } from './dashboard-data';
+import { permissionFlag } from '../../core/auth/permission-flag';
 
 /** "Mi día": ventas propias de hoy (cajero o vendedor sin acceso a los reportes del negocio). */
 @Component({
@@ -34,7 +34,7 @@ import { paymentChart } from './dashboard-data';
           <div class="card">
             <app-empty-state icon="pi pi-shopping-cart" title="Aún no tienes ventas hoy"
                              message="Tus ventas del día aparecen aquí apenas las registres."
-                             [actionLabel]="canSell ? 'Ir a vender' : null" actionIcon="pi pi-arrow-right"
+                             [actionLabel]="canSell() ? 'Ir a vender' : null" actionIcon="pi pi-arrow-right"
                              (action)="sell()" />
           </div>
         } @else {
@@ -58,7 +58,7 @@ import { paymentChart } from './dashboard-data';
 export class MyDayComponent implements OnInit {
   private readonly reports = inject(ReportsApi);
   private readonly router = inject(Router);
-  protected readonly canSell = inject(AuthService).hasPermission('sales:create');
+  protected readonly canSell = permissionFlag('sales:create');
   protected readonly cop = formatCop;
   protected readonly data = signal<MyDay | null>(null);
   protected readonly error = signal(false);

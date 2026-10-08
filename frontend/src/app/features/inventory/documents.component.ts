@@ -7,7 +7,6 @@ import { DialogModule } from 'primeng/dialog';
 import { Branch, InventoryDocument, InventoryDocumentLine, InventoryDocumentType, PageResponse } from '../../core/api/api.models';
 import { InventoryApi } from '../../core/api/inventory.api';
 import { OrganizationApi } from '../../core/api/organization.api';
-import { AuthService } from '../../core/auth/auth.service';
 import { HasPermissionDirective } from '../../shared/has-permission.directive';
 import { formatCop, formatQuantity } from '../../shared/money';
 import { PageHeaderComponent } from '../../shared/page-header.component';
@@ -15,6 +14,8 @@ import { CellTemplateDirective } from '../../shared/table/cell-template.directiv
 import { DataTableComponent } from '../../shared/table/data-table.component';
 import { ColumnDef, TableQuery, initialQuery } from '../../shared/table/table';
 import { DOCUMENT_LABEL, DOCUMENT_ROUTE, documentNumber } from './labels';
+import { permissionFlag } from '../../core/auth/permission-flag';
+import { LatestRequest } from '../../shared/latest-request';
 
 /** Documentos de inventario (saldo inicial, ajustes, traslados y conteos) y acceso a crearlos. */
 @Component({
@@ -40,7 +41,7 @@ import { DOCUMENT_LABEL, DOCUMENT_ROUTE, documentNumber } from './labels';
                     caption="Documentos de inventario" emptyIcon="pi pi-arrow-right-arrow-left"
                     emptyTitle="Aún no hay movimientos"
                     emptyMessage="Empieza con un saldo inicial para cargar las existencias que ya tienes."
-                    [emptyActionLabel]="canAdjust ? 'Registrar saldo inicial' : null" emptyActionIcon="pi pi-plus"
+                    [emptyActionLabel]="canAdjust() ? 'Registrar saldo inicial' : null" emptyActionIcon="pi pi-plus"
                     (emptyAction)="newInitial()"
                     (queryChange)="load($event)">
       <label tableToolbar class="flex items-center gap-2 text-sm">
@@ -98,10 +99,12 @@ import { DOCUMENT_LABEL, DOCUMENT_ROUTE, documentNumber } from './labels';
   `,
 })
 export class InventoryDocumentsComponent implements OnInit {
+  /** Cancela la petición anterior de la lista (QA UI-10). */
+  private readonly latest = new LatestRequest();
   private readonly api = inject(InventoryApi);
   private readonly organization = inject(OrganizationApi);
   private readonly router = inject(Router);
-  protected readonly canAdjust = inject(AuthService).hasPermission('inventory:adjust');
+  protected readonly canAdjust = permissionFlag('inventory:adjust');
 
   protected readonly labels = DOCUMENT_LABEL;
   protected readonly routes = DOCUMENT_ROUTE;
@@ -157,7 +160,7 @@ export class InventoryDocumentsComponent implements OnInit {
   load(query: TableQuery): void {
     this.query = query;
     this.loading.set(true);
-    this.api.documents(this.type || null, this.branchId || null, query.page, query.size).subscribe({
+    this.api.documents(this.type || null, this.branchId || null, query.page, query.size).pipe(this.latest.only()).subscribe({
       next: (result) => {
         this.page.set(result);
         this.loading.set(false);

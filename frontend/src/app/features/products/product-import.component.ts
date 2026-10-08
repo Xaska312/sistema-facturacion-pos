@@ -26,7 +26,15 @@ import { ColumnDef } from '../../shared/table/table';
       </ol>
       <div class="flex flex-wrap gap-2 items-center">
         <p-button label="Descargar plantilla" severity="secondary" [outlined]="true" (onClick)="downloadTemplate()" />
-        <input type="file" accept=".csv,text/csv" (change)="pick($event)" class="text-sm" />
+        <label class="inline-flex items-center gap-2 border rounded px-3 py-2 text-sm cursor-pointer hover:bg-surface-alt
+                      focus-within:ring-2 focus-within:ring-brand">
+          <i class="pi pi-upload text-xs" aria-hidden="true"></i>
+          {{ file() ? 'Elegir otro archivo' : 'Elegir archivo CSV' }}
+          <input type="file" accept=".csv,text/csv" (change)="pick($event)" class="sr-only" />
+        </label>
+        @if (file(); as f) {
+          <span class="text-sm text-muted">{{ f.name }}</span>
+        }
       </div>
       <div class="flex gap-2">
         <p-button label="Validar" [disabled]="!file()" [loading]="busy()" (onClick)="run(true)" />
@@ -74,7 +82,13 @@ export class ProductImportComponent {
 
   pick(event: Event): void {
     const input = event.target as HTMLInputElement;
-    this.file.set(input.files?.item(0) ?? null);
+    const chosen = input.files?.item(0) ?? null;
+    // Se limpia el campo para que volver a elegir el mismo archivo (ya corregido) sí dispare el cambio (QA UI-12).
+    input.value = '';
+    if (!chosen) {
+      return;
+    }
+    this.file.set(chosen);
     this.report.set(null);
   }
 

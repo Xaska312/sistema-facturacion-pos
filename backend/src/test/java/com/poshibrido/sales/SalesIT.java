@@ -349,6 +349,13 @@ class SalesIT extends IntegrationTest {
                 .isInstanceOf(DataAccessException.class);
         assertThatThrownBy(() -> jdbc.update("UPDATE " + schema + ".cash_movements SET amount = 1"))
                 .isInstanceOf(DataAccessException.class);
+        // TRUNCATE tampoco (QA SEG-12: no dispara los triggers de fila)
+        assertThatThrownBy(() -> jdbc.execute("TRUNCATE " + schema + ".sales CASCADE"))
+                .isInstanceOf(DataAccessException.class);
+        assertThatThrownBy(() -> jdbc.execute("TRUNCATE " + schema + ".audit_log"))
+                .isInstanceOf(DataAccessException.class);
+        assertThatThrownBy(() -> jdbc.execute("TRUNCATE platform.security_events"))
+                .isInstanceOf(DataAccessException.class);
     }
 
     @Test

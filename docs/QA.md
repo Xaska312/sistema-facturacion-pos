@@ -6,8 +6,8 @@ lo que queda como riesgo conocido. Se trabaja en cuatro partes (un parche y una 
 | Parte | Contenido | Estado |
 |---|---|---|
 | **7-6a** | Este documento, rol Vendedor, seguridad y sesión | ✅ PR #20 |
-| **7-6b** | Dinero y punto de venta: pesos sin centavos, montos con punto de miles, informe de caja, cobro | 🧪 entregada |
-| **7-6c** | Inventario y operación: conteo físico, arranque con muchos negocios, pool, CSV grandes, consultas | pendiente |
+| **7-6b** | Dinero y punto de venta: pesos sin centavos, montos con punto de miles, informe de caja, cobro | ✅ fusionada |
+| **7-6c** | Inventario y operación: conteo físico, arranque con muchos negocios, pool, CSV grandes, consultas | 🧪 entregada |
 | **7-6d** | Pruebas nuevas (e2e por rol, prueba de carga), lista de pruebas manuales e informe final | pendiente |
 
 ## 1. Alcance y método
@@ -70,7 +70,7 @@ Ids: **SEG** seguridad y sesión · **DIN** dinero y punto de venta · **INV** i
 | SEG-9 | Baja | "Eliminar negocio" permitía probar contraseñas sin bloqueo | ✅ 7-6a |
 | SEG-10 | Baja | Se puede saber si un correo tiene cuenta (registro 409; 423 solo para cuentas que existen) | 🟰 decisión 200 |
 | SEG-11 | Baja | El cajero ve los movimientos de venta de su sesión y podría calcular el esperado del cierre ciego | 🟰 decisión 200 |
-| SEG-12 | Baja | `TRUNCATE` se salta los triggers de inmutabilidad | ⏳ 7-6c |
+| SEG-12 | Baja | `TRUNCATE` se salta los triggers de inmutabilidad | ✅ 7-6c |
 | ROL-1 | Media | El rol Vendedor tenía `sales:create` pero no podía abrir caja: no podía vender | ✅ 7-6a (decisión del usuario: darle caja) |
 
 ### Dinero y punto de venta (7-6b)
@@ -94,26 +94,26 @@ Ids: **SEG** seguridad y sesión · **DIN** dinero y punto de venta · **INV** i
 
 | Id | Sev. | Hallazgo | Estado |
 |---|---|---|---|
-| INV-1 | Alta | Si la migración de un negocio falla al arrancar, no arranca ninguno | ⏳ 7-6c |
-| INV-2 | Alta | El conteo físico suma las ventas hechas durante el conteo (inventa existencias) | ⏳ 7-6c |
-| INV-3 | Media | Se puede apagar "controla inventario" con existencias y el saldo queda desfasado | ⏳ 7-6c |
-| INV-4 | Media | Flyway recrea vacío el schema de un negocio que falta (oculta una pérdida de datos) | ⏳ 7-6c |
-| INV-5 | Media | Consultas N+1 en productos y existencias (cientos de consultas por venta en el POS) | ⏳ 7-6c |
-| INV-6 | Media | Pool agotado responde 500 y no hay tiempos máximos de bloqueo ni de consulta | ⏳ 7-6c |
-| INV-7 | Media | Los CSV grandes se arman en memoria (riesgo de quedarse sin memoria y reiniciar) | ⏳ 7-6c |
-| INV-8 | Baja | Cantidades en unidad base fuera de rango terminan en 500 o en un 409 confuso | ⏳ 7-6c |
-| INV-9 | Baja | El costo de la venta puede leerse antes de un ajuste concurrente | 🟰 7-6c (documentar) |
-| INV-10 | Baja | La idempotencia de documentos de inventario no compara tipo ni usuario | ⏳ 7-6c |
-| INV-11 | Baja | `/inventory/consistency` recorre todo el kardex con solo `inventory:read` | ⏳ 7-6c |
-| INV-12 | Media | Arranque más lento con muchos negocios (migración uno por uno) | ⏳ 7-6c (medir) |
-| UI-6 | Media | Lecturas rápidas del lector se mezclan en el documento de inventario | ⏳ 7-6c |
-| UI-7 | Media | No se avisa de cambios sin guardar al salir (documento, producto, carrito) | ⏳ 7-6c |
-| UI-8 | Baja | Reintentar un documento editado devuelve el anterior sin avisar | ⏳ 7-6c |
+| INV-1 | Alta | Si la migración de un negocio falla al arrancar, no arranca ninguno | ✅ 7-6c |
+| INV-2 | Alta | El conteo físico suma las ventas hechas durante el conteo (inventa existencias) | ✅ 7-6c |
+| INV-3 | Media | Se puede apagar "controla inventario" con existencias y el saldo queda desfasado | ✅ 7-6c |
+| INV-4 | Media | Flyway recrea vacío el schema de un negocio que falta (oculta una pérdida de datos) | ✅ 7-6c |
+| INV-5 | Media | Consultas N+1 en productos y existencias (cientos de consultas por venta en el POS) | ✅ 7-6c |
+| INV-6 | Media | Pool agotado responde 500 y no hay tiempos máximos de bloqueo ni de consulta | ✅ 7-6c |
+| INV-7 | Media | Los CSV grandes se arman en memoria (riesgo de quedarse sin memoria y reiniciar) | ✅ 7-6c |
+| INV-8 | Baja | Cantidades en unidad base fuera de rango terminan en 500 o en un 409 confuso | ✅ 7-6c |
+| INV-9 | Baja | El costo de la venta puede leerse antes de un ajuste concurrente | 🟰 decisión 222 |
+| INV-10 | Baja | La idempotencia de documentos de inventario no compara tipo ni usuario | ✅ 7-6c |
+| INV-11 | Baja | `/inventory/consistency` recorre todo el kardex con solo `inventory:read` | ✅ 7-6c |
+| INV-12 | Media | Arranque más lento con muchos negocios (migración uno por uno) | ✅ 7-6c |
+| UI-6 | Media | Lecturas rápidas del lector se mezclan en el documento de inventario | ✅ 7-6c |
+| UI-7 | Media | No se avisa de cambios sin guardar al salir (documento, producto, carrito) | ✅ 7-6c |
+| UI-8 | Baja | Reintentar un documento editado devuelve el anterior sin avisar | ✅ 7-6c |
 | UI-9 | Baja | Rangos de más de un año en la URL de reportes no caen al periodo predeterminado | ✅ 7-6b |
-| UI-10 | Baja | Listas que pueden mostrar resultados viejos (respuestas fuera de orden) | ⏳ 7-6c |
-| UI-11 | Baja | Se pierde la página pedida al pasar por el login | ⏳ 7-6c |
-| UI-12 | Baja | Volver a elegir el mismo CSV corregido no lo vuelve a leer | ⏳ 7-6c |
-| UI-13 | Baja | Algunos permisos de pantalla se leen una sola vez | ⏳ 7-6c |
+| UI-10 | Baja | Listas que pueden mostrar resultados viejos (respuestas fuera de orden) | ✅ 7-6c |
+| UI-11 | Baja | Se pierde la página pedida al pasar por el login | ✅ 7-6c |
+| UI-12 | Baja | Volver a elegir el mismo CSV corregido no lo vuelve a leer | ✅ 7-6c |
+| UI-13 | Baja | Algunos permisos de pantalla se leen una sola vez | ✅ 7-6c |
 
 ## 4. Revisado y sin hallazgos
 
@@ -136,3 +136,18 @@ Resumen de lo que los cuatro frentes revisaron de punta a punta y encontraron co
 - **Frontend**: sin `innerHTML` ni `bypassSecurityTrust`; token solo en memoria; sin fugas de suscripciones; reportes
   descartan respuestas viejas; atajos del POS no chocan entre sí.
 - **Respaldos**: `pg_dump` verificado, restauración de prueba semanal y restauración en producción con vuelta atrás.
+
+## 5. Cómo se comprobó cada corrección de la 7-6c
+
+| Id | Prueba |
+|---|---|
+| SEG-12 | `SalesIT`: `TRUNCATE` de ventas, auditoría y eventos de seguridad falla |
+| INV-1, INV-4 | `TenantMigrationFailureIT`: un negocio con migración rota (o sin schema) queda fuera (403) y los demás entran; al corregirlo vuelve |
+| INV-2 | `InventoryIT.countAdjustsAgainstWhatTheSystemShowedWhenCountingStarted` y `document-lines.spec` |
+| INV-3 | `InventoryIT.inventoryControlCannotBeTurnedOffWithStock` |
+| INV-8 | `InventoryIT.outOfRangeQuantitiesAreRejectedWith422` |
+| INV-10 | `InventoryIT.sameIdempotencyKeyCreatesOneDocument` (otro tipo u otro usuario: 409) |
+| INV-11 | `InventoryIT` (permisos): el Vendedor recibe 403, el Bodeguero 200 |
+| INV-5, INV-6, INV-7, INV-12 | Configuración y manejo de errores; se miden en la prueba de carga de la 7-6d |
+| UI-6, UI-7, UI-10, UI-11 | `document-lines.spec`, `unsaved-changes.spec`, `latest-request.spec`, `auth.guards.spec`, `return-url.spec` |
+| UI-8, UI-12, UI-13 | Revisión de código y lista de pruebas manuales (7-6d) |

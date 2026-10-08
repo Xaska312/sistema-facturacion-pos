@@ -1,6 +1,7 @@
 package com.poshibrido.tenancy.application;
 
 import com.poshibrido.tenancy.domain.TenantSchemas;
+import com.poshibrido.tenancy.infrastructure.TenantMigrationFailures;
 import com.poshibrido.tenancy.infrastructure.TenantSchemaMigrator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -17,6 +18,7 @@ public class TenantSchemaManager {
 
     private final DataSource dataSource;
     private final TenantSchemaMigrator migrator;
+    private final TenantMigrationFailures failures;
 
     public void createAndMigrate(String schema) {
         String safe = TenantSchemas.requireTenantSchema(schema);
@@ -26,7 +28,9 @@ public class TenantSchemaManager {
 
     /** Aplica las migraciones pendientes del negocio (p. ej. al reactivarlo). */
     public void migrate(String schema) {
-        migrator.migrateTenant(TenantSchemas.requireTenantSchema(schema));
+        String safe = TenantSchemas.requireTenantSchema(schema);
+        migrator.migrateTenant(safe);
+        failures.markOk(safe);
     }
 
     public void drop(String schema) {

@@ -1,8 +1,9 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { TenantSummary } from '../../core/api/api.models';
 import { AuthService } from '../../core/auth/auth.service';
+import { isTenantPage, safeReturnUrl } from '../../core/auth/return-url';
 import { VerifyEmailBannerComponent } from '../auth/verify-email-banner.component';
 import { suspendedMessage } from '../platform/platform-labels';
 
@@ -64,6 +65,8 @@ export class SelectTenantComponent implements OnInit {
 
   protected readonly statusLabel = STATUS_LABEL;
   protected readonly selecting = signal<string | null>(null);
+  /** Página del negocio que se pidió antes de elegirlo (QA UI-11). */
+  private readonly returnUrl = safeReturnUrl(inject(ActivatedRoute).snapshot.queryParamMap.get('returnUrl'));
 
   ngOnInit(): void {
     this.auth.loadTenants().subscribe();
@@ -72,7 +75,7 @@ export class SelectTenantComponent implements OnInit {
   select(tenant: TenantSummary): void {
     this.selecting.set(tenant.id);
     this.auth.selectTenant(tenant.id).subscribe({
-      next: () => void this.router.navigate(['/app']),
+      next: () => void this.router.navigateByUrl(isTenantPage(this.returnUrl) ? this.returnUrl : '/app'),
       error: () => this.selecting.set(null),
     });
   }

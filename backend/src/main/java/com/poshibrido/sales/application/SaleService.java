@@ -66,6 +66,9 @@ import java.util.regex.Pattern;
 @Service
 public class SaleService {
 
+    /** Máximo de NUMERIC(14,4), la columna de cantidades en unidad base. */
+    static final BigDecimal MAX_BASE_QUANTITY = new BigDecimal("9999999999.9999");
+
     static final String SEQUENCE = "SALE";
     static final String REFERENCE_TYPE = "SALE";
     static final String DISCOUNT_PERMISSION = "sales:discount";
@@ -171,6 +174,10 @@ public class SaleService {
                 throw new BusinessRuleException("La cantidad de " + product.name() + " debe ser mayor que cero.");
             }
             BigDecimal baseQuantity = quantity.multiply(price.factor()).setScale(4, RoundingMode.HALF_UP);
+            if (baseQuantity.signum() <= 0 || baseQuantity.compareTo(MAX_BASE_QUANTITY) > 0) {
+                // Cero por redondeo (0,0001 × 0,0001) o más de lo que cabe en la columna: antes daba 500 (QA INV-8).
+                throw new BusinessRuleException("La cantidad de " + product.name() + " no es válida.");
+            }
             if (!product.baseUnitAllowsDecimals() && baseQuantity.stripTrailingZeros().scale() > 0) {
                 throw new BusinessRuleException(product.name() + " se vende en unidades enteras de "
                         + product.baseUnitCode() + ".");

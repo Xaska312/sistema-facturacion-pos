@@ -1,5 +1,5 @@
-import { Component, OnInit, computed, inject, input, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { Component, HostListener, OnInit, computed, inject, input, signal } from '@angular/core';
+import { FormArray, FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
@@ -7,13 +7,14 @@ import { InputTextModule } from 'primeng/inputtext';
 import { forkJoin } from 'rxjs';
 import { Category, PriceList, Product, Tax, Unit } from '../../core/api/api.models';
 import { CatalogApi } from '../../core/api/catalog.api';
-import { AuthService } from '../../core/auth/auth.service';
 import { formatCop } from '../../shared/money';
 import { barcodeGroup, conversionGroup, fillForm, listPriceGroup, productForm, toInput } from './product-form';
 import { PageHeaderComponent } from '../../shared/page-header.component';
 import { StatusBadgeComponent } from '../../shared/status-badge.component';
 import { TermComponent } from '../../shared/help/term.component';
 import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
+import { permissionFlag } from '../../core/auth/permission-flag';
+import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
 
 /** Alta y edición de un producto: datos, presentaciones, códigos de barras y precios por lista. */
 @Component({
@@ -27,7 +28,7 @@ import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
     </app-page-header>
 
     <form [formGroup]="form" (ngSubmit)="save()" (keydown.enter)="ignoreEnter($event)" class="flex flex-col gap-4 max-w-4xl">
-      <fieldset [disabled]="!canEdit" class="flex flex-col gap-4">
+      <fieldset [disabled]="!canEdit()" class="flex flex-col gap-4">
         <!-- Datos básicos -->
         <section class="card p-4 grid gap-3 md:grid-cols-2">
           <label class="flex flex-col gap-1">
@@ -94,7 +95,7 @@ import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
               <h2 class="font-medium">Presentaciones</h2>
               <p class="text-xs text-muted">Ej.: una caja de 24 unidades. Si no pones precio, se calcula precio base × factor.</p>
             </div>
-            @if (canEdit) {
+            @if (canEdit()) {
               <p-button label="Agregar" size="small" [text]="true" (onClick)="addConversion()" />
             }
           </header>
@@ -119,9 +120,9 @@ import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
                 <input pInputText appPesos="2" formControlName="salePrice"
                        [placeholder]="formatCop(form.controls.salePrice.value * group.controls.factor.value)" />
               </label>
-              @if (canEdit) {
+              @if (canEdit()) {
                 <p-button class="col-span-2" label="Quitar" size="small" [text]="true" severity="danger"
-                          (onClick)="form.controls.conversions.removeAt(i)" />
+                          (onClick)="removeRow(form.controls.conversions, i)" />
               }
             </div>
           } @empty {
@@ -133,7 +134,7 @@ import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
         <section class="card p-4 flex flex-col gap-2">
           <header class="flex items-center justify-between">
             <h2 class="font-medium">Códigos de barras</h2>
-            @if (canEdit) {
+            @if (canEdit()) {
               <span class="flex gap-2">
                 <p-button label="Generar código interno" size="small" [text]="true" [loading]="generating()"
                           (onClick)="generateBarcode()" />
@@ -158,9 +159,9 @@ import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
                   }
                 </select>
               </label>
-              @if (canEdit) {
+              @if (canEdit()) {
                 <p-button class="col-span-2" label="Quitar" size="small" [text]="true" severity="danger"
-                          (onClick)="form.controls.barcodes.removeAt(i)" />
+                          (onClick)="removeRow(form.controls.barcodes, i)" />
               }
             </div>
           } @empty {
@@ -176,7 +177,7 @@ import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
                 <h2 class="font-medium">Precios en otras listas</h2>
                 <p class="text-xs text-muted">Si una lista no tiene precio para una unidad, se usa el de la lista General.</p>
               </div>
-              @if (canEdit) {
+              @if (canEdit()) {
                 <p-button label="Agregar" size="small" [text]="true" (onClick)="addListPrice()" />
               }
             </header>
@@ -205,9 +206,9 @@ import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
                   <span class="text-xs">Precio</span>
                   <input pInputText appPesos="2" formControlName="price" />
                 </label>
-                @if (canEdit) {
+                @if (canEdit()) {
                   <p-button class="col-span-2" label="Quitar" size="small" [text]="true" severity="danger"
-                            (onClick)="form.controls.listPrices.removeAt(i)" />
+                            (onClick)="removeRow(form.controls.listPrices, i)" />
                 }
               </div>
             } @empty {
@@ -217,7 +218,7 @@ import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
         }
       </fieldset>
 
-      @if (canEdit) {
+      @if (canEdit()) {
         <div class="flex justify-end gap-2">
           <a routerLink="/app/productos"><p-button label="Cancelar" [text]="true" severity="secondary" /></a>
           <p-button type="submit" label="Guardar" [loading]="saving()" [disabled]="form.invalid" />
@@ -226,7 +227,7 @@ import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
     </form>
   `,
 })
-export class ProductEditorComponent implements OnInit {
+export class ProductEditorComponent implements OnInit, HasUnsavedChanges {
   /** Parámetro de ruta :id (ausente en /nuevo). */
   readonly id = input<string>();
 
@@ -234,7 +235,7 @@ export class ProductEditorComponent implements OnInit {
   private readonly api = inject(CatalogApi);
   private readonly router = inject(Router);
   private readonly messages = inject(MessageService);
-  protected readonly canEdit = inject(AuthService).hasPermission('products:manage');
+  protected readonly canEdit = permissionFlag('products:manage');
   protected readonly formatCop = formatCop;
 
   protected readonly form = productForm(this.fb);
@@ -250,6 +251,8 @@ export class ProductEditorComponent implements OnInit {
   protected readonly activeUnits = computed(() => this.units().filter((u) => u.active));
   protected readonly activeTaxes = computed(() => this.taxes().filter((t) => t.active));
   protected readonly extraLists = computed(() => this.priceLists().filter((l) => l.active && !l.defaultList));
+  /** Ya se guardó: salir hacia la lista no debe preguntar. */
+  private saved = false;
 
   ngOnInit(): void {
     forkJoin({
@@ -291,18 +294,36 @@ export class ProductEditorComponent implements OnInit {
     return names.join(' › ');
   }
 
+  hasUnsavedChanges(): boolean {
+    return this.canEdit() && !this.saved && this.form.dirty;
+  }
+
+  @HostListener('window:beforeunload', ['$event'])
+  protected beforeUnload(event: BeforeUnloadEvent): void {
+    warnIfUnsaved(event, this.hasUnsavedChanges());
+  }
+
   addConversion(): void {
     this.form.controls.conversions.push(conversionGroup(this.fb));
+    this.form.markAsDirty();
   }
 
   addBarcode(): void {
     this.form.controls.barcodes.push(barcodeGroup(this.fb));
+    this.form.markAsDirty();
+  }
+
+  /** Quitar una fila (presentación, código o precio por lista) también es un cambio sin guardar. */
+  protected removeRow(rows: FormArray, index: number): void {
+    rows.removeAt(index);
+    this.form.markAsDirty();
   }
 
   addListPrice(): void {
     const first = this.extraLists()[0];
     this.form.controls.listPrices.push(
       listPriceGroup(this.fb, first?.id ?? '', this.form.controls.baseUnitId.value, this.form.controls.salePrice.value));
+    this.form.markAsDirty();
   }
 
   generateBarcode(): void {
@@ -336,6 +357,7 @@ export class ProductEditorComponent implements OnInit {
       next: (saved) => {
         this.saving.set(false);
         this.messages.add({ severity: 'success', summary: 'Producto guardado', detail: saved.name });
+        this.saved = true;
         void this.router.navigate(['/app/productos']);
       },
       error: () => this.saving.set(false),

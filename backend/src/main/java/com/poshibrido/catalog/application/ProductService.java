@@ -59,6 +59,7 @@ public class ProductService {
     private final TaxRepository taxes;
     private final PriceListRepository priceLists;
     private final AuditLogger audit;
+    private final StockPresence stock;
 
     @Transactional(readOnly = true)
     public Page<ProductView> search(String search, UUID categoryId, boolean includeInactive, Pageable pageable) {
@@ -113,6 +114,12 @@ public class ProductService {
         if (product.isCostLocked() && data.cost().setScale(2, RoundingMode.HALF_UP).compareTo(product.getCost()) != 0) {
             throw new BusinessRuleException("El costo de este producto lo calcula el inventario (promedio ponderado) "
                     + "y no se puede editar a mano.");
+        }
+        if (product.isTrackInventory() && !data.trackInventory() && stock.hasStock(id)) {
+            // Si no, el saldo quedaba congelado: las ventas sin control no lo descuentan y al volver a activarlo
+            // aparecían existencias que ya no están (QA INV-3).
+            throw new BusinessRuleException("Este producto tiene existencias. Déjalas en cero con un ajuste o un "
+                    + "conteo físico antes de dejar de controlar su inventario.");
         }
         product.apply(data);
         apply(product, command, refs);

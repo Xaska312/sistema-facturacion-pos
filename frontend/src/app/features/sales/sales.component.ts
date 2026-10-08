@@ -8,7 +8,6 @@ import { InputTextModule } from 'primeng/inputtext';
 import { Observable, tap, throwError } from 'rxjs';
 import { PageResponse, Sale, SaleRow, SaleStatus } from '../../core/api/api.models';
 import { SaleFilters, SalesApi } from '../../core/api/sales.api';
-import { AuthService } from '../../core/auth/auth.service';
 import { FormDialogComponent } from '../../shared/forms/form-dialog.component';
 import { HasPermissionDirective } from '../../shared/has-permission.directive';
 import { PageHeaderComponent } from '../../shared/page-header.component';
@@ -17,6 +16,8 @@ import { DataTableComponent } from '../../shared/table/data-table.component';
 import { ColumnDef, TableQuery, initialQuery } from '../../shared/table/table';
 import { ReceiptComponent } from '../../shared/receipt/receipt.component';
 import { ReceiptWidth, loadReceiptWidth, printReceipt } from '../../shared/receipt/receipt-prefs';
+import { permissionFlag } from '../../core/auth/permission-flag';
+import { LatestRequest } from '../../shared/latest-request';
 
 export const SALE_STATUS_LABEL: Record<SaleStatus, string> = {
   COMPLETED: 'Registrada',
@@ -36,7 +37,7 @@ const SALE_STATUS: Record<SaleStatus, StatusKey> = { COMPLETED: 'completed', VOI
     <app-data-table [columns]="columns" [page]="page()" [loading]="loading()" [trackBy]="trackById"
                     caption="Ventas" searchPlaceholder="Número (POS-12) o cliente" emptyIcon="pi pi-receipt"
                     emptyTitle="No hay ventas en este periodo" emptyMessage="Cambia las fechas o el estado, o registra una venta."
-                    [emptyActionLabel]="canSell ? 'Ir a vender' : null" emptyActionIcon="pi pi-shopping-cart"
+                    [emptyActionLabel]="canSell() ? 'Ir a vender' : null" emptyActionIcon="pi pi-shopping-cart"
                     (emptyAction)="goSell()"
                     (queryChange)="load($event)">
       <label tableToolbar class="flex items-center gap-2 text-sm">
@@ -101,10 +102,12 @@ const SALE_STATUS: Record<SaleStatus, StatusKey> = { COMPLETED: 'completed', VOI
   `,
 })
 export class SalesComponent implements OnInit {
+  /** Cancela la petición anterior de la lista (QA UI-10). */
+  private readonly latest = new LatestRequest();
   private readonly sales = inject(SalesApi);
   private readonly messages = inject(MessageService);
   private readonly router = inject(Router);
-  protected readonly canSell = inject(AuthService).hasPermission('sales:create');
+  protected readonly canSell = permissionFlag('sales:create');
 
   protected readonly page = signal<PageResponse<SaleRow> | null>(null);
   protected readonly loading = signal(true);
@@ -138,7 +141,7 @@ export class SalesComponent implements OnInit {
   load(query: TableQuery): void {
     this.query = query;
     this.loading.set(true);
-    this.sales.search({ ...this.filters, search: query.search }, query.page, query.size).subscribe({
+    this.sales.search({ ...this.filters, search: query.search }, query.page, query.size).pipe(this.latest.only()).subscribe({
       next: (result) => {
         this.page.set(result);
         this.loading.set(false);

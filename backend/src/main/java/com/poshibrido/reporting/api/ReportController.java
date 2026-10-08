@@ -16,6 +16,7 @@ import com.poshibrido.reporting.application.ReportViews.SalesRow;
 import com.poshibrido.reporting.application.ReportViews.Summary;
 import com.poshibrido.reporting.application.ReportViews.TaxRow;
 import com.poshibrido.shared.csv.CsvWriter;
+import com.poshibrido.shared.csv.ExportGate;
 import com.poshibrido.shared.security.CurrentActor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -48,6 +49,7 @@ public class ReportController {
 
     private final ReportQueryService reports;
     private final AuditLogger audit;
+    private final ExportGate exports;
 
     // ---------------------------------------------------------------- JSON
 
@@ -236,13 +238,16 @@ public class ReportController {
                                            @RequestParam(required = false) UUID branchId,
                                            @RequestParam(required = false) UUID sellerId) {
         ReportFilter f = filter(from, to, branchId, sellerId);
-        CsvWriter w = writer().row("Número", "Fecha", "Estado", "Sucursal", "Caja", "Vendedor", "Documento cliente",
-                "Cliente", "Descuentos", "Base", "Impuestos", "Total", "Medios de pago");
-        List<SaleLine> lines = reports.saleLines(f);
-        lines.forEach(r -> w.row(r.documentNumber(), r.createdAt(), r.status(), r.branchName(), r.registerCode(),
-                r.sellerName(), r.customerDocument(), r.customerName(), r.discountTotal(), r.subtotal(),
-                r.taxTotal(), r.total(), r.paymentMethods()));
-        return csv("ventas", f.period(), w);
+        // Hasta 100.000 filas: pocas a la vez en todo el servidor (QA INV-7).
+        return exports.run(() -> {
+            CsvWriter w = writer().row("Número", "Fecha", "Estado", "Sucursal", "Caja", "Vendedor",
+                    "Documento cliente", "Cliente", "Descuentos", "Base", "Impuestos", "Total", "Medios de pago");
+            List<SaleLine> lines = reports.saleLines(f);
+            lines.forEach(r -> w.row(r.documentNumber(), r.createdAt(), r.status(), r.branchName(),
+                    r.registerCode(), r.sellerName(), r.customerDocument(), r.customerName(), r.discountTotal(),
+                    r.subtotal(), r.taxTotal(), r.total(), r.paymentMethods()));
+            return csv("ventas", f.period(), w);
+        });
     }
 
     @GetMapping("/inventory/valuation.csv")

@@ -29,7 +29,7 @@ import {
   selector: 'app-first-steps',
   imports: [RouterLink, ButtonModule, SkeletonModule],
   template: `
-    @if (eligible) {
+    @if (eligible()) {
       @if (dismissed()) {
         <button type="button" class="text-sm text-brand hover:underline min-h-11" (click)="show()">
           Mostrar los primeros pasos
@@ -142,14 +142,14 @@ export class FirstStepsComponent implements OnInit {
   private readonly sales = inject(SalesApi);
 
   /** El dueño o quien puede cambiar los ajustes del negocio. */
-  protected readonly eligible = (this.auth.currentTenant()?.owner ?? false) || this.auth.hasPermission('settings:manage');
+  protected readonly eligible = computed(() => (this.auth.currentTenant()?.owner ?? false) || this.auth.hasPermission('settings:manage'));
   private readonly key = firstStepsKey(this.auth.user()?.id ?? 'anon', this.auth.tenantId() ?? 'none');
   protected readonly dismissed = signal(isFirstStepsDismissed(this.key));
   protected readonly steps = signal<FirstStep[] | null>(null);
   protected readonly progress = computed(() => firstStepsProgress(this.steps() ?? []));
 
   ngOnInit(): void {
-    if (this.eligible && !this.dismissed()) {
+    if (this.eligible() && !this.dismissed()) {
       this.load();
     }
   }

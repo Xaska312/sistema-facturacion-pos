@@ -11,6 +11,7 @@ import { DataTableComponent } from '../../shared/table/data-table.component';
 import { ColumnDef, TableQuery, initialQuery } from '../../shared/table/table';
 import { MOVEMENT_LABEL, documentNumber } from './labels';
 import { TermComponent } from '../../shared/help/term.component';
+import { LatestRequest } from '../../shared/latest-request';
 
 /** Kardex de un producto: movimientos con saldo después de cada uno. */
 @Component({
@@ -54,6 +55,8 @@ import { TermComponent } from '../../shared/help/term.component';
   `,
 })
 export class KardexComponent implements OnInit {
+  /** Cancela la petición anterior de la lista (QA UI-10). */
+  private readonly latest = new LatestRequest();
   /** Parámetro de ruta :productId. */
   readonly productId = input.required<string>();
   /** Parámetro de consulta ?branchId. */
@@ -104,7 +107,7 @@ export class KardexComponent implements OnInit {
     this.query = query;
     this.loading.set(true);
     this.api.kardex(this.productId(), this.branch || null, this.from || null, this.to || null, query.page, query.size)
-      .subscribe({
+      .pipe(this.latest.only()).subscribe({
         next: (result) => {
           this.page.set(result);
           this.loading.set(false);

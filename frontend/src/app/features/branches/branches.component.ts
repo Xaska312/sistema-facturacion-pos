@@ -5,7 +5,6 @@ import { InputTextModule } from 'primeng/inputtext';
 import { Observable } from 'rxjs';
 import { Branch, City, Department, PageResponse } from '../../core/api/api.models';
 import { OrganizationApi } from '../../core/api/organization.api';
-import { AuthService } from '../../core/auth/auth.service';
 import { ConfirmService } from '../../shared/confirm';
 import { FieldErrorComponent } from '../../shared/forms/field-error.component';
 import { FormDialogComponent } from '../../shared/forms/form-dialog.component';
@@ -13,6 +12,8 @@ import { PageHeaderComponent } from '../../shared/page-header.component';
 import { activeStatus } from '../../shared/status';
 import { DataTableComponent } from '../../shared/table/data-table.component';
 import { ColumnDef, TableQuery, initialQuery, toPageQuery } from '../../shared/table/table';
+import { permissionFlag } from '../../core/auth/permission-flag';
+import { LatestRequest } from '../../shared/latest-request';
 
 const CODE_PATTERN = /^[A-Za-z0-9_-]{2,20}$/;
 
@@ -23,7 +24,7 @@ const CODE_PATTERN = /^[A-Za-z0-9_-]{2,20}$/;
   template: `
     <app-page-header title="Sucursales"
                      description="Los puntos de venta de tu negocio. Cada caja y cada existencia pertenecen a una sucursal.">
-      @if (canManage) {
+      @if (canManage()) {
         <p-button label="Nueva sucursal" icon="pi pi-plus" (onClick)="openCreate()" />
       }
     </app-page-header>
@@ -31,10 +32,10 @@ const CODE_PATTERN = /^[A-Za-z0-9_-]{2,20}$/;
     <app-data-table [columns]="columns" [page]="page()" [loading]="loading()" [trackBy]="trackById"
                     initialSort="code,asc" caption="Sucursales del negocio" emptyIcon="pi pi-building"
                     emptyTitle="Aún no hay sucursales" emptyMessage="Crea una sucursal por cada local donde vendes."
-                    [emptyActionLabel]="canManage ? 'Crear sucursal' : null" (emptyAction)="openCreate()"
+                    [emptyActionLabel]="canManage() ? 'Crear sucursal' : null" (emptyAction)="openCreate()"
                     (queryChange)="load($event)">
       <ng-template #actions let-row>
-        @if (canManage) {
+        @if (canManage()) {
           <p-button label="Editar" icon="pi pi-pencil" size="small" [text]="true" (onClick)="openEdit(row)" />
           <p-button [label]="row.active ? 'Desactivar' : 'Activar'" size="small" [text]="true"
                     [icon]="row.active ? 'pi pi-ban' : 'pi pi-check-circle'"
@@ -97,9 +98,11 @@ const CODE_PATTERN = /^[A-Za-z0-9_-]{2,20}$/;
   `,
 })
 export class BranchesComponent implements OnInit {
+  /** Cancela la petición anterior de la lista (QA UI-10). */
+  private readonly latest = new LatestRequest();
   private readonly api = inject(OrganizationApi);
   private readonly confirm = inject(ConfirmService);
-  protected readonly canManage = inject(AuthService).hasPermission('branches:manage');
+  protected readonly canManage = permissionFlag('branches:manage');
 
   protected readonly page = signal<PageResponse<Branch> | null>(null);
   protected readonly loading = signal(true);
@@ -135,7 +138,7 @@ export class BranchesComponent implements OnInit {
   load(query: TableQuery): void {
     this.query = query;
     this.loading.set(true);
-    this.api.branches(toPageQuery(query)).subscribe({
+    this.api.branches(toPageQuery(query)).pipe(this.latest.only()).subscribe({
       next: (result) => {
         this.page.set(result);
         this.loading.set(false);

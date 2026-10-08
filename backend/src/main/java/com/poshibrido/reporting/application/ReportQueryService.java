@@ -36,7 +36,8 @@ import java.util.UUID;
  * catálogo, inventario y caja sin pasar por sus servicios). Usa la conexión del negocio actual (search_path).
  */
 @Service
-@Transactional(readOnly = true)
+// Tiempo máximo: un periodo enorme no deja una conexión tomada indefinidamente (QA INV-6).
+@Transactional(readOnly = true, timeout = 60)
 public class ReportQueryService {
 
     private static final UUID NONE = new UUID(0, 0);

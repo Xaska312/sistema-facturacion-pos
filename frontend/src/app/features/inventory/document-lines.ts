@@ -44,6 +44,19 @@ export function baseQuantity(line: DraftLine): number | null {
   return Number(line.quantity) * factor;
 }
 
+/**
+ * Suma 1 a la línea por una nueva lectura del lector en {@code unitId} (QA UI-6). Si la lectura es de otra unidad que
+ * la de la línea (p. ej. la caja cuando la línea va en unidades), devuelve null: no se suma para no mezclar unidades.
+ */
+export function addScan(line: DraftLine, unitId: string | null): DraftLine | null {
+  const unit = line.units.some((u) => u.id === unitId) ? unitId : line.units[0]?.id;
+  const current = line.quantity === null || String(line.quantity) === '' ? 0 : Number(line.quantity);
+  if (unit !== line.unitId || Number.isNaN(current)) {
+    return null;
+  }
+  return { ...line, quantity: current + 1 };
+}
+
 /** Validación en el cliente antes de enviar (el backend aplica todas las reglas). */
 export function linesProblem(type: InventoryDocumentType, lines: DraftLine[]): string | null {
   if (lines.length === 0) {
@@ -71,6 +84,10 @@ export function toLineInputs(type: InventoryDocumentType, lines: DraftLine[]): I
     }
     if (type === 'INITIAL') {
       input.unitCost = hasCost ? Number(l.unitCost) : null;
+    }
+    if (type === 'COUNT') {
+      // Lo que había al empezar a contar: si se vende durante el conteo, el ajuste no "inventa" existencias (INV-2).
+      input.expectedQuantity = l.currentQuantity;
     }
     return input;
   });

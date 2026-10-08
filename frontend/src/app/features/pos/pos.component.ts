@@ -53,6 +53,7 @@ import {
   summarizePayments,
 } from './sale-math';
 import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
+import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
 
 interface CustomerChoice {
   id: string;
@@ -410,7 +411,7 @@ const STOCK_PAGES = 5;
     }
   `,
 })
-export class PosComponent implements OnInit, OnDestroy {
+export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   protected readonly auth = inject(AuthService);
   private readonly cash = inject(CashApi);
   private readonly sales = inject(SalesApi);
@@ -508,6 +509,16 @@ export class PosComponent implements OnInit, OnDestroy {
       },
       error: () => this.sessionError.set(true),
     });
+  }
+
+  /** Carrito con productos: salir de "Vender" o cerrar la pestaña lo perdería (QA UI-7). */
+  hasUnsavedChanges(): boolean {
+    return this.lines().length > 0;
+  }
+
+  @HostListener('window:beforeunload', ['$event'])
+  protected beforeUnload(event: BeforeUnloadEvent): void {
+    warnIfUnsaved(event, this.hasUnsavedChanges());
   }
 
   @HostListener('window:keydown', ['$event'])
