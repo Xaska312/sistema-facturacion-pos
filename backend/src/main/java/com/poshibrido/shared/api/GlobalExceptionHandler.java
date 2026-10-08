@@ -2,7 +2,14 @@ package com.poshibrido.shared.api;
 
 import com.poshibrido.shared.error.DomainException;
 import lombok.extern.slf4j.Slf4j;
+import jakarta.persistence.OptimisticLockException;
+import jakarta.persistence.PersistenceException;
+import jakarta.persistence.PessimisticLockException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.QueryTimeoutException;
+import org.springframework.jdbc.CannotGetJdbcConnectionException;
+import org.springframework.transaction.CannotCreateTransactionException;
+import org.springframework.transaction.TransactionTimedOutException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +31,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.net.URI;
+import java.sql.SQLException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -111,6 +119,65 @@ public class GlobalExceptionHandler {
         log.warn("Conflicto de concurrencia: {}", ex.getMostSpecificCause().getMessage());
         return build(HttpStatus.CONFLICT, "Conflicto",
                 "Otra operación modificó los mismos datos al mismo tiempo. Intenta de nuevo.");
+    }
+
+    /** Sin conexión libre en el pool (muchas operaciones a la vez): 503 para reintentar, no 500 (QA INV-6). */
+    @ExceptionHandler({CannotCreateTransactionException.class, CannotGetJdbcConnectionException.class})
+    public ResponseEntity<ProblemDetail> handleNoConnection(Exception ex) {
+        log.warn("Sin conexión a la base disponible: {}", ex.getMessage());
+        return retryLater("El sistema está ocupado en este momento. Inténtalo de nuevo en unos segundos.");
+    }
+
+    /** Consulta o transacción que superó su tiempo máximo (reportes con periodos muy grandes). */
+    @ExceptionHandler({QueryTimeoutException.class, TransactionTimedOutException.class})
+    public ResponseEntity<ProblemDetail> handleTimeout(Exception ex) {
+        log.warn("Tiempo máximo superado: {}", ex.getMessage());
+        return retryLater("La consulta tardó demasiado. Acota el periodo o inténtalo de nuevo en un momento.");
+    }
+
+    /**
+     * Errores de la base que llegan sin traducir (p. ej. un {@code flush} fuera de un repositorio): se clasifican
+     * por su SQLState en vez de responder 500 (QA INV-8).
+     */
+    @ExceptionHandler(PersistenceException.class)
+    public ResponseEntity<ProblemDetail> handlePersistence(PersistenceException ex) {
+        // Consultas en servicios (reportes, auditoría) llegan sin traducir a excepciones de Spring: 57014 es la
+        // consulta cancelada por el tiempo máximo de la transacción.
+        if (ex instanceof jakarta.persistence.QueryTimeoutException || "57014".equals(sqlState(ex))) {
+            return retryLater("La consulta tardó demasiado. Prueba con un periodo más corto o inténtalo en un momento.");
+        }
+        if (ex instanceof OptimisticLockException || ex instanceof PessimisticLockException) {
+            return build(HttpStatus.CONFLICT, "Conflicto",
+                    "Otra operación estaba usando los mismos datos. Inténtalo de nuevo.");
+        }
+        String state = sqlState(ex);
+        if (state != null && state.startsWith("23")) {
+            return build(HttpStatus.CONFLICT, "Conflicto", "La operación entra en conflicto con datos existentes.");
+        }
+        if (state != null && state.startsWith("22")) {
+            return build(HttpStatus.UNPROCESSABLE_CONTENT, "Valor fuera de rango",
+                    "Algún valor es demasiado grande o no es válido. Revisa cantidades y precios.");
+        }
+        if ("40001".equals(state) || "40P01".equals(state) || "55P03".equals(state)) {
+            return build(HttpStatus.CONFLICT, "Conflicto",
+                    "Otra operación estaba usando los mismos datos. Inténtalo de nuevo.");
+        }
+        log.error("Error de persistencia no controlado (SQLState {})", state, ex);
+        return build(HttpStatus.INTERNAL_SERVER_ERROR, "Error interno", "Ha ocurrido un error interno en el servidor.");
+    }
+
+    private static String sqlState(Throwable ex) {
+        for (Throwable t = ex; t != null; t = t.getCause()) {
+            if (t instanceof SQLException sql && sql.getSQLState() != null) {
+                return sql.getSQLState();
+            }
+        }
+        return null;
+    }
+
+    private static ResponseEntity<ProblemDetail> retryLater(String detail) {
+        ProblemDetail body = build(HttpStatus.SERVICE_UNAVAILABLE, "Servicio ocupado", detail).getBody();
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).header("Retry-After", "5").body(body);
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

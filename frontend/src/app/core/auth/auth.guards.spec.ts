@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRouteSnapshot, Router, RouterStateSnapshot, UrlTree, provideRouter } from '@angular/router';
-import { of } from 'rxjs';
-import { permissionGuard, tenantGuard } from './auth.guards';
+import { Observable, of } from 'rxjs';
+import { authGuard, permissionGuard, tenantGuard } from './auth.guards';
 import { AuthService } from './auth.service';
 
 describe('guards', () => {
@@ -15,15 +15,30 @@ describe('guards', () => {
     });
   });
 
-  const run = (guard: typeof tenantGuard, data: Record<string, unknown> = {}) =>
+  const run = (guard: typeof tenantGuard, data: Record<string, unknown> = {}, url?: string) =>
     TestBed.runInInjectionContext(() =>
-      guard({ data } as unknown as ActivatedRouteSnapshot, {} as RouterStateSnapshot),
+      guard({ data } as unknown as ActivatedRouteSnapshot, { url } as RouterStateSnapshot),
     );
 
   it('tenantGuard redirige a /negocios si el token no tiene negocio', () => {
     auth.hasTenant.and.returnValue(false);
     const result = run(tenantGuard) as UrlTree;
     expect(TestBed.inject(Router).serializeUrl(result)).toBe('/negocios');
+  });
+
+  it('tenantGuard recuerda la página pedida para volver después de elegir negocio (QA UI-11)', () => {
+    auth.hasTenant.and.returnValue(false);
+    const result = run(tenantGuard, {}, '/app/inventario') as UrlTree;
+    expect(TestBed.inject(Router).serializeUrl(result)).toBe('/negocios?returnUrl=%2Fapp%2Finventario');
+  });
+
+  it('authGuard sin sesión lleva al login con la página pedida (QA UI-11)', (done) => {
+    auth.isAuthenticated.and.returnValue(false);
+    const result = run(authGuard, {}, '/app/ventas') as unknown as Observable<UrlTree>;
+    result.subscribe((tree) => {
+      expect(TestBed.inject(Router).serializeUrl(tree)).toBe('/login?returnUrl=%2Fapp%2Fventas');
+      done();
+    });
   });
 
   it('tenantGuard deja pasar con negocio seleccionado', () => {

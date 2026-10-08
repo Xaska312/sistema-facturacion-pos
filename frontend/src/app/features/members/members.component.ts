@@ -16,6 +16,7 @@ import { activeStatus } from '../../shared/status';
 import { DataTableComponent } from '../../shared/table/data-table.component';
 import { ColumnDef, TableQuery, initialQuery, toPageQuery } from '../../shared/table/table';
 import { assignableRoles, toggleIn } from './assignable';
+import { LatestRequest } from '../../shared/latest-request';
 
 type Tab = 'members' | 'invitations';
 
@@ -44,7 +45,7 @@ type Tab = 'members' | 'invitations';
                       initialSort="displayName,asc" caption="Miembros del negocio" searchPlaceholder="Buscar por nombre"
                       emptyIcon="pi pi-users" emptyTitle="Aún no hay más usuarios"
                       emptyMessage="Invita a tus cajeros y vendedores para que cada uno entre con su usuario."
-                      [emptyActionLabel]="mayInvite ? 'Invitar usuario' : null" emptyActionIcon="pi pi-user-plus"
+                      [emptyActionLabel]="mayInvite() ? 'Invitar usuario' : null" emptyActionIcon="pi pi-user-plus"
                       (emptyAction)="openInvite()"
                       (queryChange)="loadMembers($event)">
         <ng-template #actions let-row>
@@ -61,7 +62,7 @@ type Tab = 'members' | 'invitations';
                       [trackBy]="invitationId" initialSort="createdAt,desc" caption="Invitaciones pendientes"
                       emptyIcon="pi pi-envelope" emptyTitle="No hay invitaciones pendientes"
                       emptyMessage="Las invitaciones que generes aparecen aquí hasta que las acepten o venzan."
-                      [emptyActionLabel]="mayInvite ? 'Invitar usuario' : null" emptyActionIcon="pi pi-user-plus"
+                      [emptyActionLabel]="mayInvite() ? 'Invitar usuario' : null" emptyActionIcon="pi pi-user-plus"
                       (emptyAction)="openInvite()"
                       (queryChange)="loadInvitations($event)">
         <ng-template #actions let-row>
@@ -164,10 +165,14 @@ type Tab = 'members' | 'invitations';
   `,
 })
 export class MembersComponent implements OnInit {
+  /** Cancela la petición anterior de la lista (QA UI-10). */
+  private readonly latestMembers = new LatestRequest();
+  /** Cancela la petición anterior de la lista (QA UI-10). */
+  private readonly latestInvitations = new LatestRequest();
   private readonly access = inject(AccessApi);
   private readonly organization = inject(OrganizationApi);
   private readonly auth = inject(AuthService);
-  protected readonly mayInvite = this.auth.hasPermission('members:manage');
+  protected readonly mayInvite = computed(() => this.auth.hasPermission('members:manage'));
   private readonly messages = inject(MessageService);
   private readonly confirm = inject(ConfirmService);
 
@@ -229,7 +234,7 @@ export class MembersComponent implements OnInit {
   loadMembers(query: TableQuery): void {
     this.memberQuery = query;
     this.loading.set(true);
-    this.access.members(toPageQuery(query), query.search).subscribe({
+    this.access.members(toPageQuery(query), query.search).pipe(this.latestMembers.only()).subscribe({
       next: (result) => {
         this.members.set(result);
         this.loading.set(false);
@@ -252,7 +257,7 @@ export class MembersComponent implements OnInit {
   loadInvitations(query: TableQuery): void {
     this.invitationQuery = query;
     this.loading.set(true);
-    this.access.invitations(toPageQuery(query), true).subscribe({
+    this.access.invitations(toPageQuery(query), true).pipe(this.latestInvitations.only()).subscribe({
       next: (result) => {
         this.invitations.set(result);
         this.loading.set(false);

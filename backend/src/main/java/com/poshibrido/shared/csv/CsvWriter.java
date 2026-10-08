@@ -1,5 +1,10 @@
 package com.poshibrido.shared.csv;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.UncheckedIOException;
+import java.io.Writer;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -21,7 +26,12 @@ public final class CsvWriter {
     private static final byte[] BOM = {(byte) 0xEF, (byte) 0xBB, (byte) 0xBF};
     private static final DateTimeFormatter DATE_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
-    private final StringBuilder out = new StringBuilder();
+    /**
+     * Se escribe directo en bytes UTF-8 (con el BOM al inicio): antes un StringBuilder, su String y los bytes eran
+     * tres copias del archivo en memoria al mismo tiempo (QA INV-7).
+     */
+    private final ByteArrayOutputStream bytes = new ByteArrayOutputStream(8192);
+    private final Writer out = new OutputStreamWriter(bytes, StandardCharsets.UTF_8);
     private final ZoneId zone;
     private int rows;
 
@@ -30,16 +40,21 @@ public final class CsvWriter {
      */
     public CsvWriter(ZoneId zone) {
         this.zone = zone;
+        bytes.writeBytes(BOM);
     }
 
     public CsvWriter row(Object... values) {
-        for (int i = 0; i < values.length; i++) {
-            if (i > 0) {
-                out.append(SEPARATOR);
+        try {
+            for (int i = 0; i < values.length; i++) {
+                if (i > 0) {
+                    out.write(SEPARATOR);
+                }
+                out.write(cell(values[i]));
             }
-            out.append(cell(values[i]));
+            out.write("\r\n");
+        } catch (IOException ex) {
+            throw new UncheckedIOException(ex); // en memoria no ocurre
         }
-        out.append("\r\n");
         rows++;
         return this;
     }
@@ -49,17 +64,26 @@ public final class CsvWriter {
         return Math.max(rows - 1, 0);
     }
 
+    /** El archivo completo: BOM + filas en UTF-8. */
     public byte[] toBytes() {
-        byte[] body = out.toString().getBytes(StandardCharsets.UTF_8);
-        byte[] result = new byte[BOM.length + body.length];
-        System.arraycopy(BOM, 0, result, 0, BOM.length);
-        System.arraycopy(body, 0, result, BOM.length, body.length);
-        return result;
+        flush();
+        return bytes.toByteArray();
     }
 
+    /** Las filas como texto, sin el BOM (para pruebas). */
     @Override
     public String toString() {
-        return out.toString();
+        flush();
+        byte[] all = bytes.toByteArray();
+        return new String(all, BOM.length, all.length - BOM.length, StandardCharsets.UTF_8);
+    }
+
+    private void flush() {
+        try {
+            out.flush();
+        } catch (IOException ex) {
+            throw new UncheckedIOException(ex);
+        }
     }
 
     private String cell(Object value) {

@@ -1,4 +1,4 @@
-import { Component, effect, inject, input, signal, untracked } from '@angular/core';
+import { Component, effect, inject, input, signal, untracked, computed } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { StockAlert } from '../../core/api/api.models';
@@ -12,7 +12,7 @@ import { DOCUMENT_ROUTE } from '../inventory/labels';
   selector: 'app-stock-alerts',
   imports: [RouterLink, ButtonModule],
   template: `
-    @if (canRead) {
+    @if (canRead()) {
       <section class="card p-4 h-full flex flex-col" aria-labelledby="stock-alerts-title">
         <header class="flex items-center justify-between gap-2 mb-3">
           <h2 id="stock-alerts-title" class="font-semibold flex items-center gap-2">
@@ -47,7 +47,7 @@ import { DOCUMENT_ROUTE } from '../inventory/labels';
           <div class="mt-auto pt-3 flex flex-wrap gap-2">
             <a pButton routerLink="/app/inventario" label="Ver existencias" icon="pi pi-warehouse" size="small"
                severity="secondary" [outlined]="true"></a>
-            @if (canAdjust) {
+            @if (canAdjust()) {
               <a pButton [routerLink]="['/app/inventario/nuevo', adjustRoute]" label="Hacer un ajuste" icon="pi pi-sliders-h"
                  size="small"></a>
             }
@@ -64,8 +64,8 @@ export class StockAlertsComponent {
   /** Sucursal del filtro (null = todas). */
   readonly branchId = input<string | null>(null);
 
-  protected readonly canRead = this.auth.hasPermission('inventory:read');
-  protected readonly canAdjust = this.auth.hasPermission('inventory:adjust');
+  protected readonly canRead = computed(() => this.auth.hasPermission('inventory:read'));
+  protected readonly canAdjust = computed(() => this.auth.hasPermission('inventory:adjust'));
   protected readonly adjustRoute = DOCUMENT_ROUTE.ADJUSTMENT;
   protected readonly alerts = signal<StockAlert[]>([]);
   protected readonly q = formatQuantity;
@@ -73,7 +73,7 @@ export class StockAlertsComponent {
   constructor() {
     effect(() => {
       const branchId = this.branchId();
-      if (this.canRead) {
+      if (this.canRead()) {
         untracked(() => this.inventory.alerts(branchId).subscribe((list) => this.alerts.set(list)));
       }
     });

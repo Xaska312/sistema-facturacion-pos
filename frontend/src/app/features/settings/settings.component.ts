@@ -33,7 +33,7 @@ const TIMEZONE_LABEL: Record<string, string> = {
   template: `
     <app-page-header title="Ajustes del negocio" description="Cómo funciona tu negocio: inventario, impuestos, zona horaria, moneda y tiquete." />
     <form [formGroup]="form" (ngSubmit)="save()" class="card p-4 md:p-6 flex flex-col gap-4 max-w-2xl">
-      <fieldset [disabled]="!canEdit" class="flex flex-col gap-4">
+      <fieldset [disabled]="!canEdit()" class="flex flex-col gap-4">
         <label class="flex items-start gap-3">
           <input type="checkbox" class="mt-1" formControlName="allowNegativeStock" />
           <span><span class="font-medium">Permitir vender sin existencias</span>
@@ -77,7 +77,7 @@ const TIMEZONE_LABEL: Record<string, string> = {
             política de cambios…</span>
         </label>
       </fieldset>
-      @if (canEdit) {
+      @if (canEdit()) {
         <div class="flex justify-end">
           <p-button type="submit" label="Guardar" [loading]="saving()" [disabled]="form.invalid || form.pristine" />
         </div>
@@ -127,7 +127,7 @@ export class SettingsComponent implements OnInit {
   private readonly messages = inject(MessageService);
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
-  protected readonly canEdit = this.auth.hasPermission('settings:manage');
+  protected readonly canEdit = computed(() => this.auth.hasPermission('settings:manage'));
   /** Solo el dueño puede eliminar (cerrar) el negocio; el backend lo vuelve a comprobar. */
   protected readonly isOwner = computed(() => this.auth.currentTenant()?.owner === true);
   protected readonly tradeName = computed(() => this.auth.currentTenant()?.tradeName ?? null);

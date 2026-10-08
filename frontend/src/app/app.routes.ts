@@ -2,6 +2,7 @@ import { ResolveFn, Routes } from '@angular/router';
 import { authGuard, guestGuard, permissionGuard, platformAdminGuard, tenantGuard } from './core/auth/auth.guards';
 import { FORBIDDEN_DATA, NOT_FOUND_DATA } from './features/errors/error-data';
 import { DOCUMENT_LABEL, documentTypeFromRoute } from './features/inventory/labels';
+import { unsavedChangesGuard } from './shared/unsaved-changes';
 
 const errorPage = () => import('./features/errors/error-page.component').then((m) => m.ErrorPageComponent);
 
@@ -146,6 +147,7 @@ export const routes: Routes = [
         path: 'productos/nuevo',
         title: 'Nuevo producto',
         canActivate: [permissionGuard],
+        canDeactivate: [unsavedChangesGuard],
         data: { permission: 'products:manage' },
         loadComponent: () =>
           import('./features/products/product-editor.component').then((m) => m.ProductEditorComponent),
@@ -154,6 +156,7 @@ export const routes: Routes = [
         path: 'productos/:id',
         title: 'Producto',
         canActivate: [permissionGuard],
+        canDeactivate: [unsavedChangesGuard],
         data: { permission: 'products:read' },
         loadComponent: () =>
           import('./features/products/product-editor.component').then((m) => m.ProductEditorComponent),
@@ -194,6 +197,7 @@ export const routes: Routes = [
         path: 'inventario/nuevo/:kind',
         title: inventoryDocumentTitle,
         canActivate: [permissionGuard],
+        canDeactivate: [unsavedChangesGuard],
         data: { permission: 'inventory:read' },
         loadComponent: () =>
           import('./features/inventory/document-editor.component').then((m) => m.InventoryDocumentEditorComponent),
@@ -262,6 +266,7 @@ export const routes: Routes = [
     path: 'pos',
     title: 'Vender',
     canActivate: [authGuard, tenantGuard, permissionGuard],
+    canDeactivate: [unsavedChangesGuard],
     data: { permission: 'sales:create' },
     loadComponent: () => import('./features/pos/pos.component').then((m) => m.PosComponent),
   },

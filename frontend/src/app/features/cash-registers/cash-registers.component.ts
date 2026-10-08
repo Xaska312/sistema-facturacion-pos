@@ -5,7 +5,6 @@ import { InputTextModule } from 'primeng/inputtext';
 import { Observable } from 'rxjs';
 import { Branch, CashRegister, PageResponse } from '../../core/api/api.models';
 import { OrganizationApi } from '../../core/api/organization.api';
-import { AuthService } from '../../core/auth/auth.service';
 import { ConfirmService } from '../../shared/confirm';
 import { FieldErrorComponent } from '../../shared/forms/field-error.component';
 import { FormDialogComponent } from '../../shared/forms/form-dialog.component';
@@ -13,6 +12,8 @@ import { PageHeaderComponent } from '../../shared/page-header.component';
 import { activeStatus } from '../../shared/status';
 import { DataTableComponent } from '../../shared/table/data-table.component';
 import { ColumnDef, TableQuery, initialQuery, toPageQuery } from '../../shared/table/table';
+import { permissionFlag } from '../../core/auth/permission-flag';
+import { LatestRequest } from '../../shared/latest-request';
 
 @Component({
   selector: 'app-cash-registers',
@@ -21,7 +22,7 @@ import { ColumnDef, TableQuery, initialQuery, toPageQuery } from '../../shared/t
   template: `
     <app-page-header title="Cajas registradoras"
                      description="Cada caja se abre con una base de efectivo y se cierra con su arqueo.">
-      @if (canManage) {
+      @if (canManage()) {
         <p-button label="Nueva caja" icon="pi pi-plus" (onClick)="openCreate()" />
       }
     </app-page-header>
@@ -29,7 +30,7 @@ import { ColumnDef, TableQuery, initialQuery, toPageQuery } from '../../shared/t
     <app-data-table [columns]="columns" [page]="page()" [loading]="loading()" [trackBy]="trackById"
                     initialSort="code,asc" caption="Cajas registradoras" emptyIcon="pi pi-calculator"
                     emptyTitle="Aún no hay cajas" emptyMessage="Crea al menos una caja para poder vender."
-                    [emptyActionLabel]="canManage ? 'Crear caja' : null" (emptyAction)="openCreate()"
+                    [emptyActionLabel]="canManage() ? 'Crear caja' : null" (emptyAction)="openCreate()"
                     (queryChange)="load($event)">
       <label tableToolbar class="flex items-center gap-2 text-sm">
         <span class="sr-only">Sucursal</span>
@@ -41,7 +42,7 @@ import { ColumnDef, TableQuery, initialQuery, toPageQuery } from '../../shared/t
         </select>
       </label>
       <ng-template #actions let-row>
-        @if (canManage) {
+        @if (canManage()) {
           <p-button label="Renombrar" icon="pi pi-pencil" size="small" [text]="true" (onClick)="openEdit(row)" />
           <p-button [label]="row.active ? 'Desactivar' : 'Activar'" size="small" [text]="true"
                     [icon]="row.active ? 'pi pi-ban' : 'pi pi-check-circle'"
@@ -80,9 +81,11 @@ import { ColumnDef, TableQuery, initialQuery, toPageQuery } from '../../shared/t
   `,
 })
 export class CashRegistersComponent implements OnInit {
+  /** Cancela la petición anterior de la lista (QA UI-10). */
+  private readonly latest = new LatestRequest();
   private readonly api = inject(OrganizationApi);
   private readonly confirm = inject(ConfirmService);
-  protected readonly canManage = inject(AuthService).hasPermission('cash-registers:manage');
+  protected readonly canManage = permissionFlag('cash-registers:manage');
 
   protected readonly page = signal<PageResponse<CashRegister> | null>(null);
   protected readonly branches = signal<Branch[]>([]);
@@ -115,7 +118,7 @@ export class CashRegistersComponent implements OnInit {
   load(query: TableQuery): void {
     this.query = query;
     this.loading.set(true);
-    this.api.cashRegisters(toPageQuery(query), this.branchFilter()).subscribe({
+    this.api.cashRegisters(toPageQuery(query), this.branchFilter()).pipe(this.latest.only()).subscribe({
       next: (result) => {
         this.page.set(result);
         this.loading.set(false);

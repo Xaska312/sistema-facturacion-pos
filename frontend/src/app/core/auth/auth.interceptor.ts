@@ -5,6 +5,7 @@ import { MessageService } from 'primeng/api';
 import { catchError, switchMap, throwError } from 'rxjs';
 import { AUTH_API, AuthService } from './auth.service';
 import { decodeAccessToken } from './jwt';
+import { returnQuery } from './return-url';
 
 /** 403 del backend cuando el negocio del token fue suspendido o cerrado (TenantUnavailableException). */
 export const TENANT_UNAVAILABLE = 'TENANT_UNAVAILABLE';
@@ -102,7 +103,8 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
               life: 6000,
             });
           } else {
-            void router.navigate(['/login']);
+            // Sesión vencida: al volver a entrar, regresa a la misma página (QA UI-11).
+            void router.navigate(['/login'], { queryParams: returnQuery(router.url) });
           }
           return throwError(() => error);
         }),

@@ -3,6 +3,7 @@ package com.poshibrido.tenancy.application;
 import com.poshibrido.identity.application.MembershipApi;
 import com.poshibrido.tenancy.domain.Tenant;
 import com.poshibrido.tenancy.domain.TenantStatus;
+import com.poshibrido.tenancy.infrastructure.TenantMigrationFailures;
 import com.poshibrido.tenancy.infrastructure.TenantRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ public class TenantDirectory implements TenantApi {
 
     private final TenantRepository tenants;
     private final MembershipApi memberships;
+    private final TenantMigrationFailures migrationFailures;
     private final ConcurrentHashMap<UUID, CachedTenant> cache = new ConcurrentHashMap<>();
 
     @Override
@@ -36,6 +38,8 @@ public class TenantDirectory implements TenantApi {
         }
         TenantRef ref = tenants.findById(tenantId)
                 .filter(t -> t.getStatus() == TenantStatus.ACTIVE)
+                // Su schema no se pudo migrar al arrancar: sin servicio hasta corregirlo (QA INV-1).
+                .filter(t -> !migrationFailures.isFailed(t.getSchemaName()))
                 .map(t -> new TenantRef(t.getId(), t.getSlug(), t.getSchemaName()))
                 .orElse(null);
         cache.put(tenantId, new CachedTenant(ref, now.plus(CACHE_TTL)));

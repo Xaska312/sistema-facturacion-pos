@@ -8,13 +8,14 @@ import { InputTextModule } from 'primeng/inputtext';
 import { Branch, PageResponse, StockAlert, StockRow, StockStatus } from '../../core/api/api.models';
 import { InventoryApi } from '../../core/api/inventory.api';
 import { OrganizationApi } from '../../core/api/organization.api';
-import { AuthService } from '../../core/auth/auth.service';
 import { formatQuantity } from '../../shared/money';
 import { PageHeaderComponent } from '../../shared/page-header.component';
 import { StatusKey } from '../../shared/status';
 import { DataTableComponent } from '../../shared/table/data-table.component';
 import { ColumnDef, TableQuery, initialQuery, toPageQuery } from '../../shared/table/table';
 import { TermComponent } from '../../shared/help/term.component';
+import { permissionFlag } from '../../core/auth/permission-flag';
+import { LatestRequest } from '../../shared/latest-request';
 
 const STOCK_STATUS: Record<StockStatus, StatusKey> = { LOW: 'stock-low', OK: 'stock-ok', OVER: 'stock-over' };
 
@@ -46,7 +47,7 @@ const STOCK_STATUS: Record<StockStatus, StatusKey> = { LOW: 'stock-low', OK: 'st
                     initialSort="name,asc" caption="Existencias por producto" searchPlaceholder="Buscar por nombre, SKU o código"
                     emptyIcon="pi pi-warehouse" emptyTitle="No hay productos con control de inventario"
                     emptyMessage="Los productos que marques con “controla inventario” aparecen aquí con su existencia."
-                    [emptyActionLabel]="canManageProducts ? 'Ir a productos' : null" emptyActionIcon="pi pi-box"
+                    [emptyActionLabel]="canManageProducts() ? 'Ir a productos' : null" emptyActionIcon="pi pi-box"
                     (emptyAction)="goToProducts()"
                     (queryChange)="load($event)">
       <label tableToolbar class="flex items-center gap-2 text-sm">
@@ -60,7 +61,7 @@ const STOCK_STATUS: Record<StockStatus, StatusKey> = { LOW: 'stock-low', OK: 'st
       <ng-template #actions let-row>
         <a pButton [routerLink]="['/app/inventario/kardex', row.productId]" [queryParams]="{ branchId: row.branchId }"
            label="Kardex" icon="pi pi-list" size="small" [text]="true"></a>
-        @if (canAdjust) {
+        @if (canAdjust()) {
           <p-button label="Mín./máx." icon="pi pi-sliders-h" size="small" [text]="true" (onClick)="openLevels(row)" />
         }
       </ng-template>
@@ -88,11 +89,13 @@ const STOCK_STATUS: Record<StockStatus, StatusKey> = { LOW: 'stock-low', OK: 'st
   `,
 })
 export class StockComponent implements OnInit {
+  /** Cancela la petición anterior de la lista (QA UI-10). */
+  private readonly latest = new LatestRequest();
   private readonly api = inject(InventoryApi);
   private readonly organization = inject(OrganizationApi);
   private readonly messages = inject(MessageService);
-  protected readonly canAdjust = inject(AuthService).hasPermission('inventory:adjust');
-  protected readonly canManageProducts = inject(AuthService).hasPermission('products:manage');
+  protected readonly canAdjust = permissionFlag('inventory:adjust');
+  protected readonly canManageProducts = permissionFlag('products:manage');
   private readonly router = inject(Router);
 
   protected readonly q = formatQuantity;
@@ -143,7 +146,7 @@ export class StockComponent implements OnInit {
       return;
     }
     this.loading.set(true);
-    this.api.stock(this.branchId, toPageQuery(query), query.search).subscribe({
+    this.api.stock(this.branchId, toPageQuery(query), query.search).pipe(this.latest.only()).subscribe({
       next: (result) => {
         this.page.set(result);
         this.loading.set(false);

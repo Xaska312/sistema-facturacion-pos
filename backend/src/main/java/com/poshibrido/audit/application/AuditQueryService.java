@@ -33,7 +33,8 @@ import java.util.UUID;
  * la auditoría no se modifica ni se borra (trigger en V9).
  */
 @Service
-@Transactional(readOnly = true)
+// Tiempo máximo: un periodo enorme no deja una conexión tomada indefinidamente (QA INV-6).
+@Transactional(readOnly = true, timeout = 60)
 public class AuditQueryService {
 
     /** Límite de filas del CSV (un año de un negocio pequeño cabe con holgura). */

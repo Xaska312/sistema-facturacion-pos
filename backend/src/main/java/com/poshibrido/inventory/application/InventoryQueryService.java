@@ -188,7 +188,7 @@ public class InventoryQueryService {
                 lineViews);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true, timeout = 60)
     public List<InventoryConsistencyQueries.Mismatch> consistency() {
         return consistency.mismatches();
     }

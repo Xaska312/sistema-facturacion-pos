@@ -20,6 +20,11 @@ spring:
     password: ${DB_PASSWORD:}
     hikari:
       maximum-pool-size: ${DB_POOL_SIZE:10}
+      # Espera máxima por una conexión libre: con el pool lleno se responde 503 "intenta de nuevo" (QA INV-6).
+      connection-timeout: ${DB_CONNECTION_TIMEOUT_MS:10000}
+      # Ninguna espera por un bloqueo pasa de 10 s (una sesión que retiene filas no congela las ventas) y una
+      # transacción abandonada sin cerrar se corta al minuto.
+      connection-init-sql: SET lock_timeout = '10s'; SET idle_in_transaction_session_timeout = '60s'
   jpa:
     open-in-view: false
     hibernate:
@@ -28,6 +33,9 @@ spring:
       hibernate:
         jdbc:
           time_zone: UTC
+        # Carga las colecciones perezosas (presentaciones, códigos de barras…) de a 100 en una consulta: evita el
+        # N+1 de los listados de productos y existencias (QA INV-5).
+        default_batch_fetch_size: 100
   threads:
     virtual:
       enabled: false

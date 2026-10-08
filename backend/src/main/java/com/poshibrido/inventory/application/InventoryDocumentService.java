@@ -28,6 +28,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -41,6 +42,9 @@ import java.util.regex.Pattern;
  */
 @Service
 public class InventoryDocumentService {
+
+    /** Máximo de NUMERIC(14,4), la columna de cantidades en unidad base. */
+    static final BigDecimal MAX_BASE_QUANTITY = new BigDecimal("9999999999.9999");
 
     public static final String REFERENCE_TYPE = "INVENTORY_DOCUMENT";
     static final int MAX_LINES = 500;
@@ -73,7 +77,7 @@ public class InventoryDocumentService {
     // ------------------------------------------------------------------ casos de uso
 
     public DocumentView initial(InventoryCommands.Initial c, String idempotencyKey) {
-        return idempotent(idempotencyKey, () -> {
+        return idempotent(InventoryDocumentType.INITIAL, idempotencyKey, () -> {
             requireActiveBranches(c.branchId());
             List<Line> lines = requireLines(c.lines(), false);
             Set<UUID> productIds = productIds(lines);
@@ -101,7 +105,7 @@ public class InventoryDocumentService {
     }
 
     public DocumentView adjustment(InventoryCommands.Adjustment c, String idempotencyKey) {
-        return idempotent(idempotencyKey, () -> {
+        return idempotent(InventoryDocumentType.ADJUSTMENT, idempotencyKey, () -> {
             requireActiveBranches(c.branchId());
             String reason = requireReason(c.reason());
             List<Line> lines = requireLines(c.lines(), false);
@@ -136,7 +140,7 @@ public class InventoryDocumentService {
     }
 
     public DocumentView transfer(InventoryCommands.Transfer c, String idempotencyKey) {
-        return idempotent(idempotencyKey, () -> {
+        return idempotent(InventoryDocumentType.TRANSFER, idempotencyKey, () -> {
             if (c.fromBranchId().equals(c.toBranchId())) {
                 throw new BusinessRuleException("La sucursal de origen y la de destino deben ser distintas.");
             }
@@ -161,7 +165,7 @@ public class InventoryDocumentService {
 
     /** Conteo físico: por cada producto, la diferencia entre lo contado y el saldo actual se ajusta. */
     public DocumentView count(InventoryCommands.Count c, String idempotencyKey) {
-        return idempotent(idempotencyKey, () -> {
+        return idempotent(InventoryDocumentType.COUNT, idempotencyKey, () -> {
             requireActiveBranches(c.branchId());
             String reason = c.reason() == null || c.reason().isBlank() ? "Conteo físico" : c.reason().trim();
             List<Line> lines = requireLines(c.lines(), true);
@@ -171,7 +175,9 @@ public class InventoryDocumentService {
             int lineNo = 0;
             for (Line line : lines) {
                 Resolved r = resolve(session.product(line.productId()), line);
-                BigDecimal expected = session.balance(c.branchId(), line.productId());
+                BigDecimal expected = line.expectedQuantity() == null
+                        ? session.balance(c.branchId(), line.productId())
+                        : line.expectedQuantity().setScale(4, RoundingMode.HALF_UP);
                 BigDecimal difference = r.baseQuantity().subtract(expected);
                 String direction = difference.signum() > 0 ? "IN" : difference.signum() < 0 ? "OUT" : null;
                 persistLine(doc, ++lineNo, line, r, direction, session.averageCost(line.productId()), expected,
@@ -188,11 +194,16 @@ public class InventoryDocumentService {
 
     // ------------------------------------------------------------------ infraestructura del caso de uso
 
-    private DocumentView idempotent(String idempotencyKey, Supplier<UUID> create) {
+    /**
+     * Repetir la petición con la misma clave devuelve el documento ya creado, pero solo si es del mismo tipo y del
+     * mismo usuario: una clave reutilizada para otra operación responde 409 en vez de mostrar un documento ajeno
+     * como si fuera el resultado (QA INV-10).
+     */
+    private DocumentView idempotent(InventoryDocumentType type, String idempotencyKey, Supplier<UUID> create) {
         String key = normalizeKey(idempotencyKey);
         if (key != null) {
-            Optional<UUID> existing = tx.execute(status -> documents.findByIdempotencyKey(key).map(InventoryDocument::getId));
-            if (existing != null && existing.isPresent()) {
+            Optional<UUID> existing = findByKey(key, type);
+            if (existing.isPresent()) {
                 return queries.document(existing.get());
             }
         }
@@ -203,13 +214,24 @@ public class InventoryDocumentService {
             // Dos peticiones simultáneas con la misma clave: gana una (índice único) y la otra devuelve el
             // mismo documento. La violación puede llegar traducida o no según dónde ocurra el flush.
             if (key != null) {
-                Optional<UUID> winner = tx.execute(status -> documents.findByIdempotencyKey(key).map(InventoryDocument::getId));
-                if (winner != null && winner.isPresent()) {
+                Optional<UUID> winner = findByKey(key, type);
+                if (winner.isPresent()) {
                     return queries.document(winner.get());
                 }
             }
             throw ex;
         }
+    }
+
+    private Optional<UUID> findByKey(String key, InventoryDocumentType type) {
+        UUID actor = CurrentActor.userId().orElse(null);
+        Optional<UUID> found = tx.execute(status -> documents.findByIdempotencyKey(key).map(d -> {
+            if (d.getType() != type || !Objects.equals(d.getCreatedBy(), actor)) {
+                throw new ConflictException("Esta Idempotency-Key ya se usó en otro documento de inventario.");
+            }
+            return d.getId();
+        }));
+        return found == null ? Optional.empty() : found;
     }
 
     private InventoryDocument newDocument(InventoryDocumentType type, UUID branchId, UUID targetBranchId, String reason,
@@ -251,6 +273,11 @@ public class InventoryDocumentService {
         }
         BigDecimal quantity = line.quantity().setScale(4, RoundingMode.HALF_UP);
         BigDecimal base = quantity.multiply(factor).setScale(4, RoundingMode.HALF_UP);
+        if (base.signum() < 0 || (base.signum() == 0 && quantity.signum() > 0)
+                || base.compareTo(MAX_BASE_QUANTITY) > 0) {
+            // Cero por redondeo o más de lo que cabe en la columna: antes daba 500 (QA INV-8).
+            throw new BusinessRuleException("La cantidad de " + product.name() + " no es válida.");
+        }
         if (!product.baseUnitAllowsDecimals() && base.stripTrailingZeros().scale() > 0) {
             throw new BusinessRuleException(product.name() + " se maneja en unidades enteras de "
                     + product.baseUnitCode() + ".");

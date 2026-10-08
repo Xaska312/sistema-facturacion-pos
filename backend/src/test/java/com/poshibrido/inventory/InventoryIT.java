@@ -203,6 +203,17 @@ class InventoryIT extends IntegrationTest {
         assertNumber(body(balance(s, principal, product)), "$.quantity", "4");
         api.postWithHeaders(s, "/api/v1/inventory/adjustments", json, "Idempotency-Key", "mal")
                 .andExpect(status().is(422));
+
+        // QA INV-10: la clave usada en otra operación u otro usuario no devuelve el documento ajeno.
+        String count = """
+                {"branchId":"%s","lines":[{"productId":"%s","quantity":4}]}
+                """.formatted(principal, product);
+        api.postWithHeaders(s, "/api/v1/inventory/counts", count, "Idempotency-Key", "ajuste-0001")
+                .andExpect(status().isConflict());
+        Joined warehouse = api.joinAs(s, owner.tenantId(), "WAREHOUSE");
+        api.postWithHeaders(warehouse.session(), "/api/v1/inventory/adjustments", json, "Idempotency-Key", "ajuste-0001")
+                .andExpect(status().isConflict());
+        assertNumber(body(balance(s, principal, product)), "$.quantity", "4");
     }
 
     @Test
@@ -346,6 +357,9 @@ class InventoryIT extends IntegrationTest {
         post(cashier.session(), "/api/v1/inventory/transfers", transfer).andExpect(status().isForbidden());
         post(warehouse.session(), "/api/v1/inventory/adjustments", adjust).andExpect(status().isCreated());
         post(warehouse.session(), "/api/v1/inventory/transfers", transfer).andExpect(status().isCreated());
+        // QA INV-11: la verificación de consistencia recorre todo el kardex; no basta con poder ver el inventario.
+        api.getWith(seller.session(), "/api/v1/inventory/consistency").andExpect(status().isForbidden());
+        api.getWith(warehouse.session(), "/api/v1/inventory/consistency").andExpect(status().isOk());
 
         // El responsable queda registrado en el kardex
         String kardex = body(api.getWith(s, "/api/v1/inventory/kardex?productId=" + product + "&branchId=" + principal));
@@ -406,6 +420,65 @@ class InventoryIT extends IntegrationTest {
         Integer negatives = jdbc.queryForObject("SELECT count(*) FROM " + s + ".stock_balances WHERE quantity < 0",
                 Integer.class);
         assertThat(negatives).isZero();
+    }
+
+    @Test
+    void countAdjustsAgainstWhatTheSystemShowedWhenCountingStarted() throws Exception {
+        // QA INV-2: se empieza a contar con 50 en el sistema, mientras se cuenta se venden 5 (queda 45) y se
+        // registra lo contado (50). Antes el ajuste era 50 − 45 = +5 y "aparecían" 5 unidades; ahora es 50 − 50 = 0.
+        Owned owner = api.newTenant("conteo-vivo");
+        Session s = owner.tenant();
+        UUID branch = api.principalBranchId(s);
+        UUID product = createProductWithBox(s, "CONT-1", 12);
+        initial(s, branch, product, "50", "1000").andExpect(status().isCreated());
+        post(s, "/api/v1/inventory/adjustments", """
+                {"branchId":"%s","reason":"Venta durante el conteo","lines":[{"productId":"%s","quantity":5,
+                 "direction":"OUT"}]}
+                """.formatted(branch, product)).andExpect(status().isCreated());
+
+        String count = body(post(s, "/api/v1/inventory/counts", """
+                {"branchId":"%s","lines":[{"productId":"%s","quantity":50,"expectedQuantity":50}]}
+                """.formatted(branch, product)).andExpect(status().isCreated()));
+        assertNumber(count, "$.lines[0].difference", "0");
+        assertNumber(body(balance(s, branch, product)), "$.quantity", "45");
+
+        // Contó 48 de los 50 que había al empezar: faltan 2 → 45 − 2 = 43
+        post(s, "/api/v1/inventory/counts", """
+                {"branchId":"%s","lines":[{"productId":"%s","quantity":48,"expectedQuantity":50}]}
+                """.formatted(branch, product)).andExpect(status().isCreated());
+        assertNumber(body(balance(s, branch, product)), "$.quantity", "43");
+        assertLedgerConsistent(owner);
+    }
+
+    @Test
+    void outOfRangeQuantitiesAreRejectedWith422() throws Exception {
+        // QA INV-8: 9.999.999.999 cajas de 12 no caben en la columna: antes daba 500.
+        Owned owner = api.newTenant("rango");
+        Session s = owner.tenant();
+        UUID branch = api.principalBranchId(s);
+        UUID product = createProductWithBox(s, "RANGO-1", 12);
+        post(s, "/api/v1/inventory/initial-balances", """
+                {"branchId":"%s","lines":[{"productId":"%s","unitId":"%s","quantity":9999999999,"unitCost":1}]}
+                """.formatted(branch, product, CJ)).andExpect(status().is(422));
+    }
+
+    @Test
+    void inventoryControlCannotBeTurnedOffWithStock() throws Exception {
+        // QA INV-3: con existencias, dejar de controlar el inventario congelaba el saldo.
+        Owned owner = api.newTenant("sin-control");
+        Session s = owner.tenant();
+        UUID branch = api.principalBranchId(s);
+        UUID product = createProductWithBox(s, "CTRL-1", 12);
+        initial(s, branch, product, "3", "1000").andExpect(status().isCreated());
+        String edit = """
+                {"sku":"CTRL-1","name":"Producto CTRL-1","baseUnitId":"%s","taxId":"%s","salePrice":2000,
+                 "trackInventory":false,"conversions":[{"unitId":"%s","factor":12}]}
+                """.formatted(UND, IVA19, CJ);
+        api.putWith(s, "/api/v1/products/" + product, edit).andExpect(status().is(422));
+        post(s, "/api/v1/inventory/adjustments", """
+                {"branchId":"%s","reason":"Se agotó","lines":[{"productId":"%s","quantity":3,"direction":"OUT"}]}
+                """.formatted(branch, product)).andExpect(status().isCreated());
+        api.putWith(s, "/api/v1/products/" + product, edit).andExpect(status().isOk());
     }
 
     private ResultActions post(Session s, String path, String json) throws Exception {

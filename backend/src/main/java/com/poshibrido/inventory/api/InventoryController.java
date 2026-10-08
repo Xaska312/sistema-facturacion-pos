@@ -14,6 +14,7 @@ import com.poshibrido.inventory.infrastructure.InventoryConsistencyQueries;
 import com.poshibrido.organization.application.BusinessSettingsApi;
 import com.poshibrido.shared.api.PageRequests;
 import com.poshibrido.shared.api.PageResponse;
+import com.poshibrido.shared.csv.ExportGate;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
@@ -46,8 +47,8 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Inventario. Leer: {@code inventory:read}; saldo inicial, ajustes, conteos y niveles:
- * {@code inventory:adjust}; traslados: {@code inventory:transfer}. Las operaciones que crean documentos
+ * Inventario. Leer: {@code inventory:read}; saldo inicial, ajustes, conteos, niveles y la
+ * verificación de consistencia: {@code inventory:adjust}; traslados: {@code inventory:transfer}. Las operaciones que crean documentos
  * aceptan el encabezado {@code Idempotency-Key}.
  */
 @RestController
@@ -60,15 +61,17 @@ public class InventoryController {
     private final InventoryQueryService queries;
     private final InventoryDocumentService documents;
     private final BusinessSettingsApi settings;
+    private final ExportGate heavy;
 
     // ---------------------------------------------------------------- DTOs
 
     public record LineRequest(@NotNull UUID productId, UUID unitId,
                               @NotNull @DecimalMin("0") @Digits(integer = 10, fraction = 4) BigDecimal quantity,
                               Direction direction,
-                              @DecimalMin("0") @Digits(integer = 12, fraction = 2) BigDecimal unitCost) {
+                              @DecimalMin("0") @Digits(integer = 12, fraction = 2) BigDecimal unitCost,
+                              @Digits(integer = 10, fraction = 4) BigDecimal expectedQuantity) {
         Line toLine() {
-            return new Line(productId, unitId, quantity, direction, unitCost);
+            return new Line(productId, unitId, quantity, direction, unitCost, expectedQuantity);
         }
     }
 
@@ -164,12 +167,18 @@ public class InventoryController {
         return queries.document(id);
     }
 
-    /** Verifica que cada saldo sea igual a la suma de sus movimientos (debe estar siempre vacío). */
+    /**
+     * Verifica que cada saldo sea igual a la suma de sus movimientos (debe estar siempre vacío). Recorre todo el
+     * kardex: es una herramienta de soporte, pide {@code inventory:adjust} y comparte el cupo de consultas pesadas
+     * (QA INV-11).
+     */
     @GetMapping("/consistency")
-    @PreAuthorize("hasAuthority('inventory:read')")
+    @PreAuthorize("hasAuthority('inventory:adjust')")
     public ConsistencyResponse consistency() {
-        List<InventoryConsistencyQueries.Mismatch> mismatches = queries.consistency();
-        return new ConsistencyResponse(mismatches.isEmpty(), mismatches);
+        return heavy.run(() -> {
+            List<InventoryConsistencyQueries.Mismatch> mismatches = queries.consistency();
+            return new ConsistencyResponse(mismatches.isEmpty(), mismatches);
+        });
     }
 
     // ---------------------------------------------------------------- documentos

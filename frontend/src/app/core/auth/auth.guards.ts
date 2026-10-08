@@ -2,21 +2,24 @@ import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { map } from 'rxjs';
 import { AuthService } from './auth.service';
+import { returnQuery } from './return-url';
 
-/** Hay sesión (o se puede recuperar con la cookie de refresh). */
-export const authGuard: CanActivateFn = () => {
+/** Hay sesión (o se puede recuperar con la cookie de refresh). Sin ella, al login recordando la página pedida. */
+export const authGuard: CanActivateFn = (_route, state) => {
   const auth = inject(AuthService);
   const router = inject(Router);
   if (auth.isAuthenticated()) {
     return true;
   }
-  return auth.restore().pipe(map((ok) => (ok ? true : router.createUrlTree(['/login']))));
+  return auth.restore().pipe(
+    map((ok) => (ok ? true : router.createUrlTree(['/login'], { queryParams: returnQuery(state.url) }))),
+  );
 };
 
-/** La sesión corresponde a un negocio (token con tid). */
-export const tenantGuard: CanActivateFn = () => {
+/** La sesión corresponde a un negocio (token con tid). Si no, a elegirlo y luego volver a la página pedida. */
+export const tenantGuard: CanActivateFn = (_route, state) => {
   const auth = inject(AuthService);
-  return auth.hasTenant() ? true : inject(Router).createUrlTree(['/negocios']);
+  return auth.hasTenant() ? true : inject(Router).createUrlTree(['/negocios'], { queryParams: returnQuery(state.url) });
 };
 
 /** Exige el permiso indicado en {@code data.permission} de la ruta; sin él, muestra la página "sin permiso". */

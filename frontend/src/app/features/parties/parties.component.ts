@@ -7,7 +7,6 @@ import { City, Department, PageResponse, Party, PersonType, PriceList } from '..
 import { CatalogApi } from '../../core/api/catalog.api';
 import { OrganizationApi } from '../../core/api/organization.api';
 import { PartiesApi, PartyKind } from '../../core/api/parties.api';
-import { AuthService } from '../../core/auth/auth.service';
 import { ConfirmService } from '../../shared/confirm';
 import { FormDialogComponent } from '../../shared/forms/form-dialog.component';
 import { PageHeaderComponent } from '../../shared/page-header.component';
@@ -17,6 +16,8 @@ import { ColumnDef, TableQuery, initialQuery, toPageQuery } from '../../shared/t
 import { DOCUMENT_TYPES, PartyDraft, draftDv, draftOf, draftProblem, emptyDraft, toPartyInput } from './party-form';
 import { TermComponent } from '../../shared/help/term.component';
 import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
+import { permissionFlag } from '../../core/auth/permission-flag';
+import { LatestRequest } from '../../shared/latest-request';
 
 /** Clientes o proveedores (según {@code kind} en los datos de la ruta). */
 @Component({
@@ -27,7 +28,7 @@ import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
                      [description]="isCustomers()
                        ? 'Personas y empresas a las que les vendes. Con su lista de precios y cupo de crédito.'
                        : 'Personas y empresas a las que les compras.'">
-      @if (canManage) {
+      @if (canManage()) {
         <p-button [label]="isCustomers() ? 'Nuevo cliente' : 'Nuevo proveedor'" icon="pi pi-plus" (onClick)="openCreate()" />
       }
     </app-page-header>
@@ -39,14 +40,14 @@ import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
                     [emptyMessage]="isCustomers()
                       ? 'Registra a tus clientes frecuentes para venderles con su lista de precios.'
                       : 'Registra a quienes te venden mercancía.'"
-                    [emptyActionLabel]="canManage ? (isCustomers() ? 'Crear cliente' : 'Crear proveedor') : null"
+                    [emptyActionLabel]="canManage() ? (isCustomers() ? 'Crear cliente' : 'Crear proveedor') : null"
                     (emptyAction)="openCreate()" (queryChange)="load($event)">
       <label tableToolbar class="flex items-center gap-2 text-sm">
         <input type="checkbox" [ngModel]="includeInactive" (ngModelChange)="includeInactive = $event; reloadFirstPage()" />
         Ver inactivos
       </label>
       <ng-template #actions let-row>
-        @if (canManage && !row.system) {
+        @if (canManage() && !row.system) {
           <p-button label="Editar" icon="pi pi-pencil" size="small" [text]="true" (onClick)="openEdit(row)" />
           <p-button [label]="row.active ? 'Desactivar' : 'Activar'" size="small" [text]="true"
                     [icon]="row.active ? 'pi pi-ban' : 'pi pi-check-circle'"
@@ -158,6 +159,8 @@ import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
   `,
 })
 export class PartiesComponent implements OnInit {
+  /** Cancela la petición anterior de la lista (QA UI-10). */
+  private readonly latest = new LatestRequest();
   /** Desde los datos de la ruta. */
   readonly kind = input<PartyKind>('customers');
 
@@ -165,7 +168,7 @@ export class PartiesComponent implements OnInit {
   private readonly catalog = inject(CatalogApi);
   private readonly organization = inject(OrganizationApi);
   private readonly confirm = inject(ConfirmService);
-  protected readonly canManage = inject(AuthService).hasPermission('parties:manage');
+  protected readonly canManage = permissionFlag('parties:manage');
 
   protected readonly documentTypes = DOCUMENT_TYPES;
   protected readonly isCustomers = computed(() => this.kind() === 'customers');
@@ -229,7 +232,7 @@ export class PartiesComponent implements OnInit {
   load(query: TableQuery): void {
     this.query = query;
     this.loading.set(true);
-    this.api.search(this.kind(), toPageQuery(query), query.search, this.includeInactive).subscribe({
+    this.api.search(this.kind(), toPageQuery(query), query.search, this.includeInactive).pipe(this.latest.only()).subscribe({
       next: (result) => {
         this.page.set(result);
         this.loading.set(false);

@@ -10,6 +10,7 @@ import com.poshibrido.audit.application.AuditViews.Detail;
 import com.poshibrido.audit.application.AuditViews.Entry;
 import com.poshibrido.shared.api.PageResponse;
 import com.poshibrido.shared.csv.CsvWriter;
+import com.poshibrido.shared.csv.ExportGate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ContentDisposition;
@@ -42,6 +43,7 @@ public class AuditController {
 
     private final AuditQueryService audits;
     private final AuditLogger auditLogger;
+    private final ExportGate exports;
 
     @GetMapping
     public PageResponse<Entry> list(@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
@@ -79,6 +81,10 @@ public class AuditController {
                                       @RequestParam(required = false) String action,
                                       @RequestParam(required = false) String q) {
         AuditFilter filter = audits.filter(from, to, actorId, entity, action, q);
+        return exports.run(() -> export(filter));
+    }
+
+    private ResponseEntity<byte[]> export(AuditFilter filter) {
         List<Entry> rows = audits.forExport(filter);
         CsvWriter w = new CsvWriter(filter.zone())
                 .row("Fecha", "Usuario", "Acción", "Módulo", "Registro", "Id del registro", "IP");

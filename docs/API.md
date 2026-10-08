@@ -144,14 +144,14 @@ Cantidades siempre en unidad base del producto en las respuestas.
 | PUT | `/inventory/stock-levels` | `{branchId, productId, minStock, maxStock}` (null = sin límite; 422 si máximo < mínimo) |
 | GET | `/inventory/kardex?productId=&branchId=&from=&to=&page=&size=` | Movimientos, el más reciente primero. Fechas `AAAA-MM-DD` en la zona horaria del negocio |
 | GET | `/inventory/documents?type=&branchId=&page=&size=` · `/inventory/documents/{id}` | Documentos con sus líneas |
-| GET | `/inventory/consistency` | `{consistent, mismatches[]}`: compara cada saldo con la suma de sus movimientos |
+| GET | `/inventory/consistency` | `{consistent, mismatches[]}`: compara cada saldo con la suma de sus movimientos. Pide `inventory:adjust` y comparte el cupo de consultas pesadas (429) |
 | POST | `/inventory/initial-balances` | `{branchId, notes, lines}`. 409 si el producto ya tiene movimientos en la sucursal |
 | POST | `/inventory/adjustments` | `{branchId, reason, notes, lines}`; cada línea con `direction: IN\|OUT`; costo solo en entradas |
 | POST | `/inventory/transfers` | `{fromBranchId, toBranchId, notes, lines}` |
-| POST | `/inventory/counts` | `{branchId, reason, notes, lines}`; `quantity` = lo contado (puede ser 0) |
+| POST | `/inventory/counts` | `{branchId, reason, notes, lines}`; `quantity` = lo contado (puede ser 0); `expectedQuantity` = la existencia en unidad base que se mostró al empezar a contar (opcional; sin ella, el saldo actual) |
 
-Línea: `{productId, unitId (opcional, base por defecto), quantity, direction, unitCost (por unidad indicada)}`.
-Los `POST` responden 201 con el documento y aceptan el encabezado `Idempotency-Key`. 422 *Existencias insuficientes* si una salida deja el saldo negativo; 409 si otra operación simultánea obliga a reintentar.
+Línea: `{productId, unitId (opcional, base por defecto), quantity, direction, unitCost (por unidad indicada), expectedQuantity (solo conteos)}`. En unidad base, máximo 9.999.999.999,9999 (422).
+Los `POST` responden 201 con el documento y aceptan el encabezado `Idempotency-Key` (repetirla devuelve el mismo documento; usada en otro tipo de documento o por otro usuario, 409). 422 *Existencias insuficientes* si una salida deja el saldo negativo; 409 si otra operación simultánea obliga a reintentar.
 
 ## Caja (Fase 5)
 Operar: `cash:operate`. Historial: `cash:read` (sin él, cada usuario ve solo sus sesiones). Esperado, diferencia y desglose del efectivo: `cash:audit` (cierre ciego).
@@ -260,3 +260,11 @@ Envío: **Resend** (API HTTP) si hay `RESEND_API_KEY`; si no, **SMTP** si hay `S
 - `POST /cash/sessions/{id}/movements`: un egreso o retiro mayor que el efectivo que debería haber en la caja → **422** (el mensaje no revela el esperado: cierre ciego).
 - `GET /cash/sessions/{id}/report`: en una caja cerrada, `voidedCount`, `voidedTotal`, `netSales` y `byMethod` quedan como al cierre; las ventas anuladas después se informan en `voidedAfterCloseCount` y `voidedAfterCloseTotal`.
 - `GET /reports/products.csv`: trae todos los productos vendidos del periodo (antes se cortaba en 1.000); el parámetro `limit` ya no aplica al CSV.
+
+## Cambios de la Fase 7-6c
+- **503 `Retry-After: 5`** "El sistema está ocupado…" si no hay conexión libre en 10 s (`DB_CONNECTION_TIMEOUT_MS`) o una consulta supera su tiempo (reportes, auditoría y verificación de inventario: 60 s). Esperar un bloqueo más de 10 s o un interbloqueo: 409 (reintentar). Valor fuera de rango para la base: 422.
+- **429** "Hay muchos reportes pesados en curso…" si ya hay 2 exportaciones grandes (`/reports/sales.csv`, `/audit/export.csv`) o verificaciones de inventario en curso en el servidor y no se libera un cupo en 10 s.
+- `PUT /products/{id}` con `trackInventory: false` → **422** si el producto tiene existencias en alguna sucursal (déjalas en cero antes). La importación CSV deja el control encendido en ese caso.
+- Ventas: cantidad en unidad base mayor que 9.999.999.999,9999 o igual a 0 → 422 "La cantidad de X no es válida.".
+- `TRUNCATE` sobre tablas inmutables (kardex, documentos, caja, ventas, auditoría, eventos de seguridad) falla igual que `UPDATE`/`DELETE`.
+- Un negocio cuya migración falló al arrancar responde 403 `TENANT_UNAVAILABLE` hasta que se corrija; los demás funcionan normal.

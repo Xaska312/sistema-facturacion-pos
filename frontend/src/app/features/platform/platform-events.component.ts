@@ -8,6 +8,7 @@ import { CellTemplateDirective } from '../../shared/table/cell-template.directiv
 import { ColumnDef, TableQuery, initialQuery } from '../../shared/table/table';
 import { addDays, isoDate } from '../reports/periods';
 import { EVENT_LABEL, eventDetail, eventLabel, isWarningEvent } from './platform-labels';
+import { LatestRequest } from '../../shared/latest-request';
 
 /** Eventos de seguridad de la plataforma: inicios de sesión, intentos fallidos, bloqueos, límites, negocios. */
 @Component({
@@ -58,6 +59,8 @@ import { EVENT_LABEL, eventDetail, eventLabel, isWarningEvent } from './platform
   `,
 })
 export class PlatformEventsComponent implements OnInit {
+  /** Cancela la petición anterior de la lista (QA UI-10). */
+  private readonly latest = new LatestRequest();
   private readonly platform = inject(PlatformApi);
 
   protected readonly page = signal<PageResponse<SecurityEvent> | null>(null);
@@ -92,7 +95,7 @@ export class PlatformEventsComponent implements OnInit {
     this.query = query;
     this.filters = { ...this.filters, q: query.search };
     this.loading.set(true);
-    this.platform.securityEvents(this.filters, query.page, query.size).subscribe({
+    this.platform.securityEvents(this.filters, query.page, query.size).pipe(this.latest.only()).subscribe({
       next: (result) => {
         this.page.set(result);
         this.loading.set(false);

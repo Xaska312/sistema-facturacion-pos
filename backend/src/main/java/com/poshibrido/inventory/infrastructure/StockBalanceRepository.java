@@ -44,6 +44,10 @@ public interface StockBalanceRepository extends JpaRepository<StockBalance, UUID
     @Query("select b from StockBalance b where b.lotId is null and b.branchId = :branchId and b.productId in :productIds")
     List<StockBalance> findForBranch(@Param("branchId") UUID branchId, @Param("productIds") Collection<UUID> productIds);
 
+    /** Si el producto tiene saldo distinto de cero en alguna sucursal. */
+    @Query("select count(b) > 0 from StockBalance b where b.productId = :productId and b.quantity <> 0")
+    boolean existsNonZero(@Param("productId") UUID productId);
+
     /** Existencia total del producto en todas las sucursales (para el costo promedio). */
     @Query("select coalesce(sum(b.quantity), 0) from StockBalance b where b.productId = :productId")
     BigDecimal totalQuantity(@Param("productId") UUID productId);

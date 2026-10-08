@@ -6,8 +6,8 @@ import { ButtonModule } from 'primeng/button';
 import { SkeletonModule } from 'primeng/skeleton';
 import { CashSession, RegisterOption } from '../../core/api/api.models';
 import { CashApi } from '../../core/api/cash.api';
-import { AuthService } from '../../core/auth/auth.service';
 import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
+import { permissionFlag } from '../../core/auth/permission-flag';
 
 /**
  * Apertura guiada desde el POS: elegir la caja (si hay más de una libre), contar la base de efectivo y "Abrir caja",
@@ -25,12 +25,12 @@ import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
         <div>
           <h1 id="open-cash-title" class="text-xl font-semibold">No tienes una caja abierta</h1>
           <p class="text-muted">
-            {{ canOperate ? 'Cuenta el efectivo con el que empiezas y abre la caja para vender.' : 'Para vender necesitas una caja abierta.' }}
+            {{ canOperate() ? 'Cuenta el efectivo con el que empiezas y abre la caja para vender.' : 'Para vender necesitas una caja abierta.' }}
           </p>
         </div>
       </div>
 
-      @if (!canOperate) {
+      @if (!canOperate()) {
         <p class="text-sm">Tu usuario no puede abrir cajas. Pide a un administrador que te asigne el permiso
           "Abrir, mover y cerrar caja".</p>
         <a routerLink="/app" class="text-brand font-medium">Volver al menú</a>
@@ -102,7 +102,7 @@ import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
 export class OpenCashComponent implements OnInit {
   private readonly cash = inject(CashApi);
   private readonly messages = inject(MessageService);
-  protected readonly canOperate = inject(AuthService).hasPermission('cash:operate');
+  protected readonly canOperate = permissionFlag('cash:operate');
 
   readonly opened = output<CashSession>();
 
@@ -113,7 +113,7 @@ export class OpenCashComponent implements OnInit {
   protected openingAmount: number | null = 0;
 
   ngOnInit(): void {
-    if (!this.canOperate) {
+    if (!this.canOperate()) {
       return;
     }
     this.cash.registers().subscribe({

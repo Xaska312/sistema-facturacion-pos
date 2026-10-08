@@ -19,6 +19,7 @@ import { DataTableComponent } from '../../shared/table/data-table.component';
 import { ColumnDef, TableQuery, initialQuery } from '../../shared/table/table';
 import { addDays, businessToday, isoDate } from '../reports/periods';
 import { DataRow, actionLabel, actionOptions, dataRows, entityLabel, entityOptions } from './audit-labels';
+import { LatestRequest } from '../../shared/latest-request';
 
 /** Nombre del autor; sin autor es una acción del sistema. */
 export function actorText(name: string | null, id: string | null): string {
@@ -159,6 +160,8 @@ export function actorText(name: string | null, id: string | null): string {
   `,
 })
 export class AuditComponent implements OnInit {
+  /** Cancela la petición anterior de la lista (QA UI-10). */
+  private readonly latest = new LatestRequest();
   private readonly audit = inject(AuditApi);
 
   protected readonly page = signal<PageResponse<AuditEntry> | null>(null);
@@ -215,7 +218,7 @@ export class AuditComponent implements OnInit {
     this.query = query;
     this.filters = { ...this.filters, q: query.search };
     this.loading.set(true);
-    this.audit.search(this.filters, query.page, query.size).subscribe({
+    this.audit.search(this.filters, query.page, query.size).pipe(this.latest.only()).subscribe({
       next: (result) => {
         this.page.set(result);
         this.loading.set(false);

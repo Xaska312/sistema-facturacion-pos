@@ -7,7 +7,6 @@ import { forkJoin, map, of } from 'rxjs';
 import { Branch, ReportSummary } from '../../core/api/api.models';
 import { OrganizationApi } from '../../core/api/organization.api';
 import { ReportFilters, ReportsApi } from '../../core/api/reports.api';
-import { AuthService } from '../../core/auth/auth.service';
 import { ChartComponent } from '../../shared/charts/chart.component';
 import { EmptyStateComponent } from '../../shared/empty-state.component';
 import { PeriodFilterComponent } from '../../shared/period-filter.component';
@@ -26,6 +25,7 @@ import {
 import { ChartData, KpiCard, buildKpis, dayChart, hourChart, paymentChart, topProductsChart } from './dashboard-data';
 import { DASHBOARD_TOUR } from './dashboard-tour';
 import { StockAlertsComponent } from './stock-alerts.component';
+import { permissionFlag } from '../../core/auth/permission-flag';
 
 interface DashboardView {
   label: string;
@@ -90,7 +90,7 @@ interface DashboardView {
               @if (v.current.salesCount === 0) {
                 <app-empty-state icon="pi pi-shopping-cart" title="Aún no hay ventas hoy"
                                  message="Cuando registres la primera venta verás aquí cómo van las ventas por hora."
-                                 [actionLabel]="canSell ? 'Ir a vender' : null" actionIcon="pi pi-arrow-right"
+                                 [actionLabel]="canSell() ? 'Ir a vender' : null" actionIcon="pi pi-arrow-right"
                                  (action)="goSell()" />
               } @else {
                 <app-chart kind="bar" [labels]="v.hours.labels" [series]="v.hours.series" categoryHeader="Hora"
@@ -165,7 +165,7 @@ export class DashboardComponent {
   private readonly tours = inject(TourService);
   private tourOffered = false;
   private tourTimer: ReturnType<typeof setTimeout> | null = null;
-  protected readonly canSell = inject(AuthService).hasPermission('sales:create');
+  protected readonly canSell = permissionFlag('sales:create');
 
   protected readonly selection = signal<PeriodSelection>({ period: 'today', from: null, to: null, branchId: null });
   protected readonly branches = signal<Branch[]>([]);

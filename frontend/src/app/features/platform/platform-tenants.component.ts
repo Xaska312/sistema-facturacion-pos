@@ -13,6 +13,7 @@ import { DataTableComponent } from '../../shared/table/data-table.component';
 import { CellTemplateDirective } from '../../shared/table/cell-template.directive';
 import { ColumnDef, TableQuery, initialQuery } from '../../shared/table/table';
 import { TENANT_STATUS_LABEL, tenantStatusKey } from './platform-labels';
+import { LatestRequest } from '../../shared/latest-request';
 
 /** Negocios de toda la plataforma: buscar, suspender (con motivo) y reactivar. */
 @Component({
@@ -81,6 +82,8 @@ import { TENANT_STATUS_LABEL, tenantStatusKey } from './platform-labels';
   `,
 })
 export class PlatformTenantsComponent implements OnInit {
+  /** Cancela la petición anterior de la lista (QA UI-10). */
+  private readonly latest = new LatestRequest();
   private readonly platform = inject(PlatformApi);
   private readonly confirm = inject(ConfirmService);
   private readonly messages = inject(MessageService);
@@ -112,7 +115,7 @@ export class PlatformTenantsComponent implements OnInit {
   load(query: TableQuery): void {
     this.query = query;
     this.loading.set(true);
-    this.platform.tenants(query.search, this.status, query.page, query.size).subscribe({
+    this.platform.tenants(query.search, this.status, query.page, query.size).pipe(this.latest.only()).subscribe({
       next: (result) => {
         this.page.set(result);
         this.loading.set(false);
