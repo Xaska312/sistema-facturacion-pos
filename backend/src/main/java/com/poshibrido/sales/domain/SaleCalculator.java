@@ -8,13 +8,16 @@ import java.util.List;
 /**
  * Reglas de cálculo de una venta (sin estado; las mismas en el frontend para mostrar el total antes de cobrar).
  *
- * <p>Por línea, con dinero a 2 decimales HALF_UP:
+ * <p><b>Pesos enteros</b> (decisión del usuario, QA DIN-2): en Colombia el efectivo no tiene centavos, así que el
+ * total de cada línea se redondea al peso (HALF_UP). Si no, se guardaban centavos que la pantalla redondeaba: el
+ * cajero entregaba $1 de más de cambio o veía "Falta $ 0". Por línea:
  * <ul>
- *   <li>bruto = precio × cantidad; descuento = bruto × % / 100.</li>
- *   <li>Precios con IVA incluido: total = bruto − descuento; base = total / (1 + tarifa); impuesto = total − base.</li>
- *   <li>Precios sin IVA: base = bruto − descuento; impuesto = base × tarifa; total = base + impuesto.</li>
+ *   <li>bruto = pesos(precio × cantidad); descuento = pesos(bruto × % / 100); neto = bruto − descuento.</li>
+ *   <li>Precios con IVA incluido: total = neto; base = total / (1 + tarifa) a 2 decimales; impuesto = total − base.</li>
+ *   <li>Precios sin IVA: base = neto; total = pesos(base × (1 + tarifa)); impuesto = total − base.</li>
  * </ul>
- * Los totales de la venta son la suma de las líneas.
+ * Base e impuesto pueden tener centavos (información tributaria), pero suman exactamente el total. Los totales de la
+ * venta son la suma de las líneas: siempre pesos enteros, igual que los pagos.
  */
 public final class SaleCalculator {
 
@@ -32,16 +35,16 @@ public final class SaleCalculator {
      */
     public static LineAmounts line(BigDecimal unitPrice, BigDecimal quantity, BigDecimal discountPercent,
                                    BigDecimal taxRate, boolean pricesIncludeTax) {
-        BigDecimal gross = money(unitPrice.multiply(quantity));
-        BigDecimal discount = money(gross.multiply(discountPercent).divide(HUNDRED, 10, RoundingMode.HALF_UP));
+        BigDecimal gross = pesos(unitPrice.multiply(quantity));
+        BigDecimal discount = pesos(gross.multiply(discountPercent).divide(HUNDRED, 10, RoundingMode.HALF_UP));
         BigDecimal net = gross.subtract(discount);
         BigDecimal rate = taxRate.divide(HUNDRED, 10, RoundingMode.HALF_UP);
         if (pricesIncludeTax) {
             BigDecimal base = net.divide(BigDecimal.ONE.add(rate), 2, RoundingMode.HALF_UP);
             return new LineAmounts(gross, discount, base, net.subtract(base), net);
         }
-        BigDecimal tax = money(net.multiply(rate));
-        return new LineAmounts(gross, discount, net, tax, net.add(tax));
+        BigDecimal total = pesos(net.multiply(BigDecimal.ONE.add(rate)));
+        return new LineAmounts(gross, discount, net, total.subtract(net), total);
     }
 
     /** Pago informado: {@code tendered} es lo que entrega el cliente con ese medio. */
@@ -104,5 +107,10 @@ public final class SaleCalculator {
 
     public static BigDecimal money(BigDecimal value) {
         return value.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    /** Al peso (HALF_UP), con escala 2 para guardarlo en las columnas de dinero. */
+    public static BigDecimal pesos(BigDecimal value) {
+        return value.setScale(0, RoundingMode.HALF_UP).setScale(2, RoundingMode.UNNECESSARY);
     }
 }

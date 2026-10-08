@@ -184,6 +184,9 @@ class SalesIT extends IntegrationTest {
         pos.sell(s, item.formatted(product, CARD, "1500"), key()).andExpect(status().is(422));
         pos.sell(s, item.formatted(product, CASH, "900"), key()).andExpect(status().is(422));
         pos.sell(s, item.formatted(product, UUID.randomUUID(), "1000"), key()).andExpect(status().is(422));
+        // Pagos en pesos enteros (QA DIN-2): con centavos, 400 con el campo
+        pos.sell(s, item.formatted(product, CASH, "1000.50"), key()).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$..field", org.hamcrest.Matchers.hasItem("payments[0].amount")));
         pos.sell(s, item.formatted(product, CASH, "1000"), null).andExpect(status().is(422));
         pos.sell(s, item.formatted(product, CASH, "1000"), "corta").andExpect(status().is(422));
         pos.sell(s, item.formatted(UUID.randomUUID(), CASH, "1000"), key()).andExpect(status().isNotFound());
@@ -317,6 +320,14 @@ class SalesIT extends IntegrationTest {
         String newReport = body(api.getWith(s, "/api/v1/cash/sessions/" + newSession + "/report"));
         assertThat(((Number) JsonPath.read(newReport, "$.voidsHereCount")).intValue()).isEqualTo(1);
         assertThat(number(newReport, "$.cash.expected")).isEqualByComparingTo("2000");
+        // El informe de la caja ya cerrada queda como se cerró (QA DIN-3): la venta anulada después sigue en sus
+        // ventas netas y en efectivo, y se informa aparte.
+        String closedReport = body(api.getWith(s, "/api/v1/cash/sessions/" + session + "/report"));
+        assertThat(((Number) JsonPath.read(closedReport, "$.voidedCount")).intValue()).isEqualTo(1);
+        assertThat(number(closedReport, "$.netSales")).isEqualByComparingTo("3000");
+        assertThat(((Number) JsonPath.read(closedReport, "$.voidedAfterCloseCount")).intValue()).isEqualTo(1);
+        assertThat(number(closedReport, "$.voidedAfterCloseTotal")).isEqualByComparingTo("3000");
+        assertThat(number(closedReport, "$.byMethod[0].amount")).isEqualByComparingTo("3000");
         api.getWith(s, "/api/v1/inventory/consistency").andExpect(jsonPath("$.consistent").value(true));
     }
 

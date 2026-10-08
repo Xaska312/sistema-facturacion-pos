@@ -1,5 +1,6 @@
 import {
   addDays,
+  businessToday,
   daysBetween,
   isoDate,
   periodFromParams,
@@ -41,6 +42,17 @@ describe('daysBetween', () => {
   it('rango inválido o vacío', () => {
     expect(daysBetween('2026-10-05', '2026-10-01')).toEqual([]);
     expect(daysBetween('', '2026-10-01')).toEqual([]);
+    // Más de un año (el servidor admite hasta 367 días): vacío, y la URL cae en el periodo predeterminado (QA UI-9)
+    expect(daysBetween('2026-01-01', '2027-01-02').length).toBe(367);
+    expect(daysBetween('2024-01-01', '2026-01-01')).toEqual([]);
+  });
+});
+
+describe('hoy del negocio (QA DIN-6)', () => {
+  it('usa el día de Colombia aunque el equipo esté en otra zona', () => {
+    // 2 a. m. en UTC del 7 de octubre = 9 p. m. del 6 de octubre en Bogotá
+    expect(isoDate(businessToday(new Date('2026-10-07T02:00:00Z')))).toBe('2026-10-06');
+    expect(isoDate(businessToday(new Date('2026-10-07T15:00:00Z')))).toBe('2026-10-07');
   });
 });
 

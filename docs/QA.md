@@ -5,8 +5,8 @@ lo que queda como riesgo conocido. Se trabaja en cuatro partes (un parche y una 
 
 | Parte | Contenido | Estado |
 |---|---|---|
-| **7-6a** | Este documento, rol Vendedor, seguridad y sesión | 🧪 entregada |
-| **7-6b** | Dinero y punto de venta: pesos sin centavos, montos con punto de miles, informe de caja, cobro | pendiente |
+| **7-6a** | Este documento, rol Vendedor, seguridad y sesión | ✅ PR #20 |
+| **7-6b** | Dinero y punto de venta: pesos sin centavos, montos con punto de miles, informe de caja, cobro | 🧪 entregada |
 | **7-6c** | Inventario y operación: conteo físico, arranque con muchos negocios, pool, CSV grandes, consultas | pendiente |
 | **7-6d** | Pruebas nuevas (e2e por rol, prueba de carga), lista de pruebas manuales e informe final | pendiente |
 
@@ -77,18 +77,18 @@ Ids: **SEG** seguridad y sesión · **DIN** dinero y punto de venta · **INV** i
 
 | Id | Sev. | Hallazgo | Estado |
 |---|---|---|---|
-| DIN-1 | Alta | Los campos de montos son `type="number"`: "250.000" se lee como 250 (cierre de caja, costos, precios, base) | ⏳ 7-6b |
-| DIN-2 | Media | El sistema guarda centavos (descuentos %, precios sin IVA) pero muestra pesos: cambio entregado de más, "Falta $ 0", faltantes de $1 en el arqueo | ⏳ 7-6b |
-| DIN-3 | Media | El informe de una caja cerrada cambia si después se anula una de sus ventas | ⏳ 7-6b |
-| DIN-4 | Baja | Egresos y retiros pueden dejar el efectivo esperado en negativo (error de digitación) | ⏳ 7-6b |
-| DIN-5 | Baja | El CSV de productos vendidos se corta en 1.000 filas sin avisar | ⏳ 7-6b |
-| DIN-6 | Baja | "Hoy" en reportes usa la zona horaria del equipo, no la del negocio | ⏳ 7-6b |
-| DIN-7 | Baja | Cantidades decimales del carrito se redondean a 2 decimales (el servidor admite 4) o acumulan error (0,1+0,2) | ⏳ 7-6b |
-| UI-1 | Alta | El Enter del lector en el código de barras guarda el producto a medio crear | ⏳ 7-6b |
-| UI-2 | Media | Escanear con el cobro abierto reemplaza el monto recibido y registra la venta | ⏳ 7-6b |
-| UI-3 | Media | Cerrar el cobro mientras guarda permite cambiar el carrito y duplicar la venta | ⏳ 7-6b |
-| UI-4 | Media | Una respuesta tardía del lector le quita el foco al cobro | ⏳ 7-6b |
-| UI-5 | Media | Un error de red al abrir el POS muestra "Abrir caja" y deja al cajero atascado | ⏳ 7-6b |
+| DIN-1 | Alta | Los campos de montos son `type="number"`: "250.000" se lee como 250 (cierre de caja, costos, precios, base) | ✅ 7-6b |
+| DIN-2 | Media | El sistema guarda centavos (descuentos %, precios sin IVA) pero muestra pesos: cambio entregado de más, "Falta $ 0", faltantes de $1 en el arqueo | ✅ 7-6b |
+| DIN-3 | Media | El informe de una caja cerrada cambia si después se anula una de sus ventas | ✅ 7-6b |
+| DIN-4 | Baja | Egresos y retiros pueden dejar el efectivo esperado en negativo (error de digitación) | ✅ 7-6b |
+| DIN-5 | Baja | El CSV de productos vendidos se corta en 1.000 filas sin avisar | ✅ 7-6b |
+| DIN-6 | Baja | "Hoy" en reportes usa la zona horaria del equipo, no la del negocio | ✅ 7-6b |
+| DIN-7 | Baja | Cantidades decimales del carrito se redondean a 2 decimales (el servidor admite 4) o acumulan error (0,1+0,2) | ✅ 7-6b |
+| UI-1 | Alta | El Enter del lector en el código de barras guarda el producto a medio crear | ✅ 7-6b |
+| UI-2 | Media | Escanear con el cobro abierto reemplaza el monto recibido y registra la venta | ✅ 7-6b |
+| UI-3 | Media | Cerrar el cobro mientras guarda permite cambiar el carrito y duplicar la venta | ✅ 7-6b |
+| UI-4 | Media | Una respuesta tardía del lector le quita el foco al cobro | ✅ 7-6b |
+| UI-5 | Media | Un error de red al abrir el POS muestra "Abrir caja" y deja al cajero atascado | ✅ 7-6b |
 
 ### Inventario, concurrencia y operación (7-6c)
 
@@ -109,7 +109,7 @@ Ids: **SEG** seguridad y sesión · **DIN** dinero y punto de venta · **INV** i
 | UI-6 | Media | Lecturas rápidas del lector se mezclan en el documento de inventario | ⏳ 7-6c |
 | UI-7 | Media | No se avisa de cambios sin guardar al salir (documento, producto, carrito) | ⏳ 7-6c |
 | UI-8 | Baja | Reintentar un documento editado devuelve el anterior sin avisar | ⏳ 7-6c |
-| UI-9 | Baja | Rangos de más de un año en la URL de reportes no caen al periodo predeterminado | ⏳ 7-6b |
+| UI-9 | Baja | Rangos de más de un año en la URL de reportes no caen al periodo predeterminado | ✅ 7-6b |
 | UI-10 | Baja | Listas que pueden mostrar resultados viejos (respuestas fuera de orden) | ⏳ 7-6c |
 | UI-11 | Baja | Se pierde la página pedida al pasar por el login | ⏳ 7-6c |
 | UI-12 | Baja | Volver a elegir el mismo CSV corregido no lo vuelve a leer | ⏳ 7-6c |

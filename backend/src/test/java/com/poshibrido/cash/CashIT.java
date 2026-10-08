@@ -53,6 +53,10 @@ class CashIT extends IntegrationTest {
                 .andExpect(status().isCreated()));
         assertThat(number(withdrawal, "$.amount")).isEqualByComparingTo("-50000");
         movement(c, session, "SALE", "1000", "x").andExpect(status().is(422));
+        // No se puede sacar más efectivo del que hay (QA DIN-4): hay 69.000 y se digitó 1.500.000
+        String tooMuch = body(movement(c, session, "WITHDRAWAL", "1500000", "Consignación").andExpect(status().is(422)));
+        assertThat((String) JsonPath.read(tooMuch, "$.detail")).contains("1.500.000").doesNotContain("69.000");
+        movement(c, session, "EXPENSE", "10000.50", "x").andExpect(status().isBadRequest()); // pesos enteros
         movement(c, session, "INCOME", "0", "x").andExpect(status().isBadRequest());
 
         // El cajero no ve el esperado (cierre ciego)
@@ -104,6 +108,7 @@ class CashIT extends IntegrationTest {
         pos.openCashRaw(c, CAJA_1, "0").andExpect(status().isConflict());
         pos.openCashRaw(s, caja2, "0").andExpect(status().isConflict());
         pos.openCashRaw(c, caja2, "-1").andExpect(status().isBadRequest());
+        pos.openCashRaw(c, caja2, "10000.50").andExpect(status().isBadRequest()); // pesos enteros (QA DIN-2)
         pos.openCashRaw(c, UUID.randomUUID(), "0").andExpect(status().isNotFound());
         UUID cashierSession = pos.openCash(c, caja2, "0");
 

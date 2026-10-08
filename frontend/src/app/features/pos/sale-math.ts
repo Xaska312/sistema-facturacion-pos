@@ -10,6 +10,18 @@ export function money(value: number): number {
   return (sign * cents) / 100;
 }
 
+/** Al peso (HALF_UP): el efectivo en Colombia no tiene centavos (QA DIN-2). */
+export function pesos(value: number): number {
+  const sign = value < 0 ? -1 : 1;
+  return sign * Math.round(Number(Math.abs(value).toFixed(6)));
+}
+
+/** Cantidad a 4 decimales, como la guarda el servidor (evita 0,1 + 0,2 = 0,30000000000000004). */
+export function quantity4(value: number): number {
+  const sign = value < 0 ? -1 : 1;
+  return (sign * Math.round(Number((Math.abs(value) * 10000).toFixed(6)))) / 10000;
+}
+
 export interface LineAmounts {
   gross: number;
   discount: number;
@@ -19,21 +31,22 @@ export interface LineAmounts {
 }
 
 /**
- * Bruto = precio × cantidad; descuento = bruto × %.
- * Con IVA incluido: total = bruto − descuento; base = total / (1 + tarifa); impuesto = total − base.
- * Sin IVA: base = bruto − descuento; impuesto = base × tarifa; total = base + impuesto.
+ * Igual que SaleCalculator (pesos enteros por línea): bruto = pesos(precio × cantidad); descuento = pesos(bruto × %);
+ * neto = bruto − descuento.
+ * Con IVA incluido: total = neto; base = total / (1 + tarifa); impuesto = total − base.
+ * Sin IVA: base = neto; total = pesos(base × (1 + tarifa)); impuesto = total − base.
  */
 export function lineAmounts(price: number, quantity: number, discountPercent: number, taxRate: number,
                             pricesIncludeTax: boolean): LineAmounts {
-  const gross = money(price * quantity);
-  const discount = money((gross * discountPercent) / 100);
-  const net = money(gross - discount);
+  const gross = pesos(price * quantity);
+  const discount = pesos((gross * discountPercent) / 100);
+  const net = gross - discount;
   if (pricesIncludeTax) {
     const base = money(net / (1 + taxRate / 100));
     return { gross, discount, base, tax: money(net - base), total: net };
   }
-  const tax = money((net * taxRate) / 100);
-  return { gross, discount, base: net, tax, total: money(net + tax) };
+  const total = pesos(net * (1 + taxRate / 100));
+  return { gross, discount, base: net, tax: total - net, total };
 }
 
 export interface CartLine {
@@ -142,7 +155,7 @@ export function cashSuggestions(total: number): number[] {
 
 /** Cantidad después de tocar + / − en el carrito: nunca negativa (0 = quitar la línea). */
 export function stepQuantity(quantity: number, delta: number): number {
-  return Math.max(0, money(quantity + delta));
+  return Math.max(0, quantity4(quantity + delta));
 }
 
 /**

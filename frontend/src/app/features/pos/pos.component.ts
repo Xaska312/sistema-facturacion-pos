@@ -7,7 +7,7 @@ import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { SkeletonModule } from 'primeng/skeleton';
-import { forkJoin, map, of } from 'rxjs';
+import { finalize, forkJoin, map, of } from 'rxjs';
 import {
   CashSession,
   Party,
@@ -48,9 +48,11 @@ import {
   cashSuggestions,
   parseScan,
   paymentsMissingReference,
+  quantity4,
   stockShortages,
   summarizePayments,
 } from './sale-math';
+import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
 
 interface CustomerChoice {
   id: string;
@@ -70,14 +72,21 @@ const STOCK_PAGES = 5;
  */
 @Component({
   selector: 'app-pos',
-  imports: [FormsModule, RouterLink, ButtonModule, DialogModule, InputTextModule, SkeletonModule, HasPermissionDirective,
+  imports: [FormsModule, PesosInputDirective, RouterLink, ButtonModule, DialogModule, InputTextModule, SkeletonModule, HasPermissionDirective,
     ReceiptComponent, PosHeaderComponent, ProductGridComponent, CartPanelComponent, OpenCashComponent],
   template: `
     <div class="min-h-dvh md:h-dvh flex flex-col bg-ground">
       <app-pos-header [businessName]="config()?.businessName ?? ''" [session]="session()"
                       [userName]="auth.user()?.fullName ?? ''" [online]="online()" (help)="openHelp()" />
 
-      @if (session() === undefined) {
+      @if (sessionError()) {
+        <div class="flex-1 flex flex-col items-center justify-center gap-3 p-6 text-center" role="alert">
+          <i class="pi pi-wifi text-3xl text-muted" aria-hidden="true"></i>
+          <p class="font-medium">No pudimos revisar tu caja.</p>
+          <p class="text-sm text-muted">Revisa la conexión y vuelve a intentarlo.</p>
+          <p-button label="Reintentar" icon="pi pi-refresh" (onClick)="loadSession()" />
+        </div>
+      } @else if (session() === undefined) {
         <div class="flex-1 flex items-center justify-center p-6" aria-busy="true">
           <p-skeleton width="20rem" height="12rem" borderRadius="0.75rem" />
         </div>
@@ -177,6 +186,7 @@ const STOCK_PAGES = 5;
 
     <!-- Cobro (F4) -->
     <p-dialog header="Cobrar" [(visible)]="payOpen" [modal]="true" [style]="{ width: '40rem' }"
+              [closable]="!saving()" [closeOnEscape]="!saving()"
               [breakpoints]="{ '640px': '100vw' }" (onShow)="focusPayment()" (onHide)="focusScanner()">
       <p class="text-center text-sm text-muted">Total a cobrar</p>
       <p class="text-5xl font-bold text-center tabular-nums mb-4">{{ cop(totals().total) }}</p>
@@ -205,9 +215,10 @@ const STOCK_PAGES = 5;
           <label [for]="'pay-' + i" class="w-32 text-sm font-medium flex items-center gap-2">
             <i [class]="methodIcon(methodCode(p.methodId))" aria-hidden="true"></i>{{ methodShortName(p.methodId) }}
           </label>
-          <input type="number" inputmode="decimal" min="0" step="any"
+          <input appPesos
                  class="h-12 w-40 border rounded-lg px-3 text-xl text-right tabular-nums"
-                 [id]="'pay-' + i" [(ngModel)]="p.amount" (keydown.enter)="confirmPayment()" />
+                 [id]="'pay-' + i" [(ngModel)]="p.amount" (keydown)="trackAmountTyping($event, p)"
+                 (keydown.enter)="confirmFromAmount(p)" />
           @if (!p.affectsCash) {
             <input pInputText class="flex-1 min-w-32 h-12" [(ngModel)]="p.reference" maxlength="60"
                    [attr.aria-label]="'Referencia del pago con ' + methodShortName(p.methodId)"
@@ -267,7 +278,8 @@ const STOCK_PAGES = 5;
         </p>
       }
       <ng-template #footer>
-        <p-button label="Volver" [text]="true" severity="secondary" styleClass="min-h-11" (onClick)="payOpen = false" />
+        <p-button label="Volver" [text]="true" severity="secondary" styleClass="min-h-11" [disabled]="saving()"
+                  (onClick)="payOpen = false" />
         <p-button label="Registrar venta (Enter)" icon="pi pi-check" size="large" styleClass="min-h-12"
                   [disabled]="!canConfirm()" [loading]="saving()" (onClick)="confirmPayment()" />
       </ng-template>
@@ -427,6 +439,12 @@ export class PosComponent implements OnInit, OnDestroy {
   protected readonly config = signal<PosConfig | null>(null);
   /** {@code undefined} mientras carga; {@code null} sin caja abierta. */
   protected readonly session = signal<CashSession | null | undefined>(undefined);
+  protected readonly sessionError = signal(false);
+  /** Búsquedas de códigos en curso: F4 espera a que terminen (si no, el último producto llega con el cobro abierto). */
+  private pendingLookups = 0;
+  private payWhenReady = false;
+  /** Ritmo de tecleo en el monto del cobro, para reconocer una lectura del lector (QA UI-2). */
+  private amountTyping = { start: 0, last: 0, count: 0, before: null as number | null };
   protected readonly methods = signal<PaymentMethod[]>([]);
   protected readonly lines = signal<CartLine[]>([]);
   protected readonly customer = signal<CustomerChoice>({ id: '', name: 'Consumidor final', document: '222222222222', priceListId: null });
@@ -468,6 +486,17 @@ export class PosComponent implements OnInit, OnDestroy {
       this.config.set(config);
       this.customer.update((c) => (c.id ? c : { ...c, id: config.finalConsumerId }));
     });
+    this.loadSession();
+    this.cash.paymentMethods().subscribe((methods) => this.methods.set(methods));
+  }
+
+  /**
+   * Caja abierta del usuario. Un error (sin conexión, servidor reiniciando) no es "sin caja": antes mostraba "Abrir
+   * caja", el servidor la rechazaba porque ya estaba abierta y el cajero quedaba atascado (QA UI-5).
+   */
+  loadSession(): void {
+    this.sessionError.set(false);
+    this.session.set(undefined);
     this.cash.current().subscribe({
       next: (session) => {
         this.session.set(session);
@@ -477,9 +506,8 @@ export class PosComponent implements OnInit, OnDestroy {
           this.offerTour();
         }
       },
-      error: () => this.session.set(null),
+      error: () => this.sessionError.set(true),
     });
-    this.cash.paymentMethods().subscribe((methods) => this.methods.set(methods));
   }
 
   @HostListener('window:keydown', ['$event'])
@@ -541,18 +569,22 @@ export class PosComponent implements OnInit, OnDestroy {
       return;
     }
     this.code = '';
-    this.sales.lookup(parsed.code, this.customer().priceListId).subscribe({
-      next: (found) => this.addLine(found, parsed.quantity),
-      error: (error: unknown) => {
-        const notFound = error instanceof HttpErrorResponse && error.status === 404;
-        this.messages.add({
-          severity: 'warn',
-          summary: notFound ? 'Código no encontrado' : 'No se pudo agregar',
-          detail: notFound ? `"${parsed.code}". Usa F2 para buscar por nombre.` : problemMessage(error),
-        });
-        this.focusScanner();
-      },
-    });
+    this.pendingLookups++;
+    this.sales.lookup(parsed.code, this.customer().priceListId)
+      .pipe(finalize(() => this.lookupDone()))
+      .subscribe({
+        next: (found) => this.addLine(found, parsed.quantity),
+        error: (error: unknown) => {
+          this.payWhenReady = false; // el producto no llegó: no se abre el cobro solo
+          const notFound = error instanceof HttpErrorResponse && error.status === 404;
+          this.messages.add({
+            severity: 'warn',
+            summary: notFound ? 'Código no encontrado' : 'No se pudo agregar',
+            detail: notFound ? `"${parsed.code}". Usa F2 para buscar por nombre.` : problemMessage(error),
+          });
+          this.focusScanner();
+        },
+      });
   }
 
   addLine(found: ProductLookup, quantity: number): void {
@@ -560,11 +592,11 @@ export class PosComponent implements OnInit, OnDestroy {
     this.updateLines((list) => {
       const existing = list.findIndex((l) => l.key === key);
       if (existing >= 0) {
-        return list.map((l, i) => (i === existing ? { ...l, quantity: l.quantity + quantity } : l));
+        return list.map((l, i) => (i === existing ? { ...l, quantity: quantity4(l.quantity + quantity) } : l));
       }
       return [...list, {
         key, productId: found.productId, sku: found.sku, name: found.name, unitId: found.unitId,
-        unitCode: found.unitCode, quantity, unitPrice: Number(found.price), discountPercent: 0,
+        unitCode: found.unitCode, quantity: quantity4(quantity), unitPrice: Number(found.price), discountPercent: 0,
         taxRate: Number(found.taxRate), trackInventory: found.trackInventory, factor: Number(found.factor) || 1,
       }];
     });
@@ -572,10 +604,11 @@ export class PosComponent implements OnInit, OnDestroy {
   }
 
   setQuantity(change: LineQuantityChange): void {
-    if (!(change.quantity > 0)) {
+    const quantity = quantity4(change.quantity);
+    if (!(quantity > 0)) {
       return;
     }
-    this.updateLines((list) => list.map((l) => (l.key === change.key ? { ...l, quantity: change.quantity } : l)));
+    this.updateLines((list) => list.map((l) => (l.key === change.key ? { ...l, quantity } : l)));
     this.focusScanner();
   }
 
@@ -594,7 +627,7 @@ export class PosComponent implements OnInit, OnDestroy {
   restoreLine(removed: RemovedLine): void {
     this.updateLines((list) => {
       if (list.some((l) => l.key === removed.line.key)) {
-        return list.map((l) => (l.key === removed.line.key ? { ...l, quantity: l.quantity + removed.line.quantity } : l));
+        return list.map((l) => (l.key === removed.line.key ? { ...l, quantity: quantity4(l.quantity + removed.line.quantity) } : l));
       }
       const copy = [...list];
       copy.splice(Math.min(removed.index, copy.length), 0, removed.line);
@@ -659,10 +692,16 @@ export class PosComponent implements OnInit, OnDestroy {
 
   /** Desde la cuadrícula o la búsqueda: el precio lo calcula el servidor para el cliente de la venta. */
   pickProduct(product: Product): void {
-    this.sales.price(product.id, null, this.customer().id || null).subscribe((price) => {
-      this.searchOpen = false;
-      this.addLine(price, 1);
-    });
+    this.pendingLookups++;
+    this.sales.price(product.id, null, this.customer().id || null)
+      .pipe(finalize(() => this.lookupDone()))
+      .subscribe({
+        next: (price) => {
+          this.searchOpen = false;
+          this.addLine(price, 1);
+        },
+        error: () => (this.payWhenReady = false),
+      });
   }
 
   openCustomers(): void {
@@ -713,6 +752,11 @@ export class PosComponent implements OnInit, OnDestroy {
   // ---------------------------------------------------------------- cobro
 
   openPayment(): void {
+    if (this.pendingLookups > 0) {
+      // F4 justo después de escanear: se abre cuando llegue el último producto.
+      this.payWhenReady = true;
+      return;
+    }
     if (!this.session() || this.lines().length === 0 || this.anyDialogOpen()) {
       return;
     }
@@ -722,6 +766,49 @@ export class PosComponent implements OnInit, OnDestroy {
     this.payments = cash ? [this.draft(cash, this.totals().total)] : [];
     this.idempotencyKey ??= newIdempotencyKey('sale');
     this.payOpen = true;
+  }
+
+  private lookupDone(): void {
+    this.pendingLookups = Math.max(0, this.pendingLookups - 1);
+    if (this.pendingLookups === 0 && this.payWhenReady) {
+      this.payWhenReady = false;
+      this.openPayment();
+    }
+  }
+
+  /**
+   * Lector de códigos en el campo del monto (QA UI-2): si se escanea un producto con el cobro abierto, los dígitos
+   * llegan en ráfaga (menos de ~35 ms entre teclas) y reemplazaban el monto; el Enter registraba la venta con un
+   * cambio absurdo. Se reconoce la ráfaga, se deja el monto como estaba y no se registra.
+   */
+  trackAmountTyping(event: KeyboardEvent, payment: PaymentDraft): void {
+    if (event.key.length !== 1) {
+      return;
+    }
+    const now = performance.now();
+    if (this.amountTyping.count === 0 || now - this.amountTyping.last > 60) {
+      this.amountTyping = { start: now, last: now, count: 0, before: payment.amount };
+    }
+    this.amountTyping.count++;
+    this.amountTyping.last = now;
+  }
+
+  confirmFromAmount(payment: PaymentDraft): void {
+    const typing = this.amountTyping;
+    this.amountTyping = { start: 0, last: 0, count: 0, before: null };
+    const scannerBurst = typing.count >= 6 && performance.now() - typing.start < typing.count * 35 + 60;
+    if (scannerBurst) {
+      payment.amount = typing.before;
+      this.messages.add({
+        severity: 'warn',
+        summary: 'Eso parece una lectura del lector',
+        detail: 'No se registró. Para agregar otro producto toca "Volver"; si no, revisa el monto y registra.',
+        life: 6000,
+      });
+      this.focusPayment();
+      return;
+    }
+    this.confirmPayment();
   }
 
   focusPayment(): void {
@@ -908,8 +995,22 @@ export class PosComponent implements OnInit, OnDestroy {
     }, 150);
   }
 
-  focusScanner(): void {
-    setTimeout(() => this.scanner()?.nativeElement.focus(), 0);
+  /**
+   * Con un diálogo abierto no se mueve el foco (una búsqueda que llega tarde le quitaba el foco al cobro: UI-4). Si
+   * solo queda la máscara de un diálogo que se está cerrando (p. ej. la confirmación de "Cancelar venta"), se
+   * reintenta unas veces hasta que desaparezca.
+   */
+  focusScanner(attempt = 0): void {
+    setTimeout(() => {
+      if (this.searchOpen || this.customerOpen || this.payOpen || this.receiptOpen || this.helpOpen) {
+        return;
+      }
+      if (document.querySelector('.p-dialog-mask') && attempt < 10) {
+        this.focusScanner(attempt + 1);
+        return;
+      }
+      this.scanner()?.nativeElement.focus();
+    }, attempt === 0 ? 0 : 50);
   }
 
   focus(which: 'search' | 'customerSearch'): void {
@@ -937,6 +1038,10 @@ export class PosComponent implements OnInit, OnDestroy {
 
   /** Todo cambio del carrito invalida la clave de idempotencia del cobro anterior. */
   private updateLines(change: (list: CartLine[]) => CartLine[]): void {
+    if (this.saving()) {
+      // Mientras se registra la venta el carrito no cambia (si no, una nueva clave podía duplicarla: QA UI-3).
+      return;
+    }
     this.lines.update(change);
     this.idempotencyKey = null;
   }

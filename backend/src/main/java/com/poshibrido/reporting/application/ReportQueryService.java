@@ -147,6 +147,20 @@ public class ReportQueryService {
      * @param byQuantity ordena por cantidad (unidad base) en vez de por valor vendido
      */
     public List<ProductRow> topProducts(ReportFilter filter, int limit, boolean byQuantity) {
+        return products(filter, Math.min(Math.max(limit, 1), 1000), byQuantity);
+    }
+
+    /**
+     * Todos los productos vendidos en el periodo, para el CSV (QA DIN-5: antes se cortaba en 1.000 sin avisar y los
+     * totales no cuadraban con el resumen). El tope es solo de seguridad: ningún catálogo vende tantos en un periodo.
+     */
+    public List<ProductRow> allProducts(ReportFilter filter, boolean byQuantity) {
+        return products(filter, EXPORT_PRODUCTS_LIMIT, byQuantity);
+    }
+
+    static final int EXPORT_PRODUCTS_LIMIT = 50_000;
+
+    private List<ProductRow> products(ReportFilter filter, int limit, boolean byQuantity) {
         Query query = sales("WITH " + FILTERED + """
                 SELECT si.product_id AS product_id, p.sku AS sku, p.name AS product_name, c.name AS category_name,
                        u.code AS unit_code, sum(si.base_quantity) AS quantity, sum(si.taxable_base) AS subtotal,
@@ -159,7 +173,7 @@ public class ReportQueryService {
                 ORDER BY %s DESC, product_name
                 LIMIT :limit
                 """.formatted(byQuantity ? "6" : "8"), filter);
-        query.setParameter("limit", Math.min(Math.max(limit, 1), 1000));
+        query.setParameter("limit", limit);
         List<ProductRow> result = new ArrayList<>();
         for (Object row : query.getResultList()) {
             Object[] r = (Object[]) row;

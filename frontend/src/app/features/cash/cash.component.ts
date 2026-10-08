@@ -26,11 +26,12 @@ import { ColumnDef } from '../../shared/table/table';
 import { CashReportComponent } from './cash-report.component';
 import { CASH_MOVEMENT_LABEL } from './labels';
 import { TermComponent } from '../../shared/help/term.component';
+import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
 
 /** Mi caja: abrir con base, registrar ingresos/egresos/retiros y cerrar con arqueo ciego. */
 @Component({
   selector: 'app-cash',
-  imports: [TermComponent, SkeletonModule, FormsModule, RouterLink, DatePipe, ButtonModule, DialogModule, InputTextModule, HasPermissionDirective,
+  imports: [TermComponent, SkeletonModule, FormsModule, PesosInputDirective, RouterLink, DatePipe, ButtonModule, DialogModule, InputTextModule, HasPermissionDirective,
     CashReportComponent, PageHeaderComponent, DataTableComponent, CellTemplateDirective],
   template: `
     <app-page-header title="Mi caja" description="Abre tu caja con la base de efectivo, registra ingresos o retiros y ciérrala al final del turno.">
@@ -91,7 +92,7 @@ import { TermComponent } from '../../shared/help/term.component';
         <div class="flex flex-wrap items-end gap-3">
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">Base de efectivo</span>
-            <input pInputText type="number" min="0" step="any" class="w-48" [(ngModel)]="openingAmount" />
+            <input pInputText appPesos class="w-48" [(ngModel)]="openingAmount" />
           </label>
           <label class="flex flex-col gap-1 flex-1 min-w-48">
             <span class="text-sm font-medium">Notas (opcional)</span>
@@ -108,7 +109,7 @@ import { TermComponent } from '../../shared/help/term.component';
       <div class="flex flex-col gap-3">
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Valor</span>
-          <input pInputText type="number" min="0" step="any" [(ngModel)]="movementAmount" />
+          <input pInputText appPesos [(ngModel)]="movementAmount" />
         </label>
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Motivo</span>
@@ -132,7 +133,7 @@ import { TermComponent } from '../../shared/help/term.component';
       <div class="flex flex-col gap-3">
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Efectivo contado</span>
-          <input pInputText type="number" min="0" step="any" [(ngModel)]="countedAmount" />
+          <input pInputText appPesos [(ngModel)]="countedAmount" />
         </label>
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Notas (opcional)</span>

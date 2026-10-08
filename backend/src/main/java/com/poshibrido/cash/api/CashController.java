@@ -12,6 +12,7 @@ import com.poshibrido.cash.domain.CashSessionStatus;
 import com.poshibrido.shared.api.PageResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
+import com.poshibrido.shared.validation.WholePesos;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -49,17 +50,19 @@ public class CashController {
     private final CashQueryService queries;
 
     public record OpenRequest(@NotNull UUID cashRegisterId,
-                              @NotNull @DecimalMin("0") @Digits(integer = 12, fraction = 2) BigDecimal openingAmount,
+                              @NotNull @DecimalMin("0")
+                              @Digits(integer = 12, fraction = 2) @WholePesos BigDecimal openingAmount,
                               @Size(max = 255) String notes) {
     }
 
     public record MovementRequest(@NotNull CashMovementType type,
                                   @NotNull @DecimalMin(value = "0", inclusive = false)
-                                  @Digits(integer = 12, fraction = 2) BigDecimal amount,
+                                  @Digits(integer = 12, fraction = 2) @WholePesos BigDecimal amount,
                                   @NotBlank @Size(max = 255) String reason) {
     }
 
-    public record CloseRequest(@NotNull @DecimalMin("0") @Digits(integer = 12, fraction = 2) BigDecimal countedAmount,
+    public record CloseRequest(@NotNull @DecimalMin("0")
+                               @Digits(integer = 12, fraction = 2) @WholePesos BigDecimal countedAmount,
                                @Size(max = 500) String notes) {
     }
 

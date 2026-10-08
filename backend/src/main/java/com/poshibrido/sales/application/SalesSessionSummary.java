@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -28,12 +29,14 @@ public class SalesSessionSummary implements SessionSalesSummary {
 
     @Override
     @Transactional(readOnly = true)
-    public Summary summarize(UUID cashSessionId) {
+    public Summary summarize(UUID cashSessionId, Instant closedAt) {
+        Instant cutoff = closedAt == null ? Instant.now() : closedAt;
         Object[] all = sales.totalsBySession(cashSessionId, true, SaleStatus.COMPLETED).getFirst();
-        Object[] voided = sales.totalsBySession(cashSessionId, false, SaleStatus.VOIDED).getFirst();
+        Object[] voided = sales.voidedUntil(cashSessionId, cutoff).getFirst();
+        Object[] voidedAfter = sales.voidedAfter(cashSessionId, cutoff).getFirst();
         Map<UUID, PaymentMethodRef> methods = cash.paymentMethods();
         List<MethodTotal> byMethod = new ArrayList<>();
-        for (Object[] row : payments.totalsByMethod(cashSessionId)) {
+        for (Object[] row : payments.totalsByMethod(cashSessionId, cutoff)) {
             UUID methodId = (UUID) row[0];
             PaymentMethodRef method = methods.get(methodId);
             byMethod.add(new MethodTotal(methodId, method == null ? null : method.code(),
@@ -41,7 +44,8 @@ public class SalesSessionSummary implements SessionSalesSummary {
         }
         byMethod.sort(Comparator.comparing(MethodTotal::amount).reversed());
         return new Summary(((Number) all[0]).longValue(), decimal(all[1]), ((Number) voided[0]).longValue(),
-                decimal(voided[1]), byMethod, sales.countByVoidCashSessionId(cashSessionId));
+                decimal(voided[1]), byMethod, sales.countByVoidCashSessionId(cashSessionId),
+                ((Number) voidedAfter[0]).longValue(), decimal(voidedAfter[1]));
     }
 
     private static BigDecimal decimal(Object value) {

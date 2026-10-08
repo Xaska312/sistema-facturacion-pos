@@ -32,6 +32,12 @@ import { differenceLabel } from './labels';
         @for (m of r.byMethod; track m.paymentMethodId) {
           <p class="flex justify-between pl-3 text-muted"><span>{{ m.name }} ({{ m.count }})</span><span>{{ cop(m.amount) }}</span></p>
         }
+        @if (r.voidedAfterCloseCount > 0) {
+          <p class="text-muted">
+            Anuladas después del cierre ({{ r.voidedAfterCloseCount }}): {{ cop(r.voidedAfterCloseTotal) }}. No cambian
+            este cierre; el efectivo se devolvió desde otra caja.
+          </p>
+        }
         @if (r.voidsHereCount > 0) {
           <p class="text-muted">Anulaciones con devolución de efectivo en esta caja: {{ r.voidsHereCount }}</p>
         }

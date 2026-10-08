@@ -559,6 +559,9 @@ export interface CashReport {
   netSales: number;
   byMethod: MethodTotal[];
   voidsHereCount: number;
+  /** Ventas de esta caja anuladas después de cerrarla: no cambian el cierre (se informan aparte). */
+  voidedAfterCloseCount: number;
+  voidedAfterCloseTotal: number;
   cash: CashSection;
   auditView: boolean;
 }

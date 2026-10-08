@@ -6,6 +6,7 @@ import {
   money,
   parseScan,
   paymentsMissingReference,
+  quantity4,
   stepQuantity,
   stockShortages,
   summarizePayments,
@@ -31,6 +32,10 @@ describe('sale-math', () => {
   it('suma el impuesto cuando el precio no lo incluye', () => {
     expect(lineAmounts(1000, 3, 0, 19, false)).toEqual({ gross: 3000, discount: 0, base: 3000, tax: 570, total: 3570 });
     expect(lineAmounts(1000, 2, 5, 5, false)).toEqual({ gross: 2000, discount: 100, base: 1900, tax: 95, total: 1995 });
+    // Pesos enteros, igual que el servidor (QA DIN-2)
+    expect(lineAmounts(1995, 1, 10, 19, true)).toEqual({ gross: 1995, discount: 200, base: 1508.4, tax: 286.6, total: 1795 });
+    expect(lineAmounts(1050, 1, 0, 19, false)).toEqual({ gross: 1050, discount: 0, base: 1050, tax: 200, total: 1250 });
+    expect(lineAmounts(12990, 0.375, 0, 0, true).total).toBe(4871);
   });
 
   it('totaliza el carrito', () => {
@@ -71,6 +76,8 @@ describe('sale-math (carrito táctil)', () => {
     expect(stepQuantity(1, -1)).toBe(0);
     expect(stepQuantity(0.5, -1)).toBe(0);
     expect(stepQuantity(0.1, 0.2)).toBe(0.3);
+    expect(stepQuantity(0.375, 1)).toBe(1.375); // 4 decimales, como el servidor (QA DIN-7)
+    expect(quantity4(0.1 + 0.2)).toBe(0.3);
   });
 
   it('marca las líneas que superan la existencia, sumando todas las del mismo producto', () => {

@@ -48,6 +48,7 @@ public final class CashViews {
     /** Informe de cierre (Z) o parcial (X) si la sesión sigue abierta. */
     public record SessionReport(SessionView session, long salesCount, BigDecimal salesTotal, long voidedCount,
                                 BigDecimal voidedTotal, BigDecimal netSales, List<MethodTotal> byMethod,
-                                long voidsHereCount, CashSection cash, boolean auditView) {
+                                long voidsHereCount, long voidedAfterCloseCount, BigDecimal voidedAfterCloseTotal,
+                                CashSection cash, boolean auditView) {
     }
 }

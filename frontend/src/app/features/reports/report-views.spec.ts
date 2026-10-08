@@ -9,7 +9,7 @@ function row(total: number, subtotal: number, profit: number, salesCount: number
 describe('report-views', () => {
   it('exporta el CSV de la pestaña actual', () => {
     expect(csvFor('summary', 'total').report).toBe('sales');
-    expect(csvFor('products', 'quantity')).toEqual({ report: 'products', extra: { orderBy: 'quantity', limit: 1000 } });
+    expect(csvFor('products', 'quantity')).toEqual({ report: 'products', extra: { orderBy: 'quantity' } });
     expect(csvFor('inventory', 'total').report).toBe('inventory/valuation');
   });
 

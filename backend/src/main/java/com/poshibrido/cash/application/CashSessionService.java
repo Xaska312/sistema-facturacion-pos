@@ -29,8 +29,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -183,6 +185,18 @@ public class CashSessionService {
         if (sessions.lockIfOpen(sessionId).isEmpty()) {
             throw new BusinessRuleException("La sesión de caja está cerrada.");
         }
+        if (!type.isEntry()) {
+            // Un egreso o retiro no puede sacar más efectivo del que hay (QA DIN-4: 1.500.000 en vez de 150.000). El
+            // mensaje no dice cuánto hay: revelaría el esperado del cierre ciego.
+            List<BigDecimal> current = movements.totalsByType(sessionId).stream()
+                    .map(row -> row[1] instanceof BigDecimal d ? d : new BigDecimal(String.valueOf(row[1])))
+                    .toList();
+            BigDecimal available = CashCount.expected(session.getOpeningAmount(), current);
+            if (amount.compareTo(available) > 0) {
+                throw new BusinessRuleException("No puedes sacar $ " + pesos(amount)
+                        + ": es más de lo que debería haber en efectivo en la caja. Revisa el valor.");
+            }
+        }
         CashMovement movement = CashMovement.record(sessionId, type, amount, reason.trim(), null, null, key, actor);
         em.persist(movement);
         Map<String, Object> after = new LinkedHashMap<>();
@@ -192,6 +206,12 @@ public class CashSessionService {
         after.put("reason", movement.getReason());
         audit.log("CASH_MOVEMENT_CREATED", "cash_movement", movement.getId(), null, after);
         return movement.getId();
+    }
+
+    /** 1500000 → "1.500.000". */
+    private static String pesos(BigDecimal value) {
+        return String.format(Locale.forLanguageTag("es-CO"), "%,d",
+                value.setScale(0, RoundingMode.HALF_UP).longValueExact());
     }
 
     /** Movimiento ya registrado con la clave; solo se devuelve si es de la misma sesión y del mismo usuario. */
