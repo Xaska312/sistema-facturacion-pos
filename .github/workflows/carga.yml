@@ -1,0 +1,70 @@
+name: Prueba de carga
+
+# Solo a mano (pestaña Actions → "Prueba de carga" → Run workflow): ~20 minutos de Actions por ejecución.
+# Levanta postgres + backend con docker compose y corre loadtest/carga.js (k6). Los resultados quedan como artefacto
+# "resultados-carga" (resumen.txt, resumen.json y recursos.txt con CPU y memoria de cada contenedor).
+# Ojo: el runner de GitHub (2–4 vCPU compartidas) no es el servidor de producción; sirve para comparar versiones.
+on:
+  workflow_dispatch:
+    inputs:
+      tiendas:
+        description: Tiendas simuladas (2 cajeros por tienda)
+        type: number
+        default: 50
+      duracion:
+        description: Duración de la carga (p. ej. 5m, 10m)
+        default: '10m'
+
+jobs:
+  carga:
+    name: k6 (docker compose)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      COMPOSE: docker compose -p poscarga -f docker-compose.yml -f loadtest/compose.carga.yml
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Variables de entorno de prueba
+        run: |
+          {
+            echo "DB_NAME=pos_hibrido"
+            echo "DB_USER=pos_carga"
+            echo "DB_PASSWORD=$(openssl rand -hex 16)"
+            echo "DB_URL=jdbc:postgresql://postgres-db:5432/pos_hibrido"
+            echo "JWT_SECRET=$(openssl rand -base64 48)"
+            echo "REFRESH_COOKIE_SECURE=false"
+            echo "OPENAPI_ENABLED=false"
+          } > .env
+
+      - name: Levantar base de datos y backend
+        run: $COMPOSE up -d --build postgres-db mailpit backend
+
+      - name: Esperar el backend
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:8080/actuator/health > /dev/null; then exit 0; fi
+            sleep 5
+          done
+          $COMPOSE logs
+          exit 1
+
+      - name: Ejecutar la prueba
+        env:
+          TIENDAS: ${{ inputs.tiendas }}
+          DURACION: ${{ inputs.duracion }}
+        run: |
+          (while true; do date '+%H:%M:%S' ; docker stats --no-stream --format '{{.Name}} CPU {{.CPUPerc}} MEM {{.MemUsage}}'; sleep 30; done) \
+            > loadtest/resultados/recursos.txt 2>&1 &
+          $COMPOSE run --rm k6
+
+      - name: Logs del backend
+        if: always()
+        run: $COMPOSE logs --no-color --tail=200 backend
+
+      - name: Resultados
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: resultados-carga
+          path: loadtest/resultados

@@ -6,9 +6,9 @@ lo que queda como riesgo conocido. Se trabaja en cuatro partes (un parche y una 
 | Parte | Contenido | Estado |
 |---|---|---|
 | **7-6a** | Este documento, rol Vendedor, seguridad y sesión | ✅ PR #20 |
-| **7-6b** | Dinero y punto de venta: pesos sin centavos, montos con punto de miles, informe de caja, cobro | ✅ fusionada |
-| **7-6c** | Inventario y operación: conteo físico, arranque con muchos negocios, pool, CSV grandes, consultas | 🧪 entregada |
-| **7-6d** | Pruebas nuevas (e2e por rol, prueba de carga), lista de pruebas manuales e informe final | pendiente |
+| **7-6b** | Dinero y punto de venta: pesos sin centavos, montos con punto de miles, informe de caja, cobro | ✅ PR #22 |
+| **7-6c** | Inventario y operación: conteo físico, arranque con muchos negocios, pool, CSV grandes, consultas | ✅ PR #23 |
+| **7-6d** | Pruebas nuevas (e2e por rol, prueba de carga), lista de pruebas manuales e informe final | 🧪 entregada |
 
 ## 1. Alcance y método
 
@@ -19,8 +19,9 @@ lo que queda como riesgo conocido. Se trabaja en cuatro partes (un parche y una 
   automática que falla antes del arreglo y pasa después (cuando se puede automatizar).
 - **Pruebas automáticas existentes** (red de seguridad): 21 clases de integración del backend contra PostgreSQL real (más pruebas unitarias)
   (Testcontainers), ~265 pruebas del frontend, e2e de venta con Playwright en cada PR, lint.
-- **Pruebas que se agregan** en 7-6d: e2e por rol (cajero, vendedor, bodeguero, contador), anulación, traslado,
-  invitación; prueba de carga con k6 (muchas cajas vendiendo a la vez).
+- **Pruebas que se agregan** en 7-6d: e2e por rol (cajero, vendedor, bodeguero, contador, con invitación) y de
+  anulación; prueba de carga con k6 (50 tiendas, 100 cajas vendiendo a la vez). El traslado queda en `InventoryIT`
+  y en la lista manual.
 - **Pruebas manuales** (equipo real, 7-6d): impresora térmica de 58 y 80 mm, lector de código de barras, tablet
   horizontal, celular, modo oscuro, dos pestañas abiertas, red inestable.
 
@@ -151,3 +152,50 @@ Resumen de lo que los cuatro frentes revisaron de punta a punta y encontraron co
 | INV-5, INV-6, INV-7, INV-12 | Configuración y manejo de errores; se miden en la prueba de carga de la 7-6d |
 | UI-6, UI-7, UI-10, UI-11 | `document-lines.spec`, `unsaved-changes.spec`, `latest-request.spec`, `auth.guards.spec`, `return-url.spec` |
 | UI-8, UI-12, UI-13 | Revisión de código y lista de pruebas manuales (7-6d) |
+
+## 6. Informe final (7-6d)
+
+### Resultado
+
+Se revisó el sistema completo en cuatro frentes y se registraron **45 hallazgos**: ninguno crítico, 6 altos, 20 medios
+y 19 bajos. **42 están corregidos**, cada uno con su prueba cuando se pudo automatizar, y **3 quedan aceptados** como
+riesgo conocido y documentado (SEG-10, SEG-11 en la decisión 200; INV-9 en la decisión 222).
+
+| Frente | Hallazgos | Corregidos | Aceptados | Parte |
+|---|---|---|---|---|
+| Seguridad y sesión (SEG, ROL) | 13 | 11 | 2 | 7-6a/7-6c |
+| Dinero y punto de venta (DIN, UI-1…5) | 12 | 12 | 0 | 7-6b |
+| Inventario, concurrencia y operación (INV, UI-6…13) | 20 | 19 | 1 | 7-6b/7-6c |
+
+Los altos eran: confirmar un correo ajeno con una invitación (SEG-1), escribir en el negocio equivocado al cambiar de
+negocio en otra pestaña (SEG-2), montos "250.000" leídos como 250 (DIN-1), el Enter del lector guardando productos a
+medio crear (UI-1), un negocio con la migración rota impidiendo arrancar a todos (INV-1) y el conteo físico que
+"devolvía" lo vendido durante el conteo (INV-2). Todos corregidos y con prueba.
+
+### Red de pruebas al cierre de la fase 7
+
+| Capa | Qué cubre | Cuándo corre |
+|---|---|---|
+| Integración del backend (Testcontainers, PostgreSQL real) | Reglas de negocio, permisos, aislamiento entre negocios, concurrencia, migraciones | Cada PR (`ci.yml`) |
+| Pruebas del frontend (Karma) y lint | Cálculos del carrito, formularios, guardias, permisos de pantalla | Cada PR (`ci.yml`) |
+| E2E (Playwright, `e2e/`) | Venta completa con cierre de caja; lo que ve y hace cada rol; anulación | Cada PR (`e2e.yml`) |
+| Carga (k6, `loadtest/`) | 50 tiendas, 100 cajas vendiendo, tablero y exportaciones a la vez | A mano (`carga.yml` o en el PC) |
+| Manual (`docs/PRUEBAS-MANUALES.md`) | Equipo real: lector, impresora, tablet, correo, modo oscuro | Antes de abrir y antes de cada versión grande |
+
+### Criterios para abrir a clientes
+
+1. CI, E2E y lint en verde en `main`.
+2. Prueba de carga **APROBADA con 50 tiendas en el servidor de pruebas** (los umbrales están en `loadtest/README.md`).
+3. Lista manual completa en ese servidor, sin hallazgos altos abiertos.
+4. Respaldo diario funcionando y una restauración de prueba exitosa.
+5. Secretos de producción nuevos (JWT_SECRET, base de datos, Resend) y dominio con https.
+
+### Riesgos que quedan
+
+- **Una sola instancia del backend**: el límite de solicitudes, la caché del directorio de negocios y la cola de
+  correos viven en memoria. Para correr varias instancias hay que pasarlos a Redis (ver `ESTADO.md`). Con un
+  servidor de 4 GB (lo recomendado en `DESPLIEGUE.md`; los límites de memoria de los contenedores suman ~3 GB) debería
+  alcanzar para la meta de 50 tiendas; se confirma con el criterio 2. Escalar verticalmente cubre cientos.
+- **La prueba de carga del PC no es la del servidor**: la medida que cuenta se toma al desplegar.
+- **Facturación electrónica DIAN**: el POS emite tiquetes de venta, no factura electrónica. Integrarla (con un
+  proveedor tecnológico autorizado) es una fase aparte si los clientes la necesitan.

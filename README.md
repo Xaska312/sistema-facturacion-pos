@@ -20,7 +20,7 @@ POS web multi-negocio para comercios en Colombia. Backend Spring Boot 4.1 (Java 
 | 5 — Caja y ventas | ✅ Completada (probada en local el 2026-10-05 con la cuenta demo) |
 | 6 — Reportes y dashboard | ✅ Completada (validada en local el 2026-10-05) |
 | Mejora de UX (UX-1 a UX-5) | ✅ Completada (validada el 2026-10-05) |
-| 7 — Endurecimiento para producción | 🚧 En curso: 7-1 producción y respaldos ([`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md)), 7-2 auditoría completa, 7-3 consola de plataforma y límites, 7-4 correos (confirmar cuenta, invitaciones, contraseña olvidada), 7-5 CI con lint y e2e en cada PR, manual de uso |
+| 7 — Endurecimiento para producción | 🚧 En curso: 7-1 producción y respaldos ([`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md)), 7-2 auditoría completa, 7-3 consola de plataforma y límites, 7-4 correos (confirmar cuenta, invitaciones, contraseña olvidada), 7-5 CI con lint y e2e en cada PR, manual de uso, 7-6 QA completo (informe en [`docs/QA.md`](docs/QA.md)) |
 
 ## Requisitos
 - **Docker Desktop** (o Docker Engine + Compose). Debe estar en estado *Engine running* antes de levantar el proyecto o correr los tests.
@@ -95,9 +95,14 @@ cd frontend && npm run test:ci
 ```powershell
 cd e2e; npm install; npx playwright install chromium; npx playwright test
 ```
-Crea un usuario y un negocio nuevos por la API y recorre login → abrir caja → vender → cerrar caja en el navegador.
-El reporte queda en `e2e/playwright-report`. En GitHub el flujo *E2E POS Híbrido* corre en cada PR hacia `main`
+Crea usuarios y negocios nuevos por la API y recorre en el navegador: login → abrir caja → vender → cerrar caja
+(`venta.spec.ts`), lo que ve y hace cada rol (`roles.spec.ts`) y la anulación de una venta (`anulacion.spec.ts`).
+Como registran varias cuentas desde tu IP, en tu `.env` local pon `RATE_LIMIT_LOGIN=100` y `RATE_LIMIT_REGISTER=100`
+(y `docker compose up -d` de nuevo) antes de correrlas. El reporte queda en `e2e/playwright-report`. En GitHub el flujo *E2E POS Híbrido* corre en cada PR hacia `main`
 (y a mano desde Actions); si falla, descarga el artefacto `playwright-report` con capturas y trazas.
+
+**Prueba de carga (k6)** y **lista de pruebas manuales**: ver [`loadtest/README.md`](loadtest/README.md) y
+[`docs/PRUEBAS-MANUALES.md`](docs/PRUEBAS-MANUALES.md). Informe final del QA: [`docs/QA.md`](docs/QA.md) §6.
 
 `mvnw verify` solo ejecuta las pruebas: levanta un PostgreSQL temporal, prueba y lo apaga; **no deja la aplicación corriendo** (para eso, `docker compose up`).
 
@@ -271,7 +276,7 @@ Validada en local: 46 tests en verde; invitación por enlace, menú por permisos
 | Anulación (inventario y efectivo, sesión cerrada), inmutabilidad, permisos por endpoint, aislamiento, token sin negocio | `SalesIT` |
 | Arqueo ciego, una sesión por caja y por usuario, sucursales asignadas, idempotencia de movimientos | `CashIT` |
 | Impuestos, totales, cambio, arqueo | `SaleCalculatorTest`, `CashCountTest`, `sale-math.spec.ts` |
-| Flujo completo en el navegador | `e2e/tests/venta.spec.ts` (Playwright) |
+| Flujo completo en el navegador, permisos por rol, anulación | `e2e/tests/*.spec.ts` (Playwright) |
 
 **Probar a mano**
 1. Crea un producto con código de barras y dale saldo inicial (Fase 4).

@@ -39,6 +39,11 @@ services:
       MAIL_FROM: ${MAIL_FROM:-POS Híbrido <onboarding@resend.dev>}
       APP_PUBLIC_URL: ${APP_PUBLIC_URL:-http://localhost:4200}
       EMAIL_VERIFICATION_REQUIRED: ${EMAIL_VERIFICATION_REQUIRED:-true}
+      # Límites por minuto (los valores por defecto son los de producción; las pruebas E2E y de carga los suben).
+      RATE_LIMIT_LOGIN: ${RATE_LIMIT_LOGIN:-10}
+      RATE_LIMIT_REGISTER: ${RATE_LIMIT_REGISTER:-5}
+      RATE_LIMIT_API: ${RATE_LIMIT_API:-300}
+      RATE_LIMIT_HEAVY: ${RATE_LIMIT_HEAVY:-20}
     depends_on:
       postgres-db:
         condition: service_healthy

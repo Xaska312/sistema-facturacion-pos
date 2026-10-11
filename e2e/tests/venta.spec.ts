@@ -1,73 +1,11 @@
-import { APIRequestContext, expect, test } from '@playwright/test';
-import { confirmEmail } from './mailpit';
-
-const UND = '01920000-0000-7000-8000-000000000301';
-const IVA19 = '01920000-0000-7000-8000-000000000401';
-const PASSWORD = 'ClaveE2E-12345';
-
-interface Setup {
-  userId: string;
-  email: string;
-  tradeName: string;
-  sku: string;
-}
-
-/** Usuario nuevo con negocio, un producto con existencia 10 y precio 2.500 (todo por la API). */
-async function prepareBusiness(request: APIRequestContext): Promise<Setup> {
-  const stamp = Date.now().toString(36);
-  const email = `e2e-${stamp}@pos.test`;
-  const slug = `e2e_${stamp}`;
-  const tradeName = `Tienda E2E ${stamp}`;
-  const sku = `E2E-${stamp}`.toUpperCase();
-
-  expect((await request.post('/api/v1/auth/register', {
-    data: { email, password: PASSWORD, fullName: 'Cajero E2E' },
-  })).status()).toBe(201);
-  // Sin el correo confirmado no se puede crear el negocio: se abre el enlace que llegó a Mailpit.
-  await confirmEmail(request, email);
-  const login = await request.post('/api/v1/auth/login', { data: { email, password: PASSWORD } });
-  expect(login.ok()).toBeTruthy();
-  const session = await login.json();
-  const platformToken = session.accessToken as string;
-  const userId = session.user.id as string;
-
-  const tenant = await request.post('/api/v1/tenants', {
-    headers: { Authorization: `Bearer ${platformToken}` },
-    data: { slug, legalName: `${tradeName} S.A.S.`, tradeName, businessType: 'RETAIL' },
-  });
-  expect(tenant.status()).toBe(201);
-  const tenantId = (await tenant.json()).id as string;
-
-  const selected = await request.post('/api/v1/auth/select-tenant', {
-    headers: { Authorization: `Bearer ${platformToken}` },
-    data: { tenantId },
-  });
-  expect(selected.ok()).toBeTruthy();
-  const auth = { Authorization: `Bearer ${(await selected.json()).accessToken as string}` };
-
-  const product = await request.post('/api/v1/products', {
-    headers: auth,
-    data: { sku, name: 'Gaseosa E2E', baseUnitId: UND, taxId: IVA19, cost: 0, salePrice: 2500, trackInventory: true },
-  });
-  expect(product.status()).toBe(201);
-  const productId = (await product.json()).id as string;
-
-  const branches = await request.get('/api/v1/branches?page=0&size=10', { headers: auth });
-  const principal = ((await branches.json()).content as { id: string; code: string }[]).find((b) => b.code === 'PRINCIPAL');
-  expect(principal).toBeTruthy();
-  expect((await request.post('/api/v1/inventory/initial-balances', {
-    headers: auth,
-    data: { branchId: principal!.id, lines: [{ productId, quantity: 10, unitCost: 1200 }] },
-  })).status()).toBe(201);
-
-  return { userId, email, tradeName, sku };
-}
+import { expect, test } from '@playwright/test';
+import { PASSWORD, prepareBusiness } from './setup';
 
 test('login → abrir caja → vender → cerrar caja', async ({ page, request }) => {
   const setup = await prepareBusiness(request);
 
   // Los recorridos guiados ya vistos (si no, su capa tapa la pantalla la primera vez); se prueban en los tests unitarios.
-  await page.addInitScript((key) => localStorage.setItem(key, '["dashboard","pos"]'), `pos.tours.${setup.userId}`);
+  await page.addInitScript((key) => localStorage.setItem(key, '["dashboard","pos"]'), `pos.tours.${setup.ownerId}`);
 
   // Login y selección del negocio
   await page.goto('/login');

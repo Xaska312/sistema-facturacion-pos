@@ -1,7 +1,8 @@
 name: E2E POS Híbrido
 
-# Flujo de punta a punta (registro y confirmación del correo → login → abrir caja → vender → cerrar caja) con la
-# app levantada por docker compose (incluye Mailpit). Corre en cada PR hacia main y también a mano desde Actions.
+# Pruebas de punta a punta con la app levantada por docker compose (incluye Mailpit): venta completa con cierre de
+# caja, lo que ve y hace cada rol (Cajero, Vendedor, Bodeguero, Contador) y anulación. Corre en cada PR hacia main y
+# también a mano desde Actions.
 on:
   pull_request:
     branches: [ "main" ]
@@ -17,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Variables de entorno de prueba
         run: |
@@ -30,6 +31,9 @@ jobs:
             echo "CORS_ALLOWED_ORIGINS=http://localhost:4200"
             echo "REFRESH_COOKIE_SECURE=false"
             echo "OPENAPI_ENABLED=false"
+            # Cada prueba registra e inicia sesión con varios usuarios desde la misma IP.
+            echo "RATE_LIMIT_LOGIN=100"
+            echo "RATE_LIMIT_REGISTER=100"
           } > .env
 
       - name: Levantar la aplicación
@@ -48,7 +52,7 @@ jobs:
           exit 1
 
       - name: Set up Node.js 22
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '22'
 
@@ -68,7 +72,7 @@ jobs:
 
       - name: Reporte
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: playwright-report
           path: e2e/playwright-report
