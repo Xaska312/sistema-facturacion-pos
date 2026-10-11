@@ -72,8 +72,12 @@ services:
       FORWARD_HEADERS_STRATEGY: native
       # Administradores de plataforma (consola /plataforma), separados por coma.
       PLATFORM_ADMIN_EMAILS: ${PLATFORM_ADMIN_EMAILS:-}
+      RATE_LIMIT_LOGIN: ${RATE_LIMIT_LOGIN:-10}
+      RATE_LIMIT_REGISTER: ${RATE_LIMIT_REGISTER:-5}
       RATE_LIMIT_API: ${RATE_LIMIT_API:-300}
       RATE_LIMIT_HEAVY: ${RATE_LIMIT_HEAVY:-20}
+      # Duración del token de acceso. Solo se alarga en el servidor de pruebas para la prueba de carga.
+      JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-PT15M}
       # Correos (verificación, invitaciones, contraseña) por Resend. Sin clave quedan en el log del backend.
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       MAIL_FROM: ${MAIL_FROM:-POS Híbrido <onboarding@resend.dev>}

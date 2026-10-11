@@ -1,0 +1,38 @@
+# Prueba de carga (QA 7-6d). Se usa junto al docker-compose.yml de la raíz, con un nombre de proyecto aparte para no
+# tocar tus datos de desarrollo:
+#
+#   docker compose -p poscarga -f docker-compose.yml -f loadtest/compose.carga.yml up -d --build postgres-db mailpit backend
+#   docker compose -p poscarga -f docker-compose.yml -f loadtest/compose.carga.yml run --rm k6
+#   docker compose -p poscarga -f docker-compose.yml -f loadtest/compose.carga.yml down -v
+#
+# Detalles en loadtest/README.md.
+services:
+  backend:
+    environment:
+      # La preparación registra 100 usuarios y 50 negocios desde una sola IP: sin estos cambios lo frenarían los
+      # límites de producción (login 10/min, registro 5/min) y la confirmación del correo.
+      EMAIL_VERIFICATION_REQUIRED: "false"
+      RATE_LIMIT_LOGIN: "100000"
+      RATE_LIMIT_REGISTER: "100000"
+      # El límite por usuario (300/min) y el de consultas pesadas quedan como en producción: se mide la configuración real.
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-10}
+      # La preparación más la prueba pueden pasar de 15 minutos: el token de acceso dura más solo aquí.
+      JWT_ACCESS_TTL: PT3H
+
+  k6:
+    image: grafana/k6:1.0.0
+    profiles: ["carga"]
+    depends_on:
+      - backend
+    # Escribe los resultados en loadtest/resultados (en Linux la carpeta montada no es del usuario de la imagen).
+    user: root
+    working_dir: /carga
+    environment:
+      BASE_URL: http://backend:8080
+      TIENDAS: ${TIENDAS:-50}
+      PRODUCTOS: ${PRODUCTOS:-20}
+      DURACION: ${DURACION:-10m}
+      PAUSA_VENTA: ${PAUSA_VENTA:-6}
+    volumes:
+      - ./loadtest:/carga
+    command: ["run", "carga.js"]

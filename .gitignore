@@ -26,3 +26,7 @@ playwright-report/
 # Producción: acceso a Google Drive y claves de cifrado de los respaldos
 deploy/rclone/*
 !deploy/rclone/README.md
+
+# Resultados de la prueba de carga (k6)
+loadtest/resultados/*
+!loadtest/resultados/.gitkeep
