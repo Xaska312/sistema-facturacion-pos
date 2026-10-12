@@ -146,7 +146,7 @@ interface ThemeOption extends PrimeMenuItem {
                 }
               </div>
               @if (sub()?.status !== 'EXPIRED') {
-                <button type="button" class="icon-button shrink-0 sm:-my-1 text-inherit hover:bg-black/5 dark:hover:bg-white/5" aria-label="Cerrar aviso" (click)="bannerClosed.set(true)">
+                <button type="button" class="icon-button shrink-0 sm:-my-1" aria-label="Cerrar aviso" (click)="bannerClosed.set(true)">
                   <i class="pi pi-times" aria-hidden="true"></i>
                 </button>
               }
