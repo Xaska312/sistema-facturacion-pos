@@ -42,7 +42,8 @@ public class TenantController {
     @ResponseStatus(HttpStatus.CREATED)
     public TenantSummary create(@Valid @RequestBody CreateTenantRequest request) {
         return provisioning.create(CurrentActor.requireUserId(), new CreateTenantCommand(
-                request.slug(), request.legalName(), request.tradeName(), request.businessType()));
+                request.slug(), request.legalName(), request.tradeName(), request.businessType(),
+                request.activationCode()));
     }
 
     @PostMapping("/{tenantId}/retry-provisioning")

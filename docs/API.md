@@ -268,3 +268,32 @@ Envío: **Resend** (API HTTP) si hay `RESEND_API_KEY`; si no, **SMTP** si hay `S
 - Ventas: cantidad en unidad base mayor que 9.999.999.999,9999 o igual a 0 → 422 "La cantidad de X no es válida.".
 - `TRUNCATE` sobre tablas inmutables (kardex, documentos, caja, ventas, auditoría, eventos de seguridad) falla igual que `UPDATE`/`DELETE`.
 - Un negocio cuya migración falló al arrancar responde 403 `TENANT_UNAVAILABLE` hasta que se corrija; los demás funcionan normal.
+
+## Suscripciones (Fase 8b)
+Cada negocio tiene una suscripción: **prueba gratis** de 14 días con los límites del plan Pro (solo el primer negocio de cada cuenta) o un **plan pagado**. Sin pasarela: el administrador de plataforma registra los pagos y genera códigos de activación.
+
+Estados (`status`, calculados con la fecha de fin): `TRIAL` (prueba vigente), `ACTIVE` (pagado vigente), `PAST_DUE` (pagado vencido hace menos de 3 días: todo funciona, con aviso), `EXPIRED` (prueba terminada o gracia agotada). Con `EXPIRED` el negocio queda en **solo consulta**: todo `POST/PUT/DELETE` de negocio responde **403 `code: SUBSCRIPTION_EXPIRED`**, salvo cerrar la caja (`POST /cash/sessions/{id}/close`), `/auth/**` y cerrar el negocio. Las consultas y descargas CSV siguen funcionando.
+
+| Método | Ruta | Permiso | Descripción |
+|---|---|---|---|
+| POST | `/tenants` | sesión de plataforma | Nuevo campo opcional `activationCode` (`XXXX-XXXX-XXXX`, sin distinguir mayúsculas ni guiones). Sin código: prueba gratis; si la cuenta ya tiene otro negocio, **422 `code: ACTIVATION_CODE_REQUIRED`**. Código inválido, usado, anulado o vencido: 422 |
+| GET | `/subscription` | cualquier miembro | `{tenantId, tradeName, plan: {code, name, maxBranches, maxUsers, monthlyPrice, annualPrice, active}, status, trial, billingCycle: MONTHLY\|ANNUAL, startedAt, endsAt, graceEndsAt (null en prueba), daysLeft, usage: {branches, users}, paymentInstructions, payments[]}`. `payments` solo con `settings:manage` (si no, vacío). Límites `null` = sin límite |
+
+**Límites del plan** (422 con el nombre del plan): sucursales activas (`POST /branches`, `POST /branches/{id}/activate`) y usuarios = miembros activos + invitaciones pendientes vigentes (`POST /members/invitations`, `POST /members/{id}/activate`). Planes sembrados: Básico (1 sucursal, 3 usuarios) y Pro (5 sucursales, usuarios sin límite); precios los fija el administrador.
+
+**Consola de plataforma** (`PLATFORM_ADMIN`):
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/platform/plans` | Planes |
+| PUT | `/platform/plans/{code}` | `{name, maxBranches, maxUsers, monthlyPrice, annualPrice, active}` (límites `null` = sin límite) |
+| GET | `/platform/subscriptions?q=&status=&page=&size=` | Suscripciones de todos los negocios, las que vencen primero arriba: `{tenantId, slug, tradeName, tenantStatus, ownerEmail, ownerName, planCode, planName, status, trial, endsAt, daysLeft}` |
+| GET | `/platform/tenants/{id}/subscription` | Igual que `/subscription`, con pagos |
+| POST | `/platform/tenants/{id}/subscription/payments` | `{planCode, billingCycle, periods (meses 1–36 o años 1–3), amount, method, reference?, notes?}` → 201 con la suscripción. El periodo empieza al terminar el vigente (o hoy si ya venció). Correo `suscripcion-pagada` al dueño. Los pagos no se editan ni se borran |
+| PUT | `/platform/tenants/{id}/subscription/plan` | `{planCode}`: cambia el plan sin mover la fecha de fin |
+| GET | `/platform/activation-codes` | Últimos 200: `{id, hint, planCode, planName, months, note, status: AVAILABLE\|USED\|EXPIRED\|REVOKED, expiresAt, createdAt, usedAt, usedTenantName}` |
+| POST | `/platform/activation-codes` | `{planCode, months (1–36), validDays (1–365), note?, quantity (1–20)}` → 201 `{codes: ["ABCD-…"], details: […]}`. El código completo **solo se ve aquí** (se guarda el hash) |
+| POST | `/platform/activation-codes/{id}/revoke` | Anula un código sin usar (409 si ya se usó) |
+
+**Avisos por correo** al dueño (9 a. m. de Colombia): 7, 3 y 1 día antes del fin (`suscripcion-por-vencer`), al terminar (`suscripcion-vencida`) y al acabarse la gracia (`suscripcion-bloqueada`), una vez por fecha de fin. Variables: `SUBSCRIPTION_PAYMENT_INSTRUCTIONS` (cómo pagar), `SUBSCRIPTION_TRIAL_DAYS` (14), `SUBSCRIPTION_REMINDERS_ENABLED` (true).
+

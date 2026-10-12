@@ -104,6 +104,62 @@ public class MailTemplates {
                 "Si no fuiste tú, cambia tu contraseña y avisa a soporte de inmediato.");
     }
 
+    // ---------------------------------------------------------------- suscripción (al dueño, fase 8b)
+
+    /** Aviso de 7, 3 y 1 día antes de terminar la prueba o el periodo pagado ({@code daysLeft}: días de calendario). */
+    public MailMessage subscriptionEnding(String to, String ownerName, String businessName, String planName,
+                                          boolean trial, Instant endsAt, long daysLeft, String paymentInstructions) {
+        String when = daysLeft <= 0 ? "hoy" : daysLeft == 1 ? "mañana" : "en " + daysLeft + " días";
+        String what = trial ? "La prueba gratis de " + businessName + " termina " + when
+                : "El plan " + planName + " de " + businessName + " vence " + when;
+        return message(to, what, "suscripcion-por-vencer",
+                "Hola, " + ownerName + ":",
+                List.of(what + " (" + format(endsAt) + ").",
+                        trial ? "Para seguir vendiendo sin interrupciones, activa tu plan antes de esa fecha."
+                                : "Renueva antes de esa fecha para seguir vendiendo sin interrupciones.",
+                        "Cómo pagar: " + paymentInstructions),
+                "Entrar a POS Híbrido", properties.link("/login"),
+                "Tus datos están seguros: si vence, podrás consultarlos y exportarlos.");
+    }
+
+    /** La prueba terminó, o el periodo pagado venció y empieza la gracia ({@code graceEndsAt}). */
+    public MailMessage subscriptionEnded(String to, String ownerName, String businessName, boolean trial,
+                                         Instant graceEndsAt, String paymentInstructions) {
+        List<String> paragraphs = trial
+                ? List.of("Terminó la prueba gratis de " + businessName + ". Puedes entrar y consultar tu información,"
+                        + " pero no registrar ventas ni cambios hasta activar un plan.",
+                "Cómo pagar: " + paymentInstructions)
+                : List.of("Venció el plan de " + businessName + ". Todo sigue funcionando hasta el "
+                        + format(graceEndsAt) + "; después solo se podrá consultar la información.",
+                "Cómo pagar: " + paymentInstructions);
+        return message(to, trial ? "Terminó la prueba de " + businessName : "Venció el plan de " + businessName,
+                "suscripcion-vencida", "Hola, " + ownerName + ":", paragraphs,
+                "Entrar a POS Híbrido", properties.link("/login"),
+                "Tus datos no se borran: al renovar, todo sigue donde lo dejaste.");
+    }
+
+    /** Se acabó la gracia de un plan pagado: solo lectura. */
+    public MailMessage subscriptionBlocked(String to, String ownerName, String businessName,
+                                           String paymentInstructions) {
+        return message(to, businessName + " quedó en solo consulta", "suscripcion-bloqueada",
+                "Hola, " + ownerName + ":",
+                List.of("El plan de " + businessName + " sigue sin renovarse. Desde hoy puedes entrar y consultar tu "
+                                + "información, pero no registrar ventas ni cambios.",
+                        "Cómo pagar: " + paymentInstructions),
+                "Entrar a POS Híbrido", properties.link("/login"),
+                "Tus datos no se borran: al renovar, todo sigue donde lo dejaste.");
+    }
+
+    public MailMessage subscriptionPaid(String to, String ownerName, String businessName, String planName,
+                                        Instant paidUntil) {
+        return message(to, "Recibimos tu pago de " + businessName, "suscripcion-pagada",
+                "Hola, " + ownerName + ":",
+                List.of("Registramos tu pago del plan " + planName + " para " + businessName + ".",
+                        "Tu plan está activo hasta el " + format(paidUntil) + "."),
+                "Entrar a POS Híbrido", properties.link("/login"),
+                "Gracias por confiar en POS Híbrido.");
+    }
+
     // ---------------------------------------------------------------- formato
 
     private MailMessage message(String to, String subject, String kind, String greeting, List<String> paragraphs,

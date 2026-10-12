@@ -14,6 +14,7 @@ import com.poshibrido.shared.error.BusinessRuleException;
 import com.poshibrido.shared.error.ForbiddenException;
 import com.poshibrido.shared.error.NotFoundException;
 import com.poshibrido.shared.security.CurrentActor;
+import com.poshibrido.subscription.application.SubscriptionApi;
 import com.poshibrido.tenancy.application.CurrentTenant;
 import com.poshibrido.tenancy.application.TenantApi;
 import com.poshibrido.tenancy.application.TenantInfo;
@@ -57,6 +58,7 @@ public class MemberService {
     private final SessionApi sessions;
     private final PrivilegeGuard guard;
     private final AuditLogger audit;
+    private final SubscriptionApi subscriptions;
 
     @Transactional(readOnly = true)
     public Page<MemberView> list(String search, Pageable pageable) {
@@ -95,6 +97,7 @@ public class MemberService {
         requireCanManage(member);
         if (member.isActive() != active) {
             if (active) {
+                subscriptions.requireCanAddUser(CurrentTenant.require());
                 member.activate();
             } else {
                 member.deactivate();
