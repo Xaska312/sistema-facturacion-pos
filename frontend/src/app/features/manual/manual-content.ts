@@ -265,7 +265,7 @@ export const MANUAL: readonly ManualChapter[] = [
           'En Productos toca "Con tallas" y luego "Nuevo modelo".',
           'Escribe el prefijo del SKU (p. ej. RUN), el nombre, el impuesto y el precio de venta.',
           'Elige la escala (Calzado Colombia, EU, US, niño, ropa…), marca las tallas que vendes y escribe los colores separados por comas.',
-          'Toca "Crear modelo": se crean todas las variantes (RUN-38-NEGRO, RUN-39-NEGRO…) con un código interno que puedes imprimir.',
+          'Toca "Crear modelo": se crean todas las variantes (RUN-38-NEGRO, RUN-39-NEGRO…) cada una con su propio código de barras interno.',
           'Para cargar o contar existencias, en el documento de inventario toca "Por tallas" y llena la cuadrícula talla × color.',
           'Al vender, el modelo sale en una sola tarjeta: tócala y elige la talla (ves cuántas hay de cada una). Con el lector, el código de cada talla la agrega directo.',
         ],
