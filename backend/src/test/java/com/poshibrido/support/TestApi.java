@@ -125,6 +125,17 @@ public class TestApi {
                         """.formatted(slug, slug, slug)));
     }
 
+    /** Crea un negocio con código de activación (fase 8b). */
+    public ResultActions createTenantWithCode(Session session, String slug, String activationCode) throws Exception {
+        return mvc.perform(post("/api/v1/tenants")
+                .header(HttpHeaders.AUTHORIZATION, session.bearer())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"slug":"%s","legalName":"%s S.A.S.","tradeName":"Tienda %s","businessType":"RETAIL",
+                         "activationCode":"%s"}
+                        """.formatted(slug, slug, slug, activationCode)));
+    }
+
     public UUID createTenant(Session session, String slug) throws Exception {
         MvcResult result = createTenantRaw(session, slug).andExpect(status().isCreated()).andReturn();
         return UUID.fromString(JsonPath.read(result.getResponse().getContentAsString(), "$.id"));

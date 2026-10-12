@@ -7,6 +7,8 @@ import { DrawerModule } from 'primeng/drawer';
 import { MenuModule } from 'primeng/menu';
 import { TooltipModule } from 'primeng/tooltip';
 import { filter } from 'rxjs';
+import { Subscription } from '../../core/api/api.models';
+import { SubscriptionApi } from '../../core/api/subscription.api';
 import { AuthService } from '../../core/auth/auth.service';
 import { THEME_MODES, ThemeMode, themeModeIcon } from '../../core/theme/theme-mode';
 import { ThemeService } from '../../core/theme/theme.service';
@@ -17,6 +19,7 @@ import { TourService } from '../../shared/tour/tour.service';
 import { UI_PREF_KEYS, readUiPref, writeUiPref } from '../../shared/ui-prefs';
 import { buildBreadcrumbs } from './breadcrumbs';
 import { EXACT_MATCH_ROUTES, MENU, initials, visibleMenu, withHeadings } from './menu';
+import { subscriptionBanner } from './subscription-banner';
 
 interface ThemeOption extends PrimeMenuItem {
   mode: ThemeMode;
@@ -130,6 +133,26 @@ interface ThemeOption extends PrimeMenuItem {
           </button>
           <p-menu #userMenu [model]="userItems()" [popup]="true" appendTo="body" />
         </header>
+
+        @if (banner(); as b) {
+          @if (!bannerClosed() || sub()?.status === 'EXPIRED') {
+            <div role="status" class="px-3 md:px-6 py-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-line bg-surface-alt"
+                 [class.text-danger]="b.tone === 'danger'" [class.text-warning]="b.tone === 'warning'">
+              <div class="text-sm">
+                <span class="font-medium">{{ b.text }}</span>
+                <span class="block sm:inline sm:ml-2 text-muted">Cómo pagar: {{ sub()?.paymentInstructions }}</span>
+                @if (canManageSettings()) {
+                  <a routerLink="/app/ajustes" class="block sm:inline sm:ml-2 font-medium hover:underline text-fg">Ver mi suscripción</a>
+                }
+              </div>
+              @if (sub()?.status !== 'EXPIRED') {
+                <button type="button" class="icon-button shrink-0 sm:-my-1" aria-label="Cerrar aviso" (click)="bannerClosed.set(true)">
+                  <i class="pi pi-times" aria-hidden="true"></i>
+                </button>
+              }
+            </div>
+          }
+        }
 
         @if (helpTopic(); as topic) {
           <p-drawer [(visible)]="helpOpen" position="right" [style]="{ width: 'min(24rem, 100vw)' }" [header]="'Ayuda: ' + topic.title">
@@ -253,6 +276,7 @@ export class ShellComponent {
   protected readonly theme = inject(ThemeService);
   private readonly router = inject(Router);
   private readonly tours = inject(TourService);
+  private readonly subscriptionApi = inject(SubscriptionApi);
   private readonly mainElement = viewChild.required<ElementRef<HTMLElement>>('main');
 
   protected readonly exactRoutes = EXACT_MATCH_ROUTES;
@@ -261,6 +285,11 @@ export class ShellComponent {
   protected readonly helpOpen = signal(false);
   private readonly url = signal(this.router.url);
   private readonly pageTitle = signal<string | null>(deepestTitle(this.router.routerState.snapshot.root));
+
+  protected readonly sub = signal<Subscription | null>(null);
+  protected readonly banner = computed(() => subscriptionBanner(this.sub()));
+  protected readonly bannerClosed = signal(false);
+  protected readonly canManageSettings = computed(() => this.auth.permissions().has('settings:manage'));
 
   protected readonly menu = computed(() => {
     const permissions = this.auth.permissions();
@@ -322,6 +351,11 @@ export class ShellComponent {
         this.drawerOpen.set(false);
         this.helpOpen.set(false);
       });
+
+    this.subscriptionApi.current().subscribe({
+      next: (s) => this.sub.set(s),
+      error: () => { /* No mostrar nada en caso de fallo */ }
+    });
   }
 
   toggleCollapsed(): void {

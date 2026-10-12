@@ -3,6 +3,8 @@ package com.poshibrido.config;
 import com.poshibrido.audit.application.SecurityEventLogger;
 import com.poshibrido.identity.application.TokenService;
 import com.poshibrido.tenancy.application.TenantApi;
+import com.poshibrido.subscription.api.SubscriptionGuardFilter;
+import com.poshibrido.subscription.application.SubscriptionApi;
 import com.poshibrido.tenancy.infrastructure.TenantContextFilter;
 import jakarta.servlet.DispatcherType;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -53,6 +55,7 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain apiSecurity(HttpSecurity http, JwtDecoder jwtDecoder, TenantApi tenantApi,
+                                           SubscriptionApi subscriptions,
                                            RateLimitProperties rateLimits, SecurityEventLogger securityEvents,
                                            @Qualifier("corsConfigurationSource") CorsConfigurationSource corsSource,
                                            @Qualifier("handlerExceptionResolver") HandlerExceptionResolver resolver)
@@ -95,7 +98,9 @@ public class SecurityConfig {
                 // Después de autenticar (cuenta por usuario) y antes de autorizar.
                 .addFilterAfter(new ApiRateLimitFilter(rateLimits, resolver, securityEvents),
                         BearerTokenAuthenticationFilter.class)
-                .addFilterAfter(new TenantContextFilter(tenantApi, resolver), AuthorizationFilter.class);
+                .addFilterAfter(new TenantContextFilter(tenantApi, resolver), AuthorizationFilter.class)
+                // Suscripción vencida: solo consulta (necesita el negocio ya resuelto).
+                .addFilterAfter(new SubscriptionGuardFilter(subscriptions, resolver), TenantContextFilter.class);
         return http.build();
     }
 

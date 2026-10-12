@@ -63,6 +63,8 @@ public abstract class IntegrationTest {
         // Los correos se "envían" en la misma petición (después del commit) para poder leerlos en el test.
         registry.add("app.mail.async", () -> "false");
         registry.add("app.mail.public-url", () -> "http://pos.test");
+        // Los avisos de suscripción se prueban llamando sendDue(); la tarea diaria no corre en las pruebas.
+        registry.add("app.subscription.reminders-enabled", () -> "false");
     }
 
     @Autowired

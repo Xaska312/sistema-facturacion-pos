@@ -9,7 +9,7 @@ import org.springframework.web.util.UrlPathHelper;
  * {@code getRequestURI()} (sin decodificar): si no, {@code /api/v1/auth/%6Cogin} llegaría al login sin límite
  * (QA SEG-3).
  */
-final class RequestPaths {
+public final class RequestPaths {
 
     private static final UrlPathHelper HELPER = new UrlPathHelper();
 
@@ -21,7 +21,7 @@ final class RequestPaths {
     private RequestPaths() {
     }
 
-    static String normalized(HttpServletRequest request) {
+    public static String normalized(HttpServletRequest request) {
         String path = HELPER.getPathWithinApplication(request);
         while (path.length() > 1 && path.endsWith("/")) {
             path = path.substring(0, path.length() - 1);

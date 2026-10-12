@@ -4,11 +4,15 @@ import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
+import { Observable } from 'rxjs';
+import { Subscription, SubscriptionStatus } from '../../core/api/api.models';
 import { OrganizationApi } from '../../core/api/organization.api';
+import { SubscriptionApi } from '../../core/api/subscription.api';
 import { AuthService } from '../../core/auth/auth.service';
+import { formatDate } from '../../shared/format';
+import { formatCop } from '../../shared/money';
 import { FormDialogComponent } from '../../shared/forms/form-dialog.component';
 import { PageHeaderComponent } from '../../shared/page-header.component';
-import { Observable } from 'rxjs';
 
 /** Zonas horarias de Colombia y vecinas más usadas; el backend acepta cualquier zona IANA válida. */
 export const TIMEZONES = ['America/Bogota', 'America/Panama', 'America/Lima', 'America/Guayaquil', 'America/Caracas'];
@@ -32,6 +36,82 @@ const TIMEZONE_LABEL: Record<string, string> = {
   imports: [ReactiveFormsModule, FormsModule, ButtonModule, InputTextModule, PageHeaderComponent, FormDialogComponent],
   template: `
     <app-page-header title="Ajustes del negocio" description="Cómo funciona tu negocio: inventario, impuestos, zona horaria, moneda y tiquete." />
+
+    @if (sub(); as s) {
+      <section class="card p-4 md:p-6 mb-6 flex flex-col gap-4 max-w-2xl">
+        <h2 class="text-base font-semibold">Suscripción</h2>
+        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+          <div class="flex flex-col gap-1">
+            <dt class="text-muted">Plan</dt>
+            <dd class="font-medium">{{ s.plan.name }}</dd>
+          </div>
+          <div class="flex flex-col gap-1">
+            <dt class="text-muted">Estado</dt>
+            <dd>{{ statusLabel(s.status) }}</dd>
+          </div>
+          <div class="flex flex-col gap-1">
+            <dt class="text-muted">Inicio</dt>
+            <dd>{{ formatDate(s.startedAt) }}</dd>
+          </div>
+          <div class="flex flex-col gap-1">
+            <dt class="text-muted">Fin</dt>
+            <dd>{{ formatDate(s.endsAt) }} @if (s.daysLeft > 0) { <span class="text-muted">({{ s.daysLeft === 1 ? 'queda 1 día' : 'quedan ' + s.daysLeft + ' días' }})</span> }</dd>
+          </div>
+          <div class="flex flex-col gap-1">
+            <dt class="text-muted">Uso de sucursales</dt>
+            <dd>{{ s.usage.branches }} de {{ s.plan.maxBranches ?? 'sin límite' }}</dd>
+          </div>
+          <div class="flex flex-col gap-1">
+            <dt class="text-muted">Uso de usuarios</dt>
+            <dd>{{ s.usage.users }} de {{ s.plan.maxUsers ?? 'sin límite' }}</dd>
+          </div>
+          @if (s.plan.monthlyPrice !== null || s.plan.annualPrice !== null) {
+            <div class="flex flex-col gap-1 sm:col-span-2">
+              <dt class="text-muted">Precio</dt>
+              <dd>
+                @if (s.plan.monthlyPrice !== null) { {{ cop(s.plan.monthlyPrice) }} mes }
+                @if (s.plan.monthlyPrice !== null && s.plan.annualPrice !== null) { <span class="text-muted mx-1">•</span> }
+                @if (s.plan.annualPrice !== null) { {{ cop(s.plan.annualPrice) }} año }
+              </dd>
+            </div>
+          }
+          <div class="flex flex-col gap-1 sm:col-span-2">
+            <dt class="text-muted">Cómo pagar</dt>
+            <dd>{{ s.paymentInstructions }}</dd>
+          </div>
+        </dl>
+
+        @if (s.payments.length > 0) {
+          <h3 class="text-sm font-semibold mt-2">Pagos registrados</h3>
+          <div class="overflow-x-auto border border-line rounded">
+            <table class="w-full text-left text-sm whitespace-nowrap">
+              <caption class="sr-only">Pagos registrados</caption>
+              <thead class="bg-surface-alt border-b border-line text-muted">
+                <tr>
+                  <th scope="col" class="p-2 font-medium">Fecha</th>
+                  <th scope="col" class="p-2 font-medium">Periodo</th>
+                  <th scope="col" class="p-2 font-medium">Valor</th>
+                  <th scope="col" class="p-2 font-medium">Medio</th>
+                  <th scope="col" class="p-2 font-medium">Referencia</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-line">
+                @for (p of s.payments; track p.id) {
+                  <tr>
+                    <td class="p-2">{{ formatDate(p.createdAt) }}</td>
+                    <td class="p-2">{{ formatDate(p.periodStart) }} – {{ formatDate(p.periodEnd) }}</td>
+                    <td class="p-2">{{ p.source === 'CODE' ? '—' : cop(p.amount) }}</td>
+                    <td class="p-2">{{ p.source === 'CODE' ? 'Código de activación' : p.method }}</td>
+                    <td class="p-2">{{ p.reference ?? '—' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+    }
+
     <form [formGroup]="form" (ngSubmit)="save()" class="card p-4 md:p-6 flex flex-col gap-4 max-w-2xl">
       <fieldset [disabled]="!canEdit()" class="flex flex-col gap-4">
         <label class="flex items-start gap-3">
@@ -124,9 +204,14 @@ const TIMEZONE_LABEL: Record<string, string> = {
 })
 export class SettingsComponent implements OnInit {
   private readonly api = inject(OrganizationApi);
+  private readonly subscriptionApi = inject(SubscriptionApi);
   private readonly messages = inject(MessageService);
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
+
+  protected readonly formatDate = formatDate;
+  protected readonly cop = formatCop;
+
   protected readonly canEdit = computed(() => this.auth.hasPermission('settings:manage'));
   /** Solo el dueño puede eliminar (cerrar) el negocio; el backend lo vuelve a comprobar. */
   protected readonly isOwner = computed(() => this.auth.currentTenant()?.owner === true);
@@ -140,6 +225,7 @@ export class SettingsComponent implements OnInit {
     return TIMEZONE_LABEL[zone] ?? zone;
   }
   protected readonly saving = signal(false);
+  protected readonly sub = signal<Subscription | null>(null);
 
   protected readonly form = inject(FormBuilder).nonNullable.group({
     allowNegativeStock: [false],
@@ -154,6 +240,19 @@ export class SettingsComponent implements OnInit {
     this.api.settings().subscribe((settings) => {
       this.form.reset(settings);
     });
+    this.subscriptionApi.current().subscribe({
+      next: (s) => this.sub.set(s),
+      error: () => { /* ignore */ }
+    });
+  }
+
+  protected statusLabel(status: SubscriptionStatus): string {
+    switch (status) {
+      case 'TRIAL': return 'Prueba gratis';
+      case 'ACTIVE': return 'Activa';
+      case 'PAST_DUE': return 'Vencida, en gracia';
+      case 'EXPIRED': return 'Vencida';
+    }
   }
 
   save(): void {

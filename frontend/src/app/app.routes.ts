@@ -76,6 +76,24 @@ export const routes: Routes = [
           import('./features/platform/platform-tenants.component').then((m) => m.PlatformTenantsComponent),
       },
       {
+        path: 'suscripciones',
+        title: 'Plataforma: suscripciones',
+        loadComponent: () =>
+          import('./features/platform/platform-subscriptions.component').then((m) => m.PlatformSubscriptionsComponent),
+      },
+      {
+        path: 'codigos',
+        title: 'Plataforma: códigos de activación',
+        loadComponent: () =>
+          import('./features/platform/platform-codes.component').then((m) => m.PlatformCodesComponent),
+      },
+      {
+        path: 'planes',
+        title: 'Plataforma: planes',
+        loadComponent: () =>
+          import('./features/platform/platform-plans.component').then((m) => m.PlatformPlansComponent),
+      },
+      {
         path: 'seguridad',
         title: 'Plataforma: eventos de seguridad',
         loadComponent: () =>

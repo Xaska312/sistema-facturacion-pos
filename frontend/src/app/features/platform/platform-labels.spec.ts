@@ -1,5 +1,8 @@
 import { eventRange } from '../../core/api/platform.api';
-import { eventDetail, eventLabel, isWarningEvent, suspendedMessage, tenantStatusKey } from './platform-labels';
+import {
+  CODE_STATUS_LABEL, SUBSCRIPTION_STATUS_LABEL, codeStatusKey, daysLeftText, eventDetail, eventLabel, isWarningEvent,
+  limitText, subscriptionStatusKey, suspendedMessage, tenantStatusKey,
+} from './platform-labels';
 
 describe('platform-labels', () => {
   it('nombra los eventos y resalta los de cuidado', () => {
@@ -33,5 +36,22 @@ describe('platform-labels', () => {
     expect(range.from).toBe(new Date(2026, 9, 1).toISOString());
     expect(range.to).toBe(new Date(2026, 9, 7).toISOString());
     expect(eventRange(null, 'mal').to).toBeNull();
+  });
+
+  it('nombra y colorea los estados de suscripción y de los códigos (fase 8b)', () => {
+    expect(SUBSCRIPTION_STATUS_LABEL.PAST_DUE).toBe('En gracia');
+    expect(subscriptionStatusKey('TRIAL')).toBe('open');
+    expect(subscriptionStatusKey('EXPIRED')).toBe('expired');
+    expect(CODE_STATUS_LABEL.REVOKED).toBe('Anulado');
+    expect(codeStatusKey('AVAILABLE')).toBe('active');
+    expect(codeStatusKey('USED')).toBe('inactive');
+  });
+
+  it('escribe los días que faltan y los límites', () => {
+    expect(daysLeftText(5)).toBe('en 5 días');
+    expect(daysLeftText(1)).toBe('mañana');
+    expect(daysLeftText(0)).toBe('vencida');
+    expect(limitText(null)).toBe('Sin límite');
+    expect(limitText(3)).toBe('3');
   });
 });

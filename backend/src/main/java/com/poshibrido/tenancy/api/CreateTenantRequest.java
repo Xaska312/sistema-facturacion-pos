@@ -13,5 +13,7 @@ public record CreateTenantRequest(
         String slug,
         @NotBlank @Size(max = 200) String legalName,
         @NotBlank @Size(max = 200) String tradeName,
-        @NotNull BusinessType businessType) {
+        @NotNull BusinessType businessType,
+        // Opcional: sin código, prueba gratis (solo el primer negocio de la cuenta). Fase 8b.
+        @Size(max = 40) String activationCode) {
 }

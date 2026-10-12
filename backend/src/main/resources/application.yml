@@ -76,6 +76,16 @@ app:
   auth:
     # Exigir correo confirmado para crear un negocio.
     require-email-verification: ${EMAIL_VERIFICATION_REQUIRED:true}
+  subscription:
+    # Prueba gratis del primer negocio de cada cuenta (días y plan cuyos límites aplica).
+    trial-days: ${SUBSCRIPTION_TRIAL_DAYS:14}
+    trial-plan: PRO
+    # Días que un plan pagado vencido sigue funcionando antes de quedar en solo consulta.
+    grace-days: 3
+    # Cómo pagar: cuenta, Nequi y a quién enviar el comprobante. Sale en la app y en los correos de aviso.
+    payment-instructions: ${SUBSCRIPTION_PAYMENT_INSTRUCTIONS:Comunícate con soporte para renovar.}
+    # Correos diarios de aviso (9 a. m. de Colombia).
+    reminders-enabled: ${SUBSCRIPTION_REMINDERS_ENABLED:true}
 
 springdoc:
   api-docs:

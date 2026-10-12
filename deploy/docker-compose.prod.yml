@@ -83,6 +83,10 @@ services:
       MAIL_FROM: ${MAIL_FROM:-POS Híbrido <onboarding@resend.dev>}
       APP_PUBLIC_URL: ${APP_PUBLIC_URL:-https://${DOMAIN}}
       EMAIL_VERIFICATION_REQUIRED: ${EMAIL_VERIFICATION_REQUIRED:-true}
+      # Suscripciones (fase 8b): cómo pagar (sale en la app y en los correos) y días de prueba gratis.
+      SUBSCRIPTION_PAYMENT_INSTRUCTIONS: ${SUBSCRIPTION_PAYMENT_INSTRUCTIONS:-Comunícate con soporte para renovar.}
+      SUBSCRIPTION_TRIAL_DAYS: ${SUBSCRIPTION_TRIAL_DAYS:-14}
+      SUBSCRIPTION_REMINDERS_ENABLED: ${SUBSCRIPTION_REMINDERS_ENABLED:-true}
     depends_on:
       postgres-db:
         condition: service_healthy

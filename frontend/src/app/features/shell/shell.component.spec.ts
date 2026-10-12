@@ -2,8 +2,10 @@ import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { Router, provideRouter } from '@angular/router';
-import { of } from 'rxjs';
+import { EMPTY, of } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
+import { Subscription } from '../../core/api/api.models';
+import { SubscriptionApi } from '../../core/api/subscription.api';
 import { UI_PREF_KEYS } from '../../shared/ui-prefs';
 import { ShellComponent } from './shell.component';
 
@@ -41,6 +43,8 @@ describe('ShellComponent', () => {
           },
         ]),
         { provide: AuthService, useValue: auth },
+        // Por defecto la suscripción no responde: sin aviso (fase 8b).
+        { provide: SubscriptionApi, useValue: { current: () => EMPTY } },
       ],
     }).compileComponents();
   });
@@ -112,5 +116,17 @@ describe('ShellComponent', () => {
     await TestBed.inject(Router).navigateByUrl('/app');
     fixture.detectChanges();
     await fixture.whenStable();
+  });
+
+  it('avisa que la prueba gratis está por terminar y cómo pagar (fase 8b)', () => {
+    const trial = {
+      status: 'TRIAL', daysLeft: 2, graceEndsAt: null, paymentInstructions: 'Nequi 300 000 0000',
+    } as unknown as Subscription;
+    TestBed.overrideProvider(SubscriptionApi, { useValue: { current: () => of(trial) } });
+    const fixture = TestBed.createComponent(ShellComponent);
+    fixture.detectChanges();
+    const banner = (fixture.nativeElement as HTMLElement).querySelector('[role="status"]');
+    expect(banner?.textContent).toContain('Tu prueba gratis termina en 2 días.');
+    expect(banner?.textContent).toContain('Nequi 300 000 0000');
   });
 });

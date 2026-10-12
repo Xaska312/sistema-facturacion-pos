@@ -11,6 +11,7 @@ import com.poshibrido.shared.error.ConflictException;
 import com.poshibrido.shared.error.EmailNotVerifiedException;
 import com.poshibrido.shared.error.NotFoundException;
 import com.poshibrido.shared.error.ServiceUnavailableException;
+import com.poshibrido.subscription.application.SubscriptionApi;
 import com.poshibrido.tenancy.domain.Tenant;
 import com.poshibrido.tenancy.domain.TenantSchemas;
 import com.poshibrido.tenancy.domain.TenantStatus;
@@ -49,11 +50,13 @@ public class TenantProvisioningService {
     private final SecurityEventLogger securityEvents;
     private final AuditLogger audit;
     private final boolean requireEmailVerification;
+    private final SubscriptionApi subscriptions;
 
     public TenantProvisioningService(TenantRepository tenants, TenantSchemaManager schemaManager,
                                      TenantDataSeeder seeder, MembershipApi memberships, UserApi users,
                                      TenantDirectory directory, PlatformTransactionManager transactionManager,
                                      SecurityEventLogger securityEvents, AuditLogger audit,
+                                     SubscriptionApi subscriptions,
                                      @Value("${app.auth.require-email-verification:true}")
                                      boolean requireEmailVerification) {
         this.tenants = tenants;
@@ -66,6 +69,7 @@ public class TenantProvisioningService {
         this.securityEvents = securityEvents;
         this.audit = audit;
         this.requireEmailVerification = requireEmailVerification;
+        this.subscriptions = subscriptions;
     }
 
     public TenantSummary create(UUID ownerId, CreateTenantCommand command) {
@@ -86,8 +90,12 @@ public class TenantProvisioningService {
             if (tenants.existsBySlug(command.slug())) {
                 throw new ConflictException("Ya existe un negocio con el identificador '" + command.slug() + "'.");
             }
-            return tenants.save(Tenant.startProvisioning(command.slug(), command.legalName().trim(),
+            // Se escribe ya: la suscripción (SQL) referencia la fila del negocio.
+            Tenant tenant = tenants.saveAndFlush(Tenant.startProvisioning(command.slug(), command.legalName().trim(),
                     command.tradeName().trim(), command.businessType(), ownerId));
+            // Prueba gratis o código de activación; si no hay ninguno de los dos, 422 y no se crea nada.
+            subscriptions.startForNewTenant(tenant.getId(), ownerId, command.activationCode());
+            return tenant;
         });
         return provision(created.getId(), owner);
     }
@@ -102,6 +110,7 @@ public class TenantProvisioningService {
                 throw new ConflictException("Solo se puede reintentar un negocio cuyo aprovisionamiento falló.");
             }
             tenant.retryProvisioning();
+            subscriptions.restartTrialOnRetry(tenantId);
         });
         return provision(tenantId, owner);
     }

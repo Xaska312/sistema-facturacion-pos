@@ -16,6 +16,7 @@ import com.poshibrido.organization.application.BranchApi.BranchRef;
 import com.poshibrido.shared.error.BusinessRuleException;
 import com.poshibrido.shared.error.ConflictException;
 import com.poshibrido.shared.security.CurrentActor;
+import com.poshibrido.subscription.application.SubscriptionApi;
 import com.poshibrido.tenancy.application.CurrentTenant;
 import com.poshibrido.tenancy.application.TenantApi;
 import com.poshibrido.tenancy.application.TenantInfo;
@@ -58,6 +59,7 @@ public class MemberInvitationService {
     private final TenantApi tenants;
     private final Mailer mailer;
     private final MailTemplates templates;
+    private final SubscriptionApi subscriptions;
 
     public record Created(InvitationDetails invitation, String token) {
     }
@@ -84,6 +86,8 @@ public class MemberInvitationService {
                         .flatMap(r -> r.getPermissionCodes().stream())
                         .collect(Collectors.toSet()), "volver a invitar a este usuario"));
 
+        // Límite de usuarios del plan: miembros activos + invitaciones pendientes (fase 8b).
+        subscriptions.requireCanAddUser(tenant);
         InvitationApi.Created created = invitations.create(tenant.id(), email, roleIds, branchIds,
                 CurrentActor.requireUserId());
         Map<String, Object> after = new LinkedHashMap<>();

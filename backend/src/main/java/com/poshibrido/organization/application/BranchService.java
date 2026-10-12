@@ -7,6 +7,8 @@ import com.poshibrido.organization.infrastructure.BranchRepository;
 import com.poshibrido.shared.error.BusinessRuleException;
 import com.poshibrido.shared.error.ConflictException;
 import com.poshibrido.shared.error.NotFoundException;
+import com.poshibrido.subscription.application.SubscriptionApi;
+import com.poshibrido.tenancy.application.CurrentTenant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,6 +29,7 @@ public class BranchService implements BranchApi {
     private final BranchRepository branches;
     private final LocationApi locations;
     private final AuditLogger audit;
+    private final SubscriptionApi subscriptions;
 
     public record BranchData(String name, String address, String cityCode, String phone) {
     }
@@ -48,6 +51,8 @@ public class BranchService implements BranchApi {
             throw new ConflictException("Ya existe una sucursal con el código " + code + ".");
         }
         String cityCode = validCity(data.cityCode());
+        // Límite de sucursales activas del plan (fase 8b).
+        subscriptions.requireCanAddBranch(CurrentTenant.require());
         Branch branch = branches.save(Branch.create(code, data.name().trim(), blankToNull(data.address()),
                 cityCode, blankToNull(data.phone())));
         audit.log("BRANCH_CREATED", "branch", branch.getId(), null, snapshot(branch));
@@ -82,6 +87,7 @@ public class BranchService implements BranchApi {
     public Branch activate(UUID id) {
         Branch branch = get(id);
         if (!branch.isActive()) {
+            subscriptions.requireCanAddBranch(CurrentTenant.require());
             branch.activate();
             audit.log("BRANCH_ACTIVATED", "branch", id, null, null);
         }
