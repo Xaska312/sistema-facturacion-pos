@@ -131,7 +131,7 @@ Leer: `parties:read`. Modificar: `parties:manage`.
 | POST | `/customers/{id}/activate` · `/deactivate` | El tercero del sistema no se modifica (422) |
 | GET/POST/PUT | `/suppliers` … | Igual, sin lista ni cupo |
 
-Datos del tercero: `{personType: NATURAL|LEGAL, documentType: CC|CE|NIT|PASSPORT|TI|PEP, documentNumber, verificationDigit (solo NIT), firstNames, lastNames | businessName, email, phone, address, cityCode}`. Persona jurídica = NIT. El DV se valida con el algoritmo de la DIAN (422 indicando el DV correcto).
+Datos del tercero: `{personType: NATURAL|LEGAL, documentType: CC|CE|NIT|PASSPORT|TI|PEP|PPT|TE|RC|NUIP|FOREIGN_ID|FOREIGN_NIT, documentNumber, verificationDigit (solo NIT), firstNames, lastNames | businessName, email, phone, address, cityCode}`. Persona jurídica = NIT o FOREIGN_NIT (NIT de otro país, sin DV); FOREIGN_NIT no sirve para persona natural (422). El DV se valida con el algoritmo de la DIAN (422 indicando el DV correcto).
 
 ## Inventario (Fase 4)
 Leer: `inventory:read`. Ajustes, saldos iniciales, conteos y mínimos: `inventory:adjust`. Traslados: `inventory:transfer`.

@@ -2,6 +2,7 @@ import { Component, computed, input } from '@angular/core';
 import { Sale } from '../../core/api/api.models';
 import { formatCop, formatQuantity } from '../money';
 import { ReceiptWidth } from './receipt-prefs';
+import { documentShortLabel } from '../document-types';
 
 /**
  * Tiquete de venta para impresora térmica de 58 u 80 mm. El mismo componente sirve de vista previa y, con la
@@ -26,7 +27,7 @@ import { ReceiptWidth } from './receipt-prefs';
       <p>{{ date() }}</p>
       <p>Caja {{ s.receipt.registerCode }} · {{ s.createdByName }}</p>
       <p>Cliente: {{ s.customerName }}</p>
-      <p>{{ s.customerDocumentType }} {{ document() }}</p>
+      <p>{{ shortDocType() }} {{ document() }}</p>
       @if (s.status === 'VOIDED') {
         <p class="center bold mt">*** VENTA ANULADA ***</p>
         <p class="center">{{ s.voidReason }}</p>
@@ -101,6 +102,9 @@ export class ReceiptComponent {
       return new Date(s.createdAt).toLocaleString('es-CO');
     }
   });
+
+  /** "PASSPORT" → "PA" (fase 8a). */
+  protected readonly shortDocType = computed(() => documentShortLabel(this.sale().customerDocumentType));
 
   protected readonly document = computed(() => {
     const s = this.sale();

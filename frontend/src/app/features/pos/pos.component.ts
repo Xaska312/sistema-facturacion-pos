@@ -54,6 +54,7 @@ import {
 } from './sale-math';
 import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
 import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
+import { documentShortLabel } from '../../shared/document-types';
 
 interface CustomerChoice {
   id: string;
@@ -167,7 +168,7 @@ const STOCK_PAGES = 5;
           <li>
             <button type="button" class="w-full min-h-11 text-left p-2 hover:bg-surface-alt" (click)="pickCustomer(c)">
               <span class="font-medium">{{ c.displayName }}</span>
-              <span class="text-sm text-muted"> · {{ c.documentType }} {{ c.formattedDocument }}</span>
+              <span class="text-sm text-muted"> · {{ docShort(c.documentType) }} {{ c.formattedDocument }}</span>
               @if (c.priceListName) {
                 <span class="text-xs text-brand"> · {{ c.priceListName }}</span>
               }
@@ -430,6 +431,7 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   private readonly cart = viewChild(CartPanelComponent);
 
   protected readonly cop = formatCop;
+  protected readonly docShort = documentShortLabel;
   protected readonly methodIcon = methodIcon;
   protected readonly methodLabel = methodLabel;
   protected readonly shortcuts = POS_SHORTCUTS;
@@ -730,7 +732,7 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
     this.setCustomer({
       id: party.id,
       name: party.displayName,
-      document: `${party.documentType} ${party.formattedDocument}`,
+      document: `${documentShortLabel(party.documentType)} ${party.formattedDocument}`,
       priceListId: party.priceListId,
     });
   }

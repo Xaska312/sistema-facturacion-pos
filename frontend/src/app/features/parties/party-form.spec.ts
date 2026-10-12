@@ -14,6 +14,13 @@ describe('party-form', () => {
     expect(draftProblem({ ...emptyDraft(), documentNumber: '123', firstNames: 'Ana', lastNames: 'Gómez' })).toBeNull();
   });
 
+  it('el NIT de otro país es solo para empresas (fase 8a)', () => {
+    expect(draftProblem({ ...emptyDraft(), personType: 'LEGAL', documentType: 'FOREIGN_NIT', documentNumber: 'EXT-1',
+      businessName: 'X' })).toBeNull();
+    expect(draftProblem({ ...emptyDraft(), documentType: 'FOREIGN_NIT', documentNumber: 'EXT-1', firstNames: 'Ana',
+      lastNames: 'Gómez' })).toContain('NIT de otro país');
+  });
+
   it('envía solo los campos del tipo de persona y los de cliente cuando aplica', () => {
     const d = { ...emptyDraft(), personType: 'LEGAL' as const, documentType: 'NIT' as const,
       documentNumber: '800197268', businessName: ' Empresa ', firstNames: 'x', creditLimit: 1000 };

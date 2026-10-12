@@ -178,6 +178,31 @@ class PartiesIT extends IntegrationTest {
                 .isEqualTo("Solo de A");
     }
 
+    @Test
+    void foreignAndOtherColombianDocuments() throws Exception {
+        // Fase 8a: PPT, NUIP, NIT de otro país (solo empresas, sin DV) y demás documentos con código DIAN.
+        Owned owner = api.newTenant("ter6");
+        api.postWith(owner.tenant(), "/api/v1/customers", natural("PPT", "A1B2C3D4", "Persona", "Con PPT"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.documentType").value("PPT"));
+        api.postWith(owner.tenant(), "/api/v1/customers", """
+                {"personType":"LEGAL","documentType":"FOREIGN_NIT","documentNumber":"EXT-9988",
+                 "businessName":"Empresa Extranjera"}
+                """).andExpect(status().isCreated());
+        api.postWith(owner.tenant(), "/api/v1/customers", natural("FOREIGN_NIT", "EXT-1234", "Juan", "Extranjero"))
+                .andExpect(status().is(422));
+        api.postWith(owner.tenant(), "/api/v1/customers", """
+                {"personType":"LEGAL","documentType":"PPT","documentNumber":"A1B2C3D5","businessName":"X"}
+                """).andExpect(status().is(422));
+        api.postWith(owner.tenant(), "/api/v1/customers", natural("NUIP", "A123456789", "Niño", "Gómez"))
+                .andExpect(status().is(422));
+        // La venta guarda una copia del tipo de documento: la columna admite 'FOREIGN_NIT' (11 caracteres).
+        Integer width = jdbc.queryForObject("SELECT character_maximum_length FROM information_schema.columns"
+                + " WHERE table_schema = ? AND table_name = 'sales' AND column_name = 'customer_document_type'",
+                Integer.class, "t_" + owner.slug());
+        assertThat(width).isGreaterThanOrEqualTo(11);
+    }
+
     private static String natural(String type, String number, String firstNames, String lastNames) {
         return """
                 {"personType":"NATURAL","documentType":"%s","documentNumber":"%s","firstNames":"%s","lastNames":"%s"}

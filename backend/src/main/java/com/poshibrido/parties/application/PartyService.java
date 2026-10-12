@@ -173,8 +173,11 @@ public class PartyService {
             }
             dv = expected;
         }
-        if (c.personType() == PersonType.LEGAL && c.documentType() != DocumentType.NIT) {
-            throw new BusinessRuleException("Una persona jurídica se identifica con NIT.");
+        if (c.personType() == PersonType.LEGAL && !c.documentType().forLegalPerson()) {
+            throw new BusinessRuleException("Una persona jurídica se identifica con NIT (o NIT de otro país).");
+        }
+        if (c.personType() == PersonType.NATURAL && c.documentType() == DocumentType.FOREIGN_NIT) {
+            throw new BusinessRuleException("El NIT de otro país es solo para personas jurídicas.");
         }
         String firstNames = blankToNull(c.firstNames());
         String lastNames = blankToNull(c.lastNames());
