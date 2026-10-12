@@ -5,6 +5,8 @@ POS web multi-negocio para comercios en Colombia. Backend Spring Boot 4.1 (Java 
 - Arquitectura: [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md)
 - API: [`docs/API.md`](docs/API.md)
 - Decisiones: [`docs/DECISIONES.md`](docs/DECISIONES.md)
+- QA: informe final [`docs/QA.md`](docs/QA.md) y lista de pruebas manuales [`docs/PRUEBAS-MANUALES.md`](docs/PRUEBAS-MANUALES.md)
+- Manual de uso para los clientes: en la app, `/manual` (contenido en `frontend/src/app/features/manual/manual-content.ts`)
 - Despliegue en producción (Hetzner, HTTPS, respaldos en Google Drive): [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md)
 - Ver la app por dentro (consola de plataforma, pgAdmin, logs, Swagger): [`docs/GUIA-DESARROLLO.md`](docs/GUIA-DESARROLLO.md)
 - Mejora de interfaz (UX): [`docs/UX-1.md`](docs/UX-1.md), [`docs/UX-2.md`](docs/UX-2.md), [`docs/UX-3.md`](docs/UX-3.md), [`docs/UX-4.md`](docs/UX-4.md), [`docs/UX-5.md`](docs/UX-5.md) (auditoría: [`docs/UX-5-AUDITORIA.md`](docs/UX-5-AUDITORIA.md))
@@ -20,7 +22,9 @@ POS web multi-negocio para comercios en Colombia. Backend Spring Boot 4.1 (Java 
 | 5 — Caja y ventas | ✅ Completada (probada en local el 2026-10-05 con la cuenta demo) |
 | 6 — Reportes y dashboard | ✅ Completada (validada en local el 2026-10-05) |
 | Mejora de UX (UX-1 a UX-5) | ✅ Completada (validada el 2026-10-05) |
-| 7 — Endurecimiento para producción | 🚧 En curso: 7-1 producción y respaldos ([`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md)), 7-2 auditoría completa, 7-3 consola de plataforma y límites, 7-4 correos (confirmar cuenta, invitaciones, contraseña olvidada), 7-5 CI con lint y e2e en cada PR, manual de uso, 7-6 QA completo (informe en [`docs/QA.md`](docs/QA.md)) |
+| 7 — Endurecimiento para producción | ✅ Completada (2026-10-11): producción y respaldos, auditoría, consola de plataforma, correos, CI con lint y e2e, manual de uso y QA completo |
+| 8 — Antes de lanzar | 🚧 En curso: 8a tipos de documento ✅, 8b suscripciones ✅, 8d tallas y colores ✅, 8c marca del negocio ✅, 8e báscula 🚧 |
+| 9 — Despliegue acompañado | ⏳ Pendiente: servidor de pruebas → prueba de carga y lista manual → producción |
 
 ## Requisitos
 - **Docker Desktop** (o Docker Engine + Compose). Debe estar en estado *Engine running* antes de levantar el proyecto o correr los tests.
@@ -85,6 +89,7 @@ Usuarios (contraseña `DemoPos2026`): `dueno@tienda-demo.test`, `cajero@tienda-d
 cd backend; .\mvnw.cmd verify     # unitarios + integración (*IT) con Testcontainers (requiere Docker)
 cd frontend; npm run test:ci       # Karma + ChromeHeadless
 cd frontend; npm run lint          # ESLint + angular-eslint (también corre en el CI)
+cd frontend; npm run check:colors  # sin colores literales en las pantallas (también corre en el CI)
 ```
 **Linux / macOS**
 ```bash
@@ -287,7 +292,7 @@ Validada en local: 46 tests en verde; invitación por enlace, menú por permisos
 6. *Mi caja*: registra un retiro y *Cerrar caja* contando el efectivo. Como dueño, *Historial de caja* muestra el esperado y la diferencia; como cajero, no.
 7. Como vendedor (sin `cash:operate`): ve la pantalla de venta pero no puede cobrar sin caja abierta; no ve *Mi caja* ni puede anular.
 
-## Fase 6 — Reportes y dashboard 🧪
+## Fase 6 — Reportes y dashboard ✅
 
 **Incluye**
 - **Tablero en Inicio** (permiso `reports:read`: dueño, administrador, contador): ventas de hoy frente a ayer, número de ventas, ticket promedio, utilidad y margen; gráficas de ventas por hora, últimos 7 días, productos más vendidos y medios de pago.
@@ -316,3 +321,41 @@ Validada en local: 46 tests en verde; invitación por enlace, menú por permisos
 2. Entra como `dueno@tienda-demo.test`: en *Inicio* aparece el tablero del día.
 3. *Reportes*: revisa cada pestaña, cambia el rango y la sucursal, y exporta el CSV; ábrelo en Excel.
 4. Entra como `cajero@tienda-demo.test`: en *Inicio* ve solo *Mis ventas de hoy* y no tiene *Reportes*.
+
+## Fase 7 — Endurecimiento para producción ✅
+
+| Parte | Qué incluye |
+|---|---|
+| 7-1 Producción y respaldos | Imágenes Docker (backend, web con Caddy y HTTPS automático, respaldos), `deploy/docker-compose.prod.yml`, respaldos diarios cifrados a Google Drive con prueba de restauración semanal. Guía: [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md) |
+| 7-2 Auditoría | Pantalla *Auditoría* (quién hizo qué, antes y después), exportar CSV; eventos de seguridad de la plataforma (entradas, intentos fallidos, bloqueos) |
+| 7-3 Consola de plataforma | `/plataforma` para el administrador (correo en `PLATFORM_ADMIN_EMAILS`): negocios, suspender y reactivar, eventos de seguridad; límites de uso por usuario |
+| 7-4 Correos | Confirmar la cuenta, invitaciones por correo, olvidé mi contraseña y avisos (Resend en producción, Mailpit en local) |
+| 7-5 CI y manual | Lint, pruebas y e2e en cada PR; manual de uso público en `/manual` |
+| 7-6 QA completo | Revisión de seguridad, dinero, inventario e interfaz: 45 hallazgos, 42 corregidos ([`docs/QA.md`](docs/QA.md)); e2e por rol y prueba de carga k6 ([`loadtest/README.md`](loadtest/README.md)) |
+
+## Fase 8 — Antes de lanzar 🚧
+
+**8a — Tipos de documento.** Cédula de extranjería, PPT, tarjeta de extranjería, registro civil, NUIP, documento y NIT
+extranjeros para clientes y proveedores.
+
+**8b — Suscripciones.** Planes Básico y Pro (mensual o anual) con límites de sucursales y usuarios; prueba gratis de
+14 días o código de activación al crear el negocio; aviso antes de vencer (franja y correos); vencido = solo consulta.
+El administrador registra pagos, cambia planes y genera códigos en la consola de plataforma. Ver *Ajustes → Suscripción*.
+
+**8d — Tallas y colores.** *Productos → Con tallas*: un modelo con un solo precio crea una variante por talla × color,
+cada una con SKU, código de barras propio y existencia. Escalas de tallas (calzado Colombia, EU, US, niño; ropa) con
+equivalencias editables. En *Vender* el modelo es una tarjeta y se elige la talla; en inventario, cuadrícula
+talla × color ("Por tallas").
+
+**8c — Marca del negocio.** *Ajustes → Marca*: logo (encabezado y tiquete) y color de la app entre 8 de una paleta con
+contraste revisado en claro y oscuro. El pie del tiquete está en *Ajustes del negocio*.
+
+| Qué | Test |
+|---|---|
+| Tipos de documento y NIT | `PartiesIT` |
+| Prueba gratis, códigos, vencimiento, límites del plan, consola | `SubscriptionIT` y specs de `features/platform` |
+| Modelos, variantes, escalas, saldos por talla | `ProductModelIT`, `model-grid.spec`, `pos-cards.spec`, `variant-picker.component.spec` |
+| Color y logo (solo PNG/JPG/WebP reales, permisos) | `BrandingIT`, `image-shrink.spec` |
+
+**Probar a mano:** *Productos → Con tallas → Nuevo modelo* (tallas 38–42, colores Negro y Blanco), saldo inicial con
+"Por tallas", vender eligiendo la talla; *Ajustes → Marca*: subir logo, probar colores y revisar el tiquete.
