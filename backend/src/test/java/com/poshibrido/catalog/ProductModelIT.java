@@ -110,6 +110,9 @@ class ProductModelIT extends IntegrationTest {
                 .andExpect(status().isCreated())
                 // Las tallas en letras van sin la "T": "Camiseta S", no "Camiseta TS".
                 .andExpect(jsonPath("$.variants[0].name").value("Camiseta S"));
+        // Precio en cero: las tallas se venderían gratis
+        api.postWith(s, "/api/v1/product-models", json.replace("CAM", "CAM0").replace("40000", "0")
+                .formatted(IVA19, ROPA_LETRAS, "[\"S\"]")).andExpect(status().isBadRequest());
         // Prefijo repetido
         api.postWith(s, "/api/v1/product-models", json.formatted(IVA19, ROPA_LETRAS, "[\"S\"]"))
                 .andExpect(status().isConflict());
@@ -136,10 +139,17 @@ class ProductModelIT extends IntegrationTest {
     void balancesOfSeveralVariantsInOneCall() throws Exception {
         Owned owner = api.newTenant("modelo3");
         Session s = owner.tenant();
+        String shoes = JsonPath.read(body(api.postWith(s, "/api/v1/categories", """
+                {"name":"Calzado"}
+                """).andExpect(status().isCreated())), "$.id");
         String model = body(api.postWith(s, "/api/v1/product-models", """
                 {"skuPrefix":"SAN","name":"Sandalia","taxId":"%s","salePrice":50000,"sizeScaleId":"%s",
-                 "sizes":["36","37"],"colors":[]}
-                """.formatted(IVA19, CALZADO_CO)).andExpect(status().isCreated()));
+                 "categoryId":"%s","sizes":["36","37"],"colors":[]}
+                """.formatted(IVA19, CALZADO_CO, shoes)).andExpect(status().isCreated()));
+        // El POS pide los modelos de cada categoría.
+        api.getWith(s, "/api/v1/product-models?categoryId=" + shoes).andExpect(jsonPath("$.totalElements").value(1));
+        api.getWith(s, "/api/v1/product-models?categoryId=" + UUID.randomUUID())
+                .andExpect(jsonPath("$.totalElements").value(0));
         String v36 = JsonPath.read(model, "$.variants[0].productId");
         String v37 = JsonPath.read(model, "$.variants[1].productId");
         UUID principal = api.principalBranchId(s);

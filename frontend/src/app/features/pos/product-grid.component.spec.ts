@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { of, throwError } from 'rxjs';
-import { Category, PageResponse, Product } from '../../core/api/api.models';
+import { Category, PageResponse, Product, ProductModelRow } from '../../core/api/api.models';
 import { CatalogApi } from '../../core/api/catalog.api';
 import { ProductGridComponent } from './product-grid.component';
 
@@ -12,8 +12,13 @@ const product = (id: string, name: string, over: Partial<Product> = {}): Product
   listPrices: [], ...over,
 });
 
-const page = (content: Product[]): PageResponse<Product> =>
+const page = <T>(content: T[]): PageResponse<T> =>
   ({ content, page: 0, size: 48, totalElements: content.length, totalPages: 1 });
+
+const model = (id: string, name: string): ProductModelRow => ({
+  id, skuPrefix: id.toUpperCase(), name, categoryName: null, salePrice: 120000, sizeScaleName: 'Calzado Colombia',
+  variants: 5, active: true,
+});
 
 describe('ProductGridComponent', () => {
   let fixture: ComponentFixture<ProductGridComponent>;
@@ -32,9 +37,10 @@ describe('ProductGridComponent', () => {
   const element = (): HTMLElement => fixture.nativeElement as HTMLElement;
 
   beforeEach(() => {
-    catalog = jasmine.createSpyObj<CatalogApi>('CatalogApi', ['categories', 'products', 'product']);
+    catalog = jasmine.createSpyObj<CatalogApi>('CatalogApi', ['categories', 'products', 'product', 'productModels']);
     catalog.categories.and.returnValue(of(categories));
-    catalog.products.and.returnValue(of(page([
+    catalog.productModels.and.returnValue(of(page<ProductModelRow>([])));
+    catalog.products.and.returnValue(of(page<Product>([
       product('a', 'Gaseosa'),
       product('b', 'Agua'),
       product('c', 'Bolsa', { trackInventory: false }),
@@ -95,5 +101,19 @@ describe('ProductGridComponent', () => {
     (chip as HTMLButtonElement).click();
     fixture.detectChanges();
     expect(element().textContent).toContain('Aún no tienes favoritos');
+  });
+
+  it('un producto con tallas es una sola tarjeta que pide la talla (fase 8d)', () => {
+    catalog.productModels.and.returnValue(of(page([model('m', 'Tenis Runner')])));
+    create();
+    expect(catalog.products).toHaveBeenCalledWith(jasmine.objectContaining({ includeVariants: false }));
+    expect(catalog.productModels).toHaveBeenCalledWith(jasmine.objectContaining({ page: 0, sort: 'name,asc' }));
+    const names = Array.from(element().querySelectorAll('.product-card .line-clamp-2')).map((n) => n.textContent?.trim());
+    expect(names).toEqual(['Agua', 'Bolsa', 'Gaseosa', 'Tenis Runner']);
+    const picked: ProductModelRow[] = [];
+    fixture.componentInstance.pickModel.subscribe((m) => picked.push(m));
+    (element().querySelector('button[aria-label^="Elegir talla de Tenis Runner"]') as HTMLButtonElement).click();
+    expect(picked.map((m) => m.id)).toEqual(['m']);
+    expect(element().querySelector('button[aria-label="Agregar a favoritos: Tenis Runner"]')).toBeNull();
   });
 });

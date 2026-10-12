@@ -67,7 +67,7 @@ public class ProductModelController {
             UUID categoryId,
             @NotNull UUID taxId,
             @DecimalMin("0") @Digits(integer = 12, fraction = 2) BigDecimal cost,
-            @NotNull @DecimalMin("0") @Digits(integer = 12, fraction = 2) BigDecimal salePrice,
+            @NotNull @DecimalMin(value = "0", inclusive = false) @Digits(integer = 12, fraction = 2) BigDecimal salePrice,
             @NotNull UUID sizeScaleId,
             @NotEmpty @jakarta.validation.constraints.Size(max = 40) List<String> sizes,
             @jakarta.validation.constraints.Size(max = 20) List<String> colors) {
@@ -85,7 +85,7 @@ public class ProductModelController {
             UUID categoryId,
             @NotNull UUID taxId,
             @DecimalMin("0") @Digits(integer = 12, fraction = 2) BigDecimal cost,
-            @NotNull @DecimalMin("0") @Digits(integer = 12, fraction = 2) BigDecimal salePrice) {
+            @NotNull @DecimalMin(value = "0", inclusive = false) @Digits(integer = 12, fraction = 2) BigDecimal salePrice) {
 
         ModelCommand toCommand() {
             return new ModelCommand(null, name, description, categoryId, taxId, cost, salePrice, null, null, null);
@@ -126,11 +126,12 @@ public class ProductModelController {
     @GetMapping("/api/v1/product-models")
     @PreAuthorize("hasAuthority('products:read')")
     public PageResponse<ModelRow> search(@RequestParam(required = false) String search,
+                                         @RequestParam(required = false) UUID categoryId,
                                          @RequestParam(defaultValue = "false") boolean includeInactive,
                                          @RequestParam(defaultValue = "0") int page,
                                          @RequestParam(defaultValue = "20") int size,
                                          @RequestParam(required = false) String sort) {
-        return PageResponse.of(models.search(search, includeInactive,
+        return PageResponse.of(models.search(search, categoryId, includeInactive,
                 PageRequests.of(page, size, sort, SORTABLE, Sort.by("name"))), r -> r);
     }
 

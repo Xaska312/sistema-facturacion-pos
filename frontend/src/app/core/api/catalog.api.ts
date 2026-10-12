@@ -31,6 +31,8 @@ export interface ProductQuery extends PageQuery {
 
 export interface ProductModelQuery extends PageQuery {
   search?: string | null;
+  /** Solo los de esa categoría (pestañas del POS). */
+  categoryId?: string | null;
   includeInactive?: boolean;
 }
 
@@ -65,6 +67,7 @@ export class CatalogApi {
     return this.http.get<PageResponse<ProductModelRow>>('/api/v1/product-models', {
       params: pageParams(query, {
         search: query.search,
+        categoryId: query.categoryId,
         includeInactive: query.includeInactive ? 'true' : null,
       }),
     });

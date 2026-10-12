@@ -8,7 +8,7 @@ import { CatalogApi } from '../../core/api/catalog.api';
 import { InventoryApi } from '../../core/api/inventory.api';
 import { FormDialogComponent } from '../../shared/forms/form-dialog.component';
 import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
-import { formatQuantity } from '../../shared/money';
+import { formatCop, formatQuantity } from '../../shared/money';
 import { gridQuantities, modelGrid } from '../products/models/model-grid';
 import { DraftLine, variantLine } from './document-lines';
 
@@ -56,7 +56,13 @@ export interface SizeGridResult {
                 <label class="flex flex-col gap-1">
                   <span class="text-sm font-medium">Costo por unidad{{ type() === 'ADJUSTMENT' ? ' (opcional)' : '' }}</span>
                   <input pInputText appPesos="2" class="w-40" [(ngModel)]="unitCost"
-                         [placeholder]="type() === 'ADJUSTMENT' ? 'Costo promedio' : ''" />
+                         [placeholder]="type() === 'ADJUSTMENT' ? 'Costo promedio' : 'Lo que pagaste'" />
+                  <small class="text-xs text-muted max-w-xs">
+                    Lo que te costó cada unidad al proveedor (no el precio al público, que es {{ cop(m.salePrice) }}).
+                  </small>
+                  @if (costAbovePrice(m)) {
+                    <small class="text-xs text-warning max-w-xs">Es mayor que el precio de venta: revisa que no estén al revés.</small>
+                  }
                 </label>
               }
             </div>
@@ -150,6 +156,7 @@ export class SizeGridDialogComponent {
   readonly applied = output<SizeGridResult>();
 
   protected readonly q = formatQuantity;
+  protected readonly cop = formatCop;
   protected readonly selected = signal<ProductModel | null>(null);
   protected readonly results = signal<ProductModelRow[]>([]);
   protected readonly searching = signal(false);
@@ -221,6 +228,11 @@ export class SizeGridDialogComponent {
     return null;
   }
 
+  protected costAbovePrice(model: ProductModel): boolean {
+    const cost = this.unitCost === null || String(this.unitCost) === '' ? 0 : Number(this.unitCost);
+    return model.salePrice > 0 && cost > model.salePrice;
+  }
+
   protected setQuantity(productId: string, value: number | null): void {
     this.quantities.update((all) => ({ ...all, [productId]: value }));
   }
@@ -269,8 +281,9 @@ export class SizeGridDialogComponent {
         quantities[line.productId] = line.quantity;
       }
       this.direction = existing[0]?.direction ?? 'IN';
+      // Sin costo del modelo el campo queda vacío (antes salía 0 y se confundía con el precio).
       this.unitCost = existing.find((l) => l.unitCost !== null)?.unitCost
-        ?? (this.type() === 'INITIAL' ? m.cost : null);
+        ?? (this.type() === 'INITIAL' && m.cost > 0 ? m.cost : null);
       this.quantities.set(quantities);
       this.initial = this.snapshot();
       this.selected.set(m);

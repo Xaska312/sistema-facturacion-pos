@@ -2,20 +2,24 @@ import { Component, DestroyRef, OnInit, computed, inject, input, output, signal 
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SkeletonModule } from 'primeng/skeleton';
 import { Observable, catchError, forkJoin, map, of } from 'rxjs';
-import { Category, Product } from '../../core/api/api.models';
+import { Category, PageResponse, Product, ProductModelRow } from '../../core/api/api.models';
 import { CatalogApi } from '../../core/api/catalog.api';
 import { formatCop } from '../../shared/money';
 import { stockLabel } from './pos-labels';
+import { GridCard, firstName, gridCards } from './pos-cards';
 
 /** Pestaña de la cuadrícula: favoritos, todos o una categoría (por id). */
 export type GridTab = 'favorites' | 'all' | string;
 
 const PAGE_SIZE = 48;
 
+const EMPTY_MODELS: PageResponse<ProductModelRow> = { content: [], page: 0, size: PAGE_SIZE, totalElements: 0, totalPages: 0 };
+
 /**
  * Cuadrícula táctil de productos del POS: pestañas Favoritos / Todos / categorías y tarjetas grandes con nombre,
  * precio de lista y existencia. Tocar una tarjeta la agrega (el precio real lo calcula el servidor para el
- * cliente de la venta); la estrella la marca como favorita en este equipo.
+ * cliente de la venta); la estrella la marca como favorita en este equipo. Un producto con tallas (fase 8d) es una
+ * sola tarjeta: tocarla pide la talla ({@code pickModel}).
  */
 @Component({
   selector: 'app-product-grid',
@@ -32,13 +36,13 @@ const PAGE_SIZE = 48;
     </nav>
 
     <div class="flex-1 min-h-0 overflow-y-auto" [attr.aria-busy]="loading()">
-      @if (loading() && products().length === 0) {
+      @if (loading() && cards().length === 0) {
         <div class="grid gap-2 grid-cols-2 sm:grid-cols-3 xl:grid-cols-4" aria-hidden="true">
           @for (i of placeholders; track i) {
             <p-skeleton height="6rem" borderRadius="0.75rem" />
           }
         </div>
-      } @else if (products().length === 0) {
+      } @else if (cards().length === 0) {
         <div class="h-full min-h-32 flex flex-col items-center justify-center gap-2 text-center text-muted p-4">
           <i class="pi text-2xl" [class.pi-star]="tab() === 'favorites'" [class.pi-box]="tab() !== 'favorites'"
              aria-hidden="true"></i>
@@ -51,31 +55,49 @@ const PAGE_SIZE = 48;
         </div>
       } @else {
         <ul class="grid gap-2 grid-cols-2 sm:grid-cols-3 xl:grid-cols-4" aria-label="Lista de productos">
-          @for (p of products(); track p.id) {
-            @let badge = stockText(p);
-            <li class="relative">
-              <button type="button" class="product-card" [disabled]="disabled()" [class.opacity-60]="badge === 'Agotado'"
-                      [attr.aria-label]="'Agregar ' + p.name + ', ' + cop(p.salePrice) + (badge ? ', ' + badge : '')"
-                      (click)="pick.emit(p)">
-                <span class="font-medium leading-snug line-clamp-2 pr-8">{{ p.name }}</span>
-                <span class="mt-auto flex items-end justify-between gap-1 w-full">
-                  <span class="font-semibold">{{ cop(p.salePrice) }}</span>
-                  @if (badge) {
-                    <span class="text-xs rounded px-1.5 py-0.5"
-                          [class.bg-danger-soft]="badge === 'Agotado'" [class.text-danger-soft-fg]="badge === 'Agotado'"
-                          [class.bg-surface-alt]="badge !== 'Agotado'" [class.text-muted]="badge !== 'Agotado'">
-                      {{ badge }}
+          @for (card of cards(); track card.kind + card.id) {
+            @if (card.kind === 'model') {
+              @let m = card.model;
+              <li>
+                <button type="button" class="product-card" [disabled]="disabled()"
+                        [attr.aria-label]="'Elegir talla de ' + m.name + ', ' + cop(m.salePrice)"
+                        (click)="pickModel.emit(m)">
+                  <span class="font-medium leading-snug line-clamp-2">{{ m.name }}</span>
+                  <span class="mt-auto flex items-end justify-between gap-1 w-full">
+                    <span class="font-semibold">{{ cop(m.salePrice) }}</span>
+                    <span class="text-xs rounded px-1.5 py-0.5 bg-brand-soft text-brand-soft-fg inline-flex items-center gap-1">
+                      <i class="pi pi-th-large text-xs" aria-hidden="true"></i>Elegir talla
                     </span>
-                  }
-                </span>
-              </button>
-              <button type="button" class="star" [attr.aria-pressed]="isFavorite(p.id)"
-                      [attr.aria-label]="(isFavorite(p.id) ? 'Quitar de favoritos: ' : 'Agregar a favoritos: ') + p.name"
-                      (click)="favoriteToggle.emit(p)">
-                <i class="pi" [class.pi-star-fill]="isFavorite(p.id)" [class.text-warning]="isFavorite(p.id)"
-                   [class.pi-star]="!isFavorite(p.id)" aria-hidden="true"></i>
-              </button>
-            </li>
+                  </span>
+                </button>
+              </li>
+            } @else {
+              @let p = card.product;
+              @let badge = stockText(p);
+              <li class="relative">
+                <button type="button" class="product-card" [disabled]="disabled()" [class.opacity-60]="badge === 'Agotado'"
+                        [attr.aria-label]="'Agregar ' + p.name + ', ' + cop(p.salePrice) + (badge ? ', ' + badge : '')"
+                        (click)="pick.emit(p)">
+                  <span class="font-medium leading-snug line-clamp-2 pr-8">{{ p.name }}</span>
+                  <span class="mt-auto flex items-end justify-between gap-1 w-full">
+                    <span class="font-semibold">{{ cop(p.salePrice) }}</span>
+                    @if (badge) {
+                      <span class="text-xs rounded px-1.5 py-0.5"
+                            [class.bg-danger-soft]="badge === 'Agotado'" [class.text-danger-soft-fg]="badge === 'Agotado'"
+                            [class.bg-surface-alt]="badge !== 'Agotado'" [class.text-muted]="badge !== 'Agotado'">
+                        {{ badge }}
+                      </span>
+                    }
+                  </span>
+                </button>
+                <button type="button" class="star" [attr.aria-pressed]="isFavorite(p.id)"
+                        [attr.aria-label]="(isFavorite(p.id) ? 'Quitar de favoritos: ' : 'Agregar a favoritos: ') + p.name"
+                        (click)="favoriteToggle.emit(p)">
+                  <i class="pi" [class.pi-star-fill]="isFavorite(p.id)" [class.text-warning]="isFavorite(p.id)"
+                     [class.pi-star]="!isFavorite(p.id)" aria-hidden="true"></i>
+                </button>
+              </li>
+            }
           }
         </ul>
         @if (hasMore()) {
@@ -165,6 +187,8 @@ export class ProductGridComponent implements OnInit {
   readonly stock = input<ReadonlyMap<string, number>>(new Map());
   readonly disabled = input(false);
   readonly pick = output<Product>();
+  /** Un modelo con tallas: el POS pregunta cuál. */
+  readonly pickModel = output<ProductModelRow>();
   readonly favoriteToggle = output<Product>();
 
   protected readonly cop = formatCop;
@@ -173,18 +197,27 @@ export class ProductGridComponent implements OnInit {
   protected readonly tab = signal<GridTab>('all');
   protected readonly loading = signal(false);
   private readonly loaded = signal<Product[]>([]);
+  private readonly loadedModels = signal<ProductModelRow[]>([]);
+  /** Último nombre cargado de cada fuente que aún tiene páginas (null = ya llegó todo). */
+  private readonly moreProductsAfter = signal<string | null>(null);
+  private readonly moreModelsAfter = signal<string | null>(null);
   private readonly favoriteProducts = signal<Product[]>([]);
   private page = 0;
   protected readonly hasMore = signal(false);
   private requestSeq = 0;
 
-  /** En Favoritos se respeta el orden guardado y desaparecen al quitarles la estrella sin recargar. */
-  protected readonly products = computed(() => {
+  /**
+   * En Favoritos se respeta el orden guardado y desaparecen al quitarles la estrella sin recargar. En las demás
+   * pestañas, productos y modelos con tallas van juntos por nombre.
+   */
+  protected readonly cards = computed<GridCard[]>(() => {
     if (this.tab() !== 'favorites') {
-      return this.loaded();
+      return gridCards(this.loaded(), this.loadedModels(),
+        firstName([this.moreProductsAfter(), this.moreModelsAfter()]));
     }
     const byId = new Map(this.favoriteProducts().map((p) => [p.id, p]));
-    return this.favoriteIds().map((id) => byId.get(id)).filter((p): p is Product => p !== undefined);
+    return this.favoriteIds().map((id) => byId.get(id)).filter((p): p is Product => p !== undefined)
+      .map((p) => ({ kind: 'product' as const, id: p.id, name: p.name, product: p }));
   });
 
   private readonly favoriteSet = computed(() => new Set(this.favoriteIds()));
@@ -203,6 +236,9 @@ export class ProductGridComponent implements OnInit {
       this.loadFavorites();
     } else {
       this.loaded.set([]);
+      this.loadedModels.set([]);
+      this.moreProductsAfter.set(null);
+      this.moreModelsAfter.set(null);
       this.loadPage();
     }
   }
@@ -224,15 +260,26 @@ export class ProductGridComponent implements OnInit {
     const tab = this.tab();
     const seq = ++this.requestSeq;
     this.loading.set(true);
-    this.catalog.products({ page: this.page, size: PAGE_SIZE, sort: 'name,asc', categoryId: tab === 'all' ? undefined : tab })
+    const categoryId = tab === 'all' ? undefined : tab;
+    const query = { page: this.page, size: PAGE_SIZE, sort: 'name,asc', categoryId };
+    forkJoin({
+      // Las tallas no van sueltas: cada modelo es una tarjeta (fase 8d).
+      products: this.catalog.products({ ...query, includeVariants: false }),
+      models: this.catalog.productModels(query).pipe(catchError(() => of(EMPTY_MODELS))),
+    })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (page) => {
+        next: ({ products, models }) => {
           if (seq !== this.requestSeq) {
             return;
           }
-          this.loaded.update((list) => [...list, ...page.content.filter((p) => p.active)]);
-          this.hasMore.set(page.page + 1 < page.totalPages);
+          this.loaded.update((list) => [...list, ...products.content.filter((p) => p.active)]);
+          this.loadedModels.update((list) => [...list, ...models.content.filter((m) => m.active)]);
+          const moreProducts = products.page + 1 < products.totalPages;
+          const moreModels = models.page + 1 < models.totalPages;
+          this.moreProductsAfter.set(moreProducts ? (products.content.at(-1)?.name ?? null) : null);
+          this.moreModelsAfter.set(moreModels ? (models.content.at(-1)?.name ?? null) : null);
+          this.hasMore.set(moreProducts || moreModels);
           this.loading.set(false);
         },
         error: () => {

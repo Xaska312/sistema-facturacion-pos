@@ -86,16 +86,27 @@ const BARCODE = /^[A-Za-z0-9.-]{1,48}$/;
             </select>
           </label>
           <label class="flex flex-col gap-1">
-            <span class="text-sm font-medium">Costo</span>
-            <input pInputText appPesos="2" formControlName="cost" />
-            @if (!isNew()) {
-              <small class="text-xs text-muted">Las tallas que ya tienen movimientos de inventario conservan su costo promedio.</small>
+            <span class="text-sm font-medium">Precio de venta (al público)</span>
+            <input pInputText appPesos="2" formControlName="salePrice" />
+            @if (Number(form.controls.salePrice.value) >= 1) {
+              <small class="text-xs text-muted">{{ formatCop(form.controls.salePrice.value) }} en todas las tallas y colores.</small>
+            } @else if (form.controls.salePrice.touched || !isNew()) {
+              <small class="text-xs text-danger">Escribe el precio al que vendes cada par o prenda.</small>
+            } @else {
+              <small class="text-xs text-muted">El mismo para todas las tallas y colores.</small>
             }
           </label>
           <label class="flex flex-col gap-1">
-            <span class="text-sm font-medium">Precio de venta</span>
-            <input pInputText appPesos="2" formControlName="salePrice" />
-            <small class="text-xs text-muted">{{ formatCop(form.controls.salePrice.value) }} en todas las tallas y colores.</small>
+            <span class="text-sm font-medium">Costo (lo que te cuesta a ti)</span>
+            <input pInputText appPesos="2" formControlName="cost" />
+            @if (isNew()) {
+              <small class="text-xs text-muted">Lo que pagas al proveedor por unidad. Opcional: también lo puedes poner al cargar el inventario.</small>
+            } @else {
+              <small class="text-xs text-muted">Las tallas que ya tienen movimientos de inventario conservan su costo promedio.</small>
+            }
+            @if (costAbovePrice()) {
+              <small class="text-xs text-warning">El costo es mayor que el precio de venta: revisa que no estén al revés.</small>
+            }
           </label>
           <label class="flex flex-col gap-1 md:col-span-2">
             <span class="text-sm font-medium">Descripción</span>
@@ -264,6 +275,7 @@ export class ProductModelEditorComponent implements OnInit, HasUnsavedChanges {
   private readonly confirm = inject(ConfirmService);
   protected readonly canEdit = permissionFlag('products:manage');
   protected readonly formatCop = formatCop;
+  protected readonly Number = Number;
 
   protected readonly form = this.fb.nonNullable.group({
     skuPrefix: ['', [Validators.required, Validators.pattern(/^[A-Za-z0-9][A-Za-z0-9._-]{0,19}$/)]],
@@ -272,7 +284,8 @@ export class ProductModelEditorComponent implements OnInit, HasUnsavedChanges {
     categoryId: [''],
     taxId: ['', Validators.required],
     cost: [0, [Validators.required, Validators.min(0)]],
-    salePrice: [0, [Validators.required, Validators.min(0)]],
+    // Precio en 0 = se vendería gratis: no se deja guardar (fase 8d, la confusión costo/precio).
+    salePrice: [0, [Validators.required, Validators.min(1)]],
     sizeScaleId: ['', Validators.required],
   });
 
@@ -294,6 +307,11 @@ export class ProductModelEditorComponent implements OnInit, HasUnsavedChanges {
   private readonly scaleId = toSignal(this.form.controls.sizeScaleId.valueChanges, { initialValue: '' });
   private readonly prefixValue = toSignal(this.form.controls.skuPrefix.valueChanges, { initialValue: '' });
   private readonly nameValue = toSignal(this.form.controls.name.valueChanges, { initialValue: '' });
+  private readonly prices = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
+  protected readonly costAbovePrice = computed(() => {
+    const { cost, salePrice } = this.prices();
+    return Number(cost) > 0 && Number(salePrice) > 0 && Number(cost) > Number(salePrice);
+  });
   protected readonly newSizes = signal<string[]>([]);
   protected readonly colorsText = signal('');
   protected readonly scaleSizes = computed(() => this.scales().find((s) => s.id === this.scaleId())?.sizes ?? []);

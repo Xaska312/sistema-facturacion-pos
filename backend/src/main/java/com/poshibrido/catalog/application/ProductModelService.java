@@ -51,6 +51,7 @@ public class ProductModelService {
     static final int MAX_COLORS = 20;
     static final int MAX_VARIANTS = 400;
     private static final String BASE_UNIT = "UND";
+    private static final UUID NO_CATEGORY = new UUID(0, 0);
 
     private final ProductModelRepository models;
     private final ProductRepository products;
@@ -85,11 +86,14 @@ public class ProductModelService {
 
     // ------------------------------------------------------------------ consultas
 
+    /** Modelos por nombre o prefijo; {@code categoryId} nulo = todas las categorías (el POS filtra por categoría). */
     @Transactional(readOnly = true)
-    public Page<ModelRow> search(String search, boolean includeInactive, Pageable pageable) {
+    public Page<ModelRow> search(String search, UUID categoryId, boolean includeInactive, Pageable pageable) {
         String term = search == null ? "" : search.trim();
         String pattern = "%" + ProductService.escapeLike(term.toLowerCase(Locale.ROOT)) + "%";
-        Page<ProductModel> page = models.search(pattern, pattern.toUpperCase(Locale.ROOT), includeInactive, pageable);
+        // PostgreSQL no infiere el tipo de un parámetro nulo: bandera + valor ficticio.
+        Page<ProductModel> page = models.search(pattern, pattern.toUpperCase(Locale.ROOT), categoryId == null,
+                categoryId == null ? NO_CATEGORY : categoryId, includeInactive, pageable);
         Map<UUID, Long> counts = new HashMap<>();
         if (!page.isEmpty()) {
             for (Object[] row : products.countVariants(page.map(ProductModel::getId).getContent())) {
@@ -362,8 +366,9 @@ public class ProductModelService {
         if (tax == null || !tax.isActive()) {
             throw new BusinessRuleException("El impuesto no existe o está inactivo.");
         }
-        if (c.salePrice() == null || c.salePrice().signum() < 0) {
-            throw new BusinessRuleException("El precio de venta es obligatorio y no puede ser negativo.");
+        if (c.salePrice() == null || c.salePrice().signum() <= 0) {
+            // En 0 las tallas se venderían gratis (pasó al confundir el costo con el precio).
+            throw new BusinessRuleException("Escribe el precio de venta (al público): debe ser mayor que cero.");
         }
         BigDecimal cost = c.cost() == null ? BigDecimal.ZERO : c.cost();
         if (cost.signum() < 0) {

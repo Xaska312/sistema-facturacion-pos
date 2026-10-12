@@ -267,9 +267,10 @@ export const MANUAL: readonly ManualChapter[] = [
           'Elige la escala (Calzado Colombia, EU, US, niño, ropa…), marca las tallas que vendes y escribe los colores separados por comas.',
           'Toca "Crear modelo": se crean todas las variantes (RUN-38-NEGRO, RUN-39-NEGRO…) con un código interno que puedes imprimir.',
           'Para cargar o contar existencias, en el documento de inventario toca "Por tallas" y llena la cuadrícula talla × color.',
+          'Al vender, el modelo sale en una sola tarjeta: tócala y elige la talla (ves cuántas hay de cada una). Con el lector, el código de cada talla la agrega directo.',
         ],
         tips: [
-          'El precio, el nombre y el impuesto se cambian en el modelo y se aplican a todas sus tallas.',
+          'El precio de venta (al público), el nombre y el impuesto se cambian en el modelo y se aplican a todas sus tallas. El costo es lo que pagas al proveedor.',
           'Si el proveedor trae su propio código de barras, toca la casilla de esa talla y escanéalo: reemplaza al interno.',
           'En "Escalas de tallas" puedes escribir la equivalencia de cada talla (38 = EU 39 / US 7) o crear tus propias escalas.',
           'Desactivar el modelo desactiva todas sus tallas; también puedes desactivar una sola talla que ya no vendes.',
