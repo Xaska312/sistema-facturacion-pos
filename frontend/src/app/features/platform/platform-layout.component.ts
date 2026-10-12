@@ -4,7 +4,7 @@ import { ButtonModule } from 'primeng/button';
 import { AuthService } from '../../core/auth/auth.service';
 
 /**
- * Consola de plataforma (solo administradores): negocios de todos los dueños y eventos de seguridad. No entra a
+ * Consola de plataforma (solo administradores): negocios y eventos de seguridad. No entra a
  * los datos de ningún negocio. Fuera del shell de negocio: funciona con la sesión de plataforma.
  */
 @Component({
@@ -18,9 +18,15 @@ import { AuthService } from '../../core/auth/auth.service';
             <i class="pi pi-server text-brand" aria-hidden="true"></i>
             <span class="font-semibold">Consola de plataforma</span>
           </div>
-          <nav aria-label="Consola de plataforma" class="flex gap-1 text-sm">
+          <nav aria-label="Consola de plataforma" class="flex flex-wrap gap-1 text-sm">
             <a routerLink="negocios" routerLinkActive="bg-brand-soft text-brand-soft-fg" ariaCurrentWhenActive="page"
                class="px-3 py-1.5 rounded-md hover:bg-surface-alt">Negocios</a>
+            <a routerLink="suscripciones" routerLinkActive="bg-brand-soft text-brand-soft-fg" ariaCurrentWhenActive="page"
+               class="px-3 py-1.5 rounded-md hover:bg-surface-alt">Suscripciones</a>
+            <a routerLink="codigos" routerLinkActive="bg-brand-soft text-brand-soft-fg" ariaCurrentWhenActive="page"
+               class="px-3 py-1.5 rounded-md hover:bg-surface-alt">Códigos</a>
+            <a routerLink="planes" routerLinkActive="bg-brand-soft text-brand-soft-fg" ariaCurrentWhenActive="page"
+               class="px-3 py-1.5 rounded-md hover:bg-surface-alt">Planes</a>
             <a routerLink="seguridad" routerLinkActive="bg-brand-soft text-brand-soft-fg" ariaCurrentWhenActive="page"
                class="px-3 py-1.5 rounded-md hover:bg-surface-alt">Eventos de seguridad</a>
           </nav>

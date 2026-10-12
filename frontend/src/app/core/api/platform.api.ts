@@ -1,7 +1,10 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { PageResponse, TenantStatus, TenantSummary } from './api.models';
+import {
+  ActivationCode, CodeInput, CreatedCodes, PageResponse, PaymentInput, Plan, PlanInput, Subscription, SubscriptionRow,
+  SubscriptionStatus, TenantStatus, TenantSummary,
+} from './api.models';
 
 /** Negocio en la consola de plataforma. */
 export interface PlatformTenant {
@@ -87,6 +90,52 @@ export class PlatformApi {
       params = params.set('q', filters.q.trim());
     }
     return this.http.get<PageResponse<SecurityEvent>>(`${this.base}/security-events`, { params });
+  }
+
+  // ---------------------------------------------------------------- suscripciones (fase 8b)
+
+  plans(): Observable<Plan[]> {
+    return this.http.get<Plan[]>(`${this.base}/plans`);
+  }
+
+  updatePlan(code: string, input: PlanInput): Observable<Plan> {
+    return this.http.put<Plan>(`${this.base}/plans/${encodeURIComponent(code)}`, input);
+  }
+
+  subscriptions(q: string | null, status: SubscriptionStatus | null, page: number, size: number)
+    : Observable<PageResponse<SubscriptionRow>> {
+    let params = new HttpParams().set('page', page).set('size', size);
+    if (q?.trim()) {
+      params = params.set('q', q.trim());
+    }
+    if (status) {
+      params = params.set('status', status);
+    }
+    return this.http.get<PageResponse<SubscriptionRow>>(`${this.base}/subscriptions`, { params });
+  }
+
+  subscription(tenantId: string): Observable<Subscription> {
+    return this.http.get<Subscription>(`${this.base}/tenants/${tenantId}/subscription`);
+  }
+
+  registerPayment(tenantId: string, input: PaymentInput): Observable<Subscription> {
+    return this.http.post<Subscription>(`${this.base}/tenants/${tenantId}/subscription/payments`, input);
+  }
+
+  changePlan(tenantId: string, planCode: string): Observable<Subscription> {
+    return this.http.put<Subscription>(`${this.base}/tenants/${tenantId}/subscription/plan`, { planCode });
+  }
+
+  codes(): Observable<ActivationCode[]> {
+    return this.http.get<ActivationCode[]>(`${this.base}/activation-codes`);
+  }
+
+  createCodes(input: CodeInput): Observable<CreatedCodes> {
+    return this.http.post<CreatedCodes>(`${this.base}/activation-codes`, input);
+  }
+
+  revokeCode(id: string): Observable<ActivationCode> {
+    return this.http.post<ActivationCode>(`${this.base}/activation-codes/${id}/revoke`, {});
   }
 }
 

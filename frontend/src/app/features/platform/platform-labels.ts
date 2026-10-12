@@ -1,4 +1,4 @@
-import { TenantStatus } from '../../core/api/api.models';
+import { ActivationCodeStatus, SubscriptionStatus, TenantStatus } from '../../core/api/api.models';
 import { SecurityEvent } from '../../core/api/platform.api';
 import { StatusKey } from '../../shared/status';
 
@@ -89,4 +89,58 @@ export function suspendedMessage(reason: string | null | undefined, closedByOwne
   }
   const why = reason?.trim() ? `Motivo: ${reason.trim()}. ` : '';
   return `${why}Mientras esté suspendido nadie puede entrar. Si crees que es un error, comunícate con soporte.`;
+}
+
+// ---------------------------------------------------------------- suscripciones (fase 8b)
+
+export const SUBSCRIPTION_STATUS_LABEL: Readonly<Record<SubscriptionStatus, string>> = {
+  TRIAL: 'Prueba',
+  ACTIVE: 'Activa',
+  PAST_DUE: 'En gracia',
+  EXPIRED: 'Vencida',
+};
+
+/** Color de la insignia (reutiliza los estados de la app): prueba azul, activa verde, en gracia ámbar, vencida roja. */
+export function subscriptionStatusKey(status: SubscriptionStatus): StatusKey {
+  switch (status) {
+    case 'TRIAL':
+      return 'open';
+    case 'ACTIVE':
+      return 'active-f';
+    case 'PAST_DUE':
+      return 'pending';
+    default:
+      return 'expired';
+  }
+}
+
+export const CODE_STATUS_LABEL: Readonly<Record<ActivationCodeStatus, string>> = {
+  AVAILABLE: 'Disponible',
+  USED: 'Usado',
+  EXPIRED: 'Vencido',
+  REVOKED: 'Anulado',
+};
+
+export function codeStatusKey(status: ActivationCodeStatus): StatusKey {
+  switch (status) {
+    case 'AVAILABLE':
+      return 'active';
+    case 'REVOKED':
+      return 'voided';
+    default:
+      return 'inactive';
+  }
+}
+
+/** "en 5 días", "mañana" o "vencida". */
+export function daysLeftText(daysLeft: number): string {
+  if (daysLeft <= 0) {
+    return 'vencida';
+  }
+  return daysLeft === 1 ? 'mañana' : `en ${daysLeft} días`;
+}
+
+/** Límite del plan: número o "Sin límite". */
+export function limitText(limit: number | null): string {
+  return limit === null ? 'Sin límite' : String(limit);
 }

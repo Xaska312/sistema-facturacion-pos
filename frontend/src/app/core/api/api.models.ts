@@ -48,6 +48,7 @@ export interface CreateTenantRequest {
   legalName: string;
   tradeName: string;
   businessType: BusinessType;
+  activationCode?: string;
 }
 
 export interface PageResponse<T> {
@@ -825,4 +826,114 @@ export interface MyDay {
   total: number;
   averageTicket: number;
   byPaymentMethod: PaymentReportRow[];
+}
+
+// ---------------------------------------------------------------- Fase 8b: suscripciones
+
+export type SubscriptionStatus = 'TRIAL' | 'ACTIVE' | 'PAST_DUE' | 'EXPIRED';
+export type BillingCycle = 'MONTHLY' | 'ANNUAL';
+
+export interface Plan {
+  code: string;
+  name: string;
+  maxBranches: number | null;
+  maxUsers: number | null;
+  monthlyPrice: number | null;
+  annualPrice: number | null;
+  active: boolean;
+}
+
+export interface SubscriptionPayment {
+  id: string;
+  planCode: string;
+  billingCycle: BillingCycle;
+  periods: number;
+  amount: number;
+  method: string;
+  reference: string | null;
+  notes: string | null;
+  periodStart: string;
+  periodEnd: string;
+  source: 'PAYMENT' | 'CODE';
+  createdAt: string;
+}
+
+export interface Subscription {
+  tenantId: string;
+  tradeName: string;
+  plan: Plan;
+  status: SubscriptionStatus;
+  trial: boolean;
+  billingCycle: BillingCycle;
+  startedAt: string;
+  endsAt: string;
+  graceEndsAt: string | null;
+  daysLeft: number;
+  usage: { branches: number; users: number };
+  /** Instrucciones de pago configuradas en el servidor. */
+  paymentInstructions: string;
+  payments: SubscriptionPayment[];
+}
+
+export interface SubscriptionRow {
+  tenantId: string;
+  slug: string;
+  tradeName: string;
+  tenantStatus: TenantStatus;
+  ownerEmail: string;
+  ownerName: string;
+  planCode: string;
+  planName: string;
+  status: SubscriptionStatus;
+  trial: boolean;
+  endsAt: string;
+  daysLeft: number;
+}
+
+export type ActivationCodeStatus = 'AVAILABLE' | 'USED' | 'EXPIRED' | 'REVOKED';
+
+export interface ActivationCode {
+  id: string;
+  hint: string;
+  planCode: string;
+  planName: string;
+  months: number;
+  note: string | null;
+  status: ActivationCodeStatus;
+  expiresAt: string;
+  createdAt: string;
+  usedAt: string | null;
+  usedTenantName: string | null;
+}
+
+export interface CreatedCodes {
+  codes: string[];
+  details: ActivationCode[];
+}
+
+export interface PaymentInput {
+  planCode: string;
+  billingCycle: BillingCycle;
+  periods: number;
+  amount: number;
+  method: string;
+  reference?: string | null;
+  notes?: string | null;
+}
+
+export interface PlanInput {
+  name: string;
+  maxBranches: number | null;
+  maxUsers: number | null;
+  monthlyPrice: number | null;
+  annualPrice: number | null;
+  active: boolean;
+}
+
+export interface CodeInput {
+  planCode: string;
+  months: number;
+  validDays: number;
+  note?: string | null;
+  quantity: number;
 }
