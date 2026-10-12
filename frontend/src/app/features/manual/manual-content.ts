@@ -475,6 +475,7 @@ export const MANUAL: readonly ManualChapter[] = [
           'Permitir vender sin existencias: útil si aún no tienes el inventario exacto.',
           'Los precios incluyen impuestos: márcalo si el precio de venta que escribes ya trae el IVA.',
           'Pie del recibo: el texto que sale al final de cada tiquete.',
+          'Marca: sube tu logo (sale en el encabezado y en el tiquete) y elige el color de la app entre los de la paleta; toca un color para verlo antes de guardarlo.',
         ],
         who: 'Para cambiarlos: Propietario y Administrador.',
       },

@@ -32,6 +32,7 @@ import { OnlineService } from '../../core/network/online.service';
 import { ConfirmService } from '../../shared/confirm';
 import { HasPermissionDirective } from '../../shared/has-permission.directive';
 import { formatCop } from '../../shared/money';
+import { BrandingService } from '../../core/theme/branding.service';
 import { ReceiptComponent } from '../../shared/receipt/receipt.component';
 import { ReceiptWidth, loadReceiptWidth, printReceipt, saveReceiptWidth } from '../../shared/receipt/receipt-prefs';
 import { TourService } from '../../shared/tour/tour.service';
@@ -329,7 +330,7 @@ const STOCK_PAGES = 5;
         <details class="mt-4">
           <summary class="min-h-11 flex items-center cursor-pointer text-sm text-brand">Ver tiquete</summary>
           <div class="flex justify-center bg-surface-alt p-3 max-h-[50vh] overflow-auto">
-            <app-receipt [sale]="sale" [width]="width()" />
+            <app-receipt [sale]="sale" [width]="width()" [logo]="brandLogo()" />
           </div>
         </details>
       }
@@ -369,7 +370,7 @@ const STOCK_PAGES = 5;
     </p-dialog>
 
     @if (lastSale(); as sale) {
-      <app-receipt class="receipt-print-root" [sale]="sale" [width]="width()" />
+      <app-receipt class="receipt-print-root" [sale]="sale" [width]="width()" [logo]="brandLogo()" />
     }
   `,
   styles: `
@@ -437,6 +438,8 @@ const STOCK_PAGES = 5;
   `,
 })
 export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
+  /** Logo para el tiquete (fase 8c). */
+  protected readonly brandLogo = inject(BrandingService).logo;
   protected readonly auth = inject(AuthService);
   private readonly cash = inject(CashApi);
   private readonly sales = inject(SalesApi);

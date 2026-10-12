@@ -13,6 +13,7 @@ import { formatDate } from '../../shared/format';
 import { formatCop } from '../../shared/money';
 import { FormDialogComponent } from '../../shared/forms/form-dialog.component';
 import { PageHeaderComponent } from '../../shared/page-header.component';
+import { BrandingSectionComponent } from './branding-section.component';
 
 /** Zonas horarias de Colombia y vecinas más usadas; el backend acepta cualquier zona IANA válida. */
 export const TIMEZONES = ['America/Bogota', 'America/Panama', 'America/Lima', 'America/Guayaquil', 'America/Caracas'];
@@ -33,9 +34,10 @@ const TIMEZONE_LABEL: Record<string, string> = {
 
 @Component({
   selector: 'app-settings',
-  imports: [ReactiveFormsModule, FormsModule, ButtonModule, InputTextModule, PageHeaderComponent, FormDialogComponent],
+  imports: [ReactiveFormsModule, FormsModule, ButtonModule, InputTextModule, PageHeaderComponent, FormDialogComponent,
+    BrandingSectionComponent],
   template: `
-    <app-page-header title="Ajustes del negocio" description="Cómo funciona tu negocio: inventario, impuestos, zona horaria, moneda y tiquete." />
+    <app-page-header title="Ajustes del negocio" description="Cómo funciona tu negocio: inventario, impuestos, zona horaria, moneda, tiquete y marca." />
 
     @if (sub(); as s) {
       <section class="card p-4 md:p-6 mb-6 flex flex-col gap-4 max-w-2xl">
@@ -165,6 +167,8 @@ const TIMEZONE_LABEL: Record<string, string> = {
         <p class="text-sm text-muted">Solo lectura: no tienes permiso para modificar los ajustes.</p>
       }
     </form>
+
+    <app-branding-section />
 
     @if (isOwner()) {
       <section class="card p-4 md:p-6 mt-6 max-w-2xl border border-danger" aria-labelledby="danger-title">

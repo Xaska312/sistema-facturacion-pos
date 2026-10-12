@@ -13,6 +13,9 @@ import { documentShortLabel } from '../document-types';
   template: `
     @let s = sale();
     <div class="receipt" [class.receipt-58]="width() === 58" [style.width.mm]="width()">
+      @if (logo(); as src) {
+        <img [src]="src" alt="" class="logo" />
+      }
       <p class="center bold">{{ s.receipt.businessName }}</p>
       @if (s.receipt.branchName) {
         <p class="center">{{ s.receipt.branchName }}</p>
@@ -76,6 +79,8 @@ import { documentShortLabel } from '../document-types';
     .row { display: flex; justify-content: space-between; gap: 6px; }
     .row span:last-child { white-space: nowrap; }
     .center { text-align: center; }
+    /* Logo del negocio (fase 8c): en gris, porque la impresora térmica imprime solo negro. */
+    .logo { display: block; margin: 0 auto 4px; max-width: 70%; max-height: 18mm; object-fit: contain; filter: grayscale(1); }
     .bold { font-weight: 700; }
     .big { font-size: 1.15em; }
     .small { font-size: 0.85em; }
@@ -86,6 +91,8 @@ import { documentShortLabel } from '../document-types';
 export class ReceiptComponent {
   readonly sale = input.required<Sale>();
   readonly width = input<ReceiptWidth>(80);
+  /** Logo del negocio (data URL) o null (fase 8c). */
+  readonly logo = input<string | null>(null);
 
   protected readonly cop = formatCop;
   protected readonly q = formatQuantity;
