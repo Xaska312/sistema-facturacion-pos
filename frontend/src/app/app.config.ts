@@ -6,6 +6,7 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 import { providePrimeNG } from 'primeng/config';
 import { firstValueFrom } from 'rxjs';
 import { routes } from './app.routes';
+import { BrandingService } from './core/theme/branding.service';
 import { AuthService } from './core/auth/auth.service';
 import { authInterceptor } from './core/auth/auth.interceptor';
 import { errorInterceptor } from './core/errors/error.interceptor';
@@ -33,6 +34,10 @@ export const appConfig: ApplicationConfig = {
     // Mantiene sincronizada la clase del modo oscuro (public/theme-init.js ya la aplicó antes del primer render).
     provideAppInitializer(() => {
       inject(ThemeService);
+    }),
+    // Color y logo del negocio en uso (fase 8c): se aplican al entrar a un negocio y se quitan al salir.
+    provideAppInitializer(() => {
+      inject(BrandingService);
     }),
     // Recupera la sesión (cookie de refresh) antes de evaluar las rutas, para que al recargar
     // la página los guards vean el negocio ya seleccionado.

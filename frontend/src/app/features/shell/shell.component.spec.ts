@@ -2,6 +2,7 @@ import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { Router, provideRouter } from '@angular/router';
+import { BrandingService } from '../../core/theme/branding.service';
 import { EMPTY, of } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { Subscription } from '../../core/api/api.models';
@@ -45,6 +46,8 @@ describe('ShellComponent', () => {
         { provide: AuthService, useValue: auth },
         // Por defecto la suscripción no responde: sin aviso (fase 8b).
         { provide: SubscriptionApi, useValue: { current: () => EMPTY } },
+        // Sin logo (fase 8c).
+        { provide: BrandingService, useValue: { logo: signal(null) } },
       ],
     }).compileComponents();
   });

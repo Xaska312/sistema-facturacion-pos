@@ -9,6 +9,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { filter } from 'rxjs';
 import { Subscription } from '../../core/api/api.models';
 import { SubscriptionApi } from '../../core/api/subscription.api';
+import { BrandingService } from '../../core/theme/branding.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { THEME_MODES, ThemeMode, themeModeIcon } from '../../core/theme/theme-mode';
 import { ThemeService } from '../../core/theme/theme.service';
@@ -97,8 +98,15 @@ interface ThemeOption extends PrimeMenuItem {
             </ol>
           </nav>
 
+          @if (brandLogo(); as logo) {
+            <img [src]="logo" alt="" class="h-8 max-w-24 object-contain lg:hidden" aria-hidden="true" />
+          }
           <span class="hidden lg:flex items-center gap-2 text-sm text-muted max-w-56" title="Negocio actual">
-            <i class="pi pi-building" aria-hidden="true"></i>
+            @if (brandLogo(); as logo) {
+              <img [src]="logo" alt="" class="h-8 max-w-24 object-contain" aria-hidden="true" />
+            } @else {
+              <i class="pi pi-building" aria-hidden="true"></i>
+            }
             <span class="truncate">{{ tradeName() }}</span>
           </span>
 
@@ -273,6 +281,8 @@ interface ThemeOption extends PrimeMenuItem {
 })
 export class ShellComponent {
   protected readonly auth = inject(AuthService);
+  /** Logo del negocio (fase 8c), si lo tiene. */
+  protected readonly brandLogo = inject(BrandingService).logo;
   protected readonly theme = inject(ThemeService);
   private readonly router = inject(Router);
   private readonly tours = inject(TourService);

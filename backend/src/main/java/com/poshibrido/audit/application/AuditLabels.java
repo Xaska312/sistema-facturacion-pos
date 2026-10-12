@@ -51,6 +51,7 @@ public final class AuditLabels {
 
     private static final Map<String, String> ACTIONS = Map.ofEntries(
             Map.entry("AUDIT_EXPORTED", "Exportó la auditoría"),
+            Map.entry("BRANDING_UPDATED", "Cambió la marca del negocio (color o logo)"),
             Map.entry("BUSINESS_CLOSED", "Eliminó (cerró) el negocio"),
             Map.entry("BUSINESS_CREATED", "Creó el negocio"),
             Map.entry("BUSINESS_REACTIVATED", "Reactivó el negocio"),

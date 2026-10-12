@@ -92,6 +92,202 @@
   --chart-grid: #223033;
 }
 
+/*
+ * Colores de marca del negocio (fase 8c): paleta cerrada, elegida en Ajustes → Marca. Cada bloque cambia los tokens
+ * de marca y la paleta primaria de PrimeNG (--p-primary-*). En claro se usa el tono 700 con texto blanco y en oscuro
+ * el 400 con texto 950: todos pasan 4,5:1 (revisado con WCAG al generarlos). Turquesa es el de :root y .app-dark.
+ * Las muestras de Ajustes están en src/app/core/theme/brand-palettes.ts.
+ */
+:root[data-brand="azul"] {
+  --brand: #1d4ed8;
+  --brand-hover: #1e40af;
+  --brand-contrast: #ffffff;
+  --brand-soft: #dbeafe;
+  --focus-ring: #1d4ed8;
+  --brand-soft-text: #1e40af;
+  --p-primary-50: #eff6ff;
+  --p-primary-100: #dbeafe;
+  --p-primary-200: #bfdbfe;
+  --p-primary-300: #93c5fd;
+  --p-primary-400: #60a5fa;
+  --p-primary-500: #3b82f6;
+  --p-primary-600: #2563eb;
+  --p-primary-700: #1d4ed8;
+  --p-primary-800: #1e40af;
+  --p-primary-900: #1e3a8a;
+  --p-primary-950: #172554;
+}
+:root[data-brand="azul"].app-dark {
+  --brand: #60a5fa;
+  --brand-hover: #93c5fd;
+  --brand-contrast: #172554;
+  --brand-soft: #1e3a8a;
+  --focus-ring: #93c5fd;
+  --brand-soft-text: #bfdbfe;
+}
+:root[data-brand="indigo"] {
+  --brand: #4338ca;
+  --brand-hover: #3730a3;
+  --brand-contrast: #ffffff;
+  --brand-soft: #e0e7ff;
+  --focus-ring: #4338ca;
+  --brand-soft-text: #3730a3;
+  --p-primary-50: #eef2ff;
+  --p-primary-100: #e0e7ff;
+  --p-primary-200: #c7d2fe;
+  --p-primary-300: #a5b4fc;
+  --p-primary-400: #818cf8;
+  --p-primary-500: #6366f1;
+  --p-primary-600: #4f46e5;
+  --p-primary-700: #4338ca;
+  --p-primary-800: #3730a3;
+  --p-primary-900: #312e81;
+  --p-primary-950: #1e1b4b;
+}
+:root[data-brand="indigo"].app-dark {
+  --brand: #818cf8;
+  --brand-hover: #a5b4fc;
+  --brand-contrast: #1e1b4b;
+  --brand-soft: #312e81;
+  --focus-ring: #a5b4fc;
+  --brand-soft-text: #c7d2fe;
+}
+:root[data-brand="violeta"] {
+  --brand: #6d28d9;
+  --brand-hover: #5b21b6;
+  --brand-contrast: #ffffff;
+  --brand-soft: #ede9fe;
+  --focus-ring: #6d28d9;
+  --brand-soft-text: #5b21b6;
+  --p-primary-50: #f5f3ff;
+  --p-primary-100: #ede9fe;
+  --p-primary-200: #ddd6fe;
+  --p-primary-300: #c4b5fd;
+  --p-primary-400: #a78bfa;
+  --p-primary-500: #8b5cf6;
+  --p-primary-600: #7c3aed;
+  --p-primary-700: #6d28d9;
+  --p-primary-800: #5b21b6;
+  --p-primary-900: #4c1d95;
+  --p-primary-950: #2e1065;
+}
+:root[data-brand="violeta"].app-dark {
+  --brand: #a78bfa;
+  --brand-hover: #c4b5fd;
+  --brand-contrast: #2e1065;
+  --brand-soft: #4c1d95;
+  --focus-ring: #c4b5fd;
+  --brand-soft-text: #ddd6fe;
+}
+:root[data-brand="rosa"] {
+  --brand: #be185d;
+  --brand-hover: #9d174d;
+  --brand-contrast: #ffffff;
+  --brand-soft: #fce7f3;
+  --focus-ring: #be185d;
+  --brand-soft-text: #9d174d;
+  --p-primary-50: #fdf2f8;
+  --p-primary-100: #fce7f3;
+  --p-primary-200: #fbcfe8;
+  --p-primary-300: #f9a8d4;
+  --p-primary-400: #f472b6;
+  --p-primary-500: #ec4899;
+  --p-primary-600: #db2777;
+  --p-primary-700: #be185d;
+  --p-primary-800: #9d174d;
+  --p-primary-900: #831843;
+  --p-primary-950: #500724;
+}
+:root[data-brand="rosa"].app-dark {
+  --brand: #f472b6;
+  --brand-hover: #f9a8d4;
+  --brand-contrast: #500724;
+  --brand-soft: #831843;
+  --focus-ring: #f9a8d4;
+  --brand-soft-text: #fbcfe8;
+}
+:root[data-brand="naranja"] {
+  --brand: #c2410c;
+  --brand-hover: #9a3412;
+  --brand-contrast: #ffffff;
+  --brand-soft: #ffedd5;
+  --focus-ring: #c2410c;
+  --brand-soft-text: #9a3412;
+  --p-primary-50: #fff7ed;
+  --p-primary-100: #ffedd5;
+  --p-primary-200: #fed7aa;
+  --p-primary-300: #fdba74;
+  --p-primary-400: #fb923c;
+  --p-primary-500: #f97316;
+  --p-primary-600: #ea580c;
+  --p-primary-700: #c2410c;
+  --p-primary-800: #9a3412;
+  --p-primary-900: #7c2d12;
+  --p-primary-950: #431407;
+}
+:root[data-brand="naranja"].app-dark {
+  --brand: #fb923c;
+  --brand-hover: #fdba74;
+  --brand-contrast: #431407;
+  --brand-soft: #7c2d12;
+  --focus-ring: #fdba74;
+  --brand-soft-text: #fed7aa;
+}
+:root[data-brand="verde"] {
+  --brand: #047857;
+  --brand-hover: #065f46;
+  --brand-contrast: #ffffff;
+  --brand-soft: #d1fae5;
+  --focus-ring: #047857;
+  --brand-soft-text: #065f46;
+  --p-primary-50: #ecfdf5;
+  --p-primary-100: #d1fae5;
+  --p-primary-200: #a7f3d0;
+  --p-primary-300: #6ee7b7;
+  --p-primary-400: #34d399;
+  --p-primary-500: #10b981;
+  --p-primary-600: #059669;
+  --p-primary-700: #047857;
+  --p-primary-800: #065f46;
+  --p-primary-900: #064e3b;
+  --p-primary-950: #022c22;
+}
+:root[data-brand="verde"].app-dark {
+  --brand: #34d399;
+  --brand-hover: #6ee7b7;
+  --brand-contrast: #022c22;
+  --brand-soft: #064e3b;
+  --focus-ring: #6ee7b7;
+  --brand-soft-text: #a7f3d0;
+}
+:root[data-brand="grafito"] {
+  --brand: #334155;
+  --brand-hover: #1e293b;
+  --brand-contrast: #ffffff;
+  --brand-soft: #f1f5f9;
+  --focus-ring: #334155;
+  --brand-soft-text: #1e293b;
+  --p-primary-50: #f8fafc;
+  --p-primary-100: #f1f5f9;
+  --p-primary-200: #e2e8f0;
+  --p-primary-300: #cbd5e1;
+  --p-primary-400: #94a3b8;
+  --p-primary-500: #64748b;
+  --p-primary-600: #475569;
+  --p-primary-700: #334155;
+  --p-primary-800: #1e293b;
+  --p-primary-900: #0f172a;
+  --p-primary-950: #020617;
+}
+:root[data-brand="grafito"].app-dark {
+  --brand: #94a3b8;
+  --brand-hover: #cbd5e1;
+  --brand-contrast: #020617;
+  --brand-soft: #0f172a;
+  --focus-ring: #cbd5e1;
+  --brand-soft-text: #e2e8f0;
+}
+
 /* Solo los colores del sistema: las paletas de Tailwind (slate, blue…) no se generan. */
 @theme inline {
   --color-*: initial;

@@ -317,3 +317,14 @@ Cambios en productos: `GET /products` acepta `includeVariants` (por defecto `tru
 
 Inventario: `GET /inventory/balances?branchId=&productIds=a,b,c` (`inventory:read`, máximo 500) → saldo de cada producto en la sucursal (0 si no tiene movimientos), para la cuadrícula talla × color del conteo.
 
+## Marca del negocio (Fase 8c)
+Color de una paleta cerrada y logo pequeño. Leer: cualquier miembro del negocio (encabezado, POS y tiquete). Cambiar: `settings:manage`. Auditoría: `BRANDING_UPDATED`.
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/branding` | `{color, logo (data URL o null), updatedAt}`. `color` ∈ turquesa (por defecto), azul, indigo, violeta, rosa, naranja, verde, grafito |
+| PUT | `/branding/color` | `{color}` → 422 si no es de la paleta |
+| PUT | `/branding/logo` | `{dataUrl}` (`data:image/…;base64,…`, máximo 150 KB de imagen). El tipo se comprueba por la firma del archivo: solo PNG, JPEG o WebP (422 para SVG u otros) |
+| DELETE | `/branding/logo` | Quita el logo |
+
+El pie del tiquete sigue en `PUT /settings` (`receiptFooter`, ya existía).

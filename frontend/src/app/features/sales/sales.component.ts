@@ -14,6 +14,7 @@ import { PageHeaderComponent } from '../../shared/page-header.component';
 import { StatusKey } from '../../shared/status';
 import { DataTableComponent } from '../../shared/table/data-table.component';
 import { ColumnDef, TableQuery, initialQuery } from '../../shared/table/table';
+import { BrandingService } from '../../core/theme/branding.service';
 import { ReceiptComponent } from '../../shared/receipt/receipt.component';
 import { ReceiptWidth, loadReceiptWidth, printReceipt } from '../../shared/receipt/receipt-prefs';
 import { permissionFlag } from '../../core/auth/permission-flag';
@@ -70,7 +71,7 @@ const SALE_STATUS: Record<SaleStatus, StatusKey> = { COMPLETED: 'completed', VOI
           </p>
         }
         <div class="flex justify-center bg-surface-alt p-3 max-h-[60vh] overflow-auto">
-          <app-receipt [sale]="sale" [width]="width" />
+          <app-receipt [sale]="sale" [width]="width" [logo]="brandLogo()" />
         </div>
       }
       <ng-template #footer>
@@ -97,11 +98,13 @@ const SALE_STATUS: Record<SaleStatus, StatusKey> = { COMPLETED: 'completed', VOI
     </app-form-dialog>
 
     @if (detail(); as sale) {
-      <app-receipt class="receipt-print-root" [sale]="sale" [width]="width" />
+      <app-receipt class="receipt-print-root" [sale]="sale" [width]="width" [logo]="brandLogo()" />
     }
   `,
 })
 export class SalesComponent implements OnInit {
+  /** Logo para el tiquete (fase 8c). */
+  protected readonly brandLogo = inject(BrandingService).logo;
   /** Cancela la petición anterior de la lista (QA UI-10). */
   private readonly latest = new LatestRequest();
   private readonly sales = inject(SalesApi);
