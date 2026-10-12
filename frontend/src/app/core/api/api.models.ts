@@ -278,6 +278,10 @@ export interface Product {
   conversions: ProductConversion[];
   barcodes: ProductBarcode[];
   listPrices: ProductListPrice[];
+  /** Talla de un modelo (fase 8d): el modelo, la talla y el color; null en un producto normal. */
+  modelId?: string | null;
+  variantSize?: string | null;
+  variantColor?: string | null;
 }
 
 export interface ProductInput {
@@ -937,3 +941,86 @@ export interface CodeInput {
   note?: string | null;
   quantity: number;
 }
+
+// ---------------------------------------------------------------- Fase 8d: tallas y colores
+
+export interface SizeEntry {
+  label: string;
+  /** Equivalencia en texto libre (p. ej. "EU 39"); la llena cada negocio. */
+  equivalent: string | null;
+}
+
+export interface SizeScale {
+  id: string;
+  code: string;
+  name: string;
+  active: boolean;
+  sizes: SizeEntry[];
+}
+
+export interface SizeScaleInput {
+  name: string;
+  active: boolean;
+  sizes: SizeEntry[];
+}
+
+export interface ProductModelRow {
+  id: string;
+  skuPrefix: string;
+  name: string;
+  categoryName: string | null;
+  salePrice: number;
+  sizeScaleName: string | null;
+  /** Cantidad de variantes (talla × color). */
+  variants: number;
+  active: boolean;
+}
+
+export interface ProductVariant {
+  productId: string;
+  sku: string;
+  /** "Tenis Runner T38 Negro". */
+  name: string;
+  size: string;
+  color: string | null;
+  barcode: string | null;
+  baseUnitId: string;
+  baseUnitCode: string;
+  active: boolean;
+}
+
+export interface ProductModel {
+  id: string;
+  skuPrefix: string;
+  name: string;
+  description: string | null;
+  categoryId: string | null;
+  categoryName: string | null;
+  taxId: string;
+  taxCode: string | null;
+  cost: number;
+  salePrice: number;
+  sizeScaleId: string;
+  sizeScaleName: string;
+  active: boolean;
+  /** Tallas del modelo en el orden de la escala. */
+  sizes: string[];
+  /** Colores en el orden en que se crearon (vacío si el modelo no maneja colores). */
+  colors: string[];
+  variants: ProductVariant[];
+}
+
+export interface ProductModelInput {
+  skuPrefix: string;
+  name: string;
+  description: string | null;
+  categoryId: string | null;
+  taxId: string;
+  cost: number | null;
+  salePrice: number;
+  sizeScaleId: string;
+  sizes: string[];
+  colors: string[];
+}
+
+export type ProductModelUpdate = Omit<ProductModelInput, 'skuPrefix' | 'sizeScaleId' | 'sizes' | 'colors'>;

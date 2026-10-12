@@ -16,7 +16,9 @@ import { LatestRequest } from '../../shared/latest-request';
   selector: 'app-products',
   imports: [FormsModule, RouterLink, ButtonModule, DataTableComponent, PageHeaderComponent],
   template: `
-    <app-page-header title="Productos" description="Lo que vendes: precio, impuesto, unidad y códigos de barras.">
+    <app-page-header title="Productos" description="Lo que vendes: precio, impuesto, unidad y códigos de barras. Los productos con tallas y colores están en «Con tallas».">
+      <a pButton routerLink="/app/productos/modelos" label="Con tallas" icon="pi pi-th-large" severity="secondary"
+         [outlined]="true"></a>
       @if (canManage()) {
         <a pButton routerLink="/app/productos/importar" label="Importar CSV" icon="pi pi-upload" severity="secondary"
            [outlined]="true"></a>
@@ -94,6 +96,8 @@ export class ProductsComponent implements OnInit {
         search: query.search,
         categoryId: this.categoryId || null,
         includeInactive: this.includeInactive,
+        // Las tallas se ven en su modelo ("Con tallas"), no una por una aquí (fase 8d).
+        includeVariants: false,
       })
       .pipe(this.latest.only()).subscribe({
         next: (result) => {

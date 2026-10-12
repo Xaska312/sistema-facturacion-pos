@@ -9,9 +9,13 @@ public final class CatalogVariants {
     private CatalogVariants() {
     }
 
-    /** "Tenis Runner" + "38" + "Negro" → "Tenis Runner T38 Negro". */
+    /**
+     * "Tenis Runner" + "38" + "Negro" → "Tenis Runner T38 Negro"; las tallas en letras van sin la T:
+     * "Camiseta" + "XL" → "Camiseta XL".
+     */
     public static String name(String modelName, String size, String color) {
-        return modelName + " T" + size + (color == null ? "" : " " + color);
+        String sizeText = !size.isEmpty() && Character.isDigit(size.charAt(0)) ? "T" + size : size;
+        return modelName + " " + sizeText + (color == null ? "" : " " + color);
     }
 
     /** "RUN" + "38" + "NEGRO" → "RUN-38-NEGRO". */

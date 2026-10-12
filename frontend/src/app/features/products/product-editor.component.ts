@@ -27,8 +27,17 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
       }
     </app-page-header>
 
+    @if (product()?.modelId; as modelId) {
+      <div class="card p-3 mb-4 max-w-4xl flex flex-wrap items-center gap-2 text-sm" role="note">
+        <i class="pi pi-th-large text-brand" aria-hidden="true"></i>
+        <span>Esta es una talla de un modelo: el nombre, el precio y los demás datos se cambian en el modelo, para todas
+          sus tallas.</span>
+        <a [routerLink]="['/app/productos/modelos', modelId]" class="font-medium text-brand hover:underline">Ir al modelo</a>
+      </div>
+    }
+
     <form [formGroup]="form" (ngSubmit)="save()" (keydown.enter)="ignoreEnter($event)" class="flex flex-col gap-4 max-w-4xl">
-      <fieldset [disabled]="!canEdit()" class="flex flex-col gap-4">
+      <fieldset [disabled]="!editable()" class="flex flex-col gap-4">
         <!-- Datos básicos -->
         <section class="card p-4 grid gap-3 md:grid-cols-2">
           <label class="flex flex-col gap-1">
@@ -95,7 +104,7 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
               <h2 class="font-medium">Presentaciones</h2>
               <p class="text-xs text-muted">Ej.: una caja de 24 unidades. Si no pones precio, se calcula precio base × factor.</p>
             </div>
-            @if (canEdit()) {
+            @if (editable()) {
               <p-button label="Agregar" size="small" [text]="true" (onClick)="addConversion()" />
             }
           </header>
@@ -120,7 +129,7 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
                 <input pInputText appPesos="2" formControlName="salePrice"
                        [placeholder]="formatCop(form.controls.salePrice.value * group.controls.factor.value)" />
               </label>
-              @if (canEdit()) {
+              @if (editable()) {
                 <p-button class="col-span-2" label="Quitar" size="small" [text]="true" severity="danger"
                           (onClick)="removeRow(form.controls.conversions, i)" />
               }
@@ -134,7 +143,7 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
         <section class="card p-4 flex flex-col gap-2">
           <header class="flex items-center justify-between">
             <h2 class="font-medium">Códigos de barras</h2>
-            @if (canEdit()) {
+            @if (editable()) {
               <span class="flex gap-2">
                 <p-button label="Generar código interno" size="small" [text]="true" [loading]="generating()"
                           (onClick)="generateBarcode()" />
@@ -159,7 +168,7 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
                   }
                 </select>
               </label>
-              @if (canEdit()) {
+              @if (editable()) {
                 <p-button class="col-span-2" label="Quitar" size="small" [text]="true" severity="danger"
                           (onClick)="removeRow(form.controls.barcodes, i)" />
               }
@@ -177,7 +186,7 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
                 <h2 class="font-medium">Precios en otras listas</h2>
                 <p class="text-xs text-muted">Si una lista no tiene precio para una unidad, se usa el de la lista General.</p>
               </div>
-              @if (canEdit()) {
+              @if (editable()) {
                 <p-button label="Agregar" size="small" [text]="true" (onClick)="addListPrice()" />
               }
             </header>
@@ -206,7 +215,7 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
                   <span class="text-xs">Precio</span>
                   <input pInputText appPesos="2" formControlName="price" />
                 </label>
-                @if (canEdit()) {
+                @if (editable()) {
                   <p-button class="col-span-2" label="Quitar" size="small" [text]="true" severity="danger"
                             (onClick)="removeRow(form.controls.listPrices, i)" />
                 }
@@ -218,7 +227,7 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
         }
       </fieldset>
 
-      @if (canEdit()) {
+      @if (editable()) {
         <div class="flex justify-end gap-2">
           <a routerLink="/app/productos"><p-button label="Cancelar" [text]="true" severity="secondary" /></a>
           <p-button type="submit" label="Guardar" [loading]="saving()" [disabled]="form.invalid" />
@@ -236,6 +245,8 @@ export class ProductEditorComponent implements OnInit, HasUnsavedChanges {
   private readonly router = inject(Router);
   private readonly messages = inject(MessageService);
   protected readonly canEdit = permissionFlag('products:manage');
+  /** Una talla de un modelo no se edita aquí (fase 8d): solo desde su modelo. */
+  protected readonly editable = computed(() => this.canEdit() && !this.product()?.modelId);
   protected readonly formatCop = formatCop;
 
   protected readonly form = productForm(this.fb);
@@ -295,7 +306,7 @@ export class ProductEditorComponent implements OnInit, HasUnsavedChanges {
   }
 
   hasUnsavedChanges(): boolean {
-    return this.canEdit() && !this.saved && this.form.dirty;
+    return this.editable() && !this.saved && this.form.dirty;
   }
 
   @HostListener('window:beforeunload', ['$event'])

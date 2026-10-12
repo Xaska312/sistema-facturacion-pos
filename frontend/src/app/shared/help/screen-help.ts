@@ -89,6 +89,25 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     ],
     terms: ['costo-promedio', 'lista-precios'],
   },
+  '/app/productos/modelos': {
+    manual: 'tallas-colores',
+    title: 'Productos con tallas',
+    tips: [
+      'Un modelo tiene un precio y una variante por cada talla y color; cada variante es un producto con su código.',
+      'Al crear el modelo eliges la escala, las tallas y los colores: las variantes y sus códigos se crean solos.',
+      'En el modelo, toca una casilla de la cuadrícula para poner el código del proveedor o desactivar esa talla.',
+      'Para cargar existencias usa "Por tallas" en el saldo inicial, los ajustes, los traslados o el conteo.',
+    ],
+  },
+  '/app/productos/tallas': {
+    manual: 'tallas-colores',
+    title: 'Escalas de tallas',
+    tips: [
+      'Ya vienen las escalas de calzado (Colombia, EU, US, niño) y de ropa; puedes editarlas o crear las tuyas.',
+      'La equivalencia es texto libre (p. ej. "EU 39 / US 7") porque cambia según la marca.',
+      'Una talla que ya usa algún producto no se puede quitar de la escala.',
+    ],
+  },
   '/app/productos/importar': {
     manual: 'importar-productos',
     title: 'Importar productos',

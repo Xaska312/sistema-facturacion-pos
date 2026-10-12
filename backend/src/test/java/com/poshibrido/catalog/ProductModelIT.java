@@ -49,6 +49,8 @@ class ProductModelIT extends IntegrationTest {
                 .andExpect(jsonPath("$.colors[1]").value("Blanco"))
                 .andExpect(jsonPath("$.variants.length()").value(6))
                 .andExpect(jsonPath("$.variants[0].sku").value("RUN-38-NEGRO"))
+                .andExpect(jsonPath("$.variants[0].name").value("Tenis Runner T38 Negro"))
+                .andExpect(jsonPath("$.variants[0].baseUnitCode").value("UND"))
                 .andExpect(jsonPath("$.variants[0].barcode").value(startsWith("29"))));
         UUID modelId = UUID.fromString(JsonPath.read(model, "$.id"));
         String variantId = JsonPath.read(model, "$.variants[0].productId");
@@ -105,7 +107,9 @@ class ProductModelIT extends IntegrationTest {
                  "sizes":%s,"colors":[]}
                 """;
         api.postWith(s, "/api/v1/product-models", json.formatted(IVA19, ROPA_LETRAS, "[\"S\",\"M\"]"))
-                .andExpect(status().isCreated());
+                .andExpect(status().isCreated())
+                // Las tallas en letras van sin la "T": "Camiseta S", no "Camiseta TS".
+                .andExpect(jsonPath("$.variants[0].name").value("Camiseta S"));
         // Prefijo repetido
         api.postWith(s, "/api/v1/product-models", json.formatted(IVA19, ROPA_LETRAS, "[\"S\"]"))
                 .andExpect(status().isConflict());

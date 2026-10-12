@@ -67,8 +67,9 @@ public class ProductModelService {
                                List<String> colors) {
     }
 
-    public record VariantView(UUID productId, String sku, String size, String color, String barcode,
-                              boolean active) {
+    /** Una variante (producto) del modelo; la unidad base va para las líneas de inventario de la cuadrícula. */
+    public record VariantView(UUID productId, String sku, String name, String size, String color, String barcode,
+                              UUID baseUnitId, String baseUnitCode, boolean active) {
     }
 
     /** Modelo con sus variantes, las tallas (en el orden de la escala) y los colores (en el orden de creación). */
@@ -408,6 +409,7 @@ public class ProductModelService {
             sizeSet.add(v.getVariantSize());
         }
         List<String> colorOrder = new ArrayList<>(colors);
+        Map<UUID, String> unitCodes = new HashMap<>();
         List<String> sizes = sizeSet.stream()
                 .sorted(Comparator.comparing((String s) -> position.getOrDefault(s, Integer.MAX_VALUE))
                         .thenComparing(Comparator.naturalOrder()))
@@ -416,8 +418,11 @@ public class ProductModelService {
                 .sorted(Comparator.comparing((Product v) -> v.getVariantColor() == null ? -1
                                 : colorOrder.indexOf(v.getVariantColor()))
                         .thenComparing(v -> position.getOrDefault(v.getVariantSize(), Integer.MAX_VALUE)))
-                .map(v -> new VariantView(v.getId(), v.getSku(), v.getVariantSize(), v.getVariantColor(),
-                        firstBarcode(v), v.isActive()))
+                .map(v -> new VariantView(v.getId(), v.getSku(), v.getName(), v.getVariantSize(),
+                        v.getVariantColor(), firstBarcode(v), v.getBaseUnitId(),
+                        unitCodes.computeIfAbsent(v.getBaseUnitId(),
+                                id -> units.findById(id).map(Unit::getCode).orElse("")),
+                        v.isActive()))
                 .toList();
         Category category = m.getCategoryId() == null ? null : categories.findById(m.getCategoryId()).orElse(null);
         Tax tax = taxes.findById(m.getTaxId()).orElse(null);

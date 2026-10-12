@@ -1,4 +1,4 @@
-import { Component, HostListener, OnInit, computed, inject, input, signal } from '@angular/core';
+import { Component, HostListener, OnInit, computed, inject, input, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
@@ -9,7 +9,8 @@ import { CatalogApi } from '../../core/api/catalog.api';
 import { InventoryApi } from '../../core/api/inventory.api';
 import { OrganizationApi } from '../../core/api/organization.api';
 import { formatQuantity } from '../../shared/money';
-import { DraftLine, addScan, baseQuantity, draftLine, linesProblem, toLineInputs } from './document-lines';
+import { DraftLine, addScan, baseQuantity, draftLine, linesProblem, mergeGridLines, toLineInputs } from './document-lines';
+import { SizeGridDialogComponent, SizeGridResult } from './size-grid-dialog.component';
 import { DOCUMENT_LABEL, documentNumber, documentTypeFromRoute } from './labels';
 import { PageHeaderComponent } from '../../shared/page-header.component';
 import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
@@ -22,7 +23,8 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
  */
 @Component({
   selector: 'app-inventory-document-editor',
-  imports: [FormsModule, PesosInputDirective, RouterLink, ButtonModule, InputTextModule, PageHeaderComponent],
+  imports: [FormsModule, PesosInputDirective, RouterLink, ButtonModule, InputTextModule, PageHeaderComponent,
+    SizeGridDialogComponent],
   template: `
     @if (type(); as t) {
       <app-page-header [title]="labels[t]" [description]="help[t]" />
@@ -67,6 +69,8 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
           <input pInputText class="flex-1 min-w-64" placeholder="Escanea el código o escribe SKU/nombre y presiona Enter"
                  [(ngModel)]="code" (keyup.enter)="add()" autofocus />
           <p-button label="Agregar" [loading]="adding()" (onClick)="add()" />
+          <p-button label="Por tallas" icon="pi pi-th-large" severity="secondary" [outlined]="true"
+                    (onClick)="sizeGrid()?.open()" />
         </div>
         @if (results().length > 0) {
           <ul class="border rounded divide-y text-sm max-h-60 overflow-y-auto">
@@ -144,6 +148,8 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
         <a routerLink="/app/inventario/movimientos"><p-button label="Cancelar" [text]="true" severity="secondary" /></a>
         <p-button label="Registrar" [loading]="saving()" [disabled]="problem() !== null" (onClick)="save()" />
       </div>
+
+      <app-size-grid-dialog [type]="t" [branchId]="branchId" [lines]="lines()" (applied)="applyGrid($event)" />
     } @else {
       <p class="text-muted">Tipo de documento desconocido.</p>
     }
@@ -167,6 +173,7 @@ export class InventoryDocumentEditorComponent implements OnInit, HasUnsavedChang
     COUNT: 'Escribe lo que contaste: el sistema ajusta la diferencia con lo registrado.',
   };
   protected readonly q = formatQuantity;
+  protected readonly sizeGrid = viewChild(SizeGridDialogComponent);
   protected readonly type = computed(() => documentTypeFromRoute(this.kind()));
   protected readonly branches = signal<Branch[]>([]);
   protected readonly lines = signal<DraftLine[]>([]);
@@ -322,6 +329,17 @@ export class InventoryDocumentEditorComponent implements OnInit, HasUnsavedChang
     this.lines.update((list) => [...list, line]);
     if (this.type() === 'COUNT' && this.branchId) {
       this.loadCurrent(this.branchId, product.id);
+    }
+  }
+
+  /** Cantidades de la cuadrícula talla × color (fase 8d). */
+  applyGrid(result: SizeGridResult): void {
+    this.results.set([]);
+    this.lines.update((list) => mergeGridLines(list, result.variantIds, result.lines));
+    if (this.type() === 'COUNT' && this.branchId) {
+      for (const line of result.lines.filter((l) => l.currentQuantity === null)) {
+        this.loadCurrent(this.branchId, line.productId);
+      }
     }
   }
 

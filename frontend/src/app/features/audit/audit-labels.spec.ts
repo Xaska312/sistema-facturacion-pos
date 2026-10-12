@@ -8,6 +8,10 @@ describe('audit-labels', () => {
     expect(actionLabel('ROLE_DELETED', 'role')).toBe('Eliminó rol');
     expect(actionLabel('THING_UPDATED', 'thing')).toBe('Modificó');
     expect(actionLabel('ALGO_RARO', 'x')).toBe('ALGO_RARO');
+    // Fase 8d
+    expect(actionLabel('PRODUCT_MODEL_DEACTIVATED', 'product_model')).toBe('Desactivó modelo con tallas');
+    expect(actionLabel('SIZE_SCALE_UPDATED', 'size_scale')).toBe('Modificó escala de tallas');
+    expect(actionLabel('PRODUCT_VARIANT_UPDATED', 'product')).toBe('Cambió el código o el estado de una talla');
   });
 
   it('nombra los módulos y deja el código si no lo conoce', () => {
