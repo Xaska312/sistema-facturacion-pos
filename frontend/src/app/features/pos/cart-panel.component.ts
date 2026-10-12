@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { Popover, PopoverModule } from 'primeng/popover';
 import { formatCop, formatQuantity } from '../../shared/money';
-import { CartLine, CartTotals, lineAmounts, stepQuantity } from './sale-math';
+import { CartLine, CartTotals, lineAmounts, quantityForAmount, stepQuantity } from './sale-math';
 
 export interface LineQuantityChange {
   key: string;
@@ -134,6 +134,15 @@ const UNDO_MS = 6000;
             <input id="edit-quantity" name="quantity" type="number" inputmode="decimal" min="0" step="any"
                    class="h-12 border rounded-lg px-3 text-lg text-right" [(ngModel)]="draftQuantity" />
           </label>
+          @if (decimalUnits().has(line.unitId)) {
+            <label class="flex flex-col gap-1">
+              <span class="text-sm font-medium">O vende por valor ($)</span>
+              <input id="edit-amount" name="amount" type="number" inputmode="numeric" min="0" step="any"
+                     class="h-12 border rounded-lg px-3 text-lg text-right" placeholder="Ej.: 5000"
+                     [ngModel]="draftAmount" (ngModelChange)="setAmount(line, $event)" aria-describedby="amount-hint" />
+              <span id="amount-hint" class="text-xs text-muted">Calcula la cantidad: $5.000 de queso → kg.</span>
+            </label>
+          }
           <div class="flex flex-col gap-1">
             <label for="edit-discount" class="text-sm font-medium">Descuento %</label>
             <input id="edit-discount" name="discount" type="number" inputmode="decimal" min="0" [max]="maxDiscount()"
@@ -197,6 +206,8 @@ export class CartPanelComponent {
   readonly disabled = input(false);
   readonly lastSaleNumber = input<string | null>(null);
 
+  /** Ids de las unidades con decimales: solo ahí se ofrece "vender por valor" (fase 8e). */
+  readonly decimalUnits = input<ReadonlySet<string>>(new Set());
   readonly quantityChange = output<LineQuantityChange>();
   readonly discountChange = output<LineDiscountChange>();
   readonly removeLine = output<string>();
@@ -213,6 +224,8 @@ export class CartPanelComponent {
   protected readonly removed = signal<RemovedLine | null>(null);
   protected draftQuantity: number | null = null;
   protected draftDiscount: number | null = null;
+  /** "Vender por valor" (fase 8e): pesos escritos; la cantidad se calcula al vuelo. */
+  protected draftAmount: number | null = null;
   private undoTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
@@ -263,8 +276,20 @@ export class CartPanelComponent {
   openEditor(event: Event, line: CartLine): void {
     this.editing.set(line);
     this.draftQuantity = line.quantity;
+    this.draftAmount = null;
     this.draftDiscount = line.discountPercent;
     this.editor().show(event);
+  }
+
+  /** Con el descuento escrito en el editor, la cantidad que cobra ese valor. */
+  protected setAmount(line: CartLine, value: number | null): void {
+    this.draftAmount = value;
+    const discount = Math.min(Math.max(Number(this.draftDiscount ?? 0) || 0, 0), this.maxDiscount());
+    const quantity = value === null ? null
+      : quantityForAmount(Number(value), line.unitPrice, discount, line.taxRate, this.pricesIncludeTax());
+    if (quantity !== null) {
+      this.draftQuantity = quantity;
+    }
   }
 
   focusEditor(): void {

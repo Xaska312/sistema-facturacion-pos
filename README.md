@@ -23,7 +23,7 @@ POS web multi-negocio para comercios en Colombia. Backend Spring Boot 4.1 (Java 
 | 6 — Reportes y dashboard | ✅ Completada (validada en local el 2026-10-05) |
 | Mejora de UX (UX-1 a UX-5) | ✅ Completada (validada el 2026-10-05) |
 | 7 — Endurecimiento para producción | ✅ Completada (2026-10-11): producción y respaldos, auditoría, consola de plataforma, correos, CI con lint y e2e, manual de uso y QA completo |
-| 8 — Antes de lanzar | 🚧 En curso: 8a tipos de documento ✅, 8b suscripciones ✅, 8d tallas y colores ✅, 8c marca del negocio ✅, 8e báscula 🚧 |
+| 8 — Antes de lanzar | 🚧 En curso: 8a tipos de documento ✅, 8b suscripciones ✅, 8d tallas y colores ✅, 8c marca del negocio ✅, 8e báscula 🧪 |
 | 9 — Despliegue acompañado | ⏳ Pendiente: servidor de pruebas → prueba de carga y lista manual → producción |
 
 ## Requisitos
@@ -350,12 +350,17 @@ talla × color ("Por tallas").
 **8c — Marca del negocio.** *Ajustes → Marca*: logo (encabezado y tiquete) y color de la app entre 8 de una paleta con
 contraste revisado en claro y oscuro. El pie del tiquete está en *Ajustes del negocio*.
 
+**8e — Báscula.** *Productos → Báscula*: formato de las etiquetas de la báscula etiquetadora (EAN-13 que empieza por
+2, con peso o precio) y PLU de cada producto; en *Vender*, la etiqueta entra con su peso. Sin báscula: "O vende por
+valor ($)" en la línea del carrito.
+
 | Qué | Test |
 |---|---|
 | Tipos de documento y NIT | `PartiesIT` |
 | Prueba gratis, códigos, vencimiento, límites del plan, consola | `SubscriptionIT` y specs de `features/platform` |
 | Modelos, variantes, escalas, saldos por talla | `ProductModelIT`, `model-grid.spec`, `pos-cards.spec`, `variant-picker.component.spec` |
 | Color y logo (solo PNG/JPG/WebP reales, permisos) | `BrandingIT`, `image-shrink.spec` |
+| Etiquetas de báscula (peso, precio, PLU, prioridad del código) y vender por valor | `ScaleIT`, `ScaleLabelsTest`, `scale-format.spec`, `sale-math.spec` |
 
 **Probar a mano:** *Productos → Con tallas → Nuevo modelo* (tallas 38–42, colores Negro y Blanco), saldo inicial con
 "Por tallas", vender eligiendo la talla; *Ajustes → Marca*: subir logo, probar colores y revisar el tiquete.

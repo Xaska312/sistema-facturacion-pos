@@ -328,3 +328,16 @@ Color de una paleta cerrada y logo pequeño. Leer: cualquier miembro del negocio
 | DELETE | `/branding/logo` | Quita el logo |
 
 El pie del tiquete sigue en `PUT /settings` (`receiptFooter`, ya existía).
+
+## Báscula etiquetadora (Fase 8e)
+Etiquetas EAN-13 que empiezan por 2: prefijo + PLU + valor (peso o precio) + dígito de control. Leer: `products:read`; configurar y asignar PLU: `products:manage`. Auditoría: `SCALE_SETTINGS_UPDATED`, `SCALE_PLU_ASSIGNED`, `SCALE_PLU_REMOVED`.
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/scale/settings` | `{enabled, prefix ("2" o "20"–"28"), pluDigits (3–6), kind (WEIGHT \| PRICE), decimals (peso: 0–3; precio: 0)}`. Al valor le quedan `12 − prefijo − PLU` dígitos (4 a 7) |
+| PUT | `/scale/settings` | El mismo cuerpo. 422 con prefijo 29 (códigos internos) o si al valor no le quedan de 4 a 7 dígitos |
+| GET | `/scale/plus` | `[{plu, productId, sku, name, unitCode}]` |
+| PUT | `/scale/plus/{plu}` | `{productId}`: asigna o cambia el producto del PLU (se guarda sin ceros a la izquierda). 422 si la unidad base no es KG o LB; 409 si el producto ya tiene otro PLU o el PLU es de otro producto |
+| DELETE | `/scale/plus/{plu}` | 204 |
+
+`GET /products/lookup?code=` agrega `scaleQuantity` (el peso, en kg o lb) y `scaleAmount` (el precio de la etiqueta; la pantalla calcula la cantidad con el IVA): con una etiqueta de báscula y la lectura activa; null con un código normal. Un código de barras registrado tiene prioridad sobre el formato de báscula. PLU sin asignar → 404.

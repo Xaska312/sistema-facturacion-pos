@@ -475,6 +475,9 @@ export interface ProductLookup {
   taxType: TaxType;
   taxRate: number;
   trackInventory: boolean;
+  /** Etiqueta de báscula (fase 8e): el peso (cantidad) o el valor en pesos; null con un código normal. */
+  scaleQuantity?: number | null;
+  scaleAmount?: number | null;
 }
 
 // ---------------------------------------------------------------- Caja (Fase 5)
@@ -1024,3 +1027,25 @@ export interface ProductModelInput {
 }
 
 export type ProductModelUpdate = Omit<ProductModelInput, 'skuPrefix' | 'sizeScaleId' | 'sizes' | 'colors'>;
+
+// ---------------------------------------------------------------- Fase 8e: báscula
+
+export type ScaleKind = 'WEIGHT' | 'PRICE';
+
+export interface ScaleFormat {
+  enabled: boolean;
+  /** 2 o 20–28 (29 es el de los códigos internos). */
+  prefix: string;
+  pluDigits: number;
+  kind: ScaleKind;
+  /** Decimales del peso (3 = gramos → kg); con precio, 0. */
+  decimals: number;
+}
+
+export interface ScalePlu {
+  plu: string;
+  productId: string;
+  sku: string;
+  name: string;
+  unitCode: string | null;
+}

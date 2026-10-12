@@ -10,6 +10,7 @@ import {
   stepQuantity,
   stockShortages,
   summarizePayments,
+  quantityForAmount,
 } from './sale-math';
 
 const line = (over: Partial<CartLine> = {}): CartLine => ({
@@ -106,5 +107,16 @@ describe('sale-math (referencias de pago)', () => {
     ];
     expect(paymentsMissingReference(payments, requires)).toEqual([1]);
     expect(paymentsMissingReference([], requires)).toEqual([]);
+  });
+});
+
+describe('quantityForAmount (fase 8e: vender por valor)', () => {
+  it('calcula la cantidad que cobra ese valor', () => {
+    expect(quantityForAmount(5000, 20000, 0, 19, true)).toBe(0.25);
+    expect(quantityForAmount(5000, 20000, 0, 0, false)).toBe(0.25);
+    expect(quantityForAmount(5950, 20000, 0, 19, false)).toBe(0.25);
+    expect(quantityForAmount(4500, 20000, 10, 19, true)).toBe(0.25);
+    expect(quantityForAmount(0, 20000, 0, 19, true)).toBeNull();
+    expect(quantityForAmount(5000, 0, 0, 19, true)).toBeNull();
   });
 });

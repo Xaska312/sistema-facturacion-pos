@@ -108,6 +108,16 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
       'Una talla que ya usa algún producto no se puede quitar de la escala.',
     ],
   },
+  '/app/bascula': {
+    manual: 'bascula',
+    title: 'Báscula',
+    tips: [
+      'Configura el formato tal como lo imprime tu báscula: el ejemplo te ayuda a compararlo con una etiqueta real.',
+      'Asigna a cada producto que pesas el PLU que tiene en la báscula; su unidad debe admitir decimales (KG, LB…).',
+      'En la venta, escanea la etiqueta: entra el producto con su peso (o con la cantidad que da el precio de la etiqueta).',
+      'Sin báscula etiquetadora, en el carrito toca la línea y usa "Vende por valor" ($5.000 de queso).',
+    ],
+  },
   '/app/productos/importar': {
     manual: 'importar-productos',
     title: 'Importar productos',

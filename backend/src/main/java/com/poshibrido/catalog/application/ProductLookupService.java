@@ -19,6 +19,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -35,6 +37,45 @@ public class ProductLookupService implements PricingApi {
     private final PriceListItemRepository listItems;
     private final UnitRepository units;
     private final TaxRepository taxes;
+    private final ScaleService scale;
+
+    /**
+     * Lo leído por el lector del POS. Con una etiqueta de báscula: {@code scaleQuantity} = el peso, o
+     * {@code scaleAmount} = el precio de la etiqueta (la pantalla calcula la cantidad con el IVA y la lista del cliente).
+     */
+    public record Scanned(ResolvedPrice price, BigDecimal scaleQuantity, BigDecimal scaleAmount) {
+    }
+
+    /**
+     * Lector del POS (fase 8e): un código de barras registrado manda (también los internos que empiezan por 29);
+     * si no, una etiqueta de báscula con el formato configurado; si no, el SKU. Si la etiqueta trae un PLU sin
+     * asignar y tampoco es un SKU, se avisa del PLU.
+     */
+    @Transactional(readOnly = true)
+    public Scanned scan(String rawCode, UUID priceListId) {
+        String code = rawCode == null ? "" : rawCode.trim();
+        if (!code.isEmpty() && barcodes.findByBarcode(code).isEmpty()) {
+            Optional<ScaleService.ScaleHit> hit = scale.resolve(code);
+            if (hit.isPresent()) {
+                ScaleService.ScaleHit h = hit.get();
+                if (h.productId() == null) {
+                    if (products.findBySkuIgnoreCase(code).isPresent()) {
+                        return new Scanned(lookup(code, priceListId), null, null);
+                    }
+                    throw new NotFoundException("El PLU " + h.plu() + " de la báscula no está asignado a ningún "
+                            + "producto (Productos → Báscula).");
+                }
+                ResolvedPrice price = price(h.productId(), null, priceListId);
+                if (h.value().signum() <= 0) {
+                    throw new BusinessRuleException("La etiqueta de la báscula trae cantidad 0.");
+                }
+                return h.kind() == ScaleLabels.Kind.WEIGHT
+                        ? new Scanned(price, h.value().setScale(3, RoundingMode.HALF_UP), null)
+                        : new Scanned(price, null, h.value());
+            }
+        }
+        return new Scanned(lookup(code, priceListId), null, null);
+    }
 
     @Transactional(readOnly = true)
     public ResolvedPrice lookup(String rawCode, UUID priceListId) {
