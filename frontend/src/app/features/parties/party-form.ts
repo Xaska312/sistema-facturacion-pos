@@ -1,14 +1,6 @@
 import { DocumentType, Party, PartyInput, PersonType } from '../../core/api/api.models';
+import { isLegalPersonDocument } from '../../shared/document-types';
 import { nitVerificationDigit } from '../../shared/nit';
-
-export const DOCUMENT_TYPES: { value: DocumentType; label: string }[] = [
-  { value: 'CC', label: 'Cédula de ciudadanía' },
-  { value: 'NIT', label: 'NIT' },
-  { value: 'CE', label: 'Cédula de extranjería' },
-  { value: 'PASSPORT', label: 'Pasaporte' },
-  { value: 'TI', label: 'Tarjeta de identidad' },
-  { value: 'PEP', label: 'Permiso especial de permanencia' },
-];
 
 /** Estado editable del formulario de tercero. */
 export interface PartyDraft {
@@ -73,8 +65,11 @@ export function draftProblem(d: PartyDraft): string | null {
   if (!d.documentNumber.trim()) {
     return 'Escribe el número de documento.';
   }
-  if (d.personType === 'LEGAL' && d.documentType !== 'NIT') {
-    return 'Una persona jurídica se identifica con NIT.';
+  if (d.personType === 'LEGAL' && !isLegalPersonDocument(d.documentType)) {
+    return 'Una persona jurídica se identifica con NIT (o NIT de otro país).';
+  }
+  if (d.personType === 'NATURAL' && d.documentType === 'FOREIGN_NIT') {
+    return 'El NIT de otro país es solo para personas jurídicas.';
   }
   if (d.documentType === 'NIT' && draftDv(d) === null) {
     return 'El NIT solo lleva números (sin el dígito de verificación).';

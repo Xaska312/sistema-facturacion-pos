@@ -311,7 +311,8 @@ export interface ImportReport {
 // ---------------------------------------------------------------- Fase 3: terceros
 
 export type PersonType = 'NATURAL' | 'LEGAL';
-export type DocumentType = 'CC' | 'CE' | 'NIT' | 'PASSPORT' | 'TI' | 'PEP';
+export type DocumentType = 'CC' | 'CE' | 'NIT' | 'PASSPORT' | 'TI' | 'PEP' | 'PPT' | 'TE' | 'RC' | 'NUIP' | 'FOREIGN_ID'
+  | 'FOREIGN_NIT';
 
 export interface Party {
   id: string;

@@ -13,7 +13,8 @@ import { PageHeaderComponent } from '../../shared/page-header.component';
 import { StatusKey, activeStatus } from '../../shared/status';
 import { DataTableComponent } from '../../shared/table/data-table.component';
 import { ColumnDef, TableQuery, initialQuery, toPageQuery } from '../../shared/table/table';
-import { DOCUMENT_TYPES, PartyDraft, draftDv, draftOf, draftProblem, emptyDraft, toPartyInput } from './party-form';
+import { PartyDraft, draftDv, draftOf, draftProblem, emptyDraft, toPartyInput } from './party-form';
+import { documentShortLabel, documentTypesFor, isLegalPersonDocument } from '../../shared/document-types';
 import { TermComponent } from '../../shared/help/term.component';
 import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
 import { permissionFlag } from '../../core/auth/permission-flag';
@@ -72,7 +73,7 @@ import { LatestRequest } from '../../shared/latest-request';
         <div class="flex flex-col gap-1">
           <label for="party-doctype" class="text-sm font-medium">Tipo de documento</label>
           <select id="party-doctype" class="border rounded-md px-2 py-2" [(ngModel)]="draft.documentType">
-            @for (t of documentTypes; track t.value) {
+            @for (t of documentTypesFor(draft.personType); track t.value) {
               <option [value]="t.value">{{ t.label }}</option>
             }
           </select>
@@ -170,7 +171,7 @@ export class PartiesComponent implements OnInit {
   private readonly confirm = inject(ConfirmService);
   protected readonly canManage = permissionFlag('parties:manage');
 
-  protected readonly documentTypes = DOCUMENT_TYPES;
+  protected readonly documentTypesFor = documentTypesFor;
   protected readonly isCustomers = computed(() => this.kind() === 'customers');
   protected readonly page = signal<PageResponse<Party> | null>(null);
   protected readonly loading = signal(true);
@@ -191,7 +192,7 @@ export class PartiesComponent implements OnInit {
   protected readonly columns = computed<ColumnDef<Party>[]>(() => {
     const base: ColumnDef<Party>[] = [
       { header: 'Nombre', cell: (p) => p.displayName },
-      { header: 'Documento', cell: (p) => `${p.documentType} ${p.formattedDocument}`, kind: 'mono' },
+      { header: 'Documento', cell: (p) => `${documentShortLabel(p.documentType)} ${p.formattedDocument}`, kind: 'mono' },
       { header: 'Teléfono', cell: (p) => p.phone, hideOnMobile: true },
       { header: 'Correo', cell: (p) => p.email, hideOnMobile: true },
     ];
@@ -204,8 +205,10 @@ export class PartiesComponent implements OnInit {
 
   protected setPersonType(value: PersonType): void {
     this.draft.personType = value;
-    if (value === 'LEGAL') {
+    if (value === 'LEGAL' && !isLegalPersonDocument(this.draft.documentType)) {
       this.draft.documentType = 'NIT';
+    } else if (value === 'NATURAL' && this.draft.documentType === 'FOREIGN_NIT') {
+      this.draft.documentType = 'CC';
     }
   }
 
