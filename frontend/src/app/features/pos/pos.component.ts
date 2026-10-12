@@ -54,6 +54,7 @@ import {
   parseScan,
   paymentsMissingReference,
   quantity4,
+  quantityForAmount,
   stockShortages,
   summarizePayments,
 } from './sale-math';
@@ -129,7 +130,7 @@ const STOCK_PAGES = 5;
 
           <app-cart-panel class="md:w-[22rem] lg:w-[26rem] shrink-0" data-tour="cart" [lines]="lines()" [totals]="totals()"
                           [pricesIncludeTax]="config()?.pricesIncludeTax ?? true" [shortages]="shortages()"
-                          [maxDiscount]="maxDiscount()" [customerName]="customer().name"
+                          [maxDiscount]="maxDiscount()" [decimalUnits]="decimalUnits()" [customerName]="customer().name"
                           [canCharge]="lines().length > 0" [lastSaleNumber]="lastSale()?.documentNumber ?? null"
                           (quantityChange)="setQuantity($event)" (discountChange)="setDiscount($event)"
                           (removeLine)="removeLine($event)" (restoreLine)="restoreLine($event)"
@@ -489,6 +490,8 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   protected readonly favorites = signal<string[]>(loadFavorites(this.auth.tenantId()));
   /** Existencia por producto en la sucursal de la caja (solo con inventory:read). */
   protected readonly stock = signal<ReadonlyMap<string, number>>(new Map());
+  /** Unidades que admiten decimales: solo ahí se ofrece "vender por valor" (fase 8e). */
+  protected readonly decimalUnits = signal<ReadonlySet<string>>(new Set());
 
   protected readonly totals = computed(() => cartTotals(this.lines(), this.config()?.pricesIncludeTax ?? true));
   protected readonly shortages = computed(() => stockShortages(this.lines(), this.stock()));
@@ -521,6 +524,8 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
     });
     this.loadSession();
     this.cash.paymentMethods().subscribe((methods) => this.methods.set(methods));
+    this.catalog.units().subscribe((units) =>
+      this.decimalUnits.set(new Set(units.filter((u) => u.allowsDecimals).map((u) => u.id))));
   }
 
   /**
@@ -616,7 +621,8 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
     this.sales.lookup(parsed.code, this.customer().priceListId)
       .pipe(finalize(() => this.lookupDone()))
       .subscribe({
-        next: (found) => this.addLine(found, parsed.quantity),
+        // Etiqueta de báscula (fase 8e): la cantidad viene en el código (peso, o precio ÷ precio del producto).
+        next: (found) => this.addScanned(found, parsed.quantity),
         error: (error: unknown) => {
           this.payWhenReady = false; // el producto no llegó: no se abre el cobro solo
           const notFound = error instanceof HttpErrorResponse && error.status === 404;
@@ -628,6 +634,25 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
           this.focusScanner();
         },
       });
+  }
+
+  /**
+   * Lo leído por el lector. Etiqueta de báscula (fase 8e): con peso, esa es la cantidad; con precio, la cantidad que
+   * cobra ese valor con el IVA del producto.
+   */
+  private addScanned(found: ProductLookup, multiplier: number): void {
+    if (found.scaleAmount) {
+      const quantity = quantityForAmount(Number(found.scaleAmount), Number(found.price), 0, Number(found.taxRate),
+        this.config()?.pricesIncludeTax ?? true);
+      if (quantity === null) {
+        this.messages.add({ severity: 'warn', summary: 'Sin precio', detail: `${found.name} no tiene precio de venta.` });
+        this.focusScanner();
+        return;
+      }
+      this.addLine(found, quantity4(quantity * multiplier));
+      return;
+    }
+    this.addLine(found, found.scaleQuantity ? quantity4(Number(found.scaleQuantity) * multiplier) : multiplier);
   }
 
   addLine(found: ProductLookup, quantity: number): void {

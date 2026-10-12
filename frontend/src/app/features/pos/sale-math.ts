@@ -31,6 +31,19 @@ export interface LineAmounts {
 }
 
 /**
+ * "Vender por valor" (fase 8e): cantidad para que la línea cobre {@code amount} pesos ($5.000 de queso). Se redondea a
+ * 4 decimales, como toda cantidad del carrito; el total puede diferir en unos pocos pesos. Null si no hay precio.
+ */
+export function quantityForAmount(amount: number, price: number, discountPercent: number, taxRate: number,
+                                  pricesIncludeTax: boolean): number | null {
+  const perUnit = price * (1 - discountPercent / 100) * (pricesIncludeTax ? 1 : 1 + taxRate / 100);
+  if (!(amount > 0) || !(perUnit > 0)) {
+    return null;
+  }
+  return quantity4(amount / perUnit);
+}
+
+/**
  * Igual que SaleCalculator (pesos enteros por línea): bruto = pesos(precio × cantidad); descuento = pesos(bruto × %);
  * neto = bruto − descuento.
  * Con IVA incluido: total = neto; base = total / (1 + tarifa); impuesto = total − base.

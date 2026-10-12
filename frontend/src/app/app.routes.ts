@@ -196,6 +196,13 @@ export const routes: Routes = [
           import('./features/products/models/size-scales.component').then((m) => m.SizeScalesComponent),
       },
       {
+        path: 'bascula',
+        title: 'Báscula',
+        canActivate: [permissionGuard],
+        data: { permission: 'products:read' },
+        loadComponent: () => import('./features/scale/scale.component').then((m) => m.ScaleComponent),
+      },
+      {
         path: 'productos/nuevo',
         title: 'Nuevo producto',
         canActivate: [permissionGuard],

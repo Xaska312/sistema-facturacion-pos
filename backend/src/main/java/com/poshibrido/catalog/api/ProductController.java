@@ -6,6 +6,7 @@ import com.poshibrido.catalog.application.ProductImportService;
 import com.poshibrido.catalog.application.ProductLookupService;
 import com.poshibrido.catalog.application.ProductService;
 import com.poshibrido.catalog.application.ProductView;
+import com.poshibrido.catalog.domain.TaxType;
 import com.poshibrido.shared.api.PageRequests;
 import com.poshibrido.shared.api.PageResponse;
 import com.poshibrido.shared.error.BusinessRuleException;
@@ -105,8 +106,22 @@ public class ProductController {
     /** Busca por código de barras o SKU y devuelve unidad y precio vigente (lector de la pantalla de venta). */
     @GetMapping("/api/v1/products/lookup")
     @PreAuthorize("hasAuthority('products:read')")
-    public ResolvedPrice lookup(@RequestParam String code, @RequestParam(required = false) UUID priceListId) {
-        return lookup.lookup(code, priceListId);
+    public LookupView lookup(@RequestParam String code, @RequestParam(required = false) UUID priceListId) {
+        ProductLookupService.Scanned scanned = lookup.scan(code, priceListId);
+        return LookupView.of(scanned.price(), scanned.scaleQuantity(), scanned.scaleAmount());
+    }
+
+    /** Lo que ve el lector: el precio resuelto y, con una etiqueta de báscula, el peso o el valor (fase 8e). */
+    public record LookupView(UUID productId, String sku, String name, UUID unitId, String unitCode, BigDecimal factor,
+                             BigDecimal price, UUID priceListId, boolean fromList, UUID taxId, TaxType taxType,
+                             BigDecimal taxRate, boolean trackInventory, BigDecimal scaleQuantity,
+                             BigDecimal scaleAmount) {
+
+        static LookupView of(ResolvedPrice p, BigDecimal scaleQuantity, BigDecimal scaleAmount) {
+            return new LookupView(p.productId(), p.sku(), p.name(), p.unitId(), p.unitCode(), p.factor(), p.price(),
+                    p.priceListId(), p.fromList(), p.taxId(), p.taxType(), p.taxRate(), p.trackInventory(),
+                    scaleQuantity, scaleAmount);
+        }
     }
 
     @GetMapping("/api/v1/products/{id}")

@@ -278,6 +278,22 @@ export const MANUAL: readonly ManualChapter[] = [
         who: 'Propietario, Administrador y Bodeguero.',
       },
       {
+        id: 'bascula',
+        title: 'Báscula: vender lo que se pesa',
+        summary: 'Lee las etiquetas que imprime la báscula etiquetadora (el código empieza por 2) o vende por valor ($5.000 de queso).',
+        steps: [
+          'Crea el producto con unidad base KG (o LB) y su precio por kilo.',
+          'En Productos toca "Báscula": activa "Leer etiquetas", elige cómo empieza el código, cuántos dígitos tiene el PLU y si la etiqueta trae el peso o el precio. Compara el ejemplo con una etiqueta real.',
+          'Toca "Asignar PLU" y pon a cada producto el mismo PLU que tiene en la báscula.',
+          'En Vender, escanea la etiqueta: entra el producto con el peso (o, si trae el precio, con la cantidad que da ese valor).',
+        ],
+        tips: [
+          'Vender por valor sin báscula: en el carrito toca la línea y escribe el valor en "O vende por valor ($)"; la cantidad se calcula sola.',
+          'Si la etiqueta trae el precio, el total queda igual al de la etiqueta (puede variar unos pocos pesos por redondeo).',
+        ],
+        who: 'Configurar: Propietario, Administrador y Bodeguero. Vender: quien usa la caja.',
+      },
+      {
         id: 'catalogo',
         title: 'Categorías, impuestos y listas de precios',
         summary: 'En Ajustes de catálogo organizas tus productos y defines precios especiales.',

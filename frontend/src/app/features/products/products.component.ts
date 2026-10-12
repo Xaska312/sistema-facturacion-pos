@@ -19,6 +19,8 @@ import { LatestRequest } from '../../shared/latest-request';
     <app-page-header title="Productos" description="Lo que vendes: precio, impuesto, unidad y códigos de barras. Los productos con tallas y colores están en «Con tallas».">
       <a pButton routerLink="/app/productos/modelos" label="Con tallas" icon="pi pi-th-large" severity="secondary"
          [outlined]="true"></a>
+      <a pButton routerLink="/app/bascula" label="Báscula" icon="pi pi-calculator" severity="secondary"
+         [outlined]="true"></a>
       @if (canManage()) {
         <a pButton routerLink="/app/productos/importar" label="Importar CSV" icon="pi pi-upload" severity="secondary"
            [outlined]="true"></a>
