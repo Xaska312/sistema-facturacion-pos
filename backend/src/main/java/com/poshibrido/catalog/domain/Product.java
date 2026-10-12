@@ -68,6 +68,16 @@ public class Product extends AuditableEntity {
     @Column(nullable = false)
     private boolean active;
 
+    /** Modelo al que pertenece esta variante (talla × color, fase 8d); {@code null} en un producto normal. */
+    @Column(name = "model_id")
+    private UUID modelId;
+
+    @Column(name = "variant_size")
+    private String variantSize;
+
+    @Column(name = "variant_color")
+    private String variantColor;
+
     /** Verdadero cuando el inventario ya maneja el costo (promedio ponderado): no se edita a mano. */
     @Column(name = "cost_locked", nullable = false)
     private boolean costLocked;
@@ -96,6 +106,19 @@ public class Product extends AuditableEntity {
         product.tracksLots = false;
         product.apply(data);
         return product;
+    }
+
+    /** Variante de un modelo: talla y color (opcional). Sus datos básicos los copia el modelo. */
+    public static Product createVariant(Data data, UUID modelId, String size, String color) {
+        Product product = create(data);
+        product.modelId = modelId;
+        product.variantSize = size;
+        product.variantColor = color;
+        return product;
+    }
+
+    public boolean isVariant() {
+        return modelId != null;
     }
 
     public void apply(Data data) {

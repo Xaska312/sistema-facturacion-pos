@@ -31,11 +31,26 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
                    or p.id in (select b.product.id from ProductBarcode b where b.barcode = :exact))
               and (:anyCategory = true or p.categoryId = :categoryId)
               and (:includeInactive = true or p.active = true)
+              and (:includeVariants = true or p.modelId is null)
             """)
     Page<Product> search(@Param("pattern") String pattern, @Param("patternUpper") String patternUpper,
                          @Param("exact") String exact, @Param("anyCategory") boolean anyCategory,
                          @Param("categoryId") UUID categoryId, @Param("includeInactive") boolean includeInactive,
-                         Pageable pageable);
+                         @Param("includeVariants") boolean includeVariants, Pageable pageable);
+
+    /** Variantes de un modelo (fase 8d). */
+    List<Product> findByModelId(UUID modelId);
+
+    /** Variantes de varios modelos (lista de modelos: cuántas tiene cada uno). */
+    @Query("select p.modelId, count(p) from Product p where p.modelId in :modelIds group by p.modelId")
+    List<Object[]> countVariants(@Param("modelIds") Collection<UUID> modelIds);
+
+    /** Tallas de una escala que usan las variantes de sus modelos (no se pueden quitar de la escala). */
+    @Query("""
+            select distinct p.variantSize from Product p, ProductModel m
+            where p.modelId = m.id and m.sizeScaleId = :scaleId
+            """)
+    List<String> sizesInUse(@Param("scaleId") UUID scaleId);
 
     @Query("select count(p) from Product p where p.active = true and (p.baseUnitId = :unitId "
             + "or exists (select 1 from ProductUnitConversion c where c.product = p and c.unitId = :unitId))")

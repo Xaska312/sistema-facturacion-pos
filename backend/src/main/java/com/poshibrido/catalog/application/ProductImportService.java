@@ -135,6 +135,11 @@ public class ProductImportService {
         int toUpdate = 0;
         for (Row row : rows) {
             Product current = existing.get(row.sku());
+            if (current != null && current.isVariant()) {
+                errors.add(new RowError(row.number(), "El SKU " + row.sku()
+                        + " es una talla de un modelo: cámbialo desde el modelo, no desde la importación."));
+                continue;
+            }
             if (row.barcode() != null) {
                 ProductBarcode owner = existingBarcodes.get(row.barcode());
                 if (owner != null && (current == null || !owner.getProduct().getId().equals(current.getId()))) {
