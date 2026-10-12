@@ -1,4 +1,4 @@
-import { Direction, InventoryDocumentType, InventoryLineInput, Product } from '../../core/api/api.models';
+import { Direction, InventoryDocumentType, InventoryLineInput, Product, ProductVariant } from '../../core/api/api.models';
 
 /** Línea en edición del documento de inventario. */
 export interface DraftLine {
@@ -33,6 +33,46 @@ export function draftLine(product: Product, unitId: string | null): DraftLine {
     currentQuantity: null,
     baseUnitCode: product.baseUnitCode ?? '',
   };
+}
+
+/** Línea de una talla agregada desde la cuadrícula talla × color (fase 8d): las variantes solo tienen unidad base. */
+export function variantLine(variant: ProductVariant, quantity: number,
+                            options: { direction: Direction; unitCost: number | null; currentQuantity: number | null })
+  : DraftLine {
+  return {
+    productId: variant.productId,
+    sku: variant.sku,
+    name: variant.name,
+    units: [{ id: variant.baseUnitId, code: variant.baseUnitCode, factor: 1 }],
+    unitId: variant.baseUnitId,
+    quantity,
+    direction: options.direction,
+    unitCost: options.unitCost,
+    currentQuantity: options.currentQuantity,
+    baseUnitCode: variant.baseUnitCode,
+  };
+}
+
+/**
+ * Aplica la cuadrícula de un modelo a la lista: las tallas de {@code variantIds} quedan como dice la cuadrícula (las que
+ * ya estaban se actualizan en su lugar conservando la existencia con la que se empezó a contar, las nuevas van al final y
+ * las que se dejaron vacías salen de la lista). Las líneas de otros productos no cambian.
+ */
+export function mergeGridLines(lines: DraftLine[], variantIds: readonly string[], grid: DraftLine[]): DraftLine[] {
+  const ofModel = new Set(variantIds);
+  const fromGrid = new Map(grid.map((l) => [l.productId, l] as const));
+  const result: DraftLine[] = [];
+  for (const line of lines) {
+    const updated = fromGrid.get(line.productId);
+    if (!ofModel.has(line.productId)) {
+      result.push(line);
+    } else if (updated) {
+      // En el conteo se conserva la existencia de cuando se empezó a contar esa talla (INV-2).
+      result.push({ ...updated, currentQuantity: line.currentQuantity ?? updated.currentQuantity });
+      fromGrid.delete(line.productId);
+    }
+  }
+  return [...result, ...fromGrid.values()];
 }
 
 /** Cantidad de la línea en unidad base. */

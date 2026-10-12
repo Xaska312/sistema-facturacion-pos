@@ -258,6 +258,26 @@ export const MANUAL: readonly ManualChapter[] = [
         tips: ['Si un SKU ya existe, ese producto se actualiza con los datos del archivo.'],
       },
       {
+        id: 'tallas-colores',
+        title: 'Productos con tallas y colores (calzado y ropa)',
+        summary: 'Un modelo (p. ej. "Tenis Runner") con un solo precio crea un producto por cada talla y color, cada uno con su código de barras y su propia existencia.',
+        steps: [
+          'En Productos toca "Con tallas" y luego "Nuevo modelo".',
+          'Escribe el prefijo del SKU (p. ej. RUN), el nombre, el impuesto y el precio de venta.',
+          'Elige la escala (Calzado Colombia, EU, US, niño, ropa…), marca las tallas que vendes y escribe los colores separados por comas.',
+          'Toca "Crear modelo": se crean todas las variantes (RUN-38-NEGRO, RUN-39-NEGRO…) cada una con su propio código de barras interno.',
+          'Para cargar o contar existencias, en el documento de inventario toca "Por tallas" y llena la cuadrícula talla × color.',
+          'Al vender, el modelo sale en una sola tarjeta: tócala y elige la talla (ves cuántas hay de cada una). Con el lector, el código de cada talla la agrega directo.',
+        ],
+        tips: [
+          'El precio de venta (al público), el nombre y el impuesto se cambian en el modelo y se aplican a todas sus tallas. El costo es lo que pagas al proveedor.',
+          'Si el proveedor trae su propio código de barras, toca la casilla de esa talla y escanéalo: reemplaza al interno.',
+          'En "Escalas de tallas" puedes escribir la equivalencia de cada talla (38 = EU 39 / US 7) o crear tus propias escalas.',
+          'Desactivar el modelo desactiva todas sus tallas; también puedes desactivar una sola talla que ya no vendes.',
+        ],
+        who: 'Propietario, Administrador y Bodeguero.',
+      },
+      {
         id: 'catalogo',
         title: 'Categorías, impuestos y listas de precios',
         summary: 'En Ajustes de catálogo organizas tus productos y defines precios especiales.',

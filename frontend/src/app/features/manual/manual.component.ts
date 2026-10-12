@@ -8,7 +8,8 @@ import { MANUAL_GLOSSARY, filterManual, normalize } from './manual-content';
 
 /**
  * Manual de uso público ({@code /manual}): se abre sin iniciar sesión para compartirlo con clientes, y cada sección
- * tiene su propio enlace ({@code /manual#cobrar}). Se puede buscar e imprimir.
+ * tiene su propio enlace ({@code /manual#cobrar}). Se puede buscar. Sin botón de imprimir: la impresión del navegador
+ * salía en blanco y el usuario no la necesita (si quiere un manual físico se arma aparte).
  */
 @Component({
   selector: 'app-manual',
@@ -19,15 +20,12 @@ import { MANUAL_GLOSSARY, filterManual, normalize } from './manual-content';
         <a href="/manual" class="font-semibold text-brand text-lg" (click)="top($event)">POS Híbrido</a>
         <span class="text-muted">Manual de uso</span>
         <span class="flex-1"></span>
-        <button type="button" class="link-button no-print" (click)="print()">
-          <i class="pi pi-print" aria-hidden="true"></i>Imprimir
-        </button>
-        <a [routerLink]="appLink()" class="app-button no-print">{{ auth.isAuthenticated() ? 'Volver a la app' : 'Entrar' }}</a>
+        <a [routerLink]="appLink()" class="app-button">{{ auth.isAuthenticated() ? 'Volver a la app' : 'Entrar' }}</a>
       </div>
     </header>
 
     <div class="mx-auto max-w-6xl px-4 py-6 lg:grid lg:grid-cols-[15rem_1fr] lg:gap-8">
-      <nav class="toc no-print" aria-label="Contenido del manual">
+      <nav class="toc" aria-label="Contenido del manual">
         <label class="flex flex-col gap-1 mb-4">
           <span class="text-sm font-medium">Buscar en el manual</span>
           <input type="search" class="search" placeholder="Ej.: cerrar caja, invitar, F4" [value]="query()"
@@ -76,7 +74,7 @@ import { MANUAL_GLOSSARY, filterManual, normalize } from './manual-content';
                 <article [id]="section.id" class="card p-5 section">
                   <div class="flex items-start gap-2">
                     <h3 class="text-lg font-semibold flex-1">{{ section.title }}</h3>
-                    <button type="button" class="link-button text-sm no-print" (click)="copyLink(section.id)"
+                    <button type="button" class="link-button text-sm" (click)="copyLink(section.id)"
                             [attr.aria-label]="'Copiar enlace a ' + section.title">
                       <i class="pi pi-link" aria-hidden="true"></i><span class="hidden sm:inline">Copiar enlace</span>
                     </button>
@@ -263,16 +261,6 @@ import { MANUAL_GLOSSARY, filterManual, normalize } from './manual-content';
       font-weight: 600;
       white-space: nowrap;
     }
-    @media print {
-      .no-print,
-      .manual-header {
-        display: none !important;
-      }
-      .section {
-        break-inside: avoid;
-        box-shadow: none;
-      }
-    }
   `,
 })
 export class ManualComponent {
@@ -328,12 +316,6 @@ export class ManualComponent {
     this.messages.add(ok
       ? { severity: 'success', summary: 'Enlace copiado', detail: 'Pégalo en WhatsApp o en un correo.' }
       : { severity: 'warn', summary: 'No se pudo copiar', detail: 'Copia la dirección desde la barra del navegador.' });
-  }
-
-  print(): void {
-    this.query.set('');
-    // Se espera a que se pinte el manual completo (sin filtro) antes de abrir la impresión.
-    setTimeout(() => globalThis.print?.(), 0);
   }
 
   private scrollTo(id: string, behavior: ScrollBehavior): void {

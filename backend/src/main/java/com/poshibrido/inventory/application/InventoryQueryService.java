@@ -50,6 +50,7 @@ import java.util.stream.Collectors;
 public class InventoryQueryService {
 
     private static final int MAX_ALERTS = 500;
+    static final int MAX_BALANCES = 500;
     private static final Instant FAR_FUTURE = Instant.parse("9999-12-31T00:00:00Z");
 
     private final StockBalanceRepository balances;
@@ -80,6 +81,27 @@ public class InventoryQueryService {
             throw new NotFoundException("Producto no encontrado.");
         }
         return row(branchId, product, balances.find(branchId, productId).orElse(null));
+    }
+
+    /**
+     * Saldos de varios productos en una sucursal (p. ej. todas las tallas de un modelo para el conteo). Los que no
+     * tienen movimientos salen en 0; los que no existen se omiten. Máximo {@value #MAX_BALANCES}.
+     */
+    @Transactional(readOnly = true)
+    public List<StockRow> balances(UUID branchId, List<UUID> productIds) {
+        requireBranch(branchId);
+        if (productIds.size() > MAX_BALANCES) {
+            throw new BusinessRuleException("Consulta de a " + MAX_BALANCES + " productos como máximo.");
+        }
+        if (productIds.isEmpty()) {
+            return List.of();
+        }
+        Map<UUID, StockProduct> products = catalog.stockProducts(productIds);
+        Map<UUID, StockBalance> byProduct = balances.findForBranch(branchId, products.keySet()).stream()
+                .collect(java.util.stream.Collectors.toMap(StockBalance::getProductId, b -> b, (a, b) -> a));
+        return productIds.stream().distinct().filter(products::containsKey)
+                .map(id -> row(branchId, products.get(id), byProduct.get(id)))
+                .toList();
     }
 
     @Transactional(readOnly = true)

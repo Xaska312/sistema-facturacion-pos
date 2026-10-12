@@ -14,6 +14,7 @@ import com.poshibrido.catalog.infrastructure.CategoryRepository;
 import com.poshibrido.catalog.infrastructure.PriceListItemRepository;
 import com.poshibrido.catalog.infrastructure.PriceListRepository;
 import com.poshibrido.catalog.infrastructure.ProductBarcodeRepository;
+import com.poshibrido.catalog.infrastructure.ProductModelRepository;
 import com.poshibrido.catalog.infrastructure.ProductRepository;
 import com.poshibrido.catalog.infrastructure.TaxRepository;
 import com.poshibrido.catalog.infrastructure.UnitRepository;
@@ -60,13 +61,17 @@ public class ProductService {
     private final PriceListRepository priceLists;
     private final AuditLogger audit;
     private final StockPresence stock;
+    private final ProductModelRepository models;
 
+    /** {@code includeVariants}: falso en la lista de productos (las tallas se ven en su modelo); verdadero en el POS. */
     @Transactional(readOnly = true)
-    public Page<ProductView> search(String search, UUID categoryId, boolean includeInactive, Pageable pageable) {
+    public Page<ProductView> search(String search, UUID categoryId, boolean includeInactive, boolean includeVariants,
+                                    Pageable pageable) {
         String term = search == null ? "" : search.trim();
         String pattern = "%" + escapeLike(term.toLowerCase(Locale.ROOT)) + "%";
         Page<Product> page = products.search(pattern, pattern.toUpperCase(Locale.ROOT), term,
-                categoryId == null, categoryId == null ? NO_CATEGORY : categoryId, includeInactive, pageable);
+                categoryId == null, categoryId == null ? NO_CATEGORY : categoryId, includeInactive, includeVariants,
+                pageable);
         References refs = references();
         return page.map(p -> toView(p, refs, List.of()));
     }
@@ -97,6 +102,10 @@ public class ProductService {
     public ProductView update(UUID id, ProductCommand command) {
         References refs = references();
         Product product = find(id);
+        if (product.isVariant()) {
+            // Nombre, precio, impuesto y categoría son los del modelo: se cambian allá para todas las tallas.
+            throw new BusinessRuleException("Este producto es una talla de un modelo: edítalo desde el modelo.");
+        }
         Map<String, Object> before = snapshot(toView(product, refs, listItems.findByProduct(id)));
         String sku = CatalogCodes.sku(command.sku());
         products.findBySkuIgnoreCase(sku).filter(other -> !other.getId().equals(id)).ifPresent(other -> {
@@ -132,6 +141,9 @@ public class ProductService {
     @Transactional
     public ProductView setActive(UUID id, boolean active) {
         Product product = find(id);
+        if (active && product.isVariant() && models.findById(product.getModelId()).map(m -> !m.isActive()).orElse(false)) {
+            throw new BusinessRuleException("Activa primero el modelo de esta talla.");
+        }
         if (product.isActive() != active) {
             product.setActive(active);
             audit.log(active ? "PRODUCT_ACTIVATED" : "PRODUCT_DEACTIVATED", "product", id, null, null);
@@ -298,7 +310,8 @@ public class ProductService {
                 category == null ? null : category.getName(), p.getBaseUnitId(), code(unitById, p.getBaseUnitId()),
                 p.getTaxId(), tax == null ? null : tax.getCode(), tax == null ? null : tax.getType(),
                 tax == null ? null : tax.getRate(), p.getCost(), p.isCostLocked(), p.getSalePrice(), p.isTrackInventory(),
-                p.isTracksLots(), p.isActive(), conversions, barcodeViews, listPrices);
+                p.isTracksLots(), p.isActive(), conversions, barcodeViews, listPrices, p.getModelId(),
+                p.getVariantSize(), p.getVariantColor());
     }
 
     private static String code(Map<UUID, Unit> units, UUID id) {

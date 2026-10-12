@@ -45,6 +45,13 @@ export class InventoryApi {
     return this.http.get<StockRow>('/api/v1/inventory/balance', { params: { branchId, productId } });
   }
 
+  /** Saldos de varios productos en una sucursal (las tallas de un modelo, fase 8d). Máximo 500. */
+  balances(branchId: string, productIds: string[]): Observable<StockRow[]> {
+    return this.http.get<StockRow[]>('/api/v1/inventory/balances', {
+      params: new HttpParams().set('branchId', branchId).set('productIds', productIds.join(',')),
+    });
+  }
+
   alerts(branchId: string | null): Observable<StockAlert[]> {
     const params = branchId ? new HttpParams().set('branchId', branchId) : new HttpParams();
     return this.http.get<StockAlert[]>('/api/v1/inventory/alerts', { params });

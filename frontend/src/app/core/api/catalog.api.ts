@@ -8,6 +8,12 @@ import {
   PriceList,
   Product,
   ProductInput,
+  ProductModel,
+  ProductModelInput,
+  ProductModelRow,
+  ProductModelUpdate,
+  SizeScale,
+  SizeScaleInput,
   Tax,
   TaxType,
   Unit,
@@ -17,6 +23,15 @@ import { PageQuery, pageParams } from './organization.api';
 
 export interface ProductQuery extends PageQuery {
   search?: string | null;
+  categoryId?: string | null;
+  includeInactive?: boolean;
+  /** Falso en la lista de productos: las tallas se ven en su modelo (fase 8d). */
+  includeVariants?: boolean;
+}
+
+export interface ProductModelQuery extends PageQuery {
+  search?: string | null;
+  /** Solo los de esa categoría (pestañas del POS). */
   categoryId?: string | null;
   includeInactive?: boolean;
 }
@@ -32,8 +47,56 @@ export class CatalogApi {
         search: query.search,
         categoryId: query.categoryId,
         includeInactive: query.includeInactive ? 'true' : null,
+        includeVariants: query.includeVariants === false ? 'false' : null,
       }),
     });
+  }
+
+  // ---------------------------------------------------------------- tallas y colores (fase 8d)
+
+  sizeScales(): Observable<SizeScale[]> {
+    return this.http.get<SizeScale[]>('/api/v1/size-scales');
+  }
+
+  saveSizeScale(id: string | null, input: SizeScaleInput): Observable<SizeScale> {
+    return id ? this.http.put<SizeScale>(`/api/v1/size-scales/${id}`, input)
+      : this.http.post<SizeScale>('/api/v1/size-scales', input);
+  }
+
+  productModels(query: ProductModelQuery): Observable<PageResponse<ProductModelRow>> {
+    return this.http.get<PageResponse<ProductModelRow>>('/api/v1/product-models', {
+      params: pageParams(query, {
+        search: query.search,
+        categoryId: query.categoryId,
+        includeInactive: query.includeInactive ? 'true' : null,
+      }),
+    });
+  }
+
+  productModel(id: string): Observable<ProductModel> {
+    return this.http.get<ProductModel>(`/api/v1/product-models/${id}`);
+  }
+
+  createProductModel(input: ProductModelInput): Observable<ProductModel> {
+    return this.http.post<ProductModel>('/api/v1/product-models', input);
+  }
+
+  updateProductModel(id: string, input: ProductModelUpdate): Observable<ProductModel> {
+    return this.http.put<ProductModel>(`/api/v1/product-models/${id}`, input);
+  }
+
+  addVariants(id: string, sizes: string[], colors: string[]): Observable<ProductModel> {
+    return this.http.post<ProductModel>(`/api/v1/product-models/${id}/variants`, { sizes, colors });
+  }
+
+  /** {@code barcode} o {@code active} nulos = no cambian. */
+  updateVariant(modelId: string, productId: string, barcode: string | null, active: boolean | null)
+    : Observable<ProductModel> {
+    return this.http.put<ProductModel>(`/api/v1/product-models/${modelId}/variants/${productId}`, { barcode, active });
+  }
+
+  setProductModelActive(id: string, active: boolean): Observable<ProductModel> {
+    return this.http.post<ProductModel>(`/api/v1/product-models/${id}/${active ? 'activate' : 'deactivate'}`, null);
   }
 
   /** Con {@code silent}, un 4xx (p. ej. un favorito que ya no existe) no muestra el toast global. */

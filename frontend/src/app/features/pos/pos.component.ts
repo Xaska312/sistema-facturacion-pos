@@ -7,7 +7,7 @@ import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { SkeletonModule } from 'primeng/skeleton';
-import { finalize, forkJoin, map, of } from 'rxjs';
+import { finalize, forkJoin, map, of, switchMap } from 'rxjs';
 import {
   CashSession,
   Party,
@@ -15,6 +15,8 @@ import {
   PosConfig,
   Product,
   ProductLookup,
+  ProductModel,
+  ProductVariant,
   Sale,
   SaleInput,
   StockRow,
@@ -40,6 +42,8 @@ import { POS_SHORTCUTS, methodIcon, methodLabel } from './pos-labels';
 import { POS_TOUR } from './pos-tour';
 import { PosHeaderComponent } from './pos-header.component';
 import { ProductGridComponent } from './product-grid.component';
+import { SearchRow, groupSearchResults, searchRows } from './pos-cards';
+import { VariantPickerComponent } from './variant-picker.component';
 import {
   CartLine,
   PaymentDraft,
@@ -75,7 +79,8 @@ const STOCK_PAGES = 5;
 @Component({
   selector: 'app-pos',
   imports: [FormsModule, PesosInputDirective, RouterLink, ButtonModule, DialogModule, InputTextModule, SkeletonModule, HasPermissionDirective,
-    ReceiptComponent, PosHeaderComponent, ProductGridComponent, CartPanelComponent, OpenCashComponent],
+    ReceiptComponent, PosHeaderComponent, ProductGridComponent, CartPanelComponent, OpenCashComponent,
+    VariantPickerComponent],
   template: `
     <div class="min-h-dvh md:h-dvh flex flex-col bg-ground">
       <app-pos-header [businessName]="config()?.businessName ?? ''" [session]="session()"
@@ -117,7 +122,8 @@ const STOCK_PAGES = 5;
               </button>
             </div>
             <app-product-grid class="flex-1" data-tour="products" [favoriteIds]="favorites()" [stock]="stock()"
-                              (pick)="pickProduct($event)" (favoriteToggle)="toggleFavorite($event)" />
+                              (pick)="pickProduct($event)" (pickModel)="openModel($event.id)"
+                              (favoriteToggle)="toggleFavorite($event)" />
           </section>
 
           <app-cart-panel class="md:w-[22rem] lg:w-[26rem] shrink-0" data-tour="cart" [lines]="lines()" [totals]="totals()"
@@ -141,18 +147,36 @@ const STOCK_PAGES = 5;
         <p-button type="submit" label="Buscar" styleClass="min-h-11" />
       </form>
       <ul class="max-h-96 overflow-auto divide-y">
-        @for (p of searchResults(); track p.id) {
+        @for (row of searchRows(); track row.kind + row.id) {
           <li>
-            <button type="button" class="w-full min-h-11 text-left p-2 hover:bg-surface-alt flex justify-between gap-2"
-                    (click)="pickProduct(p)">
-              <span><span class="font-mono text-xs text-muted">{{ p.sku }}</span> {{ p.name }}</span>
-              <span class="text-muted whitespace-nowrap">{{ cop(p.salePrice) }}</span>
-            </button>
+            @if (row.kind === 'model') {
+              @let m = row;
+              <button type="button" class="w-full min-h-11 text-left p-2 hover:bg-surface-alt flex justify-between gap-2"
+                      (click)="openModel(m.id)">
+                <span>{{ m.name }} <span class="text-xs text-brand">· elegir talla</span></span>
+                <span class="text-muted whitespace-nowrap">{{ cop(m.salePrice) }}</span>
+              </button>
+            } @else {
+              @let p = row.product;
+              <button type="button" class="w-full min-h-11 text-left p-2 hover:bg-surface-alt flex justify-between gap-2"
+                      (click)="pickProduct(p)">
+                <span><span class="font-mono text-xs text-muted">{{ p.sku }}</span> {{ p.name }}</span>
+                <span class="text-muted whitespace-nowrap">{{ cop(p.salePrice) }}</span>
+              </button>
+            }
           </li>
         } @empty {
           <li class="p-2 text-sm text-muted">{{ searched() ? 'Sin resultados.' : 'Escribe y pulsa Enter.' }}</li>
         }
       </ul>
+    </p-dialog>
+
+    <!-- Talla de un modelo (fase 8d) -->
+    <p-dialog [header]="variantModel()?.name ?? 'Elegir talla'" [(visible)]="variantOpen" [modal]="true"
+              [style]="{ width: '40rem' }" [breakpoints]="{ '640px': '100vw' }" (onHide)="focusScanner()">
+      @if (variantModel(); as m) {
+        <app-variant-picker [model]="m" [stockMap]="stock()" (pick)="pickVariant($event)" />
+      }
     </p-dialog>
 
     <!-- Cliente -->
@@ -451,7 +475,9 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   protected readonly methods = signal<PaymentMethod[]>([]);
   protected readonly lines = signal<CartLine[]>([]);
   protected readonly customer = signal<CustomerChoice>({ id: '', name: 'Consumidor final', document: '222222222222', priceListId: null });
-  protected readonly searchResults = signal<Product[]>([]);
+  /** Resultados de F2: productos y modelos con tallas (una fila por modelo, fase 8d). */
+  protected readonly searchRows = signal<SearchRow[]>([]);
+  protected readonly variantModel = signal<ProductModel | null>(null);
   protected readonly searched = signal(false);
   protected readonly customerResults = signal<Party[]>([]);
   protected readonly saving = signal(false);
@@ -474,6 +500,7 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   protected searchText = '';
   protected customerText = '';
   protected searchOpen = false;
+  protected variantOpen = false;
   protected customerOpen = false;
   protected payOpen = false;
   protected receiptOpen = false;
@@ -684,7 +711,7 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
     this.cart()?.closeEditor();
     this.searchText = this.code.trim();
     this.code = '';
-    this.searchResults.set([]);
+    this.searchRows.set([]);
     this.searched.set(false);
     this.searchOpen = true;
     if (this.searchText) {
@@ -697,16 +724,49 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
     if (!text) {
       return;
     }
-    this.catalog.products({ page: 0, size: 20, search: text }).subscribe((page) => {
-      this.searchResults.set(page.content.filter((p) => p.active));
+    // Productos sin tallas y modelos por nombre (una fila por modelo, aunque tenga muchas tallas). Si no hay nada, se
+    // busca entre las tallas (p. ej. el SKU o el código de una talla) y se juntan por modelo.
+    forkJoin({
+      products: this.catalog.products({ page: 0, size: 20, search: text, includeVariants: false }),
+      models: this.catalog.productModels({ page: 0, size: 10, search: text }),
+    }).pipe(
+      switchMap(({ products, models }) => {
+        const rows = searchRows(products.content.filter((p) => p.active), models.content.filter((m) => m.active));
+        return rows.length > 0 ? of(rows)
+          : this.catalog.products({ page: 0, size: 20, search: text })
+            .pipe(map((page) => groupSearchResults(page.content.filter((p) => p.active))));
+      }),
+    ).subscribe((rows) => {
+      this.searchRows.set(rows);
       this.searched.set(true);
     });
   }
 
   /** Desde la cuadrícula o la búsqueda: el precio lo calcula el servidor para el cliente de la venta. */
   pickProduct(product: Product): void {
+    this.addById(product.id);
+  }
+
+  /** Un modelo con tallas (cuadrícula o búsqueda): se abre la ventana para elegir la talla. */
+  openModel(modelId: string): void {
+    if (!this.session()) {
+      return;
+    }
+    this.catalog.productModel(modelId).subscribe((model) => {
+      this.searchOpen = false;
+      this.variantModel.set(model);
+      this.variantOpen = true;
+    });
+  }
+
+  pickVariant(variant: ProductVariant): void {
+    this.variantOpen = false;
+    this.addById(variant.productId);
+  }
+
+  private addById(productId: string): void {
     this.pendingLookups++;
-    this.sales.price(product.id, null, this.customer().id || null)
+    this.sales.price(productId, null, this.customer().id || null)
       .pipe(finalize(() => this.lookupDone()))
       .subscribe({
         next: (price) => {
@@ -1015,7 +1075,7 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
    */
   focusScanner(attempt = 0): void {
     setTimeout(() => {
-      if (this.searchOpen || this.customerOpen || this.payOpen || this.receiptOpen || this.helpOpen) {
+      if (this.searchOpen || this.variantOpen || this.customerOpen || this.payOpen || this.receiptOpen || this.helpOpen) {
         return;
       }
       if (document.querySelector('.p-dialog-mask') && attempt < 10) {
@@ -1041,7 +1101,7 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
 
   /** Incluye la confirmación de cancelar y los diálogos que se están cerrando (su máscara sigue en la página). */
   private anyDialogOpen(): boolean {
-    return this.searchOpen || this.customerOpen || this.payOpen || this.receiptOpen || this.helpOpen
+    return this.searchOpen || this.variantOpen || this.customerOpen || this.payOpen || this.receiptOpen || this.helpOpen
       || document.querySelector('.p-dialog-mask') !== null;
   }
 

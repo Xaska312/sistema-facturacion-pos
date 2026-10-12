@@ -124,6 +124,13 @@ public class InventoryController {
         return queries.balance(branchId, productId);
     }
 
+    /** Saldos de varios productos en una sucursal, p. ej. las tallas de un modelo (fase 8d). Máximo 500. */
+    @GetMapping("/balances")
+    @PreAuthorize("hasAuthority('inventory:read')")
+    public List<StockRow> balances(@RequestParam UUID branchId, @RequestParam List<UUID> productIds) {
+        return queries.balances(branchId, productIds);
+    }
+
     /** Productos en o por debajo del mínimo (todas las sucursales si no se indica). */
     @GetMapping("/alerts")
     @PreAuthorize("hasAuthority('inventory:read')")

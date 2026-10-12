@@ -94,10 +94,11 @@ public class ProductController {
     public PageResponse<ProductView> search(@RequestParam(required = false) String search,
                                             @RequestParam(required = false) UUID categoryId,
                                             @RequestParam(defaultValue = "false") boolean includeInactive,
+                                            @RequestParam(defaultValue = "true") boolean includeVariants,
                                             @RequestParam(defaultValue = "0") int page,
                                             @RequestParam(defaultValue = "20") int size,
                                             @RequestParam(required = false) String sort) {
-        return PageResponse.of(products.search(search, categoryId, includeInactive,
+        return PageResponse.of(products.search(search, categoryId, includeInactive, includeVariants,
                 PageRequests.of(page, size, sort, SORTABLE, Sort.by("name"))), v -> v);
     }
 

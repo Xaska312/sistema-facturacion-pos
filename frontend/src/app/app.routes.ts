@@ -162,6 +162,40 @@ export const routes: Routes = [
           import('./features/products/product-import.component').then((m) => m.ProductImportComponent),
       },
       {
+        path: 'productos/modelos',
+        title: 'Productos con tallas',
+        canActivate: [permissionGuard],
+        data: { permission: 'products:read' },
+        loadComponent: () =>
+          import('./features/products/models/product-models.component').then((m) => m.ProductModelsComponent),
+      },
+      {
+        path: 'productos/modelos/nuevo',
+        title: 'Nuevo modelo con tallas',
+        canActivate: [permissionGuard],
+        canDeactivate: [unsavedChangesGuard],
+        data: { permission: 'products:manage' },
+        loadComponent: () =>
+          import('./features/products/models/product-model-editor.component').then((m) => m.ProductModelEditorComponent),
+      },
+      {
+        path: 'productos/modelos/:id',
+        title: 'Modelo con tallas',
+        canActivate: [permissionGuard],
+        canDeactivate: [unsavedChangesGuard],
+        data: { permission: 'products:read' },
+        loadComponent: () =>
+          import('./features/products/models/product-model-editor.component').then((m) => m.ProductModelEditorComponent),
+      },
+      {
+        path: 'productos/tallas',
+        title: 'Escalas de tallas',
+        canActivate: [permissionGuard],
+        data: { permission: 'products:read' },
+        loadComponent: () =>
+          import('./features/products/models/size-scales.component').then((m) => m.SizeScalesComponent),
+      },
+      {
         path: 'productos/nuevo',
         title: 'Nuevo producto',
         canActivate: [permissionGuard],

@@ -11,7 +11,8 @@ public record ProductView(UUID id, String sku, String name, String description, 
                           UUID baseUnitId, String baseUnitCode, UUID taxId, String taxCode, TaxType taxType,
                           BigDecimal taxRate, BigDecimal cost, boolean costLocked, BigDecimal salePrice,
                           boolean trackInventory, boolean tracksLots, boolean active, List<ConversionView> conversions,
-                          List<BarcodeView> barcodes, List<ListPriceView> listPrices) {
+                          List<BarcodeView> barcodes, List<ListPriceView> listPrices, UUID modelId,
+                          String variantSize, String variantColor) {
 
     public record ConversionView(UUID unitId, String unitCode, BigDecimal factor, BigDecimal salePrice,
                                  BigDecimal effectivePrice) {

@@ -297,3 +297,23 @@ Estados (`status`, calculados con la fecha de fin): `TRIAL` (prueba vigente), `A
 
 **Avisos por correo** al dueño (9 a. m. de Colombia): 7, 3 y 1 día antes del fin (`suscripcion-por-vencer`), al terminar (`suscripcion-vencida`) y al acabarse la gracia (`suscripcion-bloqueada`), una vez por fecha de fin. Variables: `SUBSCRIPTION_PAYMENT_INSTRUCTIONS` (cómo pagar), `SUBSCRIPTION_TRIAL_DAYS` (14), `SUBSCRIPTION_REMINDERS_ENABLED` (true).
 
+## Tallas y colores (Fase 8d)
+Un **modelo** (p. ej. "Tenis Runner") agrupa sus **variantes** (talla × color). Cada variante es un producto normal (SKU `PREFIJO-TALLA-COLOR`, código de barras interno `29…`, unidad UND, controla inventario): se vende, se cuenta y se traslada como cualquier producto. Nombre, categoría, impuesto, costo y **precio son del modelo** (igual para todas las tallas) y se copian a las variantes al guardarlo. Leer: `products:read`; crear y editar: `products:manage`.
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/size-scales` | Escalas `{id, code, name, active, sizes: [{label, equivalent}]}` en orden. Sembradas: Calzado Colombia (34–45), Calzado EU (35–46), Calzado US (5–12, con medias), Calzado niño (18–33), Ropa (letras), Ropa niño, Jean / pantalón |
+| POST | `/size-scales` | `{name, sizes: [{label (≤10), equivalent?}]}` → 201 (máximo 40 tallas) |
+| PUT | `/size-scales/{id}` | `{name, active?, sizes}`: reemplaza las tallas en ese orden. 422 si quita una talla que usa algún producto. `equivalent` = texto libre (p. ej. "EU 39"), lo edita cada negocio |
+| GET | `/product-models?search=&categoryId=&includeInactive=&page=&size=&sort=` | `{id, skuPrefix, name, categoryName, salePrice, sizeScaleName, variants (cantidad), active}` |
+| GET | `/product-models/{id}` | `{id, skuPrefix, name, description, categoryId, categoryName, taxId, taxCode, cost, salePrice, sizeScaleId, sizeScaleName, active, sizes[] (orden de la escala), colors[] (orden de creación), variants: [{productId, sku, name, size, color, barcode, baseUnitId, baseUnitCode, active}]}` |
+| POST | `/product-models` | `{skuPrefix (1–20), name (≤140), description?, categoryId?, taxId, cost?, salePrice (> 0), sizeScaleId, sizes[], colors[]}` → 201. Crea talla × color (colores opcionales; sin repetir, sin distinguir mayúsculas; máximo 20 colores y 400 variantes). 409 prefijo repetido; 422 talla fuera de la escala |
+| PUT | `/product-models/{id}` | `{name, description?, categoryId?, taxId, cost?, salePrice}`: se copia a todas las variantes (el costo, solo a las que el inventario aún no maneja). Prefijo y escala no cambian |
+| POST | `/product-models/{id}/variants` | `{sizes[], colors[]}`: crea las combinaciones que faltan. 422 si ya existen todas, o si el modelo tiene colores y no se envían (o al revés) |
+| PUT | `/product-models/{id}/variants/{productId}` | `{barcode?, active}`: cambia el código (p. ej. el del proveedor; 409 si es de otro producto) o activa/desactiva una talla |
+| POST | `/product-models/{id}/activate` · `/deactivate` | El modelo y todas sus variantes |
+
+Cambios en productos: `GET /products` acepta `includeVariants` (por defecto `true`; la lista de productos usa `false` y el POS ve las tallas). `ProductView` agrega `modelId`, `variantSize` y `variantColor`. `PUT /products/{id}` de una variante → 422 ("edítalo desde el modelo"). La importación CSV no modifica variantes (error en la fila).
+
+Inventario: `GET /inventory/balances?branchId=&productIds=a,b,c` (`inventory:read`, máximo 500) → saldo de cada producto en la sucursal (0 si no tiene movimientos), para la cuadrícula talla × color del conteo.
+
