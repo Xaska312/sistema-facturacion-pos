@@ -122,7 +122,7 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     manual: 'importar-productos',
     title: 'Importar productos',
     tips: [
-      'Descarga la plantilla, llénala en Excel y guárdala como CSV.',
+      'Descarga la plantilla de Excel, llénala (una fila por producto) y guárdala.',
       'Primero revisa: el sistema te dice qué filas tienen errores antes de guardar nada.',
       'Si un SKU ya existe, ese producto se actualiza.',
     ],

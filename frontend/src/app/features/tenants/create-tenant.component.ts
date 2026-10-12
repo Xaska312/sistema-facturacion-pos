@@ -1,3 +1,4 @@
+import { HttpClient } from '@angular/common/http';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -58,11 +59,15 @@ export function isActivationCodeRequired(error: unknown): boolean {
               <small class="text-muted">Minúsculas, números y "_" (3 a 41). No se puede cambiar después.</small>
             </label>
             <label class="flex flex-col gap-1">
-              <span class="text-sm font-medium">Código de activación</span>
+              <span class="text-sm font-medium">Código de activación{{ codeRequired() ? '' : ' (opcional)' }}</span>
               <input pInputText formControlName="activationCode" id="activationCode" maxlength="40" placeholder="XXXX-XXXX-XXXX"
                      (input)="activationCodeError.set(null)"
                      autocomplete="off" [attr.aria-invalid]="activationCodeError() ? true : null" />
-              <small class="text-muted">Opcional. Tu primer negocio tiene 14 días de prueba gratis; para otro negocio necesitas el código que te dimos al comprar tu plan.</small>
+              @if (codeRequired()) {
+                <small class="text-muted">Es el código que te damos al contratar tu plan o al pedir la prueba gratis. Si no lo tienes, pídelo a soporte.</small>
+              } @else {
+                <small class="text-muted">Tu primer negocio tiene {{ trialDays() }} días de prueba gratis; para otro negocio necesitas el código que te dimos al comprar tu plan.</small>
+              }
               @if (activationCodeError()) {
                 <small class="text-danger font-medium">{{ activationCodeError() }}</small>
               }
@@ -97,6 +102,11 @@ export function isActivationCodeRequired(error: unknown): boolean {
 export class CreateTenantComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly http = inject(HttpClient);
+
+  /** Por defecto todo negocio nuevo necesita código; el servidor dice si hay prueba gratis sin él. */
+  readonly codeRequired = signal(true);
+  readonly trialDays = signal(14);
 
   readonly step = signal<1 | 2>(1);
   readonly saving = signal(false);
@@ -110,8 +120,23 @@ export class CreateTenantComponent {
     tradeName: ['', [Validators.required, Validators.maxLength(200)]],
     legalName: ['', [Validators.required, Validators.maxLength(200)]],
     slug: ['', [Validators.required, Validators.pattern(/^[a-z][a-z0-9_]{2,40}$/)]],
-    activationCode: ['', [Validators.maxLength(40)]],
+    activationCode: ['', [Validators.required, Validators.pattern(/\S/), Validators.maxLength(40)]],
   });
+
+  constructor() {
+    this.http.get<{ activationCodeRequired: boolean; trialDays: number }>('/api/v1/tenants/signup-terms')
+      .subscribe({
+        next: (terms) => {
+          this.codeRequired.set(terms.activationCodeRequired);
+          this.trialDays.set(terms.trialDays);
+          const code = this.form.controls.activationCode;
+          code.setValidators(terms.activationCodeRequired
+            ? [Validators.required, Validators.pattern(/\S/), Validators.maxLength(40)] : [Validators.maxLength(40)]);
+          code.updateValueAndValidity();
+        },
+        error: () => undefined,
+      });
+  }
 
   suggestSlug(): void {
     if (!this.slugTouched) {

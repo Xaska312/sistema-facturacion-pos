@@ -13,7 +13,7 @@ import java.time.Duration;
  */
 @ConfigurationProperties(prefix = "app.subscription")
 public record SubscriptionProperties(int trialDays, String trialPlan, int graceDays, String paymentInstructions,
-                                     boolean remindersEnabled) {
+                                     boolean remindersEnabled, boolean trialWithoutCode) {
 
     public SubscriptionProperties {
         trialDays = trialDays <= 0 ? 14 : trialDays;

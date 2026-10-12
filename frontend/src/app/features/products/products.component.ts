@@ -22,7 +22,7 @@ import { LatestRequest } from '../../shared/latest-request';
       <a pButton routerLink="/app/bascula" label="Báscula" icon="pi pi-calculator" severity="secondary"
          [outlined]="true"></a>
       @if (canManage()) {
-        <a pButton routerLink="/app/productos/importar" label="Importar CSV" icon="pi pi-upload" severity="secondary"
+        <a pButton routerLink="/app/productos/importar" label="Importar desde Excel" icon="pi pi-file-excel" severity="secondary"
            [outlined]="true"></a>
         <a pButton routerLink="/app/productos/nuevo" label="Nuevo producto" icon="pi pi-plus"></a>
       }
@@ -31,7 +31,7 @@ import { LatestRequest } from '../../shared/latest-request';
     <app-data-table [columns]="columns" [page]="page()" [loading]="loading()" [trackBy]="trackById"
                     initialSort="name,asc" caption="Productos" searchPlaceholder="Buscar por nombre, SKU o código de barras"
                     emptyIcon="pi pi-box" emptyTitle="Aún no hay productos"
-                    emptyMessage="Crea tu primer producto o impórtalos todos desde un archivo CSV."
+                    emptyMessage="Crea tu primer producto o impórtalos todos desde una plantilla de Excel."
                     [emptyActionLabel]="canManage() ? 'Crear producto' : null" (emptyAction)="create()"
                     (queryChange)="load($event)">
       <label tableToolbar class="flex items-center gap-2 text-sm">

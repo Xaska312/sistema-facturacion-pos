@@ -80,6 +80,9 @@ app:
     # Prueba gratis del primer negocio de cada cuenta (días y plan cuyos límites aplica).
     trial-days: ${SUBSCRIPTION_TRIAL_DAYS:14}
     trial-plan: PRO
+    # Prueba gratis sin código para el primer negocio de cada cuenta. Por defecto no: todo negocio nuevo necesita un
+    # código de activación (la prueba se da con un código de 1 mes desde la consola de plataforma).
+    trial-without-code: ${SUBSCRIPTION_TRIAL_WITHOUT_CODE:false}
     # Días que un plan pagado vencido sigue funcionando antes de quedar en solo consulta.
     grace-days: 3
     # Cómo pagar: cuenta, Nequi y a quién enviar el comprobante. Sale en la app y en los correos de aviso.

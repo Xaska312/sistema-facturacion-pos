@@ -10,6 +10,7 @@ import com.poshibrido.catalog.domain.TaxType;
 import com.poshibrido.shared.api.PageRequests;
 import com.poshibrido.shared.api.PageResponse;
 import com.poshibrido.shared.error.BusinessRuleException;
+import com.poshibrido.shared.xlsx.XlsxReader;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
@@ -18,7 +19,10 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -162,7 +166,7 @@ public class ProductController {
         return Map.of("barcode", products.nextInternalBarcode());
     }
 
-    /** Carga masiva desde CSV (UTF-8, separador ';' o ','). Con dryRun=true solo valida. */
+    /** Carga masiva desde la plantilla de Excel (.xlsx) o un CSV (UTF-8, ';' o ','). Con dryRun=true solo valida. */
     @PostMapping("/api/v1/products/import")
     @PreAuthorize("hasAuthority('products:manage')")
     public ProductImportService.ImportReport importCsv(@RequestParam("file") MultipartFile file,
@@ -174,7 +178,21 @@ public class ProductController {
         if (file.getSize() > MAX_IMPORT_BYTES) {
             throw new BusinessRuleException("El archivo supera 5 MB.");
         }
-        return importer.importCsv(decodeUtf8(file.getBytes()), dryRun);
+        byte[] bytes = file.getBytes();
+        // La plantilla de Excel (.xlsx) o un CSV: se reconoce por el contenido, no por el nombre.
+        return XlsxReader.looksLikeXlsx(bytes) ? importer.importXlsx(bytes, dryRun)
+                : importer.importCsv(decodeUtf8(bytes), dryRun);
+    }
+
+    /** Plantilla de Excel para llenar y volver a subir (con las unidades e impuestos del negocio). */
+    @GetMapping("/api/v1/products/import/template")
+    @PreAuthorize("hasAuthority('products:manage')")
+    public ResponseEntity<byte[]> importTemplate() {
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"plantilla-productos.xlsx\"")
+                .contentType(MediaType.parseMediaType(
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(importer.templateXlsx());
     }
 
     private static String decodeUtf8(byte[] bytes) {

@@ -1,4 +1,4 @@
-import { HttpClient, HttpContext, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpResponse, HttpContext, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
@@ -120,6 +120,11 @@ export class CatalogApi {
 
   internalBarcode(): Observable<{ barcode: string }> {
     return this.http.post<{ barcode: string }>('/api/v1/barcodes/internal', null);
+  }
+
+  /** Plantilla de Excel (.xlsx) con las unidades e impuestos del negocio (fase 8f). */
+  importTemplate(): Observable<HttpResponse<Blob>> {
+    return this.http.get('/api/v1/products/import/template', { observe: 'response', responseType: 'blob' });
   }
 
   importProducts(file: File, dryRun: boolean): Observable<ImportReport> {

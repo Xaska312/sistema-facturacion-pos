@@ -105,7 +105,8 @@ Leer: `products:read`. Modificar: `products:manage`.
 | POST | `/products/{id}/activate` · `/deactivate` | |
 | GET | `/products/lookup?code=&priceListId=` | Código de barras o SKU → `{productId, sku, name, unitId, unitCode, factor, price, fromList, taxType, taxRate, trackInventory}`. 404 si no existe, 422 si está inactivo |
 | POST | `/barcodes/internal` | `{barcode}` EAN-13 interno libre (prefijo 29) |
-| POST | `/products/import?dryRun=true` (multipart `file`) | Reporte `{totalRows, toCreate, toUpdate, newCategories, errors[{row, message}], applied}`. Con `dryRun=false` importa solo si no hay errores |
+| POST | `/products/import?dryRun=true` (multipart `file`: plantilla de Excel `.xlsx` o CSV) | Reporte `{totalRows, toCreate, toUpdate, newCategories, errors[{row, message}], applied}`. Con `dryRun=false` importa solo si no hay errores. El Excel se reconoce por el contenido (zip) y se lee su primera hoja |
+| GET | `/products/import/template` | Plantilla `plantilla-productos.xlsx`: hoja *Productos* (encabezados, 2 ejemplos, listas de unidad, impuesto y sí/no con los códigos activos del negocio) e *Instrucciones* (`products:manage`) |
 | GET/POST | `/categories` · PUT `/categories/{id}` · POST `/{id}/activate`·`/deactivate` | Árbol con `parentId`; nombre único entre hermanas; sin ciclos |
 | GET/POST | `/units` · PUT `/units/{id}` · activar/desactivar | Código 1–10 letras/números |
 | GET/POST | `/taxes` · PUT `/taxes/{id}` · activar/desactivar | Tipos IVA, INC, EXEMPT, EXCLUDED (exento/excluido con tarifa 0) |
@@ -341,3 +342,6 @@ Etiquetas EAN-13 que empiezan por 2: prefijo + PLU + valor (peso o precio) + dí
 | DELETE | `/scale/plus/{plu}` | 204 |
 
 `GET /products/lookup?code=` agrega `scaleQuantity` (el peso, en kg o lb) y `scaleAmount` (el precio de la etiqueta; la pantalla calcula la cantidad con el IVA): con una etiqueta de báscula y la lectura activa; null con un código normal. Un código de barras registrado tiene prioridad sobre el formato de báscula. PLU sin asignar → 404.
+
+## Ajustes de la Fase 8 (8f)
+- `GET /tenants/signup-terms` (cualquier cuenta con sesión) → `{activationCodeRequired, trialDays}`. Con `SUBSCRIPTION_TRIAL_WITHOUT_CODE=false` (por defecto) `POST /tenants` sin `activationCode` → 422 `ACTIVATION_CODE_REQUIRED`.
