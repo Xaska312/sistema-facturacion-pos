@@ -23,7 +23,8 @@ export type ListPriceGroup = FormGroup<{
 export function productForm(fb: FormBuilder) {
   const nn = fb.nonNullable;
   return nn.group({
-    sku: ['', [Validators.required, Validators.pattern(/^[A-Za-z0-9._\-/]{1,40}$/)]],
+    // Vacío al crear = se arma con el nombre (skuFromName): quien empieza no sabe qué es un SKU.
+    sku: ['', [Validators.pattern(/^[A-Za-z0-9._\-/]{1,40}$/)]],
     name: ['', [Validators.required, Validators.maxLength(200)]],
     description: ['', Validators.maxLength(500)],
     categoryId: [''],
@@ -106,4 +107,21 @@ export function toInput(form: ProductForm): ProductInput {
     barcodes: v.barcodes.map((b) => ({ barcode: b.barcode.trim(), unitId: b.unitId || null, internal: b.internal })),
     listPrices: v.listPrices.map((l) => ({ priceListId: l.priceListId, unitId: l.unitId, price: Number(l.price) })),
   };
+}
+
+/**
+ * Código interno a partir del nombre, para quien no sabe qué es un SKU: "Gaseosa cola 400 ml" → "GASE-COLA-400-ML"
+ * (hasta 4 palabras de hasta 4 letras, sin tildes). Vacío si el nombre no tiene letras ni números.
+ */
+export function skuFromName(name: string): string {
+  return name
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .toUpperCase()
+    .split(/[^A-Z0-9]+/)
+    .filter(Boolean)
+    .slice(0, 4)
+    .map((word) => word.slice(0, 4))
+    .join('-')
+    .slice(0, 40);
 }

@@ -230,16 +230,16 @@ export const MANUAL: readonly ManualChapter[] = [
       {
         id: 'crear-producto',
         title: 'Crear un producto',
-        summary: 'Cada producto tiene un SKU (tu código interno), uno o varios códigos de barras, precio, impuesto y categoría.',
+        summary: 'Solo necesitas el nombre y el precio; lo demás tiene valores listos que puedes cambiar.',
         steps: [
           'Ve a Productos y toca "Nuevo producto".',
-          'Escribe el nombre, el SKU, la categoría, la unidad, el impuesto y el precio de venta.',
-          'Agrega el código de barras del empaque. Si no tiene, toca "Generar código interno".',
-          'Marca "controla inventario" en lo que tienes en bodega. Los servicios no lo necesitan.',
-          'Guarda.',
+          'Escribe el nombre y el precio de venta. Si quieres saber cuánto ganas, escribe también el costo.',
+          'Escanea el código de barras del empaque. Si no tiene, toca "Generar código interno".',
+          'Guarda. El código interno (SKU) se crea solo con el nombre si lo dejas vacío.',
+          'Te preguntamos si quieres registrar cuántas unidades tienes: di que sí y escribe la cantidad.',
         ],
         tips: [
-          'Las presentaciones sirven para vender por caja o paquete (por ejemplo, caja de 24) con su propio código y precio.',
+          'En "Más opciones" están las presentaciones (vender por caja de 24, con su código y precio) y los precios de otras listas.',
           'En Ajustes indica si tus precios ya incluyen el IVA ("Los precios incluyen impuestos").',
           'Desactivar un producto lo oculta del punto de venta sin borrar su historia.',
         ],
