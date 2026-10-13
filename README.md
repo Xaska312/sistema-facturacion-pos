@@ -154,7 +154,7 @@ Frontend: login, registro, selección de negocio, asistente de creación, shell 
 ```bash
 API=http://localhost:8080/api/v1
 curl -s -X POST $API/auth/register -H 'Content-Type: application/json' \
-  -d '{"email":"ana@demo.co","password":"ClaveSegura123","fullName":"Ana Pérez"}'
+  -d '{"email":"ana@demo.co","password":"ClaveSegura123","fullName":"Ana Pérez","acceptTerms":true}'
 TOKEN=$(curl -s -c cookies.txt -X POST $API/auth/login -H 'Content-Type: application/json' \
   -d '{"email":"ana@demo.co","password":"ClaveSegura123"}' | jq -r .accessToken)
 TID=$(curl -s -X POST $API/tenants -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \

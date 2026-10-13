@@ -81,6 +81,16 @@ services:
       # Correos (verificación, invitaciones, contraseña) por Resend. Sin clave quedan en el log del backend.
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       MAIL_FROM: ${MAIL_FROM:-XASKA POS <onboarding@resend.dev>}
+      # O por SMTP (piloto con Gmail y una contraseña de aplicación; ver docs/DESPLIEGUE.md). Con RESEND_API_KEY gana Resend.
+      SPRING_MAIL_HOST: ${SMTP_HOST:-}
+      SPRING_MAIL_PORT: ${SMTP_PORT:-587}
+      SPRING_MAIL_USERNAME: ${SMTP_USERNAME:-}
+      SPRING_MAIL_PASSWORD: ${SMTP_PASSWORD:-}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: "true"
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: "true"
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_REQUIRED: "true"
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_CONNECTIONTIMEOUT: "10000"
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_TIMEOUT: "10000"
       APP_PUBLIC_URL: ${APP_PUBLIC_URL:-https://${DOMAIN}}
       EMAIL_VERIFICATION_REQUIRED: ${EMAIL_VERIFICATION_REQUIRED:-true}
       # Suscripciones (fase 8b): cómo pagar (sale en la app y en los correos) y días de prueba gratis.

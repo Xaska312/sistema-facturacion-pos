@@ -37,6 +37,19 @@ import { safeReturnUrl } from '../../core/auth/return-url';
                       promptLabel="Mínimo 10 caracteres, con letras y números" />
         </label>
 
+        <label class="flex items-start gap-3 text-sm leading-snug cursor-pointer">
+          <input type="checkbox" formControlName="acceptTerms" class="size-5 mt-0.5 shrink-0 accent-brand"
+                 aria-describedby="accept-terms-help" />
+          <span>
+            Acepto los <a routerLink="/terminos" target="_blank" class="text-brand hover:underline">Términos y Condiciones</a>
+            y autorizo el tratamiento de mis datos según la
+            <a routerLink="/privacidad" target="_blank" class="text-brand hover:underline">Política de Tratamiento de Datos</a>.
+          </span>
+        </label>
+        <small id="accept-terms-help" class="text-xs text-muted -mt-2">
+          Puedes conocer, actualizar o pedir que se borren tus datos escribiendo a soporte@xaska.co.
+        </small>
+
         @if (error()) {
           <p class="text-sm text-danger" role="alert">{{ error() }}</p>
         }
@@ -65,6 +78,7 @@ export class RegisterComponent {
     email: [this.query.get('email') ?? '', [Validators.required, Validators.email]],
     phone: [''],
     password: ['', [Validators.required, Validators.minLength(10), Validators.pattern(/^(?=.*[A-Za-z])(?=.*\d).+$/)]],
+    acceptTerms: [false, Validators.requiredTrue],
   });
 
   submit(): void {

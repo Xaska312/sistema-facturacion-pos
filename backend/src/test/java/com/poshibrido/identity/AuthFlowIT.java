@@ -48,7 +48,7 @@ class AuthFlowIT extends IntegrationTest {
         mvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"email":"%s","password":"%s","fullName":"Otro"}
+                                {"email":"%s","password":"%s","fullName":"Otro","acceptTerms":true}
                                 """.formatted(email, TestApi.PASSWORD)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.title").value("Conflicto"));
@@ -56,7 +56,7 @@ class AuthFlowIT extends IntegrationTest {
         mvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"email":"%s","password":"corta","fullName":"Otro"}
+                                {"email":"%s","password":"corta","fullName":"Otro","acceptTerms":true}
                                 """.formatted(TestApi.uniqueEmail("weak"))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$..field", org.hamcrest.Matchers.hasItem("password")));

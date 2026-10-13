@@ -51,6 +51,7 @@ public class AuthService {
     private final PlatformAdmins platformAdmins;
     private final AccountService accounts;
     private final LoginAttemptStore loginAttempts;
+    private final LegalConsentService legalConsents;
     /** Hash señuelo para igualar tiempos cuando el correo no existe (evita enumeración de cuentas). */
     private final String dummyHash;
 
@@ -58,7 +59,7 @@ public class AuthService {
                        TokenService tokens, PasswordEncoder passwordEncoder, TenantApi tenantApi,
                        AccessApi accessApi, AuthProperties properties, SecurityEventLogger securityEvents,
                        AuditLogger audit, PlatformAdmins platformAdmins, AccountService accounts,
-                       LoginAttemptStore loginAttempts) {
+                       LoginAttemptStore loginAttempts, LegalConsentService legalConsents) {
         this.users = users;
         this.memberships = memberships;
         this.refreshTokens = refreshTokens;
@@ -72,6 +73,7 @@ public class AuthService {
         this.platformAdmins = platformAdmins;
         this.accounts = accounts;
         this.loginAttempts = loginAttempts;
+        this.legalConsents = legalConsents;
         this.dummyHash = passwordEncoder.encode("dummy-password-" + UUID.randomUUID());
     }
 
@@ -86,6 +88,8 @@ public class AuthService {
                 command.fullName(), command.phone()));
         log.info("Usuario registrado {}", user.getId());
         securityEvents.record(SecurityEvent.REGISTERED, user.getId(), email, null, null);
+        // El registro exige aceptar los Términos y la Política (RegisterRequest): la prueba queda en la misma transacción.
+        legalConsents.accept(user.getId());
         accounts.sendVerification(user);
         return summary(user);
     }

@@ -72,7 +72,7 @@ public class TestApi {
         MvcResult result = mvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"email":"%s","password":"%s","fullName":"Usuario de prueba","phone":"3000000000"}
+                                {"email":"%s","password":"%s","fullName":"Usuario de prueba","phone":"3000000000","acceptTerms":true}
                                 """.formatted(email, PASSWORD)))
                 .andExpect(status().isCreated())
                 .andReturn();
@@ -99,7 +99,7 @@ public class TestApi {
         int status = mvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"email":"%s","password":"%s","fullName":"Soporte de la plataforma"}
+                                {"email":"%s","password":"%s","fullName":"Soporte de la plataforma","acceptTerms":true}
                                 """.formatted(PLATFORM_ADMIN_EMAIL, PASSWORD)))
                 .andReturn().getResponse().getStatus();
         if (status != 201 && status != 409) {

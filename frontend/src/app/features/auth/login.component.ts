@@ -45,6 +45,11 @@ import { XaskaLogoComponent } from '../../shared/brand/xaska-logo.component';
         <a routerLink="/manual" class="text-sm text-center text-muted hover:text-fg hover:underline">
           <i class="pi pi-book text-xs mr-1" aria-hidden="true"></i>Manual de uso
         </a>
+        <p class="text-xs text-center text-muted -mt-2">
+          <a routerLink="/terminos" class="hover:text-fg hover:underline">Términos</a>
+          <span aria-hidden="true"> · </span>
+          <a routerLink="/privacidad" class="hover:text-fg hover:underline">Política de datos</a>
+        </p>
       </form>
     </main>
   `,
