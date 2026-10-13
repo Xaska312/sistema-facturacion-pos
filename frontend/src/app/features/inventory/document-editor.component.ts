@@ -167,7 +167,7 @@ export class InventoryDocumentEditorComponent implements OnInit, HasUnsavedChang
 
   protected readonly labels = DOCUMENT_LABEL;
   protected readonly help: Record<InventoryDocumentType, string> = {
-    INITIAL: 'Carga la existencia con la que arrancas en una sucursal, con su costo. Solo para productos sin movimientos en esa sucursal.',
+    INITIAL: 'Carga la existencia con la que arrancas en una sucursal. El costo se toma del producto (cámbialo si es distinto). Solo para productos sin movimientos en esa sucursal.',
     ADJUSTMENT: 'Entradas o salidas por daño, vencimiento, donación, etc. Las salidas se valoran al costo promedio.',
     TRANSFER: 'Mueve mercancía de una sucursal a otra al instante.',
     COUNT: 'Escribe lo que contaste: el sistema ajusta la diferencia con lo registrado.',
@@ -325,6 +325,11 @@ export class InventoryDocumentEditorComponent implements OnInit, HasUnsavedChang
     const line = draftLine(product, unitId);
     if (scanned) {
       line.quantity = 1;
+    }
+    // Saldo inicial: el costo ya está en el producto; se propone para no escribirlo dos veces (se puede cambiar).
+    if (this.type() === 'INITIAL' && product.cost > 0) {
+      const factor = line.units.find((u) => u.id === line.unitId)?.factor ?? 1;
+      line.unitCost = Math.round(product.cost * factor * 100) / 100;
     }
     this.lines.update((list) => [...list, line]);
     if (this.type() === 'COUNT' && this.branchId) {

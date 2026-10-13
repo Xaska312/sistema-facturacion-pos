@@ -2,6 +2,7 @@ package com.poshibrido.subscription;
 
 import com.jayway.jsonpath.JsonPath;
 import com.poshibrido.catalog.CatalogFixturesAccess;
+import com.poshibrido.subscription.application.SubscriptionProperties;
 import com.poshibrido.subscription.application.SubscriptionReminders;
 import com.poshibrido.subscription.application.SubscriptionService;
 import com.poshibrido.support.IntegrationTest;
@@ -10,6 +11,8 @@ import com.poshibrido.support.TestApi.Owned;
 import com.poshibrido.support.TestApi.Session;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.util.AopTestUtils;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.UUID;
 
@@ -26,6 +29,28 @@ class SubscriptionIT extends IntegrationTest {
 
     @Autowired
     private SubscriptionReminders reminders;
+
+    @Autowired
+    private SubscriptionProperties properties;
+
+    /** Por defecto (sin SUBSCRIPTION_TRIAL_WITHOUT_CODE) ningún negocio se crea sin código de activación. */
+    @Test
+    void withoutFreeTrialEveryBusinessNeedsAnActivationCode() throws Exception {
+        Object target = AopTestUtils.getUltimateTargetObject(subscriptions);
+        SubscriptionProperties strict = new SubscriptionProperties(properties.trialDays(), properties.trialPlan(),
+                properties.graceDays(), properties.paymentInstructions(), properties.remindersEnabled(), false);
+        ReflectionTestUtils.setField(target, "properties", strict);
+        try {
+            Session user = api.registerAndLogin("sincodigo");
+            api.getWith(user, "/api/v1/tenants/signup-terms").andExpect(status().isOk())
+                    .andExpect(jsonPath("$.activationCodeRequired").value(true));
+            api.createTenantRaw(user, TestApi.uniqueSlug("sincod"))
+                    .andExpect(status().is(422))
+                    .andExpect(jsonPath("$.code").value("ACTIVATION_CODE_REQUIRED"));
+        } finally {
+            ReflectionTestUtils.setField(target, "properties", properties);
+        }
+    }
 
     @Test
     void firstBusinessStartsATrialAndAnotherOneNeedsAnActivationCode() throws Exception {

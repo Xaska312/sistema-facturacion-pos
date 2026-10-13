@@ -34,6 +34,8 @@ jobs:
             # Cada prueba registra e inicia sesión con varios usuarios desde la misma IP.
             echo "RATE_LIMIT_LOGIN=100"
             echo "RATE_LIMIT_REGISTER=100"
+            # Las pruebas crean negocios sin código de activación (prueba gratis).
+            echo "SUBSCRIPTION_TRIAL_WITHOUT_CODE=true"
           } > .env
 
       - name: Levantar la aplicación

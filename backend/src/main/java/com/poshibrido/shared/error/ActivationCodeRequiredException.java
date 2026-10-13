@@ -14,6 +14,10 @@ public class ActivationCodeRequiredException extends BusinessRuleException {
         super("Ya usaste la prueba gratis en otro negocio. Para crear uno nuevo necesitas un código de activación.");
     }
 
+    public ActivationCodeRequiredException(String message) {
+        super(message);
+    }
+
     @Override
     public Map<String, Object> getProperties() {
         return Map.of("code", CODE);

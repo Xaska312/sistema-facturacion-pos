@@ -42,6 +42,7 @@ services:
       # Suscripciones (fase 8b): cómo pagar (sale en la app y en los correos) y días de prueba gratis.
       SUBSCRIPTION_PAYMENT_INSTRUCTIONS: ${SUBSCRIPTION_PAYMENT_INSTRUCTIONS:-Comunícate con soporte para renovar.}
       SUBSCRIPTION_TRIAL_DAYS: ${SUBSCRIPTION_TRIAL_DAYS:-14}
+      SUBSCRIPTION_TRIAL_WITHOUT_CODE: ${SUBSCRIPTION_TRIAL_WITHOUT_CODE:-false}
       # Límites por minuto (los valores por defecto son los de producción; las pruebas E2E y de carga los suben).
       RATE_LIMIT_LOGIN: ${RATE_LIMIT_LOGIN:-10}
       RATE_LIMIT_REGISTER: ${RATE_LIMIT_REGISTER:-5}

@@ -126,4 +126,28 @@ class ProductImportIT extends IntegrationTest {
     private static byte[] bytes(String text) {
         return text.getBytes(StandardCharsets.UTF_8);
     }
+
+    /** Fase 8f: la plantilla de Excel se descarga y, llena, se importa igual que un CSV. */
+    @Test
+    void excelTemplateCanBeDownloadedAndImported() throws Exception {
+        Owned owner = api.newTenant("excel");
+        byte[] template = api.getWith(owner.tenant(), "/api/v1/products/import/template")
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsByteArray();
+        assertThat(new String(template, 0, 2, StandardCharsets.US_ASCII)).isEqualTo("PK");
+        // La plantilla trae dos productos de ejemplo: se validan y se importan tal cual.
+        api.upload(owner.tenant(), "/api/v1/products/import", template)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.toCreate").value(2))
+                .andExpect(jsonPath("$.errors.length()").value(0));
+        api.upload(owner.tenant(), "/api/v1/products/import", template, "dryRun", "false")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.applied").value(true));
+        api.getWith(owner.tenant(), "/api/v1/products/lookup?code=7701234567890")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sku").value("GAS-400"));
+        // Un archivo que parece Excel pero está dañado
+        api.upload(owner.tenant(), "/api/v1/products/import", new byte[] {'P', 'K', 3, 4, 0, 0, 0})
+                .andExpect(status().is(422));
+    }
 }

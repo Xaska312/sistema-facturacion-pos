@@ -14,6 +14,8 @@ import com.poshibrido.catalog.infrastructure.UnitRepository;
 import com.poshibrido.shared.csv.CsvReader;
 import com.poshibrido.shared.csv.Numbers;
 import com.poshibrido.shared.error.BusinessRuleException;
+import com.poshibrido.shared.xlsx.XlsxReader;
+import com.poshibrido.shared.xlsx.XlsxWriter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -79,7 +81,55 @@ public class ProductImportService {
 
     @Transactional
     public ImportReport importCsv(String content, boolean dryRun) {
-        List<CsvReader.Row> table = CsvReader.parseWithLines(content);
+        return importRows(CsvReader.parseWithLines(content), dryRun);
+    }
+
+    /** La misma carga desde la plantilla de Excel (.xlsx): se lee la primera hoja (fase 8f). */
+    @Transactional
+    public ImportReport importXlsx(byte[] content, boolean dryRun) {
+        List<XlsxReader.Row> rows;
+        try {
+            rows = XlsxReader.firstSheet(content);
+        } catch (XlsxReader.InvalidXlsxException ex) {
+            throw new BusinessRuleException(ex.getMessage());
+        }
+        return importRows(rows.stream().map(r -> new CsvReader.Row(r.number(), r.cells())).toList(), dryRun);
+    }
+
+    /**
+     * Plantilla de Excel para llenar y volver a subir: hoja "Productos" con encabezados, dos ejemplos y listas
+     * desplegables (unidad, impuesto, sí/no) con los códigos activos del negocio, y hoja "Instrucciones".
+     */
+    @Transactional(readOnly = true)
+    public byte[] templateXlsx() {
+        List<String> unitCodes = units.findAll().stream().filter(Unit::isActive).map(Unit::getCode).sorted().toList();
+        List<String> taxCodes = taxes.findAll().stream().filter(Tax::isActive).map(Tax::getCode).sorted().toList();
+        List<List<String>> productRows = List.of(
+                templateHeaders(),
+                List.of("GAS-400", "Gaseosa cola 400 ml", "7701234567890", "Bebidas", "UND", "IVA19", "1200", "2500",
+                        "si", ""),
+                List.of("ARR-1K", "Arroz 1 kg", "", "Granos", "UND", "IVA5", "3100", "4200", "si", "Bolsa de 1 kg"));
+        XlsxWriter.Sheet products = new XlsxWriter.Sheet("Productos", productRows,
+                List.of(14, 32, 18, 16, 10, 12, 12, 12, 20, 32), Set.of(0, 2),
+                Map.of(4, unitCodes, 5, taxCodes, 8, List.of("si", "no")), true);
+        List<List<String>> help = List.of(
+                List.of("Cómo llenar la plantilla"),
+                List.of("1. Escribe un producto por fila en la hoja Productos. Puedes borrar los dos ejemplos."),
+                List.of("2. Obligatorias: sku (tu código interno, sin espacios), nombre, impuesto y precio."),
+                List.of("3. unidad e impuesto: elige de la lista que aparece al tocar la celda. Si dejas la unidad vacía, queda UND."),
+                List.of("4. costo y precio: solo el número, sin $ ni puntos de miles (ej.: 2500)."),
+                List.of("5. controla_inventario: si (lo que tienes en bodega) o no (servicios, bolsas)."),
+                List.of("6. Guarda el archivo tal cual (Excel .xlsx) y súbelo en Productos → Importar."),
+                List.of("7. Si un sku ya existe, ese producto se actualiza. Las categorías nuevas se crean solas."),
+                List.of(""),
+                List.of("Unidades de tu negocio: " + String.join(", ", unitCodes)),
+                List.of("Impuestos de tu negocio: " + String.join(", ", taxCodes)));
+        XlsxWriter.Sheet instructions = new XlsxWriter.Sheet("Instrucciones", help, List.of(110), Set.of(), Map.of(),
+                true);
+        return XlsxWriter.write(List.of(products, instructions));
+    }
+
+    private ImportReport importRows(List<CsvReader.Row> table, boolean dryRun) {
         if (table.size() < 2) {
             throw new BusinessRuleException("El archivo no tiene filas de productos (la primera fila son los encabezados).");
         }

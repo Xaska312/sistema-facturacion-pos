@@ -4,7 +4,7 @@ import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { ImportReport, ImportRowError } from '../../core/api/api.models';
 import { CatalogApi } from '../../core/api/catalog.api';
-import { importTemplateCsv } from './import-template';
+import { saveDownload } from '../../shared/download';
 import { PageHeaderComponent } from '../../shared/page-header.component';
 import { DataTableComponent } from '../../shared/table/data-table.component';
 import { ColumnDef } from '../../shared/table/table';
@@ -14,30 +14,32 @@ import { ColumnDef } from '../../shared/table/table';
   selector: 'app-product-import',
   imports: [ButtonModule, PageHeaderComponent, DataTableComponent],
   template: `
-    <app-page-header title="Importar productos" description="Carga o actualiza muchos productos a la vez desde un archivo CSV." />
+    <app-page-header title="Importar productos" description="Carga o actualiza muchos productos a la vez desde Excel." />
 
     <section class="card p-4 flex flex-col gap-3 max-w-3xl">
       <ol class="list-decimal list-inside text-sm text-muted flex flex-col gap-1">
-        <li>Descarga la plantilla y llénala en Excel (una fila por producto).</li>
-        <li>Guárdala como <strong>CSV UTF-8</strong>. Columnas obligatorias: sku, nombre, impuesto, precio.</li>
-        <li>Impuesto: IVA19, IVA5, EXENTO o EXCLUIDO. Unidad: UND, KG, LT… (vacía = UND).</li>
-        <li>Si un SKU ya existe, se actualiza. Las categorías nuevas se crean solas.</li>
-        <li>Si alguna fila tiene errores, no se importa nada: corrige y vuelve a validar.</li>
+        <li><strong>Descarga la plantilla de Excel</strong> y ábrela. La hoja "Instrucciones" explica cada columna.</li>
+        <li>Escribe un producto por fila. Unidad, impuesto y "controla inventario" se eligen de una lista.</li>
+        <li><strong>Guárdala</strong> (sigue siendo Excel) y súbela aquí con "Elegir archivo".</li>
+        <li>Toca <strong>Revisar</strong>: te mostramos qué filas tienen errores antes de guardar nada.</li>
+        <li>Si todo está bien, toca <strong>Importar</strong>. Si un SKU ya existe, ese producto se actualiza.</li>
       </ol>
       <div class="flex flex-wrap gap-2 items-center">
-        <p-button label="Descargar plantilla" severity="secondary" [outlined]="true" (onClick)="downloadTemplate()" />
+        <p-button label="Descargar plantilla de Excel" icon="pi pi-file-excel" severity="secondary" [outlined]="true"
+                  [loading]="downloading()" (onClick)="downloadTemplate()" />
         <label class="inline-flex items-center gap-2 border rounded px-3 py-2 text-sm cursor-pointer hover:bg-surface-alt
                       focus-within:ring-2 focus-within:ring-brand">
           <i class="pi pi-upload text-xs" aria-hidden="true"></i>
-          {{ file() ? 'Elegir otro archivo' : 'Elegir archivo CSV' }}
-          <input type="file" accept=".csv,text/csv" (change)="pick($event)" class="sr-only" />
+          {{ file() ? 'Elegir otro archivo' : 'Elegir archivo' }}
+          <input type="file" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
+                 (change)="pick($event)" class="sr-only" />
         </label>
         @if (file(); as f) {
           <span class="text-sm text-muted">{{ f.name }}</span>
         }
       </div>
       <div class="flex gap-2">
-        <p-button label="Validar" [disabled]="!file()" [loading]="busy()" (onClick)="run(true)" />
+        <p-button label="Revisar" [disabled]="!file()" [loading]="busy()" (onClick)="run(true)" />
         @if (report(); as r) {
           @if (!r.applied && r.errors.length === 0) {
             <p-button [label]="'Importar ' + (r.toCreate + r.toUpdate) + ' productos'" severity="success"
@@ -74,6 +76,7 @@ export class ProductImportComponent {
   protected readonly file = signal<File | null>(null);
   protected readonly report = signal<ImportReport | null>(null);
   protected readonly busy = signal(false);
+  protected readonly downloading = signal(false);
   protected readonly errorKey = (e: ImportRowError): string => `${e.row}:${e.message}`;
   protected readonly errorColumns: ColumnDef<ImportRowError>[] = [
     { header: 'Fila', cell: (e) => e.row, kind: 'mono', cellClass: 'w-20' },
@@ -113,12 +116,13 @@ export class ProductImportComponent {
   }
 
   downloadTemplate(): void {
-    const blob = new Blob([importTemplateCsv()], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'plantilla-productos.csv';
-    link.click();
-    URL.revokeObjectURL(url);
+    this.downloading.set(true);
+    this.api.importTemplate().subscribe({
+      next: (response) => {
+        this.downloading.set(false);
+        saveDownload(response, 'plantilla-productos.xlsx');
+      },
+      error: () => this.downloading.set(false),
+    });
   }
 }

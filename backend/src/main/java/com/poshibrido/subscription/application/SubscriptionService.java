@@ -91,6 +91,11 @@ public class SubscriptionService implements SubscriptionApi {
     public void startForNewTenant(UUID tenantId, UUID ownerId, String activationCode) {
         Instant now = Instant.now();
         if (activationCode == null || activationCode.isBlank()) {
+            // Por defecto todo negocio nuevo necesita código (la prueba gratis se da con un código desde la consola).
+            if (!properties.trialWithoutCode()) {
+                throw new ActivationCodeRequiredException("Para crear el negocio necesitas un código de activación. "
+                        + "Te lo damos al contratar tu plan o al pedir la prueba gratis.");
+            }
             // Una prueba por cuenta (también si el primer negocio falló al crearse: se reintenta ese, con
             // retry-provisioning). Se bloquea la cuenta para que dos creaciones simultáneas no tomen dos pruebas.
             jdbc.queryForList("SELECT id FROM platform.users WHERE id = ? FOR UPDATE", ownerId);
@@ -430,5 +435,13 @@ public class SubscriptionService implements SubscriptionApi {
         System.arraycopy(params, 0, all, 0, params.length);
         System.arraycopy(more, 0, all, params.length, more.length);
         return all;
+    }
+
+    /** Lo que ve quien crea un negocio: si el código es obligatorio y los días de la prueba sin código. */
+    public SignupTerms signupTerms() {
+        return new SignupTerms(!properties.trialWithoutCode(), properties.trialDays());
+    }
+
+    public record SignupTerms(boolean activationCodeRequired, int trialDays) {
     }
 }

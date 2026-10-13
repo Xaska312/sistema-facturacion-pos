@@ -23,7 +23,7 @@ POS web multi-negocio para comercios en Colombia. Backend Spring Boot 4.1 (Java 
 | 6 — Reportes y dashboard | ✅ Completada (validada en local el 2026-10-05) |
 | Mejora de UX (UX-1 a UX-5) | ✅ Completada (validada el 2026-10-05) |
 | 7 — Endurecimiento para producción | ✅ Completada (2026-10-11): producción y respaldos, auditoría, consola de plataforma, correos, CI con lint y e2e, manual de uso y QA completo |
-| 8 — Antes de lanzar | 🚧 En curso: 8a tipos de documento ✅, 8b suscripciones ✅, 8d tallas y colores ✅, 8c marca del negocio ✅, 8e báscula 🧪 |
+| 8 — Antes de lanzar | ✅ Completada (2026-10-12): 8a tipos de documento ✅, 8b suscripciones ✅, 8d tallas y colores ✅, 8c marca del negocio ✅, 8e báscula ✅ |
 | 9 — Despliegue acompañado | ⏳ Pendiente: servidor de pruebas → prueba de carga y lista manual → producción |
 
 ## Requisitos
@@ -80,7 +80,8 @@ Sin Node instalado, con Docker:
 ```powershell
 docker run --rm -v "${PWD}/tools:/tools" -e POS_API=http://host.docker.internal:8080 -e MAILPIT_URL=http://host.docker.internal:8025 node:22-alpine node /tools/demo/seed-demo.mjs
 ```
-Usuarios (contraseña `DemoPos2026`): `dueno@tienda-demo.test`, `cajero@tienda-demo.test`, `vendedor@tienda-demo.test`,
+Como crea un negocio sin código de activación, antes pon `SUBSCRIPTION_TRIAL_WITHOUT_CODE=true` en tu `.env` y
+`docker compose up -d` (quítalo después: por defecto todo negocio nuevo pide código). Usuarios (contraseña `DemoPos2026`): `dueno@tienda-demo.test`, `cajero@tienda-demo.test`, `vendedor@tienda-demo.test`,
 `bodega@tienda-demo.test`. Para otro negocio demo: `DEMO_SLUG=otro_nombre`.
 
 ## Tests
@@ -102,7 +103,7 @@ cd e2e; npm install; npx playwright install chromium; npx playwright test
 ```
 Crea usuarios y negocios nuevos por la API y recorre en el navegador: login → abrir caja → vender → cerrar caja
 (`venta.spec.ts`), lo que ve y hace cada rol (`roles.spec.ts`) y la anulación de una venta (`anulacion.spec.ts`).
-Como registran varias cuentas desde tu IP, en tu `.env` local pon `RATE_LIMIT_LOGIN=100` y `RATE_LIMIT_REGISTER=100`
+Como registran varias cuentas desde tu IP y crean negocios sin código, en tu `.env` local pon `RATE_LIMIT_LOGIN=100`, `RATE_LIMIT_REGISTER=100` y `SUBSCRIPTION_TRIAL_WITHOUT_CODE=true`
 (y `docker compose up -d` de nuevo) antes de correrlas. El reporte queda en `e2e/playwright-report`. En GitHub el flujo *E2E POS Híbrido* corre en cada PR hacia `main`
 (y a mano desde Actions); si falla, descarga el artefacto `playwright-report` con capturas y trazas.
 
@@ -333,13 +334,13 @@ Validada en local: 46 tests en verde; invitación por enlace, menú por permisos
 | 7-5 CI y manual | Lint, pruebas y e2e en cada PR; manual de uso público en `/manual` |
 | 7-6 QA completo | Revisión de seguridad, dinero, inventario e interfaz: 45 hallazgos, 42 corregidos ([`docs/QA.md`](docs/QA.md)); e2e por rol y prueba de carga k6 ([`loadtest/README.md`](loadtest/README.md)) |
 
-## Fase 8 — Antes de lanzar 🚧
+## Fase 8 — Antes de lanzar ✅
 
 **8a — Tipos de documento.** Cédula de extranjería, PPT, tarjeta de extranjería, registro civil, NUIP, documento y NIT
 extranjeros para clientes y proveedores.
 
-**8b — Suscripciones.** Planes Básico y Pro (mensual o anual) con límites de sucursales y usuarios; prueba gratis de
-14 días o código de activación al crear el negocio; aviso antes de vencer (franja y correos); vencido = solo consulta.
+**8b — Suscripciones.** Planes Básico y Pro (mensual o anual) con límites de sucursales y usuarios; código de activación
+obligatorio al crear el negocio (la prueba gratis sin código se activa con `SUBSCRIPTION_TRIAL_WITHOUT_CODE=true`); aviso antes de vencer (franja y correos); vencido = solo consulta.
 El administrador registra pagos, cambia planes y genera códigos en la consola de plataforma. Ver *Ajustes → Suscripción*.
 
 **8d — Tallas y colores.** *Productos → Con tallas*: un modelo con un solo precio crea una variante por talla × color,

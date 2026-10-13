@@ -14,6 +14,8 @@ services:
       EMAIL_VERIFICATION_REQUIRED: "false"
       RATE_LIMIT_LOGIN: "100000"
       RATE_LIMIT_REGISTER: "100000"
+      # Los 50 negocios de la prueba se crean sin código de activación.
+      SUBSCRIPTION_TRIAL_WITHOUT_CODE: "true"
       # El límite por usuario (300/min) y el de consultas pesadas quedan como en producción: se mide la configuración real.
       DB_POOL_SIZE: ${DB_POOL_SIZE:-10}
       # La preparación más la prueba pueden pasar de 15 minutos: el token de acceso dura más solo aquí.

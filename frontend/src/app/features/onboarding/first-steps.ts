@@ -55,7 +55,7 @@ export function buildFirstSteps(counts: FirstStepCounts): FirstStep[] {
     {
       id: 'products', permission: 'products:manage', route: '/app/productos', actionLabel: 'Cargar productos',
       title: 'Carga tus productos',
-      description: 'Créalos uno a uno o impórtalos todos desde un archivo CSV (Excel).',
+      description: 'Créalos uno a uno o impórtalos todos desde una plantilla de Excel.',
       done: atLeast(counts.products, 1), optional: false,
     },
     {

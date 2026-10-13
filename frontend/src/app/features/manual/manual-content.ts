@@ -248,11 +248,11 @@ export const MANUAL: readonly ManualChapter[] = [
       {
         id: 'importar-productos',
         title: 'Importar productos desde Excel',
-        summary: 'Carga muchos productos de una vez con un archivo CSV que puedes llenar en Excel.',
+        summary: 'Carga muchos productos de una vez llenando una plantilla de Excel.',
         steps: [
-          'En Productos toca "Importar CSV" y luego "Descargar plantilla".',
-          'Llénala en Excel (una fila por producto) y guárdala como CSV.',
-          'Súbela y toca "Validar": el sistema te muestra qué filas tienen errores antes de guardar nada.',
+          'En Productos toca "Importar desde Excel" y luego "Descargar plantilla de Excel".',
+          'Ábrela y escribe un producto por fila (la hoja "Instrucciones" explica cada columna). Guárdala.',
+          'Súbela con "Elegir archivo" y toca "Revisar": el sistema te muestra qué filas tienen errores antes de guardar nada.',
           'Corrige lo que falte y confirma la importación.',
         ],
         tips: ['Si un SKU ya existe, ese producto se actualiza con los datos del archivo.'],
