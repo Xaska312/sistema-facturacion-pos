@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { ChartComponent } from './chart.component';
-import { foldOthers, readChartTheme, seriesColor } from './chart-config';
+import { foldOthers, readChartTheme, seriesColor, usesBrandColor } from './chart-config';
 
 describe('chart-config', () => {
   it('lee los colores de los tokens y usa un orden fijo; la comparación es gris', () => {
@@ -11,6 +11,20 @@ describe('chart-config', () => {
     expect(seriesColor(theme, 1, 'compare')).toBe('#839290');
     // Más series que colores: nunca se inventa un color nuevo.
     expect(seriesColor(theme, 20, 'primary')).toBe(theme.series[theme.series.length - 1]);
+  });
+
+  it('una sola serie va en el color de marca; varias y la dona, en los colores fijos', () => {
+    const vars: Record<string, string> = { '--brand': '#be185d', '--chart-1': '#0d9488', '--chart-compare': '#839290' };
+    const theme = readChartTheme((name) => vars[name] ?? '');
+    const one = { label: 'Ventas', data: [1] };
+    const compare = { label: 'Antes', data: [1], role: 'compare' as const };
+    expect(usesBrandColor({ kind: 'bar', series: [one] })).toBeTrue();
+    expect(usesBrandColor({ kind: 'line', series: [one, compare] })).toBeTrue();
+    expect(usesBrandColor({ kind: 'bar', series: [one, { label: 'Otra', data: [2] }] })).toBeFalse();
+    expect(usesBrandColor({ kind: 'doughnut', series: [one] })).toBeFalse();
+    expect(seriesColor(theme, 0, 'primary', true)).toBe('#be185d');
+    expect(seriesColor(theme, 0, 'compare', true)).toBe('#839290');
+    expect(seriesColor(theme, 0, 'primary', false)).toBe('#0d9488');
   });
 
   it('agrupa en "Otros" las categorías que sobran', () => {

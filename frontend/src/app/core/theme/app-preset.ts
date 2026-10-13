@@ -2,7 +2,7 @@ import { definePreset } from '@primeng/themes';
 import Aura from '@primeng/themes/aura';
 
 /**
- * Preset de PrimeNG sobre Aura con la paleta de marca "Turquesa comercio".
+ * Preset de PrimeNG sobre Aura; paleta de marca por defecto: Índigo, el color de XASKA (antes Turquesa).
  * Debe coincidir con los tokens de src/styles.css (misma paleta en claro y oscuro).
  *
  * Ajustes de accesibilidad (WCAG AA, contraste ≥ 4,5:1):
@@ -10,18 +10,18 @@ import Aura from '@primeng/themes/aura';
  * - Los neutros 500/600 son algo más oscuros para que el texto secundario y los placeholders se lean.
  * - El borde de los campos usa el neutro 400 (claro) / 500 (oscuro): contraste ≥ 3:1 con el fondo (WCAG 1.4.11).
  */
-export const TEAL = {
-  50: '#f0fdfa',
-  100: '#ccfbf1',
-  200: '#99f6e4',
-  300: '#5eead4',
-  400: '#2dd4bf',
-  500: '#14b8a6',
-  600: '#0d9488',
-  700: '#0f766e',
-  800: '#115e59',
-  900: '#134e4a',
-  950: '#042f2e',
+export const INDIGO = {
+  50: '#eef2ff',
+  100: '#e0e7ff',
+  200: '#c7d2fe',
+  300: '#a5b4fc',
+  400: '#818cf8',
+  500: '#6366f1',
+  600: '#4f46e5',
+  700: '#4338ca',
+  800: '#3730a3',
+  900: '#312e81',
+  950: '#1e1b4b',
 } as const;
 
 const LIGHT_SURFACE = {
@@ -98,7 +98,7 @@ const TOAST_LIGHT = {
 
 export const AppPreset = definePreset(Aura, {
   semantic: {
-    primary: TEAL,
+    primary: INDIGO,
     colorScheme: {
       light: {
         surface: LIGHT_SURFACE,

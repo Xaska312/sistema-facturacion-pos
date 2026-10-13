@@ -14,6 +14,7 @@ import {
   PointElement,
   Tooltip,
 } from 'chart.js';
+import { activeBrand } from '../../core/theme/brand-palettes';
 import { ThemeService } from '../../core/theme/theme.service';
 import { formatCompactCop, formatCop } from '../money';
 import {
@@ -35,7 +36,7 @@ Chart.defaults.font.family = 'Inter, system-ui, -apple-system, "Segoe UI", Robot
 
 /**
  * Gráfica de la app sobre Chart.js (se importa solo en las pantallas que la usan).
- * - Colores desde los tokens CSS; se vuelve a pintar al cambiar entre claro y oscuro.
+ * - Colores desde los tokens CSS; se vuelve a pintar al cambiar entre claro y oscuro o el color de marca.
  * - Tooltips en pesos (o con {@code format}), ejes abreviados ("$ 1,2 M").
  * - Accesible: el lienzo tiene {@code aria-label} con un resumen y hay una tabla con los datos para lectores de
  *   pantalla; la dona muestra su leyenda en HTML con valor y porcentaje.
@@ -109,7 +110,7 @@ export class ChartComponent {
   constructor() {
     effect(() => {
       const canvas = this.canvas()?.nativeElement;
-      // Dependencias: datos, opciones y el modo de color.
+      // Dependencias: datos, opciones, el modo de color y el color de marca del negocio.
       const spec: ChartSpec = {
         kind: this.kind(),
         labels: this.labels(),
@@ -120,6 +121,7 @@ export class ChartComponent {
         animate: !this.prefersReducedMotion(),
       };
       this.theme.isDark();
+      activeBrand();
       if (canvas) {
         untracked(() => this.draw(canvas, spec));
       }
