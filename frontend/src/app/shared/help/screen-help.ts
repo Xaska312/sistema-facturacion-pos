@@ -82,8 +82,8 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     manual: 'crear-producto',
     title: 'Productos',
     tips: [
-      'Crea productos uno a uno o impórtalos desde un archivo CSV (puedes abrirlo en Excel).',
-      'Marca "controla inventario" en lo que tienes en bodega; los servicios no lo necesitan.',
+      'Crea productos uno a uno (solo hacen falta el nombre y el precio) o impórtalos desde una plantilla de Excel.',
+      'Deja marcado "Llevar control de existencias" en lo que tienes en bodega; los servicios no lo necesitan.',
       'Un producto puede tener varios códigos de barras y presentaciones (por ejemplo, caja de 24).',
       'Desactivar un producto lo oculta del POS sin borrar su historia.',
     ],

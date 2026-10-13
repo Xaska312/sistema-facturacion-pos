@@ -158,6 +158,8 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
 export class InventoryDocumentEditorComponent implements OnInit, HasUnsavedChanges {
   /** Segmento de ruta :kind (saldo-inicial, ajuste, traslado, conteo). */
   readonly kind = input.required<string>();
+  /** ?producto=id: llega desde "Producto creado → registrar existencias" y entra ya en la lista. */
+  readonly producto = input<string>();
 
   private readonly api = inject(InventoryApi);
   private readonly catalog = inject(CatalogApi);
@@ -198,6 +200,10 @@ export class InventoryDocumentEditorComponent implements OnInit, HasUnsavedChang
   private saved = false;
 
   ngOnInit(): void {
+    const productId = this.producto();
+    if (productId) {
+      this.catalog.product(productId, true).subscribe((p) => this.addProduct(p, null, false));
+    }
     this.organization.branches({ page: 0, size: 100, sort: 'code,asc' }).subscribe((p) => {
       const active = p.content.filter((b) => b.active);
       this.branches.set(active);

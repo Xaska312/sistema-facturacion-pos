@@ -8,7 +8,8 @@ import { forkJoin } from 'rxjs';
 import { Category, PriceList, Product, Tax, Unit } from '../../core/api/api.models';
 import { CatalogApi } from '../../core/api/catalog.api';
 import { formatCop } from '../../shared/money';
-import { barcodeGroup, conversionGroup, fillForm, listPriceGroup, productForm, toInput } from './product-form';
+import { barcodeGroup, conversionGroup, fillForm, listPriceGroup, productForm, skuFromName, toInput } from './product-form';
+import { ConfirmService } from '../../shared/confirm';
 import { PageHeaderComponent } from '../../shared/page-header.component';
 import { StatusBadgeComponent } from '../../shared/status-badge.component';
 import { TermComponent } from '../../shared/help/term.component';
@@ -38,24 +39,28 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
 
     <form [formGroup]="form" (ngSubmit)="save()" (keydown.enter)="ignoreEnter($event)" class="flex flex-col gap-4 max-w-4xl">
       <fieldset [disabled]="!editable()" class="flex flex-col gap-4">
-        <!-- Datos básicos -->
+        <!-- Datos básicos: en el orden en que los piensa quien vende (nombre, precio, costo…) -->
         <section class="card p-4 grid gap-3 md:grid-cols-2">
           <label class="flex flex-col gap-1">
-            <span class="text-sm font-medium">SKU</span>
-            <input pInputText formControlName="sku" class="uppercase" />
-          </label>
-          <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">Nombre</span>
-            <input pInputText formControlName="name" />
+            <input pInputText formControlName="name" placeholder="Ej.: Gaseosa cola 400 ml" />
           </label>
           <label class="flex flex-col gap-1">
-            <span class="text-sm font-medium">Categoría</span>
-            <select formControlName="categoryId" class="border rounded px-2 py-2">
-              <option value="">Sin categoría</option>
-              @for (c of activeCategories(); track c.id) {
-                <option [value]="c.id">{{ categoryPath(c) }}</option>
-              }
-            </select>
+            <span class="text-sm font-medium">Precio de venta (al público)</span>
+            <input pInputText appPesos="2" formControlName="salePrice" />
+            <small class="text-muted">{{ formatCop(form.controls.salePrice.value) }} por {{ unitCode(form.controls.baseUnitId.value) }}</small>
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="text-sm font-medium">Costo (lo que te cuesta a ti)</span>
+            <input pInputText appPesos="2" formControlName="cost"
+                   [readonly]="product()?.costLocked === true" />
+            @if (product()?.costLocked) {
+              <small class="text-muted">
+                <app-term term="costo-promedio">Costo promedio</app-term> ponderado, calculado por el inventario.
+              </small>
+            } @else {
+              <small class="text-muted">Opcional. Sirve para saber cuánto ganas.</small>
+            }
           </label>
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">Impuesto</span>
@@ -64,85 +69,50 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
                 <option [value]="t.id">{{ t.name }}</option>
               }
             </select>
+            <small class="text-muted">¿No sabes? La mayoría de productos llevan IVA 19 %.</small>
           </label>
           <label class="flex flex-col gap-1">
-            <span class="text-sm font-medium">Unidad base</span>
+            <span class="text-sm font-medium">Categoría (opcional)</span>
+            <select formControlName="categoryId" class="border rounded px-2 py-2">
+              <option value="">Sin categoría</option>
+              @for (c of activeCategories(); track c.id) {
+                <option [value]="c.id">{{ categoryPath(c) }}</option>
+              }
+            </select>
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="text-sm font-medium">Se vende por</span>
             <select formControlName="baseUnitId" class="border rounded px-2 py-2">
               @for (u of activeUnits(); track u.id) {
                 <option [value]="u.id">{{ u.code }} — {{ u.name }}</option>
               }
             </select>
           </label>
-          <label class="flex items-center gap-2 mt-6">
-            <input type="checkbox" formControlName="trackInventory" /> Controla inventario
-          </label>
           <label class="flex flex-col gap-1">
-            <span class="text-sm font-medium">Costo</span>
-            <input pInputText appPesos="2" formControlName="cost"
-                   [readonly]="product()?.costLocked === true" />
-            @if (product()?.costLocked) {
-              <small class="text-muted">
-                <app-term term="costo-promedio">Costo promedio</app-term> ponderado, calculado por el inventario.
-              </small>
-            }
+            <span class="text-sm font-medium">Código interno (SKU)</span>
+            <input pInputText formControlName="sku" class="uppercase"
+                   [placeholder]="isNew() ? 'Se crea solo con el nombre' : ''" />
+            <small class="text-muted">Para encontrarlo rápido. Si lo dejas vacío, lo creamos con el nombre.</small>
           </label>
-          <label class="flex flex-col gap-1">
-            <span class="text-sm font-medium">Precio de venta (lista General)</span>
-            <input pInputText appPesos="2" formControlName="salePrice" />
-            <small class="text-muted">{{ formatCop(form.controls.salePrice.value) }} por {{ unitCode(form.controls.baseUnitId.value) }}</small>
+          <label class="flex items-start gap-2 md:mt-6">
+            <input type="checkbox" formControlName="trackInventory" class="mt-1" />
+            <span>Llevar control de existencias
+              <small class="block text-muted">Desmárcalo para servicios o cosas que no cuentas (bolsas, domicilios).</small>
+            </span>
           </label>
           <label class="flex flex-col gap-1 md:col-span-2">
-            <span class="text-sm font-medium">Descripción</span>
+            <span class="text-sm font-medium">Descripción (opcional)</span>
             <textarea formControlName="description" rows="2" class="border rounded px-2 py-2"></textarea>
           </label>
-        </section>
-
-        <!-- Presentaciones -->
-        <section class="card p-4 flex flex-col gap-2">
-          <header class="flex items-center justify-between">
-            <div>
-              <h2 class="font-medium">Presentaciones</h2>
-              <p class="text-xs text-muted">Ej.: una caja de 24 unidades. Si no pones precio, se calcula precio base × factor.</p>
-            </div>
-            @if (editable()) {
-              <p-button label="Agregar" size="small" [text]="true" (onClick)="addConversion()" />
-            }
-          </header>
-          @for (group of form.controls.conversions.controls; track group; let i = $index) {
-            <div [formGroup]="group" class="grid grid-cols-12 gap-2 items-end">
-              <label class="col-span-4 flex flex-col gap-1">
-                <span class="text-xs">Unidad</span>
-                <select formControlName="unitId" class="border rounded px-2 py-2">
-                  @for (u of activeUnits(); track u.id) {
-                    @if (u.id !== form.controls.baseUnitId.value) {
-                      <option [value]="u.id">{{ u.code }} — {{ u.name }}</option>
-                    }
-                  }
-                </select>
-              </label>
-              <label class="col-span-3 flex flex-col gap-1">
-                <span class="text-xs">Contiene ({{ unitCode(form.controls.baseUnitId.value) }})</span>
-                <input pInputText type="number" min="0" step="any" formControlName="factor" />
-              </label>
-              <label class="col-span-3 flex flex-col gap-1">
-                <span class="text-xs">Precio (opcional)</span>
-                <input pInputText appPesos="2" formControlName="salePrice"
-                       [placeholder]="formatCop(form.controls.salePrice.value * group.controls.factor.value)" />
-              </label>
-              @if (editable()) {
-                <p-button class="col-span-2" label="Quitar" size="small" [text]="true" severity="danger"
-                          (onClick)="removeRow(form.controls.conversions, i)" />
-              }
-            </div>
-          } @empty {
-            <p class="text-sm text-muted">Se vende solo por {{ unitCode(form.controls.baseUnitId.value) }}.</p>
-          }
         </section>
 
         <!-- Códigos de barras -->
         <section class="card p-4 flex flex-col gap-2">
           <header class="flex items-center justify-between">
-            <h2 class="font-medium">Códigos de barras</h2>
+            <div>
+              <h2 class="font-medium">Códigos de barras</h2>
+              <p class="text-xs text-muted">Escanea aquí el código del empaque. Si no tiene, toca "Generar código interno".</p>
+            </div>
             @if (editable()) {
               <span class="flex gap-2">
                 <p-button label="Generar código interno" size="small" [text]="true" [loading]="generating()"
@@ -178,52 +148,100 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
           }
         </section>
 
-        <!-- Precios por lista -->
-        @if (extraLists().length > 0) {
+        @if (showAdvanced()) {
+          <!-- Presentaciones -->
           <section class="card p-4 flex flex-col gap-2">
             <header class="flex items-center justify-between">
               <div>
-                <h2 class="font-medium">Precios en otras listas</h2>
-                <p class="text-xs text-muted">Si una lista no tiene precio para una unidad, se usa el de la lista General.</p>
+                <h2 class="font-medium">Presentaciones</h2>
+                <p class="text-xs text-muted">Ej.: una caja de 24 unidades. Si no pones precio, se calcula precio base × factor.</p>
               </div>
               @if (editable()) {
-                <p-button label="Agregar" size="small" [text]="true" (onClick)="addListPrice()" />
+                <p-button label="Agregar" size="small" [text]="true" (onClick)="addConversion()" />
               }
             </header>
-            @for (group of form.controls.listPrices.controls; track group; let i = $index) {
+            @for (group of form.controls.conversions.controls; track group; let i = $index) {
               <div [formGroup]="group" class="grid grid-cols-12 gap-2 items-end">
                 <label class="col-span-4 flex flex-col gap-1">
-                  <span class="text-xs">Lista</span>
-                  <select formControlName="priceListId" class="border rounded px-2 py-2">
-                    @for (l of extraLists(); track l.id) {
-                      <option [value]="l.id">{{ l.name }}</option>
-                    }
-                  </select>
-                </label>
-                <label class="col-span-3 flex flex-col gap-1">
                   <span class="text-xs">Unidad</span>
                   <select formControlName="unitId" class="border rounded px-2 py-2">
-                    <option [value]="form.controls.baseUnitId.value">{{ unitCode(form.controls.baseUnitId.value) }}</option>
-                    @for (c of form.controls.conversions.controls; track c) {
-                      @if (c.controls.unitId.value) {
-                        <option [value]="c.controls.unitId.value">{{ unitCode(c.controls.unitId.value) }}</option>
+                    @for (u of activeUnits(); track u.id) {
+                      @if (u.id !== form.controls.baseUnitId.value) {
+                        <option [value]="u.id">{{ u.code }} — {{ u.name }}</option>
                       }
                     }
                   </select>
                 </label>
                 <label class="col-span-3 flex flex-col gap-1">
-                  <span class="text-xs">Precio</span>
-                  <input pInputText appPesos="2" formControlName="price" />
+                  <span class="text-xs">Contiene ({{ unitCode(form.controls.baseUnitId.value) }})</span>
+                  <input pInputText type="number" min="0" step="any" formControlName="factor" />
+                </label>
+                <label class="col-span-3 flex flex-col gap-1">
+                  <span class="text-xs">Precio (opcional)</span>
+                  <input pInputText appPesos="2" formControlName="salePrice"
+                         [placeholder]="formatCop(form.controls.salePrice.value * group.controls.factor.value)" />
                 </label>
                 @if (editable()) {
                   <p-button class="col-span-2" label="Quitar" size="small" [text]="true" severity="danger"
-                            (onClick)="removeRow(form.controls.listPrices, i)" />
+                            (onClick)="removeRow(form.controls.conversions, i)" />
                 }
               </div>
             } @empty {
-              <p class="text-sm text-muted">Usa los precios de la lista General.</p>
+              <p class="text-sm text-muted">Se vende solo por {{ unitCode(form.controls.baseUnitId.value) }}.</p>
             }
           </section>
+
+          <!-- Precios por lista -->
+          @if (extraLists().length > 0) {
+            <section class="card p-4 flex flex-col gap-2">
+              <header class="flex items-center justify-between">
+                <div>
+                  <h2 class="font-medium">Precios en otras listas</h2>
+                  <p class="text-xs text-muted">Si una lista no tiene precio para una unidad, se usa el de la lista General.</p>
+                </div>
+                @if (editable()) {
+                  <p-button label="Agregar" size="small" [text]="true" (onClick)="addListPrice()" />
+                }
+              </header>
+              @for (group of form.controls.listPrices.controls; track group; let i = $index) {
+                <div [formGroup]="group" class="grid grid-cols-12 gap-2 items-end">
+                  <label class="col-span-4 flex flex-col gap-1">
+                    <span class="text-xs">Lista</span>
+                    <select formControlName="priceListId" class="border rounded px-2 py-2">
+                      @for (l of extraLists(); track l.id) {
+                        <option [value]="l.id">{{ l.name }}</option>
+                      }
+                    </select>
+                  </label>
+                  <label class="col-span-3 flex flex-col gap-1">
+                    <span class="text-xs">Unidad</span>
+                    <select formControlName="unitId" class="border rounded px-2 py-2">
+                      <option [value]="form.controls.baseUnitId.value">{{ unitCode(form.controls.baseUnitId.value) }}</option>
+                      @for (c of form.controls.conversions.controls; track c) {
+                        @if (c.controls.unitId.value) {
+                          <option [value]="c.controls.unitId.value">{{ unitCode(c.controls.unitId.value) }}</option>
+                        }
+                      }
+                    </select>
+                  </label>
+                  <label class="col-span-3 flex flex-col gap-1">
+                    <span class="text-xs">Precio</span>
+                    <input pInputText appPesos="2" formControlName="price" />
+                  </label>
+                  @if (editable()) {
+                    <p-button class="col-span-2" label="Quitar" size="small" [text]="true" severity="danger"
+                              (onClick)="removeRow(form.controls.listPrices, i)" />
+                  }
+                </div>
+              } @empty {
+                <p class="text-sm text-muted">Usa los precios de la lista General.</p>
+              }
+            </section>
+          }
+        } @else {
+          <button type="button" class="self-start text-sm text-brand hover:underline" (click)="showAdvanced.set(true)">
+            <i class="pi pi-angle-down text-xs" aria-hidden="true"></i> Más opciones: presentaciones (caja de 24…) y otras listas de precios
+          </button>
         }
       </fieldset>
 
@@ -245,6 +263,8 @@ export class ProductEditorComponent implements OnInit, HasUnsavedChanges {
   private readonly router = inject(Router);
   private readonly messages = inject(MessageService);
   protected readonly canEdit = permissionFlag('products:manage');
+  private readonly canAdjustStock = permissionFlag('inventory:adjust');
+  private readonly confirm = inject(ConfirmService);
   /** Una talla de un modelo no se edita aquí (fase 8d): solo desde su modelo. */
   protected readonly editable = computed(() => this.canEdit() && !this.product()?.modelId);
   protected readonly formatCop = formatCop;
@@ -257,6 +277,8 @@ export class ProductEditorComponent implements OnInit, HasUnsavedChanges {
   protected readonly priceLists = signal<PriceList[]>([]);
   protected readonly saving = signal(false);
   protected readonly generating = signal(false);
+  /** Presentaciones y otras listas de precios: escondidas al empezar (fase de arranque), visibles si el producto las usa. */
+  protected readonly showAdvanced = signal(false);
   protected readonly isNew = computed(() => !this.id());
   protected readonly activeCategories = computed(() => this.categories().filter((c) => c.active));
   protected readonly activeUnits = computed(() => this.units().filter((u) => u.active));
@@ -281,6 +303,7 @@ export class ProductEditorComponent implements OnInit, HasUnsavedChanges {
         this.api.product(id).subscribe((p) => {
           this.product.set(p);
           fillForm(this.fb, this.form, p);
+          this.showAdvanced.set(p.conversions.length > 0 || p.listPrices.length > 0);
         });
       } else {
         const und = refs.units.find((u) => u.code === 'UND');
@@ -360,6 +383,14 @@ export class ProductEditorComponent implements OnInit, HasUnsavedChanges {
   }
 
   save(): void {
+    if (!this.form.controls.sku.value.trim()) {
+      const sku = skuFromName(this.form.controls.name.value);
+      if (!sku) {
+        this.messages.add({ severity: 'warn', summary: 'Falta el nombre', detail: 'Escribe el nombre del producto.' });
+        return;
+      }
+      this.form.controls.sku.setValue(sku);
+    }
     const input = toInput(this.form);
     const current = this.product();
     this.saving.set(true);
@@ -369,9 +400,26 @@ export class ProductEditorComponent implements OnInit, HasUnsavedChanges {
         this.saving.set(false);
         this.messages.add({ severity: 'success', summary: 'Producto guardado', detail: saved.name });
         this.saved = true;
-        void this.router.navigate(['/app/productos']);
+        if (!current && saved.trackInventory && this.canAdjustStock()) {
+          this.offerInitialStock(saved);
+        } else {
+          void this.router.navigate(['/app/productos']);
+        }
       },
       error: () => this.saving.set(false),
+    });
+  }
+
+  /** Producto nuevo: el siguiente paso natural es decir cuántos hay (sin buscar dónde se hace). */
+  private offerInitialStock(product: Product): void {
+    this.confirm.ask({
+      header: 'Producto creado',
+      message: `¿Quieres registrar ahora cuántas unidades de ${product.name} tienes en el local?`,
+      acceptLabel: 'Sí, registrar existencias',
+      rejectLabel: 'Ahora no',
+      accept: () => void this.router.navigate(['/app/inventario/nuevo/saldo-inicial'],
+        { queryParams: { producto: product.id } }),
+      reject: () => void this.router.navigate(['/app/productos']),
     });
   }
 }
