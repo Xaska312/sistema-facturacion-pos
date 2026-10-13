@@ -61,7 +61,7 @@ describe('ManualComponent', () => {
   it('se ve sin sesión, con todos los capítulos y el glosario', () => {
     const fixture = TestBed.createComponent(ManualComponent);
     fixture.detectChanges();
-    expect(text(fixture)).toContain('Cómo usar POS Híbrido');
+    expect(text(fixture)).toContain('Cómo usar XASKA POS');
     for (const chapter of MANUAL) {
       expect(fixture.nativeElement.querySelector(`#${chapter.id}`)).withContext(chapter.id).not.toBeNull();
     }

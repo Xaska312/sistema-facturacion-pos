@@ -4,6 +4,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { AuthService } from '../../core/auth/auth.service';
 import { copyToClipboard } from '../../shared/clipboard';
+import { XaskaLogoComponent } from '../../shared/brand/xaska-logo.component';
 import { MANUAL_GLOSSARY, filterManual, normalize } from './manual-content';
 
 /**
@@ -13,11 +14,13 @@ import { MANUAL_GLOSSARY, filterManual, normalize } from './manual-content';
  */
 @Component({
   selector: 'app-manual',
-  imports: [RouterLink],
+  imports: [RouterLink, XaskaLogoComponent],
   template: `
     <header class="manual-header">
       <div class="mx-auto max-w-6xl px-4 py-3 flex flex-wrap items-center gap-3">
-        <a href="/manual" class="font-semibold text-brand text-lg" (click)="top($event)">POS Híbrido</a>
+        <a href="/manual" class="home-link" aria-label="XASKA POS, inicio del manual" (click)="top($event)">
+          <app-xaska-logo [wordmark]="true" [tag]="true" />
+        </a>
         <span class="text-muted">Manual de uso</span>
         <span class="flex-1"></span>
         <a [routerLink]="appLink()" class="app-button">{{ auth.isAuthenticated() ? 'Volver a la app' : 'Entrar' }}</a>
@@ -50,7 +53,7 @@ import { MANUAL_GLOSSARY, filterManual, normalize } from './manual-content';
       <main class="flex flex-col gap-10 min-w-0">
         @if (!query()) {
           <section class="intro">
-            <h1 class="text-2xl font-semibold mb-2">Cómo usar POS Híbrido</h1>
+            <h1 class="text-2xl font-semibold mb-2">Cómo usar XASKA POS</h1>
             <p class="text-muted">
               Punto de venta en la nube para tu negocio: vende con lector o en tablet, controla tu caja y tu inventario,
               y revisa tus reportes desde cualquier lugar. Este manual explica cada pantalla paso a paso. Dentro de la
@@ -153,6 +156,12 @@ import { MANUAL_GLOSSARY, filterManual, normalize } from './manual-content';
       z-index: 10;
       background: var(--surface);
       border-bottom: 1px solid var(--surface-border);
+    }
+    .home-link {
+      display: inline-flex;
+      align-items: center;
+      min-height: 2.75rem;
+      border-radius: 0.5rem;
     }
     .app-button {
       display: inline-flex;

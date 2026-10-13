@@ -50,6 +50,14 @@
   --chart-6: #eda100;
   --chart-compare: #839290;
   --chart-grid: #e6ebeb;
+  /* Logo de XASKA (la empresa del POS): no cambia con el color de cada negocio. */
+  --xaska-tile: #111827;
+  --xaska-on-tile: #ffffff;
+  --xaska-dot-on-tile: #818cf8;
+  --xaska-ink: #111827;
+  --xaska-dot: #4f46e5;
+  --xaska-tag-bg: #e0e7ff;
+  --xaska-tag-text: #312e81;
 }
 
 .app-dark {
@@ -90,6 +98,10 @@
   --chart-6: #c98500;
   --chart-compare: #6f8285;
   --chart-grid: #223033;
+  --xaska-ink: #ffffff;
+  --xaska-dot: #818cf8;
+  --xaska-tag-bg: #312e81;
+  --xaska-tag-text: #e0e7ff;
 }
 
 /*

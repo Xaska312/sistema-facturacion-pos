@@ -3,7 +3,7 @@ package com.poshibrido.mail;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * @param from         remitente, p. ej. {@code POS Híbrido <no-responder@midominio.com>}
+ * @param from         remitente, p. ej. {@code XASKA POS <no-responder@midominio.com>}
  * @param resendApiKey clave de Resend; vacía = no se usa Resend
  * @param publicUrl    dirección pública de la app (sin "/" final) para armar los enlaces
  * @param async        enviar en segundo plano (los tests lo apagan para leer el correo en la misma petición)

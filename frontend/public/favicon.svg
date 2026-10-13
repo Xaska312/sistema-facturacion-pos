@@ -1,5 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#0f766e"/>
-  <path d="M20 16h24a2 2 0 0 1 2 2v30l-4-3-4 3-4-3-4 3-4-3-4 3-4-3V18a2 2 0 0 1 2-2z" fill="#ffffff"/>
-  <path d="M25 25h14M25 31h14M25 37h8" stroke="#0f766e" stroke-width="3" stroke-linecap="round"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="4 4 92 92" role="img" aria-label="XASKA"><title>XASKA</title><rect x="4" y="4" width="92" height="92" rx="20" fill="#111827"/><g fill="#FFFFFF"><polygon points="28.2,14 50,35.8 71.8,14 56.2,14 50,20.2 43.8,14"/><polygon points="28.2,14 50,35.8 71.8,14 56.2,14 50,20.2 43.8,14" transform="rotate(90 50 50)"/><polygon points="28.2,14 50,35.8 71.8,14 56.2,14 50,20.2 43.8,14" transform="rotate(180 50 50)"/><polygon points="28.2,14 50,35.8 71.8,14 56.2,14 50,20.2 43.8,14" transform="rotate(270 50 50)"/></g><polygon points="50,40 60,50 50,60 40,50" fill="#818CF8"/></svg>

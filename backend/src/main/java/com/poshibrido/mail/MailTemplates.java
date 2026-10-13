@@ -17,7 +17,11 @@ import java.util.UUID;
 @Component
 public class MailTemplates {
 
-    static final String BRAND = "#0f766e";
+    /** Índigo de XASKA: botón y línea del encabezado (texto blanco encima con contraste 6,3:1). */
+    static final String BRAND = "#4f46e5";
+    /** Noche de XASKA: el nombre en el encabezado. */
+    static final String INK = "#111827";
+    static final String PRODUCT = "XASKA POS";
     private static final ZoneId BOGOTA = ZoneId.of("America/Bogota");
     private static final DateTimeFormatter DATE_TIME = DateTimeFormatter
             .ofPattern("d 'de' MMMM 'de' yyyy, h:mm a", Locale.forLanguageTag("es-CO"));
@@ -34,7 +38,7 @@ public class MailTemplates {
         String link = properties.link("/verificar-correo?token=" + token);
         return message(to, "Confirma tu correo", "verificacion",
                 "Hola, " + name + ":",
-                List.of("Gracias por registrarte en POS Híbrido. Confirma tu correo para poder crear tu negocio."),
+                List.of("Gracias por registrarte en XASKA POS. Confirma tu correo para poder crear tu negocio."),
                 "Confirmar mi correo", link,
                 "El enlace vence en 24 horas. Si no creaste esta cuenta, ignora este correo.");
     }
@@ -68,7 +72,7 @@ public class MailTemplates {
         String roleText = roles.isEmpty() ? "" : " como " + String.join(", ", roles);
         return message(to, who + " te invitó a " + businessName, "invitacion",
                 "Hola:",
-                List.of(who + " te invitó a trabajar en " + businessName + roleText + " en POS Híbrido.",
+                List.of(who + " te invitó a trabajar en " + businessName + roleText + " en XASKA POS.",
                         "Si aún no tienes cuenta, créala con este mismo correo y luego acepta la invitación."),
                 "Ver la invitación", link,
                 "La invitación vence el " + format(expiresAt) + ". Si no esperabas este correo, ignóralo.");
@@ -79,7 +83,7 @@ public class MailTemplates {
     public MailMessage tenantSuspended(String to, String ownerName, String businessName, String reason) {
         return message(to, businessName + " fue suspendido", "negocio-suspendido",
                 "Hola, " + ownerName + ":",
-                List.of("Suspendimos el negocio " + businessName + " en POS Híbrido. Mientras esté suspendido, nadie "
+                List.of("Suspendimos el negocio " + businessName + " en XASKA POS. Mientras esté suspendido, nadie "
                                 + "puede entrar; los datos (ventas, inventario, clientes) se conservan.",
                         "Motivo: " + (reason == null || reason.isBlank() ? "no indicado" : reason) + "."),
                 null, null,
@@ -118,7 +122,7 @@ public class MailTemplates {
                         trial ? "Para seguir vendiendo sin interrupciones, activa tu plan antes de esa fecha."
                                 : "Renueva antes de esa fecha para seguir vendiendo sin interrupciones.",
                         "Cómo pagar: " + paymentInstructions),
-                "Entrar a POS Híbrido", properties.link("/login"),
+                "Entrar a " + PRODUCT, properties.link("/login"),
                 "Tus datos están seguros: si vence, podrás consultarlos y exportarlos.");
     }
 
@@ -134,7 +138,7 @@ public class MailTemplates {
                 "Cómo pagar: " + paymentInstructions);
         return message(to, trial ? "Terminó la prueba de " + businessName : "Venció el plan de " + businessName,
                 "suscripcion-vencida", "Hola, " + ownerName + ":", paragraphs,
-                "Entrar a POS Híbrido", properties.link("/login"),
+                "Entrar a " + PRODUCT, properties.link("/login"),
                 "Tus datos no se borran: al renovar, todo sigue donde lo dejaste.");
     }
 
@@ -146,7 +150,7 @@ public class MailTemplates {
                 List.of("El plan de " + businessName + " sigue sin renovarse. Desde hoy puedes entrar y consultar tu "
                                 + "información, pero no registrar ventas ni cambios.",
                         "Cómo pagar: " + paymentInstructions),
-                "Entrar a POS Híbrido", properties.link("/login"),
+                "Entrar a " + PRODUCT, properties.link("/login"),
                 "Tus datos no se borran: al renovar, todo sigue donde lo dejaste.");
     }
 
@@ -156,8 +160,8 @@ public class MailTemplates {
                 "Hola, " + ownerName + ":",
                 List.of("Registramos tu pago del plan " + planName + " para " + businessName + ".",
                         "Tu plan está activo hasta el " + format(paidUntil) + "."),
-                "Entrar a POS Híbrido", properties.link("/login"),
-                "Gracias por confiar en POS Híbrido.");
+                "Entrar a " + PRODUCT, properties.link("/login"),
+                "Gracias por confiar en XASKA POS.");
     }
 
     // ---------------------------------------------------------------- formato
@@ -171,8 +175,9 @@ public class MailTemplates {
                 .append("<td align=\"center\"><table role=\"presentation\" width=\"560\" cellpadding=\"0\" ")
                 .append("cellspacing=\"0\" style=\"max-width:560px;width:100%;background:#ffffff;border-radius:8px;")
                 .append("border:1px solid #dfe5e4;\"><tr><td style=\"padding:20px 28px;border-bottom:3px solid ")
-                .append(BRAND).append(";font-size:18px;font-weight:bold;color:").append(BRAND)
-                .append(";\">POS Híbrido</td></tr><tr><td style=\"padding:24px 28px;color:#1f2a2a;font-size:15px;")
+                .append(BRAND).append(";font-size:18px;font-weight:bold;letter-spacing:2px;color:").append(INK)
+                .append(";\">XASKA <span style=\"font-size:12px;letter-spacing:1px;color:").append(BRAND)
+                .append(";\">POS</span></td></tr><tr><td style=\"padding:24px 28px;color:#1f2a2a;font-size:15px;")
                 .append("line-height:1.5;\"><p style=\"margin:0 0 12px;\">").append(escape(greeting)).append("</p>");
         for (String paragraph : paragraphs) {
             html.append("<p style=\"margin:0 0 12px;\">").append(escape(paragraph)).append("</p>");
@@ -200,7 +205,7 @@ public class MailTemplates {
         if (footnote != null) {
             text.append(footnote).append("\n\n");
         }
-        text.append("— POS Híbrido");
+        text.append("— ").append(PRODUCT);
         return new MailMessage(to, subject, html.toString(), text.toString(), UUID.randomUUID().toString(), kind);
     }
 
