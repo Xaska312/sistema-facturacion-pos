@@ -18,6 +18,15 @@ describe('routes', () => {
     expect(notFound.every((r) => r.data?.['code'] === '404')).toBeTrue();
   });
 
+  it('las áreas con sesión revisan la aceptación de los textos legales (decisión 250)', () => {
+    for (const path of ['negocios', 'plataforma', 'app', 'pos']) {
+      const route = routes.find((r) => r.path === path);
+      expect(route?.canActivateChild?.length).withContext(path).toBe(1);
+    }
+    expect(routes.find((r) => r.path === 'terminos')?.canActivate).toBeUndefined();
+    expect(routes.find((r) => r.path === 'privacidad')?.canActivate).toBeUndefined();
+  });
+
   it('el título del editor de inventario depende del tipo de documento', () => {
     const snapshot = (kind: string) => ({ paramMap: convertToParamMap({ kind }) }) as ActivatedRouteSnapshot;
     const state = {} as RouterStateSnapshot;

@@ -2,6 +2,7 @@ package com.poshibrido.identity.api;
 
 import com.poshibrido.identity.application.AccountService;
 import com.poshibrido.identity.application.AuthService;
+import com.poshibrido.identity.application.LegalConsentService;
 import com.poshibrido.identity.application.RegisterCommand;
 import com.poshibrido.identity.application.SessionResult;
 import com.poshibrido.identity.application.TokenService;
@@ -32,6 +33,7 @@ public class AuthController {
 
     private final AuthService authService;
     private final AccountService accounts;
+    private final LegalConsentService legalConsents;
     private final RefreshCookies cookies;
 
     @PostMapping("/register")
@@ -94,6 +96,18 @@ public class AuthController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void resetPassword(@Valid @RequestBody PasswordResetConfirmRequest request) {
         accounts.resetPassword(request.token(), request.password());
+    }
+
+    /** ¿La persona ya aceptó los Términos y la Política vigentes? Si no, la app se los muestra antes de seguir. */
+    @GetMapping("/legal")
+    public LegalConsentService.Status legalStatus() {
+        return legalConsents.status(CurrentActor.requireUserId());
+    }
+
+    /** Acepta las versiones vigentes (cuando cambian, o para cuentas creadas antes de pedirlas). */
+    @PostMapping("/legal/accept")
+    public LegalConsentService.Status acceptLegal() {
+        return legalConsents.accept(CurrentActor.requireUserId());
     }
 
     @GetMapping("/me")

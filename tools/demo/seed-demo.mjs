@@ -98,10 +98,12 @@ function nitDv(nit) {
 
 async function ensureUser(user) {
   await api('POST', '/api/v1/auth/register', {
-    body: { email: user.email, password: PASSWORD, fullName: user.fullName },
+    body: { email: user.email, password: PASSWORD, fullName: user.fullName, acceptTerms: true },
     expect: [409],
   });
   const { data } = await api('POST', '/api/v1/auth/login', { body: { email: user.email, password: PASSWORD } });
+  // Cuentas demo creadas antes de pedir los términos (decisión 250): se aceptan para no caer en "Aceptar términos".
+  await api('POST', '/api/v1/auth/legal/accept', { token: data.accessToken });
   return { token: data.accessToken, verified: data.user.emailVerified };
 }
 

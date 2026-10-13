@@ -96,7 +96,7 @@ function randomInt(min, max) {
 }
 
 function register(email, fullName) {
-  expectStatus(post('/auth/register', { email, password: PASSWORD, fullName }), 201, `registro de ${email}`);
+  expectStatus(post('/auth/register', { email, password: PASSWORD, fullName, acceptTerms: true }), 201, `registro de ${email}`);
   return expectStatus(post('/auth/login', { email, password: PASSWORD }), 200, `login de ${email}`).accessToken;
 }
 

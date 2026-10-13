@@ -5,12 +5,14 @@ Base: `/api/v1`. Errores en `application/problem+json` (RFC 9457). **Dinero en p
 ## Autenticación (plataforma)
 | Método | Ruta | Token | Descripción |
 |---|---|---|---|
-| POST | `/auth/register` | — | Crea la cuenta. `{email, password, fullName, phone?}` → 201. Envía el correo "Confirma tu correo" |
+| POST | `/auth/register` | — | Crea la cuenta. `{email, password, fullName, phone?, acceptTerms}` → 201 (`acceptTerms` debe ser `true`: acepta los Términos y la Política de datos; si no, 400). Guarda la prueba (versiones, fecha, IP) y envía el correo "Confirma tu correo" |
 | POST | `/auth/login` | — | `{email, password}` → token de plataforma + cookie `pos_refresh` + `tenants[]`. 401 credenciales, 423 bloqueado |
 | POST | `/auth/select-tenant` | cualquiera | `{tenantId}` → token de negocio + cookie. 403 sin membresía/negocio inactivo |
 | POST | `/auth/refresh` | cookie | Rota la cookie y devuelve nuevo access token. 401 si expiró o fue reutilizada. Un token rotado hace menos de 30 s responde 401 sin cerrar las demás sesiones (otra pestaña); pasado ese margen se trata como robo |
 | POST | `/auth/logout` | cookie | Revoca la cookie. 204 |
 | GET | `/auth/me` | cualquiera | Usuario, `tenantId` y permisos del token |
+| GET | `/auth/legal` | cualquiera | `{accepted, termsVersion, privacyVersion}`: si ya aceptó los textos vigentes (si no, la app muestra "Aceptar términos") |
+| POST | `/auth/legal/accept` | cualquiera | Acepta las versiones vigentes y guarda la prueba → `{accepted: true, …}` |
 | POST | `/auth/verify-email` | — | `{token}` del enlace del correo → 204. 422 si no existe, venció (24 h) o ya se usó |
 | POST | `/auth/verify-email/resend` | cualquiera | Reenvía el correo (el enlace anterior deja de servir) → 204; nada si ya está confirmado. 429 si se pidió hace menos de un minuto |
 | POST | `/auth/password-reset/request` | — | `{email}` → 204 **siempre** (no revela si la cuenta existe). Si existe, envía el enlace (vence en 1 h; máx. uno por minuto) |

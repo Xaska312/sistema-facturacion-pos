@@ -41,6 +41,8 @@ export interface RegisterRequest {
   password: string;
   fullName: string;
   phone?: string | null;
+  /** Casilla "Acepto los Términos y la Política de datos" (obligatoria, decisión 250). */
+  acceptTerms: boolean;
 }
 
 export interface CreateTenantRequest {

@@ -54,14 +54,19 @@ No uses planes de 1 GB de RAM: Java + PostgreSQL + Caddy no caben con margen.
 
 ## 2. Apuntar el dominio
 
-En el panel de tu dominio crea un registro **A**: nombre `pos` (o `@` para el dominio raíz) → IP del servidor.
+En el panel de tu dominio crea un registro **A**: nombre `app` (para `app.xaska.co`) → IP del servidor.
+
+**En Spaceship** (donde está xaska.co): *Launchpad → Domain Manager → xaska.co → Advanced DNS → Add record*: tipo
+`A`, host `app`, valor la IP del servidor, TTL automático. Deja los nameservers de Spaceship (Caddy saca el
+certificado HTTPS solo; no hace falta Cloudflare).
+
 **No crees un registro AAAA (IPv6)**: la red de Docker de esta instalación es solo IPv4, y las conexiones por
 IPv6 llegarían al backend todas con la misma IP interna (un solo límite de intentos de login para todos y
 auditoría sin la IP real). Los celulares con IPv6 llegan igual por IPv4. Comprueba desde PowerShell (puede tardar
 unos minutos):
 
 ```powershell
-Resolve-DnsName pos.midominio.com
+Resolve-DnsName app.xaska.co
 ```
 
 ## 3. Preparar el servidor
@@ -144,7 +149,7 @@ nano .env
 
 | Variable | Valor |
 |---|---|
-| `DOMAIN` | `pos.midominio.com` (sin `https://`) |
+| `DOMAIN` | `app.xaska.co` (sin `https://`) |
 | `ACME_EMAIL` | tu correo (avisos de Let's Encrypt) |
 | `GHCR_OWNER` | `xaska312` (en minúsculas) |
 | `APP_VERSION` | `0.7.0` o `latest` |
@@ -206,14 +211,14 @@ docker compose -f docker-compose.prod.yml ps          # todos "running"; backend
 docker compose -f docker-compose.prod.yml logs -f web # ver el certificado: "certificate obtained successfully"
 ```
 
-Abre `https://pos.midominio.com`, regístrate, **confirma tu correo** con el enlace que te llega y crea tu negocio. `https://pos.midominio.com/healthz` debe
+Abre `https://app.xaska.co`, regístrate, **confirma tu correo** con el enlace que te llega y crea tu negocio. `https://app.xaska.co/healthz` debe
 responder `{"status":"UP"}`.
 
 **Consola de plataforma** (suspender negocios, ver eventos de seguridad): ya registrado y con el correo confirmado, pon tu correo en
 `PLATFORM_ADMIN_EMAILS` del `.env` y reinicia el backend con `docker compose -f docker-compose.prod.yml up -d backend`.
 Al arrancar, el backend le da el permiso a las cuentas que ya existen con esos correos (por eso va después de
 registrarte: así nadie puede registrarse antes con tu correo y quedar como administrador). Vuelve a iniciar sesión y
-entra a `https://pos.midominio.com/plataforma`.
+entra a `https://app.xaska.co/plataforma`.
 
 Para no escribir `-f docker-compose.prod.yml` cada vez: `echo 'COMPOSE_FILE=docker-compose.prod.yml' >> .env`.
 Desde aquí los comandos se escriben así: `docker compose ps`.
@@ -235,7 +240,7 @@ Debe terminar en `Respaldo terminado.` y `Prueba de restauración correcta`.
   1 día, gracia 2 horas) y "Prueba de restauración" (periodo 7 días, gracia 6 horas). Pega sus URL en
   `BACKUP_PING_URL` y `RESTORE_TEST_PING_URL` del `.env` y aplica con `docker compose up -d`. Te llega un correo si
   un respaldo falla o deja de correr.
-- **Disponibilidad**: en [UptimeRobot](https://uptimerobot.com) un monitor HTTP(s) a `https://pos.midominio.com/healthz`
+- **Disponibilidad**: en [UptimeRobot](https://uptimerobot.com) un monitor HTTP(s) a `https://app.xaska.co/healthz`
   cada 5 minutos.
 
 ## 10. Actualizar a una versión nueva
@@ -290,13 +295,35 @@ Sin `RESEND_API_KEY` los correos no salen: el enlace para confirmar tu cuenta ap
 docker compose -f docker-compose.prod.yml logs backend | Select-String "verificar-correo"
 ```
 
-## 13. Correos con Resend
+## 13. Correos: Gmail en el piloto, Resend al abrir
+
+**Piloto con Gmail (SMTP).** Sirve para pocos clientes (Gmail permite unos 500 correos al día) y no necesita
+configurar el dominio.
+
+1. En la cuenta de Google que enviará los correos activa la **verificación en 2 pasos**.
+2. Crea una **contraseña de aplicación**: *Cuenta de Google → Seguridad → Contraseñas de aplicaciones*, nombre
+   "XASKA POS". Google muestra 16 letras una sola vez.
+3. En el `.env` del servidor (la contraseña sin espacios):
+   ```bash
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=587
+   SMTP_USERNAME=tucuenta@gmail.com
+   SMTP_PASSWORD=abcdefghijklmnop
+   MAIL_FROM=XASKA POS <tucuenta@gmail.com>
+   ```
+4. `docker compose up -d backend` y revisa: `docker compose logs backend | grep "Correos:"` debe decir
+   `Correos: SMTP smtp.gmail.com`. Prueba con "¿Olvidaste tu contraseña?".
+
+- La contraseña de aplicación va solo en `.env`. Si se filtra, bórrala en Google y crea otra.
+- Al pasar a Resend basta con poner `RESEND_API_KEY` (gana sobre SMTP) y cambiar `MAIL_FROM`.
+
+**Al abrir: Resend con tu dominio.**
 
 La app envía correos para confirmar la cuenta, invitar usuarios, restablecer la contraseña y avisar al dueño si su
 negocio se suspende. Salen por [Resend](https://resend.com) (plan gratis: 100 por día, 3.000 por mes).
 
 1. Crea la cuenta en resend.com con tu correo.
-2. **Domains → Add Domain** → `midominio.com` (o un subdominio, p. ej. `correo.midominio.com`). Región: la que
+2. **Domains → Add Domain** → `xaska.co` (o un subdominio, p. ej. `correo.xaska.co`). Región: la que
    sugiera (us-east-1 está bien).
 3. Resend muestra 3 o 4 registros DNS (SPF `TXT`/`MX` en `send…` y DKIM `TXT` en `resend._domainkey…`). Créalos en el
    panel DNS de donde compraste el dominio, copiándolos tal cual, y pulsa **Verify**. Suele tardar minutos (hasta
@@ -305,7 +332,7 @@ negocio se suspende. Salen por [Resend](https://resend.com) (plan gratis: 100 po
 5. En el `.env` del servidor:
    ```bash
    RESEND_API_KEY=re_xxxxxxxx
-   MAIL_FROM=XASKA POS <no-responder@midominio.com>
+   MAIL_FROM=XASKA POS <soporte@xaska.co>
    ```
 6. `docker compose up -d backend` y revisa: `docker compose logs backend | grep "Correos:"` debe decir
    `Correos: Resend`. Prueba con "¿Olvidaste tu contraseña?" en tu cuenta.
@@ -323,7 +350,9 @@ negocio se suspende. Salen por [Resend](https://resend.com) (plan gratis: 100 po
 - [ ] `https://` con candado; `http://` redirige a `https://`.
 - [ ] Primer respaldo en Drive y prueba de restauración correcta; contraseñas de cifrado guardadas fuera del servidor.
 - [ ] Monitores de healthchecks.io y UptimeRobot activos.
-- [ ] Dominio verificado en Resend y `MAIL_FROM` con ese dominio; un correo de prueba llega a la bandeja (no a spam).
+- [ ] Correos: Gmail (piloto) o dominio verificado en Resend; un correo de prueba llega a la bandeja (no a spam).
+- [ ] Términos y Política de datos completos (`frontend/src/app/features/legal/legal-content.ts`, sin
+      `[PENDIENTES]`) y el buzón soporte@xaska.co recibiendo correos.
 - [ ] Swagger apagado (`OPENAPI_ENABLED=false`, ya fijo en producción) y `/actuator` no accesible desde internet
       (solo `/healthz`).
 

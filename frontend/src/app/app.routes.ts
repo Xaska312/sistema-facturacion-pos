@@ -1,5 +1,6 @@
 import { ResolveFn, Routes } from '@angular/router';
 import { authGuard, guestGuard, permissionGuard, platformAdminGuard, tenantGuard } from './core/auth/auth.guards';
+import { legalGuard } from './core/legal/legal.service';
 import { FORBIDDEN_DATA, NOT_FOUND_DATA } from './features/errors/error-data';
 import { DOCUMENT_LABEL, documentTypeFromRoute } from './features/inventory/labels';
 import { unsavedChangesGuard } from './shared/unsaved-changes';
@@ -46,6 +47,8 @@ export const routes: Routes = [
   {
     path: 'negocios',
     canActivate: [authGuard],
+    // Los textos legales se revisan en los hijos: corre después de authGuard, cuando ya hay sesión.
+    canActivateChild: [legalGuard],
     children: [
       {
         path: '',
@@ -65,6 +68,7 @@ export const routes: Routes = [
     // Consola de plataforma (solo administradores): negocios y eventos de seguridad.
     path: 'plataforma',
     canActivate: [authGuard, platformAdminGuard],
+    canActivateChild: [legalGuard],
     loadComponent: () =>
       import('./features/platform/platform-layout.component').then((m) => m.PlatformLayoutComponent),
     children: [
@@ -104,6 +108,7 @@ export const routes: Routes = [
   {
     path: 'app',
     canActivate: [authGuard, tenantGuard],
+    canActivateChild: [legalGuard],
     loadComponent: () => import('./features/shell/shell.component').then((m) => m.ShellComponent),
     children: [
       {
@@ -323,17 +328,44 @@ export const routes: Routes = [
   {
     // Pantalla de venta a pantalla completa (sin menú lateral), pensada también para tablet horizontal.
     path: 'pos',
-    title: 'Vender',
-    canActivate: [authGuard, tenantGuard, permissionGuard],
-    canDeactivate: [unsavedChangesGuard],
-    data: { permission: 'sales:create' },
-    loadComponent: () => import('./features/pos/pos.component').then((m) => m.PosComponent),
+    canActivate: [authGuard, tenantGuard],
+    canActivateChild: [legalGuard],
+    children: [
+      {
+        path: '',
+        title: 'Vender',
+        canActivate: [permissionGuard],
+        canDeactivate: [unsavedChangesGuard],
+        data: { permission: 'sales:create' },
+        loadComponent: () => import('./features/pos/pos.component').then((m) => m.PosComponent),
+      },
+    ],
   },
   {
     // Manual de uso público (con o sin sesión): se comparte con clientes, p. ej. /manual#cobrar.
     path: 'manual',
     title: 'Manual de uso',
     loadComponent: () => import('./features/manual/manual.component').then((m) => m.ManualComponent),
+  },
+  {
+    // Términos y Política de datos (fase 9a): públicas, con o sin sesión.
+    path: 'terminos',
+    title: 'Términos y condiciones',
+    data: { legal: 'terminos' },
+    loadComponent: () => import('./features/legal/legal-page.component').then((m) => m.LegalPageComponent),
+  },
+  {
+    path: 'privacidad',
+    title: 'Política de datos',
+    data: { legal: 'privacidad' },
+    loadComponent: () => import('./features/legal/legal-page.component').then((m) => m.LegalPageComponent),
+  },
+  {
+    // Cuentas que aún no aceptaron los textos vigentes (legalGuard las trae aquí).
+    path: 'aceptar-terminos',
+    title: 'Aceptar términos',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/legal/accept-legal.component').then((m) => m.AcceptLegalComponent),
   },
   {
     // Enlace público de invitación (con o sin sesión).

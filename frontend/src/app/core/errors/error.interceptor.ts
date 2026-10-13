@@ -9,6 +9,9 @@ import { problemMessage, problemTitle } from './problem';
 /** Marca una petición cuyos errores 4xx maneja quien la hace (sin toast). */
 export const SILENT_CLIENT_ERRORS = new HttpContextToken<boolean>(() => false);
 
+/** Marca una petición de fondo cuyos errores (cualquiera, también sin red o 5xx) no deben mostrar toast. */
+export const SILENT_ALL_ERRORS = new HttpContextToken<boolean>(() => false);
+
 /**
  * Muestra un toast con el ProblemDetail de cualquier error de la API, salvo los 401 (los maneja el interceptor de
  * autenticación) y los 4xx de peticiones marcadas con {@link SILENT_CLIENT_ERRORS} o hechas desde un formulario que
@@ -20,7 +23,8 @@ export const errorInterceptor: HttpInterceptorFn = (request, next) => {
   return next(request).pipe(
     catchError((error: unknown) => {
       const clientError = error instanceof HttpErrorResponse && error.status >= 400 && error.status < 500;
-      const silent = clientError && (request.context.get(SILENT_CLIENT_ERRORS) || inline.active);
+      const silent = request.context.get(SILENT_ALL_ERRORS)
+        || (clientError && (request.context.get(SILENT_CLIENT_ERRORS) || inline.active));
       // Negocio suspendido: el interceptor de autenticación avisa una sola vez y lleva al login.
       if (error instanceof HttpErrorResponse && error.status !== 401 && !silent && !isTenantUnavailable(error)) {
         messages.add({

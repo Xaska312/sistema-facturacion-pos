@@ -55,7 +55,7 @@ export async function prepareBusiness(request: APIRequestContext): Promise<Busin
   const sku = `E2E-${id}`.toUpperCase();
 
   expect((await request.post('/api/v1/auth/register', {
-    data: { email, password: PASSWORD, fullName: 'Dueño E2E' },
+    data: { email, password: PASSWORD, fullName: 'Dueño E2E', acceptTerms: true },
   })).status()).toBe(201);
   // Sin el correo confirmado no se puede crear el negocio: se abre el enlace que llegó a Mailpit.
   await confirmEmail(request, email);
@@ -105,7 +105,7 @@ export async function addMember(request: APIRequestContext, business: Business, 
   const token = (await invite.json()).token as string;
 
   expect((await request.post('/api/v1/auth/register', {
-    data: { email, password: PASSWORD, fullName: `Usuario ${roleCode}` },
+    data: { email, password: PASSWORD, fullName: `Usuario ${roleCode}`, acceptTerms: true },
   })).status()).toBe(201);
   const member = await login(request, email);
   const accepted = await request.post('/api/v1/invitations/accept', {
