@@ -1,4 +1,4 @@
-# Frontend — POS Híbrido
+# Frontend — XASKA POS
 
 Angular 19 (standalone, signals, interceptores funcionales) + PrimeNG 19 (tema Aura) + Tailwind 4.
 

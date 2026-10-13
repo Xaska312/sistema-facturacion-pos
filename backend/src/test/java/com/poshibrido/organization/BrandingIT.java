@@ -25,7 +25,7 @@ class BrandingIT extends IntegrationTest {
         Owned owner = api.newTenant("marca");
         Session s = owner.tenant();
         api.getWith(s, "/api/v1/branding").andExpect(status().isOk())
-                .andExpect(jsonPath("$.color").value("turquesa"))
+                .andExpect(jsonPath("$.color").value("indigo"))
                 .andExpect(jsonPath("$.logo").value(nullValue()));
 
         api.putWith(s, "/api/v1/branding/color", """

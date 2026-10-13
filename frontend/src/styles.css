@@ -20,11 +20,11 @@
   --field-border: #839290;
   --text: #12201f;
   --text-muted: #4f5f5d;
-  --brand: #0f766e;
-  --brand-hover: #115e59;
+  --brand: #4338ca;
+  --brand-hover: #3730a3;
   --brand-contrast: #ffffff;
-  --brand-soft: #ccfbf1;
-  --brand-soft-text: #115e59;
+  --brand-soft: #e0e7ff;
+  --brand-soft-text: #3730a3;
   --success: #15803d;
   --success-soft: #dcfce7;
   --success-soft-text: #14532d;
@@ -37,7 +37,7 @@
   --info: #1d4ed8;
   --info-soft: #dbeafe;
   --info-soft-text: #1e3a8a;
-  --focus-ring: #0f766e;
+  --focus-ring: #4338ca;
   --elevation-card: 0 1px 2px rgb(16 24 40 / 0.05), 0 1px 3px rgb(16 24 40 / 0.06);
   --elevation-overlay: 0 10px 30px rgb(16 24 40 / 0.12);
   --backdrop: rgb(18 32 31 / 0.55);
@@ -50,6 +50,14 @@
   --chart-6: #eda100;
   --chart-compare: #839290;
   --chart-grid: #e6ebeb;
+  /* Logo de XASKA (la empresa del POS): no cambia con el color de cada negocio. */
+  --xaska-tile: #111827;
+  --xaska-on-tile: #ffffff;
+  --xaska-dot-on-tile: #818cf8;
+  --xaska-ink: #111827;
+  --xaska-dot: #4f46e5;
+  --xaska-tag-bg: #e0e7ff;
+  --xaska-tag-text: #312e81;
 }
 
 .app-dark {
@@ -61,11 +69,11 @@
   --field-border: #5f7174;
   --text: #e6efee;
   --text-muted: #9cb0ad;
-  --brand: #2dd4bf;
-  --brand-hover: #5eead4;
-  --brand-contrast: #042f2e;
-  --brand-soft: #134e4a;
-  --brand-soft-text: #99f6e4;
+  --brand: #818cf8;
+  --brand-hover: #a5b4fc;
+  --brand-contrast: #1e1b4b;
+  --brand-soft: #312e81;
+  --brand-soft-text: #c7d2fe;
   --success: #4ade80;
   --success-soft: #14532d;
   --success-soft-text: #bbf7d0;
@@ -78,7 +86,7 @@
   --info: #60a5fa;
   --info-soft: #1e3a8a;
   --info-soft-text: #bfdbfe;
-  --focus-ring: #5eead4;
+  --focus-ring: #a5b4fc;
   --elevation-card: 0 1px 2px rgb(0 0 0 / 0.35);
   --backdrop: rgb(0 0 0 / 0.6);
   --elevation-overlay: 0 10px 30px rgb(0 0 0 / 0.5);
@@ -90,12 +98,17 @@
   --chart-6: #c98500;
   --chart-compare: #6f8285;
   --chart-grid: #223033;
+  --xaska-ink: #ffffff;
+  --xaska-dot: #818cf8;
+  --xaska-tag-bg: #312e81;
+  --xaska-tag-text: #e0e7ff;
 }
 
 /*
  * Colores de marca del negocio (fase 8c): paleta cerrada, elegida en Ajustes → Marca. Cada bloque cambia los tokens
  * de marca y la paleta primaria de PrimeNG (--p-primary-*). En claro se usa el tono 700 con texto blanco y en oscuro
- * el 400 con texto 950: todos pasan 4,5:1 (revisado con WCAG al generarlos). Turquesa es el de :root y .app-dark.
+ * el 400 con texto 950: todos pasan 4,5:1 (revisado con WCAG al generarlos). Índigo, el color de XASKA, es el de
+ * :root y .app-dark (por defecto, decisión 249); turquesa, el de antes, quedó como un bloque más.
  * Las muestras de Ajustes están en src/app/core/theme/brand-palettes.ts.
  */
 :root[data-brand="azul"] {
@@ -125,32 +138,32 @@
   --focus-ring: #93c5fd;
   --brand-soft-text: #bfdbfe;
 }
-:root[data-brand="indigo"] {
-  --brand: #4338ca;
-  --brand-hover: #3730a3;
+:root[data-brand="turquesa"] {
+  --brand: #0f766e;
+  --brand-hover: #115e59;
   --brand-contrast: #ffffff;
-  --brand-soft: #e0e7ff;
-  --focus-ring: #4338ca;
-  --brand-soft-text: #3730a3;
-  --p-primary-50: #eef2ff;
-  --p-primary-100: #e0e7ff;
-  --p-primary-200: #c7d2fe;
-  --p-primary-300: #a5b4fc;
-  --p-primary-400: #818cf8;
-  --p-primary-500: #6366f1;
-  --p-primary-600: #4f46e5;
-  --p-primary-700: #4338ca;
-  --p-primary-800: #3730a3;
-  --p-primary-900: #312e81;
-  --p-primary-950: #1e1b4b;
+  --brand-soft: #ccfbf1;
+  --focus-ring: #0f766e;
+  --brand-soft-text: #115e59;
+  --p-primary-50: #f0fdfa;
+  --p-primary-100: #ccfbf1;
+  --p-primary-200: #99f6e4;
+  --p-primary-300: #5eead4;
+  --p-primary-400: #2dd4bf;
+  --p-primary-500: #14b8a6;
+  --p-primary-600: #0d9488;
+  --p-primary-700: #0f766e;
+  --p-primary-800: #115e59;
+  --p-primary-900: #134e4a;
+  --p-primary-950: #042f2e;
 }
-:root[data-brand="indigo"].app-dark {
-  --brand: #818cf8;
-  --brand-hover: #a5b4fc;
-  --brand-contrast: #1e1b4b;
-  --brand-soft: #312e81;
-  --focus-ring: #a5b4fc;
-  --brand-soft-text: #c7d2fe;
+:root[data-brand="turquesa"].app-dark {
+  --brand: #2dd4bf;
+  --brand-hover: #5eead4;
+  --brand-contrast: #042f2e;
+  --brand-soft: #134e4a;
+  --focus-ring: #5eead4;
+  --brand-soft-text: #99f6e4;
 }
 :root[data-brand="violeta"] {
   --brand: #6d28d9;

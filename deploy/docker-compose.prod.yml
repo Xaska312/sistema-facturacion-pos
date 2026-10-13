@@ -80,7 +80,7 @@ services:
       JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-PT15M}
       # Correos (verificación, invitaciones, contraseña) por Resend. Sin clave quedan en el log del backend.
       RESEND_API_KEY: ${RESEND_API_KEY:-}
-      MAIL_FROM: ${MAIL_FROM:-POS Híbrido <onboarding@resend.dev>}
+      MAIL_FROM: ${MAIL_FROM:-XASKA POS <onboarding@resend.dev>}
       APP_PUBLIC_URL: ${APP_PUBLIC_URL:-https://${DOMAIN}}
       EMAIL_VERIFICATION_REQUIRED: ${EMAIL_VERIFICATION_REQUIRED:-true}
       # Suscripciones (fase 8b): cómo pagar (sale en la app y en los correos) y días de prueba gratis.

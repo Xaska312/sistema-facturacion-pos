@@ -305,7 +305,7 @@ negocio se suspende. Salen por [Resend](https://resend.com) (plan gratis: 100 po
 5. En el `.env` del servidor:
    ```bash
    RESEND_API_KEY=re_xxxxxxxx
-   MAIL_FROM=POS Híbrido <no-responder@midominio.com>
+   MAIL_FROM=XASKA POS <no-responder@midominio.com>
    ```
 6. `docker compose up -d backend` y revisa: `docker compose logs backend | grep "Correos:"` debe decir
    `Correos: Resend`. Prueba con "¿Olvidaste tu contraseña?" en tu cuenta.

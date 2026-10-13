@@ -9,8 +9,8 @@ class BlankComponent {}
 
 describe('AppTitleStrategy', () => {
   it('formatea el título de la pestaña', () => {
-    expect(formatPageTitle('Productos')).toBe('Productos · POS Híbrido');
-    expect(formatPageTitle(undefined)).toBe('POS Híbrido');
+    expect(formatPageTitle('Productos')).toBe('Productos · XASKA POS');
+    expect(formatPageTitle(undefined)).toBe('XASKA POS');
   });
 
   it('pone el título de la ruta activa', async () => {
@@ -21,6 +21,6 @@ describe('AppTitleStrategy', () => {
       ],
     });
     await TestBed.inject(Router).navigateByUrl('/productos');
-    expect(TestBed.inject(Title).getTitle()).toBe('Productos · POS Híbrido');
+    expect(TestBed.inject(Title).getTitle()).toBe('Productos · XASKA POS');
   });
 });

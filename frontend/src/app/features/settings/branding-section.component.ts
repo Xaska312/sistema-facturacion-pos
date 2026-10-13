@@ -114,7 +114,7 @@ export class BrandingSectionComponent implements OnDestroy {
   protected readonly saved = computed(() => this.branding.branding()?.color ?? DEFAULT_BRAND);
   private readonly previewed = signal<string | null>(null);
   protected readonly chosen = computed(() => this.previewed() ?? this.saved());
-  protected readonly savedLabel = computed(() => BRAND_PALETTES.find((p) => p.id === this.saved())?.label ?? 'Turquesa');
+  protected readonly savedLabel = computed(() => BRAND_PALETTES.find((p) => p.id === this.saved())?.label ?? 'Índigo');
   protected readonly dark = computed(() => this.theme.isDark());
   protected readonly savingColor = signal(false);
   protected readonly savingLogo = signal(false);

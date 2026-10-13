@@ -7,15 +7,16 @@ import { PasswordModule } from 'primeng/password';
 import { AuthService } from '../../core/auth/auth.service';
 import { problemMessage } from '../../core/errors/problem';
 import { safeReturnUrl } from '../../core/auth/return-url';
+import { XaskaLogoComponent } from '../../shared/brand/xaska-logo.component';
 
 @Component({
   selector: 'app-login',
-  imports: [ReactiveFormsModule, RouterLink, ButtonModule, InputTextModule, PasswordModule],
+  imports: [ReactiveFormsModule, RouterLink, ButtonModule, InputTextModule, PasswordModule, XaskaLogoComponent],
   template: `
     <main class="min-h-screen flex items-center justify-center p-4">
       <form [formGroup]="form" (ngSubmit)="submit()"
             class="w-full max-w-sm card p-6 flex flex-col gap-4">
-        <h1 class="text-2xl font-semibold text-center">POS Híbrido</h1>
+        <h1 class="flex justify-center py-1"><app-xaska-logo size="lg" [wordmark]="true" [tag]="true" label="XASKA POS" /></h1>
         <p class="text-center text-muted -mt-2">Inicia sesión para continuar</p>
 
         <label class="flex flex-col gap-1">

@@ -2,9 +2,9 @@ import { Injectable, inject } from '@angular/core';
 import { Title } from '@angular/platform-browser';
 import { RouterStateSnapshot, TitleStrategy } from '@angular/router';
 
-export const APP_NAME = 'POS Híbrido';
+export const APP_NAME = 'XASKA POS';
 
-/** "Productos · POS Híbrido"; sin título de ruta, solo el nombre de la app. */
+/** "Productos · XASKA POS"; sin título de ruta, solo el nombre de la app. */
 export function formatPageTitle(pageTitle: string | undefined | null): string {
   return pageTitle ? `${pageTitle} · ${APP_NAME}` : APP_NAME;
 }

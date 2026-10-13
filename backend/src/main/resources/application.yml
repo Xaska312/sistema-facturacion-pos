@@ -67,7 +67,7 @@ app:
     admin-emails: ${PLATFORM_ADMIN_EMAILS:}
   mail:
     # Remitente. Sin dominio propio, Resend solo permite onboarding@resend.dev y enviar a tu propio correo.
-    from: ${MAIL_FROM:POS Híbrido <onboarding@resend.dev>}
+    from: ${MAIL_FROM:XASKA POS <onboarding@resend.dev>}
     # Con clave, los correos salen por Resend. Sin clave: SMTP si hay spring.mail.host (Mailpit), si no, al log.
     resend-api-key: ${RESEND_API_KEY:}
     # Dirección pública de la app, para los enlaces de los correos.

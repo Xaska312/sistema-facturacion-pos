@@ -48,7 +48,7 @@ public class BrandingService {
         List<Object[]> rows = em.createNativeQuery(
                 "SELECT brand_color, logo, logo_type, updated_at FROM business_branding WHERE id = 1").getResultList();
         if (rows.isEmpty()) {
-            return new Branding("turquesa", null, null);
+            return new Branding("indigo", null, null);
         }
         Object[] r = rows.getFirst();
         String logo = r[1] == null ? null

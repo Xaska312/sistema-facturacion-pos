@@ -25,6 +25,8 @@ export interface ChartSpec {
 
 /** Colores resueltos de los tokens CSS (cambian con el modo oscuro). */
 export interface ChartTheme {
+  /** Color de marca del negocio (Ajustes → Marca): las gráficas de una sola serie lo usan. */
+  brand: string;
   series: string[];
   compare: string;
   grid: string;
@@ -40,6 +42,7 @@ export function readChartTheme(read: (cssVar: string) => string): ChartTheme {
   // Los valores de respaldo solo se usan si faltan los tokens (p. ej. en pruebas sin styles.css).
   const value = (name: string, fallback: string): string => read(name).trim() || fallback;
   return {
+    brand: value('--brand', '#4338ca'), // color-literal-ok
     series: Array.from({ length: CHART_SERIES_SLOTS }, (_, i) => value(`--chart-${i + 1}`, '#0d9488')), // color-literal-ok
     compare: value('--chart-compare', '#839290'), // color-literal-ok
     grid: value('--chart-grid', '#e6ebeb'), // color-literal-ok
@@ -50,12 +53,24 @@ export function readChartTheme(read: (cssVar: string) => string): ChartTheme {
 }
 
 /**
- * Color de la serie {@code index}: orden fijo de los tokens (nunca se generan colores nuevos);
- * la comparación siempre es gris.
+ * Barras o líneas con una sola serie (más la comparación, si la hay): van en el color de marca del negocio y cambian
+ * cuando se cambia en Ajustes. Con varias series y en la dona se usan los colores fijos de las gráficas, que están
+ * revisados para distinguirse entre sí (un color de marca podría confundirse con alguno de ellos).
  */
-export function seriesColor(theme: ChartTheme, index: number, role: ChartSeries['role']): string {
+export function usesBrandColor(spec: Pick<ChartSpec, 'kind' | 'series'>): boolean {
+  return spec.kind !== 'doughnut' && spec.series.filter((s) => s.role !== 'compare').length === 1;
+}
+
+/**
+ * Color de la serie {@code index}: el de marca si {@code brand}, si no el orden fijo de los tokens (nunca se generan
+ * colores nuevos); la comparación siempre es gris.
+ */
+export function seriesColor(theme: ChartTheme, index: number, role: ChartSeries['role'], brand = false): string {
   if (role === 'compare') {
     return theme.compare;
+  }
+  if (brand) {
+    return theme.brand;
   }
   return theme.series[Math.min(index, theme.series.length - 1)];
 }
@@ -141,12 +156,13 @@ function categoryAxis(theme: ChartTheme) {
 
 export function barConfig(spec: ChartSpec, theme: ChartTheme): ChartConfiguration<'bar', number[], string> {
   const horizontal = spec.horizontal ?? false;
+  const brand = usesBrandColor(spec);
   return {
     type: 'bar',
     data: {
       labels: [...spec.labels],
       datasets: spec.series.map((series, index) => {
-        const color = seriesColor(theme, index, series.role);
+        const color = seriesColor(theme, index, series.role, brand);
         return {
           label: series.label,
           data: [...series.data],
@@ -184,12 +200,13 @@ export function barConfig(spec: ChartSpec, theme: ChartTheme): ChartConfiguratio
 }
 
 export function lineConfig(spec: ChartSpec, theme: ChartTheme): ChartConfiguration<'line', number[], string> {
+  const brand = usesBrandColor(spec);
   return {
     type: 'line',
     data: {
       labels: [...spec.labels],
       datasets: spec.series.map((series, index) => {
-        const color = seriesColor(theme, index, series.role);
+        const color = seriesColor(theme, index, series.role, brand);
         const compare = series.role === 'compare';
         return {
           label: series.label,

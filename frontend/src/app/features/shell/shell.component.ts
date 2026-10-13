@@ -10,6 +10,7 @@ import { filter } from 'rxjs';
 import { Subscription } from '../../core/api/api.models';
 import { SubscriptionApi } from '../../core/api/subscription.api';
 import { SideTipDirective } from '../../shared/side-tip.directive';
+import { XaskaLogoComponent } from '../../shared/brand/xaska-logo.component';
 import { BrandingService } from '../../core/theme/branding.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { THEME_MODES, ThemeMode, themeModeIcon } from '../../core/theme/theme-mode';
@@ -34,7 +35,7 @@ interface ThemeOption extends PrimeMenuItem {
 @Component({
   selector: 'app-shell',
   imports: [RouterOutlet, RouterLink, RouterLinkActive, NgTemplateOutlet, DrawerModule, MenuModule, TooltipModule,
-    HelpPanelComponent, SideTipDirective],
+    HelpPanelComponent, SideTipDirective, XaskaLogoComponent],
   template: `
     <button type="button" class="skip-link" (click)="focusMain()">Saltar al contenido</button>
 
@@ -43,10 +44,7 @@ interface ThemeOption extends PrimeMenuItem {
                     transition-[width] duration-200 ease-out"
              [class]="collapsed() ? 'w-18' : 'w-64'" aria-label="Menú principal">
         <div class="h-14 flex items-center gap-2 border-b border-line" [class]="collapsed() ? 'justify-center' : 'px-4'">
-          <ng-container *ngTemplateOutlet="logo" />
-          @if (!collapsed()) {
-            <span class="font-semibold truncate">POS Híbrido</span>
-          }
+          <app-xaska-logo [wordmark]="!collapsed()" [tag]="true" label="XASKA POS" />
         </div>
         <ng-container *ngTemplateOutlet="nav; context: { $implicit: collapsed() }" />
         <div class="p-2 border-t border-line">
@@ -64,8 +62,7 @@ interface ThemeOption extends PrimeMenuItem {
                 [blockScroll]="true">
         <ng-template #header>
           <div class="flex items-center gap-2">
-            <ng-container *ngTemplateOutlet="logo" />
-            <span class="font-semibold">POS Híbrido</span>
+            <app-xaska-logo [wordmark]="true" [tag]="true" label="XASKA POS" />
           </div>
         </ng-template>
         <ng-container *ngTemplateOutlet="nav; context: { $implicit: false }" />
@@ -202,13 +199,6 @@ interface ThemeOption extends PrimeMenuItem {
       </nav>
     </ng-template>
 
-    <ng-template #logo>
-      <svg viewBox="0 0 64 64" class="size-8 shrink-0" aria-hidden="true">
-        <rect width="64" height="64" rx="14" class="logo-bg" />
-        <path class="logo-fg" d="M20 16h24a2 2 0 0 1 2 2v30l-4-3-4 3-4-3-4 3-4-3-4 3-4-3V18a2 2 0 0 1 2-2z" />
-        <path class="logo-lines" d="M25 25h14M25 31h14M25 37h8" />
-      </svg>
-    </ng-template>
   `,
   styles: `
     .skip-link {
@@ -275,9 +265,6 @@ interface ThemeOption extends PrimeMenuItem {
       background: var(--brand-soft);
       color: var(--brand-soft-text);
     }
-    .logo-bg { fill: var(--brand); }
-    .logo-fg { fill: var(--brand-contrast); }
-    .logo-lines { stroke: var(--brand); stroke-width: 3; stroke-linecap: round; fill: none; }
   `,
 })
 export class ShellComponent {

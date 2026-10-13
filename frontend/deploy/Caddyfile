@@ -64,6 +64,8 @@
 			not path_regexp \.[A-Za-z0-9]+$
 		}
 		rewrite @spa /index.html
+		# Caddy no conoce la extensión .webmanifest: sin esto saldría como texto plano.
+		header /manifest.webmanifest Content-Type "application/manifest+json"
 		file_server
 	}
 }
