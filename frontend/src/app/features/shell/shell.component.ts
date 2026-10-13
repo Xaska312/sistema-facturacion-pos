@@ -9,6 +9,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { filter } from 'rxjs';
 import { Subscription } from '../../core/api/api.models';
 import { SubscriptionApi } from '../../core/api/subscription.api';
+import { SideTipDirective } from '../../shared/side-tip.directive';
 import { BrandingService } from '../../core/theme/branding.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { THEME_MODES, ThemeMode, themeModeIcon } from '../../core/theme/theme-mode';
@@ -33,7 +34,7 @@ interface ThemeOption extends PrimeMenuItem {
 @Component({
   selector: 'app-shell',
   imports: [RouterOutlet, RouterLink, RouterLinkActive, NgTemplateOutlet, DrawerModule, MenuModule, TooltipModule,
-    HelpPanelComponent],
+    HelpPanelComponent, SideTipDirective],
   template: `
     <button type="button" class="skip-link" (click)="focusMain()">Saltar al contenido</button>
 
@@ -51,7 +52,7 @@ interface ThemeOption extends PrimeMenuItem {
         <div class="p-2 border-t border-line">
           <button type="button" class="nav-link w-full" [class.justify-center]="collapsed()"
                   [attr.aria-expanded]="!collapsed()" (click)="toggleCollapsed()"
-                  pTooltip="Expandir menú" [tooltipDisabled]="!collapsed()" tooltipPosition="right" tooltipEvent="both">
+                  appSideTip="Expandir menú" [sideTipDisabled]="!collapsed()">
             <i class="pi" [class.pi-angle-double-left]="!collapsed()" [class.pi-angle-double-right]="collapsed()"
                aria-hidden="true"></i>
             <span [class.sr-only]="collapsed()">{{ collapsed() ? 'Expandir menú' : 'Contraer menú' }}</span>
@@ -191,7 +192,7 @@ interface ThemeOption extends PrimeMenuItem {
               <a [routerLink]="entry.item.route" routerLinkActive="nav-link--active" ariaCurrentWhenActive="page"
                  [routerLinkActiveOptions]="{ exact: exactRoutes.has(entry.item.route) }"
                  class="nav-link" [class.justify-center]="compact"
-                 [pTooltip]="entry.item.label" [tooltipDisabled]="!compact" tooltipPosition="right" tooltipEvent="both">
+                 [appSideTip]="entry.item.label" [sideTipDisabled]="!compact">
                 <i [class]="entry.item.icon" aria-hidden="true"></i>
                 <span [class.sr-only]="compact">{{ entry.item.label }}</span>
               </a>
