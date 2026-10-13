@@ -8,6 +8,7 @@ import { PasswordModule } from 'primeng/password';
 import { AuthService } from '../../core/auth/auth.service';
 import { problemMessage } from '../../core/errors/problem';
 import { safeReturnUrl } from '../../core/auth/return-url';
+import { LEGAL_OWNER } from '../legal/legal-content';
 
 @Component({
   selector: 'app-register',
@@ -47,7 +48,7 @@ import { safeReturnUrl } from '../../core/auth/return-url';
           </span>
         </label>
         <small id="accept-terms-help" class="text-xs text-muted -mt-2">
-          Puedes conocer, actualizar o pedir que se borren tus datos escribiendo a soporte@xaska.co.
+          Puedes conocer, actualizar o pedir que se borren tus datos escribiendo a {{ owner.email }}.
         </small>
 
         @if (error()) {
@@ -69,6 +70,7 @@ export class RegisterComponent {
   private readonly messages = inject(MessageService);
   private readonly query = inject(ActivatedRoute).snapshot.queryParamMap;
   protected readonly returnUrl = safeReturnUrl(this.query.get('returnUrl'));
+  protected readonly owner = LEGAL_OWNER;
 
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
