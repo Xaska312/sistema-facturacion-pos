@@ -105,8 +105,21 @@ describe('CartPanelComponent', () => {
     expect(component.closeEditor()).toBeTrue();
   });
 
-  it('sin líneas invita a escanear', () => {
+  it('sin líneas invita a buscar, tocar o escanear', () => {
     setLines([]);
-    expect(element().textContent).toContain('Escanea un producto');
+    expect(element().textContent).toContain('Busca un producto, tócalo en la lista o escanéalo');
+  });
+
+  it('"Pausar venta" emite solo con productos en la venta', () => {
+    let holds = 0;
+    component.hold.subscribe(() => holds++);
+    const pause = (): HTMLButtonElement => Array.from(element().querySelectorAll('button'))
+      .find((b) => b.textContent?.trim() === 'Pausar venta') as HTMLButtonElement;
+
+    pause().click();
+    expect(holds).toBe(1);
+
+    setLines([]);
+    expect(pause().disabled).toBeTrue();
   });
 });

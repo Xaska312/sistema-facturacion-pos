@@ -46,7 +46,7 @@ const UNDO_MS = 6000;
         @if (lines().length === 0) {
           <div class="h-full min-h-32 flex flex-col items-center justify-center gap-2 p-6 text-center text-muted">
             <i class="pi pi-barcode text-3xl" aria-hidden="true"></i>
-            <p>Escanea un producto o tócalo en la lista para empezar la venta.</p>
+            <p>Busca un producto, tócalo en la lista o escanéalo para empezar la venta.</p>
           </div>
         } @else {
           <ul class="divide-y" aria-label="Productos de la venta">
@@ -112,9 +112,13 @@ const UNDO_MS = 6000;
           <p-button styleClass="w-full min-h-14 text-xl font-semibold" size="large" icon="pi pi-wallet"
                     label="Cobrar (F4)" [disabled]="!canCharge()" (onClick)="charge.emit()" />
         </div>
-        <div class="flex items-center justify-between gap-2">
+        <div class="flex flex-wrap items-center justify-between gap-x-2">
           <button type="button" class="pos-btn text-muted" [disabled]="lines().length === 0" (click)="cancelSale.emit()">
             Cancelar venta (Esc)
+          </button>
+          <button type="button" class="pos-btn text-brand" [disabled]="lines().length === 0 || disabled()"
+                  title="Guarda esta venta para atender a otro cliente y retomarla después" (click)="hold.emit()">
+            <i class="pi pi-pause" aria-hidden="true"></i>Pausar venta
           </button>
           @if (lastSaleNumber(); as number) {
             <button type="button" class="pos-btn text-brand" (click)="reprint.emit()">
@@ -214,6 +218,8 @@ export class CartPanelComponent {
   readonly restoreLine = output<RemovedLine>();
   readonly charge = output<void>();
   readonly cancelSale = output<void>();
+  /** "Pausar venta": guardarla en espera para atender a otro cliente. */
+  readonly hold = output<void>();
   readonly customer = output<void>();
   readonly reprint = output<void>();
 

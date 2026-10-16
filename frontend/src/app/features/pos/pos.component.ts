@@ -1,13 +1,12 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, ElementRef, HostListener, OnDestroy, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { SkeletonModule } from 'primeng/skeleton';
-import { finalize, forkJoin, map, of, switchMap } from 'rxjs';
+import { catchError, finalize, forkJoin, map, of, switchMap } from 'rxjs';
 import {
   CashSession,
   Party,
@@ -31,13 +30,25 @@ import { problemMessage } from '../../core/errors/problem';
 import { OnlineService } from '../../core/network/online.service';
 import { ConfirmService } from '../../shared/confirm';
 import { HasPermissionDirective } from '../../shared/has-permission.directive';
-import { formatCop } from '../../shared/money';
+import { formatCop, formatQuantity } from '../../shared/money';
 import { BrandingService } from '../../core/theme/branding.service';
 import { ReceiptComponent } from '../../shared/receipt/receipt.component';
 import { ReceiptWidth, loadReceiptWidth, printReceipt, saveReceiptWidth } from '../../shared/receipt/receipt-prefs';
 import { TourService } from '../../shared/tour/tour.service';
 import { CartPanelComponent, LineDiscountChange, LineQuantityChange, RemovedLine } from './cart-panel.component';
 import { loadFavorites, saveFavorites, toggleFavorite } from './favorites';
+import {
+  HELD_TTL_DAYS,
+  HeldSale,
+  MAX_HELD,
+  defaultHoldLabel,
+  heldAge,
+  heldKey,
+  loadHeld,
+  newHeldSale,
+  saveHeld,
+} from './held-sales';
+import { NewCustomerDialogComponent } from './new-customer-dialog.component';
 import { OpenCashComponent } from './open-cash.component';
 import { POS_SHORTCUTS, methodIcon, methodLabel } from './pos-labels';
 import { POS_TOUR } from './pos-tour';
@@ -75,14 +86,16 @@ const STOCK_PAGES = 5;
 /**
  * Pantalla de venta, pensada para tablet horizontal (1024×768) y también para escritorio con lector de códigos.
  * Izquierda: código/lector, categorías y cuadrícula de productos. Derecha: carrito, totales y Cobrar.
+ * En el celular (menos de 768 px) el carrito queda debajo: arriba hay un campo grande para buscar por nombre y abajo
+ * una barra fija con el total y Cobrar. "Pausar venta" guarda el carrito en este equipo (held-sales.ts).
  * El lector actúa como teclado + Enter sobre el campo de código, que recupera el foco solo.
  * Atajos: F2 buscar por nombre, F4 cobrar, Enter registrar / nueva venta, Esc cancelar, ? ver atajos.
  */
 @Component({
   selector: 'app-pos',
-  imports: [FormsModule, PesosInputDirective, RouterLink, ButtonModule, DialogModule, InputTextModule, SkeletonModule, HasPermissionDirective,
+  imports: [FormsModule, PesosInputDirective, ButtonModule, DialogModule, InputTextModule, SkeletonModule, HasPermissionDirective,
     ReceiptComponent, PosHeaderComponent, ProductGridComponent, CartPanelComponent, OpenCashComponent,
-    VariantPickerComponent],
+    VariantPickerComponent, NewCustomerDialogComponent],
   template: `
     <div class="min-h-dvh md:h-dvh flex flex-col bg-ground">
       <app-pos-header [businessName]="config()?.businessName ?? ''" [session]="session()"
@@ -104,6 +117,14 @@ const STOCK_PAGES = 5;
       } @else {
         <div class="flex-1 min-h-0 flex flex-col md:flex-row gap-3 p-3">
           <section class="h-[55dvh] md:h-auto md:flex-1 min-w-0 min-h-0 flex flex-col gap-2" aria-label="Productos">
+            <!-- Celular: buscar por nombre a la vista (no hay F2). El envoltorio lleva md:hidden porque .phone-search
+                 fija su propio display. -->
+            <div class="md:hidden shrink-0">
+              <button type="button" class="phone-search" (click)="openSearch()">
+                <i class="pi pi-search" aria-hidden="true"></i>
+                <span>Buscar producto por nombre o código</span>
+              </button>
+            </div>
             <div class="flex gap-2 shrink-0">
               <div class="relative flex-1 min-w-0" data-tour="scanner">
                 <i class="pi pi-barcode absolute left-3 top-1/2 -translate-y-1/2 z-10 pointer-events-none text-muted" aria-hidden="true"></i>
@@ -115,28 +136,54 @@ const STOCK_PAGES = 5;
               @if (coarsePointer) {
                 <button type="button" class="tool-btn" [attr.aria-pressed]="keyboard()"
                         title="Mostrar el teclado en pantalla al tocar el campo de código" (click)="toggleKeyboard()">
-                  <i class="pi pi-pencil" aria-hidden="true"></i><span class="hidden lg:inline">Teclado</span>
+                  <i class="pi pi-pencil" aria-hidden="true"></i><span class="hidden sm:inline">Teclado</span>
+                  <span class="sr-only sm:hidden">Mostrar teclado para escribir el código</span>
                 </button>
               }
-              <button type="button" class="tool-btn" (click)="openSearch()">
-                <i class="pi pi-search" aria-hidden="true"></i><span class="hidden sm:inline">Buscar (F2)</span>
-                <span class="sr-only sm:hidden">Buscar producto</span>
-              </button>
+              <!-- En el celular ya está el campo grande de búsqueda (el envoltorio oculta, .tool-btn fija display). -->
+              <div class="hidden md:flex">
+                <button type="button" class="tool-btn" (click)="openSearch()">
+                  <i class="pi pi-search" aria-hidden="true"></i>Buscar (F2)
+                </button>
+              </div>
+              @if (held().length > 0) {
+                <button type="button" class="tool-btn" [attr.aria-label]="'Ventas en espera: ' + held().length"
+                        (click)="openHeld()">
+                  <i class="pi pi-clock" aria-hidden="true"></i>En espera
+                  <span class="held-count" aria-hidden="true">{{ held().length }}</span>
+                </button>
+              }
             </div>
             <app-product-grid class="flex-1" data-tour="products" [favoriteIds]="favorites()" [stock]="stock()"
                               (pick)="pickProduct($event)" (pickModel)="openModel($event.id)"
                               (favoriteToggle)="toggleFavorite($event)" />
           </section>
 
-          <app-cart-panel class="md:w-[22rem] lg:w-[26rem] shrink-0" data-tour="cart" [lines]="lines()" [totals]="totals()"
+          <app-cart-panel id="pos-cart" class="md:w-[22rem] lg:w-[26rem] shrink-0 scroll-mt-3" data-tour="cart"
+                          [lines]="lines()" [totals]="totals()"
                           [pricesIncludeTax]="config()?.pricesIncludeTax ?? true" [shortages]="shortages()"
                           [maxDiscount]="maxDiscount()" [decimalUnits]="decimalUnits()" [customerName]="customer().name"
                           [canCharge]="lines().length > 0" [lastSaleNumber]="lastSale()?.documentNumber ?? null"
                           (quantityChange)="setQuantity($event)" (discountChange)="setDiscount($event)"
                           (removeLine)="removeLine($event)" (restoreLine)="restoreLine($event)"
                           (charge)="openPayment()" (cancelSale)="cancelSale()" (customer)="openCustomers()"
-                          (reprint)="receiptOpen = true" />
+                          (hold)="openHold()" (reprint)="receiptOpen = true" />
         </div>
+
+        <!-- Celular: el carrito queda debajo de los productos; el total y Cobrar siempre a la mano. -->
+        @if (lines().length > 0) {
+          <div class="h-24 md:hidden" aria-hidden="true"></div>
+          <div class="md:hidden">
+            <div class="phone-bar" role="region" aria-label="Total de la venta">
+              <button type="button" class="phone-bar-summary" (click)="showCart()">
+                <span class="text-xs text-muted">{{ q(totals().items) }} art. · Ver venta</span>
+                <span class="text-xl font-semibold tabular-nums">{{ cop(totals().total) }}</span>
+              </button>
+              <p-button label="Cobrar" icon="pi pi-wallet" styleClass="min-h-12 px-5 font-semibold"
+                        (onClick)="openPayment()" />
+            </div>
+          </div>
+        }
       }
     </div>
 
@@ -204,12 +251,61 @@ const STOCK_PAGES = 5;
           <li class="p-2 text-sm text-muted">Busca un cliente registrado.</li>
         }
       </ul>
-      <div class="mt-3 flex justify-between items-center">
+      <div class="mt-3 flex flex-wrap justify-between items-center gap-2">
         <p-button label="Consumidor final" [text]="true" styleClass="min-h-11" (onClick)="resetCustomer()" />
-        <a *hasPermission="'parties:manage'" routerLink="/app/clientes" class="text-sm text-brand">
-          Registrar cliente nuevo
-        </a>
+        <p-button *hasPermission="'parties:manage'" label="Registrar cliente nuevo" icon="pi pi-user-plus"
+                  [outlined]="true" styleClass="min-h-11" (onClick)="openNewCustomer()" />
       </div>
+      <p class="text-xs text-muted mt-2">Registrar un cliente no borra lo que llevas en la venta.</p>
+    </p-dialog>
+
+    <!-- Cliente nuevo sin salir de la venta -->
+    <app-new-customer-dialog [visible]="newCustomerOpen" (visibleChange)="newCustomerVisible($event)"
+                             (created)="customerCreated($event)" />
+
+    <!-- Pausar venta -->
+    <p-dialog header="Pausar venta" [(visible)]="holdOpen" [modal]="true" [style]="{ width: '28rem' }"
+              [breakpoints]="{ '640px': '100vw' }" (onShow)="focusHoldLabel()" (onHide)="focusScanner()">
+      <form class="flex flex-col gap-3" (ngSubmit)="confirmHold()">
+        <p class="text-sm text-muted">
+          La venta queda guardada en este equipo para que atiendas a otro cliente. La retomas desde "En espera".
+        </p>
+        <label class="flex flex-col gap-1">
+          <span class="text-sm font-medium">Nombre para reconocerla</span>
+          <input #holdLabelInput pInputText name="holdLabel" class="h-11" maxlength="60" autocomplete="off"
+                 [(ngModel)]="holdLabel" />
+        </label>
+        <div class="flex justify-end gap-2">
+          <p-button label="Volver" [text]="true" severity="secondary" styleClass="min-h-11" (onClick)="holdOpen = false" />
+          <p-button type="submit" label="Pausar venta" icon="pi pi-pause" styleClass="min-h-11" />
+        </div>
+      </form>
+    </p-dialog>
+
+    <!-- Ventas en espera -->
+    <p-dialog header="Ventas en espera" [(visible)]="heldOpen" [modal]="true" [style]="{ width: '34rem' }"
+              [breakpoints]="{ '640px': '100vw' }" (onHide)="focusScanner()">
+      <ul class="divide-y" aria-label="Ventas en espera">
+        @for (h of held(); track h.id) {
+          <li class="py-2 flex items-center gap-2">
+            <div class="flex-1 min-w-0">
+              <p class="font-medium truncate">{{ h.label }}</p>
+              <p class="text-sm text-muted">{{ heldSummary(h) }}</p>
+            </div>
+            <p-button label="Retomar" icon="pi pi-play" styleClass="min-h-11" (onClick)="resumeHeld(h)" />
+            <button type="button" class="icon-btn text-danger" [attr.aria-label]="'Descartar ' + h.label"
+                    (click)="discardHeld(h)">
+              <i class="pi pi-trash" aria-hidden="true"></i>
+            </button>
+          </li>
+        } @empty {
+          <li class="py-2 text-sm text-muted">No hay ventas en espera.</li>
+        }
+      </ul>
+      <p class="text-xs text-muted mt-3">
+        Se guardan en este equipo para tu usuario durante {{ heldDays }} días. Al retomar una venta se actualizan los
+        precios. Si tienes otra venta abierta, esa queda en espera.
+      </p>
     </p-dialog>
 
     <!-- Cobro (F4) -->
@@ -362,8 +458,9 @@ const STOCK_PAGES = 5;
           </div>
         }
       </dl>
-      <p class="text-sm text-muted mt-3">En tablet, toca los productos de la lista; tocar una línea del carrito permite
-        cambiar la cantidad o el descuento.</p>
+      <p class="text-sm text-muted mt-3">En tablet o celular, toca los productos de la lista o usa "Buscar producto";
+        tocar una línea del carrito permite cambiar la cantidad o el descuento. "Pausar venta" la guarda para atender
+        a otro cliente.</p>
       @if (session()) {
         <p-button label="Ver recorrido guiado" icon="pi pi-directions" [outlined]="true" styleClass="min-h-11 mt-4"
                   (onClick)="replayTour()" />
@@ -433,8 +530,65 @@ const STOCK_PAGES = 5;
     }
     .tool-btn:hover,
     .method-btn:hover,
-    .bill-btn:hover {
+    .bill-btn:hover,
+    .phone-search:hover {
       border-color: var(--brand);
+    }
+    /* Celular: parece un campo de búsqueda y abre la búsqueda por nombre. */
+    .phone-search {
+      display: flex;
+      align-items: center;
+      gap: 0.625rem;
+      width: 100%;
+      min-height: 3.25rem;
+      padding: 0 1rem;
+      border-radius: 0.75rem;
+      border: 2px solid var(--brand);
+      background: var(--surface);
+      color: var(--text-muted);
+      font-size: 1rem;
+      text-align: left;
+    }
+    .phone-search .pi {
+      color: var(--brand);
+      font-size: 1.125rem;
+    }
+    .held-count {
+      min-width: 1.5rem;
+      height: 1.5rem;
+      padding: 0 0.375rem;
+      border-radius: 9999px;
+      background: var(--brand);
+      color: var(--brand-contrast);
+      font-size: 0.75rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    /* Celular: total y Cobrar fijos abajo (el carrito queda debajo de los productos). */
+    .phone-bar {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.625rem 0.75rem calc(0.625rem + env(safe-area-inset-bottom));
+      background: var(--surface);
+      border-top: 1px solid var(--surface-border);
+    }
+    .phone-bar-summary {
+      flex: 1;
+      min-width: 0;
+      min-height: 3rem;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      text-align: left;
     }
   `,
 })
@@ -456,9 +610,13 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   private readonly scanner = viewChild<ElementRef<HTMLInputElement>>('scanner');
   private readonly search = viewChild<ElementRef<HTMLInputElement>>('search');
   private readonly customerSearch = viewChild<ElementRef<HTMLInputElement>>('customerSearch');
+  private readonly holdLabelInput = viewChild<ElementRef<HTMLInputElement>>('holdLabelInput');
   private readonly cart = viewChild(CartPanelComponent);
+  private readonly newCustomer = viewChild(NewCustomerDialogComponent);
 
   protected readonly cop = formatCop;
+  protected readonly q = formatQuantity;
+  protected readonly heldDays = HELD_TTL_DAYS;
   protected readonly docShort = documentShortLabel;
   protected readonly methodIcon = methodIcon;
   protected readonly methodLabel = methodLabel;
@@ -488,6 +646,8 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   protected readonly lastSale = signal<Sale | null>(null);
   protected readonly width = signal<ReceiptWidth>(loadReceiptWidth());
   protected readonly favorites = signal<string[]>(loadFavorites(this.auth.tenantId()));
+  /** Ventas pausadas de este usuario en este equipo. */
+  readonly held = signal<HeldSale[]>(loadHeld(this.auth.tenantId(), this.auth.user()?.id ?? null));
   /** Existencia por producto en la sucursal de la caja (solo con inventory:read). */
   protected readonly stock = signal<ReadonlyMap<string, number>>(new Map());
   /** Unidades que admiten decimales: solo ahí se ofrece "vender por valor" (fase 8e). */
@@ -511,6 +671,10 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   protected payOpen = false;
   protected receiptOpen = false;
   protected helpOpen = false;
+  holdOpen = false;
+  heldOpen = false;
+  newCustomerOpen = false;
+  holdLabel = '';
   /** Pago mixto: los botones de medio de pago agregan una fila en lugar de cambiar el medio. */
   protected mixed = false;
   protected payments: PaymentDraft[] = [];
@@ -829,6 +993,159 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
     this.setCustomer({ id: this.config()?.finalConsumerId ?? '', name: 'Consumidor final', document: '222222222222', priceListId: null });
   }
 
+  /** "Registrar cliente nuevo" sin salir de la venta: el carrito sigue igual. Usa lo que se buscó (documento o nombre). */
+  openNewCustomer(): void {
+    this.newCustomer()?.prepare(this.customerText);
+    this.customerOpen = false;
+    this.newCustomerOpen = true;
+  }
+
+  /** Al cerrar el formulario (guardado o cancelado) el lector vuelve a tener el foco. */
+  newCustomerVisible(visible: boolean): void {
+    this.newCustomerOpen = visible;
+    if (!visible) {
+      this.focusScanner();
+    }
+  }
+
+  customerCreated(party: Party): void {
+    this.newCustomerOpen = false;
+    this.pickCustomer(party);
+    this.focusScanner();
+  }
+
+  // ---------------------------------------------------------------- ventas en espera
+
+  /** "Pausar venta": pide un nombre para reconocerla (sugiere el del cliente). */
+  openHold(): void {
+    // Con un código buscándose, el producto llegaría después a la venta siguiente.
+    if (!this.session() || this.lines().length === 0 || this.saving() || this.pendingLookups > 0 || this.anyDialogOpen()) {
+      return;
+    }
+    this.cart()?.closeEditor();
+    this.reloadHeld();
+    if (this.held().length >= MAX_HELD) {
+      this.messages.add({
+        severity: 'warn',
+        summary: `Ya tienes ${MAX_HELD} ventas en espera`,
+        detail: 'Retoma o descarta alguna para pausar esta.',
+      });
+      return;
+    }
+    this.holdLabel = defaultHoldLabel(this.customer().name, this.isFinalConsumer(), this.held());
+    this.holdOpen = true;
+  }
+
+  confirmHold(): void {
+    if (this.lines().length === 0 || this.saving()) {
+      this.holdOpen = false;
+      return;
+    }
+    // Se relee lo guardado: otra pestaña del mismo usuario pudo pausar o retomar mientras tanto.
+    const current = this.reloadHeld();
+    const label = this.holdLabel.trim() || defaultHoldLabel(this.customer().name, this.isFinalConsumer(), current);
+    this.storeHeld([newHeldSale(label, this.customer(), this.lines()), ...current]);
+    this.holdOpen = false;
+    this.resetSale();
+    this.messages.add({ severity: 'info', summary: 'Venta en espera', detail: `"${label}". Retómala desde "En espera".`, life: 4000 });
+  }
+
+  openHeld(): void {
+    if (this.anyDialogOpen()) {
+      return;
+    }
+    this.cart()?.closeEditor();
+    this.reloadHeld();
+    this.heldOpen = true;
+  }
+
+  /**
+   * Vuelve a poner la venta pausada en el carrito y pide los precios vigentes. Si había otra venta en curso, esa
+   * queda en espera (no se pierde nada).
+   */
+  resumeHeld(sale: HeldSale): void {
+    if (this.saving() || this.pendingLookups > 0) {
+      return;
+    }
+    const current = this.reloadHeld();
+    const target = current.find((h) => h.id === sale.id);
+    if (!target) {
+      this.messages.add({ severity: 'warn', summary: 'Esa venta ya no está en espera', detail: 'Se retomó o descartó en otra pestaña.' });
+      return;
+    }
+    let rest = current.filter((h) => h.id !== target.id);
+    if (this.lines().length > 0) {
+      const label = defaultHoldLabel(this.customer().name, this.isFinalConsumer(), rest);
+      rest = [newHeldSale(label, this.customer(), this.lines()), ...rest];
+      this.messages.add({ severity: 'info', summary: 'La venta que tenías quedó en espera', detail: `"${label}".`, life: 4000 });
+    }
+    this.storeHeld(rest);
+    this.heldOpen = false;
+    this.cart()?.clearUndo();
+    this.payments = [];
+    this.mixed = false;
+    this.customer.set({ ...target.customer });
+    this.updateLines(() => target.lines.map((l) => ({ ...l })));
+    this.refreshPrices(target.customer.id || null);
+    this.focusScanner();
+  }
+
+  discardHeld(sale: HeldSale): void {
+    this.confirm.ask({
+      header: 'Descartar venta en espera',
+      message: `¿Borrar "${sale.label}"? Sus productos no se pueden recuperar.`,
+      acceptLabel: 'Descartar',
+      rejectLabel: 'Conservar',
+      danger: true,
+      accept: () => this.storeHeld(this.reloadHeld().filter((h) => h.id !== sale.id)),
+    });
+  }
+
+  heldSummary(sale: HeldSale): string {
+    const total = cartTotals(sale.lines, this.config()?.pricesIncludeTax ?? true).total;
+    const count = sale.lines.length;
+    return `${count} ${count === 1 ? 'producto' : 'productos'} · ${formatCop(total)} · ${heldAge(sale.heldAt)}`;
+  }
+
+  focusHoldLabel(): void {
+    setTimeout(() => {
+      const input = this.holdLabelInput()?.nativeElement;
+      input?.focus();
+      input?.select();
+    }, 0);
+  }
+
+  /** Celular: "Ver venta" baja hasta el carrito. */
+  showCart(): void {
+    document.getElementById('pos-cart')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  /** Otra pestaña cambió las ventas en espera: se actualiza el botón "En espera". */
+  @HostListener('window:storage', ['$event'])
+  protected storageChanged(event: StorageEvent): void {
+    const tenantId = this.auth.tenantId();
+    const userId = this.auth.user()?.id;
+    if (tenantId && userId && event.key === heldKey(tenantId, userId)) {
+      this.reloadHeld();
+    }
+  }
+
+  private reloadHeld(): HeldSale[] {
+    const list = loadHeld(this.auth.tenantId(), this.auth.user()?.id ?? null);
+    this.held.set(list);
+    return list;
+  }
+
+  private storeHeld(list: HeldSale[]): void {
+    this.held.set(list);
+    saveHeld(this.auth.tenantId(), this.auth.user()?.id ?? null, list);
+  }
+
+  private isFinalConsumer(): boolean {
+    const id = this.customer().id;
+    return !id || id === this.config()?.finalConsumerId;
+  }
+
   /** Cambia el cliente y vuelve a pedir el precio de cada línea (puede tener otra lista de precios). */
   private setCustomer(choice: CustomerChoice): void {
     this.customerOpen = false;
@@ -842,12 +1159,25 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
     if (current.length === 0) {
       return;
     }
-    forkJoin(current.map((l) => this.sales.price(l.productId, l.unitId, customerId))).subscribe((prices) => {
-      this.updateLines((list) => list.map((l) => {
-        const price = prices.find((p) => p.productId === l.productId && p.unitId === l.unitId);
-        return price ? { ...l, unitPrice: Number(price.price), taxRate: Number(price.taxRate) } : l;
-      }));
-    });
+    // Un producto que ya no se puede vender (p. ej. desactivado mientras la venta estaba en espera) no impide
+    // actualizar los demás: su línea queda igual y se avisa.
+    forkJoin(current.map((l) => this.sales.price(l.productId, l.unitId, customerId).pipe(catchError(() => of(null)))))
+      .subscribe((results) => {
+        const prices = results.filter((p): p is ProductLookup => p !== null);
+        this.updateLines((list) => list.map((l) => {
+          const price = prices.find((p) => p.productId === l.productId && p.unitId === l.unitId);
+          return price ? { ...l, unitPrice: Number(price.price), taxRate: Number(price.taxRate) } : l;
+        }));
+        const failed = current.filter((l, i) => results[i] === null);
+        if (failed.length > 0) {
+          this.messages.add({
+            severity: 'warn',
+            summary: 'No se pudo actualizar el precio',
+            detail: `${failed.map((l) => l.name).join(', ')}. Revisa ${failed.length === 1 ? 'ese producto' : 'esos productos'} antes de cobrar.`,
+            life: 8000,
+          });
+        }
+      });
   }
 
   // ---------------------------------------------------------------- cobro
@@ -1103,7 +1433,8 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
    */
   focusScanner(attempt = 0): void {
     setTimeout(() => {
-      if (this.searchOpen || this.variantOpen || this.customerOpen || this.payOpen || this.receiptOpen || this.helpOpen) {
+      if (this.searchOpen || this.variantOpen || this.customerOpen || this.payOpen || this.receiptOpen || this.helpOpen
+        || this.holdOpen || this.heldOpen || this.newCustomerOpen) {
         return;
       }
       if (document.querySelector('.p-dialog-mask') && attempt < 10) {
@@ -1130,7 +1461,7 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   /** Incluye la confirmación de cancelar y los diálogos que se están cerrando (su máscara sigue en la página). */
   private anyDialogOpen(): boolean {
     return this.searchOpen || this.variantOpen || this.customerOpen || this.payOpen || this.receiptOpen || this.helpOpen
-      || document.querySelector('.p-dialog-mask') !== null;
+      || this.holdOpen || this.heldOpen || this.newCustomerOpen || document.querySelector('.p-dialog-mask') !== null;
   }
 
   private draft(method: PaymentMethod, amount: number | null): PaymentDraft {
