@@ -200,9 +200,20 @@ describe('PosComponent: celular, pausar venta y cliente nuevo', () => {
     ]);
     expect(new Set(lines().map((l) => l.key)).size).toBe(2);
 
+    // El servidor sigue diciendo que es de precio libre: se conserva lo que escribió el cajero.
+    sales.price.and.callFake((productId: string) => of({ ...lookup(productId, 3000), openPrice: true }));
     component.customerCreated({ id: 'p1', displayName: 'Marta Gómez', documentType: 'CC', formattedDocument: '1',
       priceListId: null } as Party);
     expect(lines().map((l) => l.unitPrice)).toEqual([1500, 800]);
+  });
+
+  it('precio libre: si el producto dejó de serlo, al refrescar toma el precio de la lista', () => {
+    component.addLine({ ...lookup('imp', 1000), openPrice: true }, 1);
+    component.openPriceValue = 1500;
+    component.confirmOpenPrice();
+    component.customerCreated({ id: 'p1', displayName: 'Marta Gómez', documentType: 'CC', formattedDocument: '1',
+      priceListId: null } as Party);
+    expect(lines().map((l) => [l.unitPrice, l.openPrice])).toEqual([[3000, undefined]]);
   });
 
   it('precio libre: sin precio no agrega nada', () => {
