@@ -10,6 +10,7 @@ import {
   ProductReportRow,
   ReportSummary,
   SalesReportRow,
+  SlowMovers,
   TaxReportRow,
 } from './api.models';
 
@@ -31,7 +32,8 @@ export type CsvReport =
   | 'products'
   | 'categories'
   | 'taxes'
-  | 'inventory/valuation';
+  | 'inventory/valuation'
+  | 'inventory/slow-movers';
 
 export function reportParams(filters: ReportFilters, extra: Record<string, string | number | null> = {}): HttpParams {
   let params = new HttpParams();
@@ -96,11 +98,21 @@ export class ReportsApi {
     return this.http.get<InventoryValuation>(`${this.base}/inventory/valuation`, { params });
   }
 
+  /** Productos con existencia que no se venden hace {@code days} días (decisión 254). */
+  slowMovers(branchId: string | null, days: number): Observable<SlowMovers> {
+    let params = new HttpParams().set('days', String(days));
+    if (branchId) {
+      params = params.set('branchId', branchId);
+    }
+    return this.http.get<SlowMovers>(`${this.base}/inventory/slow-movers`, { params });
+  }
+
   /** Descarga el CSV (Excel en español) con el nombre que propone el servidor. */
   csv(report: CsvReport, filters: ReportFilters, extra: Record<string, string | number | null> = {}):
     Observable<HttpResponse<Blob>> {
-    const params = report === 'inventory/valuation'
-      ? reportParams({ from: null, to: null, branchId: filters.branchId, sellerId: null })
+    // El inventario es "hoy": no lleva periodo ni vendedor.
+    const params = report === 'inventory/valuation' || report === 'inventory/slow-movers'
+      ? reportParams({ from: null, to: null, branchId: filters.branchId, sellerId: null }, extra)
       : reportParams(filters, extra);
     return this.http.get(`${this.base}/${report}.csv`, { params, observe: 'response', responseType: 'blob' });
   }

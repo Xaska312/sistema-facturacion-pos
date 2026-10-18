@@ -474,6 +474,7 @@ export const MANUAL: readonly ManualChapter[] = [
         tips: [
           'Elige el periodo y la sucursal; cada pestaña muestra una vista del mismo periodo.',
           'Con "Exportar a Excel (CSV)" descargas la pestaña en un archivo que abre en Excel.',
+          '"Sin rotación" muestra los productos con existencia que no se venden hace 30, 60, 90 o 180 días, primero los que tienen más plata quieta: buenos candidatos para una promoción. En el inicio aparece un aviso con lo de 90 días.',
         ],
         who: 'Propietario, Administrador y Contador.',
       },

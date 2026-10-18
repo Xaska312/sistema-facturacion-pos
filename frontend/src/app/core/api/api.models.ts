@@ -826,6 +826,28 @@ export interface InventoryValuation {
   productCount: number;
 }
 
+/** Producto con existencia que no se vende hace {@code days} días (decisión 254); lastSaleAt null = nunca. */
+export interface SlowMoverRow {
+  branchId: string;
+  branchName: string;
+  productId: string;
+  sku: string;
+  name: string;
+  categoryName: string | null;
+  unitCode: string;
+  quantity: number;
+  averageCost: number;
+  value: number;
+  lastSaleAt: string | null;
+}
+
+export interface SlowMovers {
+  days: number;
+  rows: SlowMoverRow[];
+  totalValue: number;
+  productCount: number;
+}
+
 export interface Dashboard {
   date: string;
   today: ReportSummary;

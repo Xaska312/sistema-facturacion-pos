@@ -204,6 +204,7 @@ Permiso `reports:read` (salvo `my-day`: `sales:read`). Filtros: `from`, `to` (`A
 | GET | `/reports/categories` | Igual por categoría |
 | GET | `/reports/taxes` | `[{taxType, taxRate, salesCount, taxableBase, taxAmount}]` |
 | GET | `/reports/inventory/valuation?branchId=` | `{rows[{branch, product, quantity, averageCost, value}], totalValue, productCount}` (existencias actuales) |
+| GET | `/reports/inventory/slow-movers?days=90&branchId=` (y `.csv`) | `{days, rows[{branch, product, quantity, averageCost, value, lastSaleAt}], totalValue, productCount}`: con existencia y sin ventas en `days` (7–365) días (decisión 254) |
 
 **CSV**: agrega `.csv` a cualquiera de las rutas anteriores (salvo `dashboard`, `my-day` y `summary`), más `/reports/sales.csv` (ventas una a una, con anuladas). `text/csv; charset=UTF-8` con BOM, separador `;`, coma decimal, fechas `AAAA-MM-DD HH:mm` en la hora del negocio y `Content-Disposition: attachment` (expuesto por CORS). `sales.csv` responde 422 si el rango tiene más de 100.000 ventas. Los textos que empiezan por `= + - @` se escriben con `'` delante (protección contra inyección de fórmulas).
 Cada descarga de CSV queda en la auditoría del negocio (`REPORT_EXPORTED`, con el nombre del archivo y las filas).

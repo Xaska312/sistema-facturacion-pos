@@ -23,7 +23,8 @@ describe('DashboardComponent', () => {
 
   beforeEach(() => {
     reports = jasmine.createSpyObj<ReportsApi>('ReportsApi',
-      ['summary', 'salesBy', 'products', 'byPaymentMethod', 'dashboard']);
+      ['summary', 'salesBy', 'products', 'byPaymentMethod', 'dashboard', 'slowMovers']);
+    reports.slowMovers.and.returnValue(of({ days: 90, rows: [], totalValue: 1250000, productCount: 3 }));
     reports.summary.and.returnValues(of(summary(1100, 10)), of(summary(1000, 8)));
     reports.salesBy.and.returnValue(of([]));
     reports.products.and.returnValue(of([]));
@@ -54,6 +55,10 @@ describe('DashboardComponent', () => {
     expect(element.textContent).toContain('+10 %');
     expect(element.textContent).toContain('vs. ayer');
     expect(reports.dashboard).toHaveBeenCalledWith(null);
+    // Aviso de productos sin rotación (decisión 254)
+    fixture.detectChanges();
+    expect(element.textContent).toContain('quietos en 3 productos');
+    expect(reports.slowMovers).toHaveBeenCalledWith(null, 90);
     fixture.destroy();
   });
 
