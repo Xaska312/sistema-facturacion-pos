@@ -20,6 +20,9 @@ export type ListPriceGroup = FormGroup<{
   price: FormControl<number>;
 }>;
 
+/** SKU del producto "Varios" que trae todo negocio (precio libre, sin inventario; decisión 253). */
+export const MISC_PRODUCT_SKU = 'VARIOS';
+
 export function productForm(fb: FormBuilder) {
   const nn = fb.nonNullable;
   return nn.group({
@@ -33,6 +36,8 @@ export function productForm(fb: FormBuilder) {
     cost: [0, [Validators.required, Validators.min(0)]],
     salePrice: [0, [Validators.required, Validators.min(0)]],
     trackInventory: [true],
+    /** Precio libre (decisión 253): se pide el precio al vender; salePrice queda como sugerido. */
+    openPrice: [false],
     conversions: nn.array<ConversionGroup>([]),
     barcodes: nn.array<BarcodeGroup>([]),
     listPrices: nn.array<ListPriceGroup>([]),
@@ -77,6 +82,7 @@ export function fillForm(fb: FormBuilder, form: ProductForm, p: Product): void {
     cost: p.cost,
     salePrice: p.salePrice,
     trackInventory: p.trackInventory,
+    openPrice: p.openPrice ?? false,
   });
   form.controls.conversions.clear();
   p.conversions.forEach((c) => form.controls.conversions.push(conversionGroup(fb, c.unitId, c.factor, c.salePrice)));
@@ -99,6 +105,7 @@ export function toInput(form: ProductForm): ProductInput {
     cost: Number(v.cost),
     salePrice: Number(v.salePrice),
     trackInventory: v.trackInventory,
+    openPrice: v.openPrice,
     conversions: v.conversions.map((c) => ({
       unitId: c.unitId,
       factor: Number(c.factor),

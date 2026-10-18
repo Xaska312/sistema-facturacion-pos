@@ -238,6 +238,7 @@ export const MANUAL: readonly ManualChapter[] = [
           'El cierre es "ciego": quien cierra no ve cuánto debería haber, así el conteo es honesto. La diferencia la ve quien supervisa.',
           '"Informe parcial" muestra cómo va el turno sin cerrarlo.',
           'En "Historial de caja" están todos los turnos con su informe.',
+          'Al cerrar, al correo del dueño llega un resumen con las ventas, los medios de pago y la diferencia, aunque cierre un cajero. Se apaga en Ajustes.',
         ],
       },
     ],
@@ -264,6 +265,22 @@ export const MANUAL: readonly ManualChapter[] = [
           'Desactivar un producto lo oculta del punto de venta sin borrar su historia.',
         ],
         who: 'Propietario, Administrador y Bodeguero.',
+      },
+      {
+        id: 'precio-libre',
+        title: 'Precio libre: impresiones, servicios y "Varios"',
+        summary: 'Para lo que cambia de precio cada vez (impresiones, anillados, arreglos): al venderlo escribes cuánto cobras.',
+        steps: [
+          'En el producto marca "Precio libre: pedir el precio al vender". El precio que escribas queda como sugerido.',
+          'Al venderlo, la app pregunta "¿Cuánto cobras?". Escribe el valor y toca "Agregar".',
+          'Si te equivocaste, toca la línea en la venta y cambia el precio.',
+        ],
+        tips: [
+          'Cada vez que lo agregas va en su propia línea: dos impresiones pueden tener precios distintos.',
+          'Todo negocio trae el producto "Varios", de precio libre y sin inventario, para vender algo que todavía no has creado sin frenar la fila. Revisa su impuesto (viene con IVA 19 %).',
+          'Quién puede venderlo se define en Roles con el permiso "Vender productos de precio libre". Viene activado para Propietario, Administrador, Cajero y Vendedor.',
+          'El precio que se cobró queda en la venta y en los reportes.',
+        ],
       },
       {
         id: 'importar-productos',
@@ -511,6 +528,7 @@ export const MANUAL: readonly ManualChapter[] = [
           'Permitir vender sin existencias: útil si aún no tienes el inventario exacto.',
           'Los precios incluyen impuestos: márcalo si el precio de venta que escribes ya trae el IVA.',
           'Pie del recibo: el texto que sale al final de cada tiquete.',
+          'Enviarme el resumen de cada cierre de caja: llega al correo del dueño cada vez que se cierra una caja.',
           'Marca: sube tu logo (sale en el encabezado y en el tiquete) y elige el color de la app entre los de la paleta; toca un color para verlo antes de guardarlo.',
         ],
         who: 'Para cambiarlos: Propietario y Administrador.',

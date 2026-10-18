@@ -248,7 +248,9 @@ public class ProductImportService {
                         category == null ? (product == null ? null : product.getCategoryId()) : category.getId(),
                         keepUnit ? product.getBaseUnitId() : row.unit().getId(), row.tax().getId(),
                         keepCost ? product.getCost() : row.cost(), row.price(),
-                        keepTracking ? product.isTrackInventory() : row.trackInventory());
+                        keepTracking ? product.isTrackInventory() : row.trackInventory(),
+                        // El archivo no trae "precio libre": se conserva lo que tenga el producto.
+                        product != null && product.isOpenPrice());
                 if (product == null) {
                     product = Product.create(data);
                     if (row.barcode() != null) {

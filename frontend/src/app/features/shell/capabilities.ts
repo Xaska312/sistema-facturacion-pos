@@ -15,6 +15,7 @@ const RULES: readonly CapabilityRule[] = [
   { permission: 'sales:read', text: 'consultar las ventas' },
   { permission: 'sales:void', text: 'anular ventas' },
   { permission: 'sales:discount', text: 'dar descuentos por encima del límite' },
+  { permission: 'sales:open-price', text: 'vender productos de precio libre (impresiones, servicios)' },
   { permission: 'cash:read', text: 'ver el historial de caja' },
   { permission: 'cash:audit', text: 'ver las diferencias de los arqueos' },
   { permission: 'reports:read', text: 'ver el tablero y los reportes' },

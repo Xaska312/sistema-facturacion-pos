@@ -173,6 +173,59 @@ class SalesIT extends IntegrationTest {
     }
 
     @Test
+    void openPriceProductUsesThePriceTypedAtTheRegister() throws Exception {
+        Owned owner = api.newTenant("libre");
+        Session s = owner.tenant();
+        // Impresión a color: precio libre, sugerido 1.000, sin inventario.
+        UUID print = id(api.postWith(s, "/api/v1/products", """
+                {"sku":"IMP-COLOR","name":"Impresión a color","baseUnitId":"%s","taxId":"%s","cost":0,
+                 "salePrice":1000,"trackInventory":false,"openPrice":true}
+                """.formatted(UND, IVA19)).andExpect(status().isCreated())
+                .andExpect(jsonPath("$.openPrice").value(true)), "$.id");
+        UUID soda = pos.productWithStock(s, "GAS", "2000", "10", "1000");
+        api.getWith(s, "/api/v1/sales/price?productId=" + print).andExpect(status().isOk())
+                .andExpect(jsonPath("$.openPrice").value(true));
+        api.getWith(s, "/api/v1/products/lookup?code=IMP-COLOR").andExpect(status().isOk())
+                .andExpect(jsonPath("$.openPrice").value(true));
+        api.getWith(s, "/api/v1/sales/price?productId=" + soda).andExpect(status().isOk())
+                .andExpect(jsonPath("$.openPrice").value(false));
+        pos.openCash(s, CAJA_1, "0");
+
+        // Sin precio escrito no se vende
+        pos.sell(s, """
+                {"items":[{"productId":"%s","quantity":3}],"payments":[{"paymentMethodId":"%s","amount":10000}]}
+                """.formatted(print, CASH), key()).andExpect(status().is(422));
+
+        // 3 hojas a 1.500 (no al sugerido) y, en la misma venta, el mismo producto en otra línea a 800
+        String sale = body(pos.sell(s, """
+                {"items":[{"productId":"%s","quantity":3,"unitPrice":1500},{"productId":"%s","quantity":1,"unitPrice":800},
+                          {"productId":"%s","quantity":1,"unitPrice":2000}],
+                 "expectedTotal":7300,"payments":[{"paymentMethodId":"%s","amount":7300}]}
+                """.formatted(print, print, soda, CASH), key()).andExpect(status().isCreated()));
+        assertThat(number(sale, "$.total")).isEqualByComparingTo("7300");
+        assertThat(number(sale, "$.items[0].unitPrice")).isEqualByComparingTo("1500");
+        assertThat(number(sale, "$.items[1].unitPrice")).isEqualByComparingTo("800");
+
+        // "Varios" (decisión 253) viene en todo negocio: precio libre y sin inventario
+        api.getWith(s, "/api/v1/products/lookup?code=VARIOS").andExpect(status().isOk())
+                .andExpect(jsonPath("$.openPrice").value(true))
+                .andExpect(jsonPath("$.trackInventory").value(false));
+        String misc = api.getWith(s, "/api/v1/products/lookup?code=VARIOS").andReturn().getResponse().getContentAsString();
+        UUID miscId = UUID.fromString(JsonPath.read(misc, "$.productId"));
+        String miscSale = body(pos.sell(s, """
+                {"items":[{"productId":"%s","quantity":1,"unitPrice":4200}],
+                 "payments":[{"paymentMethodId":"%s","amount":4200}]}
+                """.formatted(miscId, CASH), key()).andExpect(status().isCreated()));
+        assertThat(number(miscSale, "$.total")).isEqualByComparingTo("4200");
+
+        // Un producto normal sigue con el precio del servidor: otro precio es un cambio de precio (409)
+        pos.sell(s, """
+                {"items":[{"productId":"%s","quantity":1,"unitPrice":500}],
+                 "payments":[{"paymentMethodId":"%s","amount":2000}]}
+                """.formatted(soda, CASH), key()).andExpect(status().isConflict());
+    }
+
+    @Test
     void paymentAndItemValidation() throws Exception {
         Owned owner = api.newTenant("pagos");
         Session s = owner.tenant();

@@ -96,6 +96,7 @@ describe('PosComponent: celular, pausar venta y cliente nuevo', () => {
     component.holdOpen = false;
     component.heldOpen = false;
     component.newCustomerOpen = false;
+    component.openPriceOpen = false;
     component['searchOpen'] = false;
     component['customerOpen'] = false;
     fixture.detectChanges();
@@ -178,6 +179,37 @@ describe('PosComponent: celular, pausar venta y cliente nuevo', () => {
 
     expect(lines().length).toBe(0);
     expect(component.held()).toEqual([]);
+  });
+
+  it('precio libre: pide el precio, cada impresión va en su línea y cambiar de cliente no lo pisa', () => {
+    const printing = { ...lookup('imp', 1000), name: 'Impresión color', openPrice: true };
+    component.addLine(printing, 3);
+    expect(component.openPriceOpen).toBeTrue();
+    expect(component.openPriceValue).toBe(1000);
+    expect(lines().length).toBe(0);
+
+    component.openPriceValue = 1500;
+    component.confirmOpenPrice();
+    component.addLine(printing, 1);
+    component.openPriceValue = 800;
+    component.confirmOpenPrice();
+
+    expect(lines().map((l) => [l.productId, l.quantity, l.unitPrice, l.openPrice])).toEqual([
+      ['imp', 3, 1500, true],
+      ['imp', 1, 800, true],
+    ]);
+    expect(new Set(lines().map((l) => l.key)).size).toBe(2);
+
+    component.customerCreated({ id: 'p1', displayName: 'Marta Gómez', documentType: 'CC', formattedDocument: '1',
+      priceListId: null } as Party);
+    expect(lines().map((l) => l.unitPrice)).toEqual([1500, 800]);
+  });
+
+  it('precio libre: sin precio no agrega nada', () => {
+    component.addLine({ ...lookup('imp', 0), openPrice: true }, 1);
+    expect(component.openPriceValue).toBeNull();
+    component.confirmOpenPrice();
+    expect(lines().length).toBe(0);
   });
 
   it('descartar una venta en espera la borra del equipo', () => {

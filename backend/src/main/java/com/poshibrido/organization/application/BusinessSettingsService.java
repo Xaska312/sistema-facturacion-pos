@@ -31,12 +31,13 @@ public class BusinessSettingsService implements BusinessSettingsApi {
     static final String CURRENCY = "currency";
     static final String RECEIPT_FOOTER = "receipt_footer";
     static final String MAX_DISCOUNT_PERCENT = "max_discount_percent";
+    static final String CASH_CLOSE_EMAIL = "cash_close_email";
 
     /** Monedas soportadas. En el MVP solo pesos colombianos. */
     private static final Set<String> CURRENCIES = Set.of("COP");
 
     private static final BusinessSettings DEFAULTS = new BusinessSettings(false, true, "America/Bogota", "COP",
-            "Gracias por su compra", BigDecimal.ZERO.setScale(2));
+            "Gracias por su compra", BigDecimal.ZERO.setScale(2), true);
 
     private final BusinessSettingRepository repository;
     private final AuditLogger audit;
@@ -52,7 +53,8 @@ public class BusinessSettingsService implements BusinessSettingsApi {
                 values.getOrDefault(TIMEZONE, DEFAULTS.timezone()),
                 values.getOrDefault(CURRENCY, DEFAULTS.currency()),
                 values.getOrDefault(RECEIPT_FOOTER, DEFAULTS.receiptFooter()),
-                decimal(values, MAX_DISCOUNT_PERCENT, DEFAULTS.maxDiscountPercent()));
+                decimal(values, MAX_DISCOUNT_PERCENT, DEFAULTS.maxDiscountPercent()),
+                bool(values, CASH_CLOSE_EMAIL, DEFAULTS.cashCloseEmail()));
     }
 
     @Transactional
@@ -70,6 +72,7 @@ public class BusinessSettingsService implements BusinessSettingsApi {
         put(rows, RECEIPT_FOOTER, ValueType.STRING, requested.receiptFooter() == null ? "" : requested.receiptFooter().trim(), actor);
         put(rows, MAX_DISCOUNT_PERCENT, ValueType.DECIMAL,
                 requested.maxDiscountPercent().setScale(2, RoundingMode.HALF_UP).toPlainString(), actor);
+        put(rows, CASH_CLOSE_EMAIL, ValueType.BOOLEAN, Boolean.toString(requested.cashCloseEmail()), actor);
 
         BusinessSettings after = current();
         audit.log("SETTINGS_UPDATED", "business_settings", null, asMap(before), asMap(after));
@@ -127,6 +130,7 @@ public class BusinessSettingsService implements BusinessSettingsApi {
         map.put(CURRENCY, s.currency());
         map.put(RECEIPT_FOOTER, s.receiptFooter());
         map.put(MAX_DISCOUNT_PERCENT, s.maxDiscountPercent());
+        map.put(CASH_CLOSE_EMAIL, s.cashCloseEmail());
         return map;
     }
 }

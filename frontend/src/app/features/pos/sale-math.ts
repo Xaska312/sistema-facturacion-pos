@@ -77,6 +77,8 @@ export interface CartLine {
   trackInventory: boolean;
   /** Unidades base por unidad de la línea (caja de 24 → 24); sin dato, 1. */
   factor?: number;
+  /** Precio libre (decisión 253): el precio lo escribió el cajero; no se reemplaza al cambiar de cliente. */
+  openPrice?: boolean;
 }
 
 export interface CartTotals extends LineAmounts {

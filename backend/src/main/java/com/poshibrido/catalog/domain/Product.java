@@ -65,6 +65,10 @@ public class Product extends AuditableEntity {
     @Column(name = "tracks_lots", nullable = false)
     private boolean tracksLots;
 
+    /** Precio libre (decisión 253): el cajero escribe el precio al vender; {@code salePrice} es el sugerido. */
+    @Column(name = "open_price", nullable = false)
+    private boolean openPrice;
+
     @Column(nullable = false)
     private boolean active;
 
@@ -90,7 +94,7 @@ public class Product extends AuditableEntity {
 
     /** Datos básicos editables. */
     public record Data(String sku, String name, String description, UUID categoryId, UUID baseUnitId, UUID taxId,
-                       BigDecimal cost, BigDecimal salePrice, boolean trackInventory) {
+                       BigDecimal cost, BigDecimal salePrice, boolean trackInventory, boolean openPrice) {
     }
 
     public record ConversionData(UUID unitId, BigDecimal factor, BigDecimal salePrice) {
@@ -131,6 +135,7 @@ public class Product extends AuditableEntity {
         this.cost = data.cost().setScale(2, RoundingMode.HALF_UP);
         this.salePrice = data.salePrice().setScale(2, RoundingMode.HALF_UP);
         this.trackInventory = data.trackInventory();
+        this.openPrice = data.openPrice();
     }
 
     /** Reemplaza las presentaciones: actualiza las que siguen, quita las que no y agrega las nuevas. */

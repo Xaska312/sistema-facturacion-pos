@@ -10,6 +10,12 @@ export interface LineQuantityChange {
   quantity: number;
 }
 
+/** Precio libre (decisión 253): el precio unitario que escribió el cajero. */
+export interface LinePriceChange {
+  key: string;
+  unitPrice: number;
+}
+
 export interface LineDiscountChange {
   key: string;
   discountPercent: number;
@@ -54,7 +60,7 @@ const UNDO_MS = 6000;
               @let short = shortages().get(line.key);
               <li class="px-2 py-1.5 flex items-center gap-1" [class.bg-warning-soft]="short !== undefined">
                 <button type="button" class="flex-1 min-w-0 min-h-11 text-left px-1 rounded-lg hover:bg-surface-alt"
-                        aria-haspopup="dialog" [attr.aria-label]="'Editar cantidad y descuento: ' + line.name"
+                        aria-haspopup="dialog" [attr.aria-label]="(line.openPrice ? 'Editar precio, cantidad y descuento: ' : 'Editar cantidad y descuento: ') + line.name"
                         (click)="openEditor($event, line)">
                   <span class="block font-medium leading-tight truncate">{{ line.name }}</span>
                   <span class="block text-xs text-muted">
@@ -133,6 +139,13 @@ const UNDO_MS = 6000;
       @if (editing(); as line) {
         <form class="flex flex-col gap-3 w-64" (ngSubmit)="applyEdit()">
           <p class="font-medium leading-tight">{{ line.name }}</p>
+          @if (line.openPrice) {
+            <label class="flex flex-col gap-1">
+              <span class="text-sm font-medium">Precio por {{ line.unitCode }} ($)</span>
+              <input id="edit-price" name="price" type="number" inputmode="numeric" min="0" step="any"
+                     class="h-12 border rounded-lg px-3 text-lg text-right" [(ngModel)]="draftPrice" />
+            </label>
+          }
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">Cantidad ({{ line.unitCode }})</span>
             <input id="edit-quantity" name="quantity" type="number" inputmode="decimal" min="0" step="any"
@@ -214,6 +227,8 @@ export class CartPanelComponent {
   readonly decimalUnits = input<ReadonlySet<string>>(new Set());
   readonly quantityChange = output<LineQuantityChange>();
   readonly discountChange = output<LineDiscountChange>();
+  /** Precio libre: nuevo precio unitario de la línea. */
+  readonly priceChange = output<LinePriceChange>();
   readonly removeLine = output<string>();
   readonly restoreLine = output<RemovedLine>();
   readonly charge = output<void>();
@@ -230,6 +245,7 @@ export class CartPanelComponent {
   protected readonly removed = signal<RemovedLine | null>(null);
   protected draftQuantity: number | null = null;
   protected draftDiscount: number | null = null;
+  protected draftPrice: number | null = null;
   /** "Vender por valor" (fase 8e): pesos escritos; la cantidad se calcula al vuelo. */
   protected draftAmount: number | null = null;
   private undoTimer: ReturnType<typeof setTimeout> | null = null;
@@ -284,6 +300,7 @@ export class CartPanelComponent {
     this.draftQuantity = line.quantity;
     this.draftAmount = null;
     this.draftDiscount = line.discountPercent;
+    this.draftPrice = line.openPrice ? line.unitPrice : null;
     this.editor().show(event);
   }
 
@@ -300,7 +317,8 @@ export class CartPanelComponent {
 
   focusEditor(): void {
     setTimeout(() => {
-      const input = document.getElementById('edit-quantity') as HTMLInputElement | null;
+      // En una línea de precio libre, lo primero que se corrige es el precio.
+      const input = (document.getElementById('edit-price') ?? document.getElementById('edit-quantity')) as HTMLInputElement | null;
       input?.focus();
       input?.select();
     }, 0);
@@ -310,6 +328,10 @@ export class CartPanelComponent {
     const line = this.editing();
     if (!line) {
       return;
+    }
+    const price = Number(this.draftPrice);
+    if (line.openPrice && this.draftPrice !== null && Number.isFinite(price) && price > 0 && price !== line.unitPrice) {
+      this.priceChange.emit({ key: line.key, unitPrice: Math.round(price * 100) / 100 });
     }
     const quantity = Number(this.draftQuantity);
     if (this.draftQuantity !== null && Number.isFinite(quantity) && quantity >= 0) {

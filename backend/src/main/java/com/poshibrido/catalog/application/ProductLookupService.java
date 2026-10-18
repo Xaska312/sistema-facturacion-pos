@@ -129,6 +129,7 @@ public class ProductLookupService implements PricingApi {
         Unit unit = units.findById(unitId).orElseThrow();
         Tax tax = taxes.findById(product.getTaxId()).orElseThrow();
         return new ResolvedPrice(product.getId(), product.getSku(), product.getName(), unitId, unit.getCode(), factor,
-                price, appliedList, fromList, tax.getId(), tax.getType(), tax.getRate(), product.isTrackInventory());
+                price, appliedList, fromList, tax.getId(), tax.getType(), tax.getRate(), product.isTrackInventory(),
+                product.isOpenPrice());
     }
 }

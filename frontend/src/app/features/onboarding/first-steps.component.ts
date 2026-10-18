@@ -10,6 +10,7 @@ import { InventoryApi } from '../../core/api/inventory.api';
 import { OrganizationApi } from '../../core/api/organization.api';
 import { SalesApi } from '../../core/api/sales.api';
 import { AuthService } from '../../core/auth/auth.service';
+import { MISC_PRODUCT_SKU } from '../products/product-form';
 import {
   FirstStep,
   FirstStepCounts,
@@ -179,7 +180,9 @@ export class FirstStepsComponent implements OnInit {
     const counts: { [K in keyof FirstStepCounts]: Observable<FirstStepCounts[K]> } = {
       branches: count('branches:read', () => this.organization.branches({ page: 0, size: 1 }).pipe(map((p) => p.totalElements))),
       categories: count('products:read', () => this.catalog.categories().pipe(map((list) => list.length))),
-      products: count('products:read', () => this.catalog.products({ page: 0, size: 1 }).pipe(map((p) => p.totalElements))),
+      // "Varios" (decisión 253) viene creado en todo negocio: no cuenta como "ya creaste productos".
+      products: count('products:read', () => this.catalog.products({ page: 0, size: 2 }).pipe(
+        map((p) => p.totalElements - p.content.filter((x) => x.sku.toUpperCase() === MISC_PRODUCT_SKU).length))),
       stockDocuments: count('inventory:read', () => this.inventory.documents(null, null, 0, 1).pipe(map((p) => p.totalElements))),
       team: count('members:read', () => forkJoin([
         this.access.members({ page: 0, size: 1 }, null),

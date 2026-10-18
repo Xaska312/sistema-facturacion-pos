@@ -2,9 +2,14 @@ package com.poshibrido.mail;
 
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -164,10 +169,80 @@ public class MailTemplates {
                 "Gracias por confiar en XASKA POS.");
     }
 
+    // ---------------------------------------------------------------- caja (al dueño, decisión 253)
+
+    /** Lo que muestra el resumen de un cierre de caja; los nombres los escribió el negocio (se escapan). */
+    public record CashCloseSummary(String businessName, String registerName, String branchName, String openedBy,
+                                   String closedBy, Instant openedAt, Instant closedAt, long salesCount,
+                                   BigDecimal salesTotal, long voidedCount, BigDecimal voidedTotal,
+                                   List<MethodLine> byMethod, BigDecimal opening, BigDecimal expected,
+                                   BigDecimal counted, BigDecimal difference, String notes) {
+    }
+
+    public record MethodLine(String name, long count, BigDecimal amount) {
+    }
+
+    /** Resumen de un cierre de caja para el dueño: ventas, medios de pago y el arqueo con su diferencia. */
+    public MailMessage cashClosed(String to, String ownerName, CashCloseSummary s) {
+        String result = differenceText(s.difference());
+        List<String[]> rows = new ArrayList<>();
+        rows.add(new String[] {"Caja", s.registerName() + (s.branchName() == null ? "" : " · " + s.branchName())});
+        rows.add(new String[] {"Abrió", s.openedBy() + " · " + format(s.openedAt())});
+        rows.add(new String[] {"Cerró", s.closedBy() + " · " + format(s.closedAt())});
+        rows.add(new String[] {"Ventas", s.salesCount() + " por " + money(s.salesTotal())});
+        if (s.voidedCount() > 0) {
+            rows.add(new String[] {"Anuladas", s.voidedCount() + " por " + money(s.voidedTotal())});
+        }
+        for (MethodLine m : s.byMethod()) {
+            rows.add(new String[] {m.name(), money(m.amount()) + " (" + m.count() + ")"});
+        }
+        rows.add(new String[] {"Base de efectivo", money(s.opening())});
+        rows.add(new String[] {"Efectivo esperado", money(s.expected())});
+        rows.add(new String[] {"Efectivo contado", money(s.counted())});
+        rows.add(new String[] {"Diferencia", result});
+        if (s.notes() != null && !s.notes().isBlank()) {
+            rows.add(new String[] {"Notas del cierre", s.notes()});
+        }
+        String subject = "Cierre de caja " + s.registerName() + " · " + s.businessName()
+                + (s.difference() != null && s.difference().signum() != 0 ? " · " + result : "");
+        return message(to, subject, "cierre-de-caja", "Hola, " + ownerName + ":",
+                List.of(s.closedBy() + " cerró la caja " + s.registerName() + " de " + s.businessName() + "."),
+                rows, "Ver el historial de caja", properties.link("/app/caja/historial"),
+                "Recibes este correo porque eres el dueño de " + s.businessName()
+                        + ". Puedes desactivarlo en Ajustes.");
+    }
+
+    /** "Sin diferencia", "Sobran $2.000", "Faltan $1.500". */
+    static String differenceText(BigDecimal difference) {
+        if (difference == null || difference.signum() == 0) {
+            return "Sin diferencia";
+        }
+        return (difference.signum() > 0 ? "Sobran " : "Faltan ") + money(difference.abs());
+    }
+
+    /** Pesos sin decimales y con punto de miles: $1.248.500. */
+    static String money(BigDecimal value) {
+        if (value == null) {
+            return "—";
+        }
+        DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.ROOT);
+        symbols.setGroupingSeparator('.');
+        symbols.setMinusSign('-');
+        DecimalFormat format = new DecimalFormat("#,##0", symbols);
+        String digits = format.format(value.abs().setScale(0, RoundingMode.HALF_UP));
+        return (value.signum() < 0 ? "-$" : "$") + digits;
+    }
+
     // ---------------------------------------------------------------- formato
 
     private MailMessage message(String to, String subject, String kind, String greeting, List<String> paragraphs,
                                 String buttonLabel, String link, String footnote) {
+        return message(to, subject, kind, greeting, paragraphs, List.of(), buttonLabel, link, footnote);
+    }
+
+    /** Con {@code rows}: una tabla de dos columnas (concepto y valor) después de los párrafos. */
+    private MailMessage message(String to, String subject, String kind, String greeting, List<String> paragraphs,
+                                List<String[]> rows, String buttonLabel, String link, String footnote) {
         StringBuilder html = new StringBuilder()
                 .append("<!doctype html><html lang=\"es\"><body style=\"margin:0;padding:0;background:#f4f6f6;\">")
                 .append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" ")
@@ -181,6 +256,16 @@ public class MailTemplates {
                 .append("line-height:1.5;\"><p style=\"margin:0 0 12px;\">").append(escape(greeting)).append("</p>");
         for (String paragraph : paragraphs) {
             html.append("<p style=\"margin:0 0 12px;\">").append(escape(paragraph)).append("</p>");
+        }
+        if (!rows.isEmpty()) {
+            html.append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" ")
+                    .append("style=\"border-collapse:collapse;margin:8px 0 16px;font-size:14px;\">");
+            for (String[] row : rows) {
+                html.append("<tr><td style=\"padding:6px 8px 6px 0;border-bottom:1px solid #e5eaea;color:#5b6b6a;\">")
+                        .append(escape(row[0])).append("</td><td style=\"padding:6px 0;border-bottom:1px solid #e5eaea;")
+                        .append("text-align:right;font-weight:bold;\">").append(escape(row[1])).append("</td></tr>");
+            }
+            html.append("</table>");
         }
         if (link != null) {
             html.append("<p style=\"margin:20px 0;\"><a href=\"").append(escape(link))
@@ -199,6 +284,10 @@ public class MailTemplates {
 
         StringBuilder text = new StringBuilder(greeting).append("\n\n");
         paragraphs.forEach(p -> text.append(p).append("\n\n"));
+        if (!rows.isEmpty()) {
+            rows.forEach(r -> text.append(r[0]).append(": ").append(r[1]).append("\n"));
+            text.append("\n");
+        }
         if (link != null) {
             text.append(buttonLabel).append(": ").append(link).append("\n\n");
         }

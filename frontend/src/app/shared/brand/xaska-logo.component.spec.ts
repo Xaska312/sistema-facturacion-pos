@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { XaskaLogoComponent } from './xaska-logo.component';
 
 describe('XaskaLogoComponent', () => {
-  function render(inputs: Partial<Record<'wordmark' | 'tag' | 'label', unknown>> = {}) {
+  function render(inputs: Partial<Record<'wordmark' | 'tag' | 'label' | 'stacked', unknown>> = {}) {
     const fixture = TestBed.createComponent(XaskaLogoComponent);
     for (const [name, value] of Object.entries(inputs)) {
       fixture.componentRef.setInput(name, value);
@@ -31,5 +31,13 @@ describe('XaskaLogoComponent', () => {
   it('la etiqueta POS solo va junto al nombre', () => {
     const el = render({ tag: true });
     expect(el.querySelector('.xaska-tag')).toBeNull();
+  });
+
+  it('apilado (entrada): el símbolo arriba y el nombre con POS debajo, en su propia fila', () => {
+    const el = render({ wordmark: true, tag: true, label: 'XASKA POS', stacked: true });
+    expect(el.querySelector('.xaska')?.classList.contains('xaska-stacked')).toBeTrue();
+    const row = el.querySelector('.xaska-wordmark-row');
+    expect(row?.querySelector('.xaska-name')).toBeTruthy();
+    expect(row?.querySelector('.xaska-tag')?.textContent).toBe('POS');
   });
 });

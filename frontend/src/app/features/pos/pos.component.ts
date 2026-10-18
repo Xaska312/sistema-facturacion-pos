@@ -35,7 +35,7 @@ import { BrandingService } from '../../core/theme/branding.service';
 import { ReceiptComponent } from '../../shared/receipt/receipt.component';
 import { ReceiptWidth, loadReceiptWidth, printReceipt, saveReceiptWidth } from '../../shared/receipt/receipt-prefs';
 import { TourService } from '../../shared/tour/tour.service';
-import { CartPanelComponent, LineDiscountChange, LineQuantityChange, RemovedLine } from './cart-panel.component';
+import { CartPanelComponent, LineDiscountChange, LinePriceChange, LineQuantityChange, RemovedLine } from './cart-panel.component';
 import { loadFavorites, saveFavorites, toggleFavorite } from './favorites';
 import {
   HELD_TTL_DAYS,
@@ -79,6 +79,9 @@ interface CustomerChoice {
   document: string;
   priceListId: string | null;
 }
+
+/** Vender productos de precio libre escribiendo el precio (decisión 253). */
+const OPEN_PRICE_PERMISSION = 'sales:open-price';
 
 /** Páginas de existencias que se cargan como máximo (100 productos con inventario cada una). */
 const STOCK_PAGES = 5;
@@ -165,6 +168,7 @@ const STOCK_PAGES = 5;
                           [maxDiscount]="maxDiscount()" [decimalUnits]="decimalUnits()" [customerName]="customer().name"
                           [canCharge]="lines().length > 0" [lastSaleNumber]="lastSale()?.documentNumber ?? null"
                           (quantityChange)="setQuantity($event)" (discountChange)="setDiscount($event)"
+                          (priceChange)="setPrice($event)"
                           (removeLine)="removeLine($event)" (restoreLine)="restoreLine($event)"
                           (charge)="openPayment()" (cancelSale)="cancelSale()" (customer)="openCustomers()"
                           (hold)="openHold()" (reprint)="receiptOpen = true" />
@@ -210,7 +214,7 @@ const STOCK_PAGES = 5;
               <button type="button" class="w-full min-h-11 text-left p-2 hover:bg-surface-alt flex justify-between gap-2"
                       (click)="pickProduct(p)">
                 <span><span class="font-mono text-xs text-muted">{{ p.sku }}</span> {{ p.name }}</span>
-                <span class="text-muted whitespace-nowrap">{{ cop(p.salePrice) }}</span>
+                <span class="text-muted whitespace-nowrap">{{ p.openPrice ? 'Precio libre' : cop(p.salePrice) }}</span>
               </button>
             }
           </li>
@@ -218,6 +222,29 @@ const STOCK_PAGES = 5;
           <li class="p-2 text-sm text-muted">{{ searched() ? 'Sin resultados.' : 'Escribe y pulsa Enter.' }}</li>
         }
       </ul>
+    </p-dialog>
+
+    <!-- Precio libre (decisión 253): impresiones, anillados, servicios -->
+    <p-dialog header="Precio libre" [(visible)]="openPriceOpen" [modal]="true" [style]="{ width: '24rem' }"
+              [breakpoints]="{ '640px': '100vw' }" (onShow)="focusOpenPrice()" (onHide)="openPriceClosed()">
+      @if (openPriceItem(); as item) {
+        <form class="flex flex-col gap-3" (ngSubmit)="confirmOpenPrice()">
+          <p class="font-medium">{{ item.found.name }}</p>
+          <label class="flex flex-col gap-1">
+            <span class="text-sm font-medium">¿Cuánto cobras por {{ item.found.unitCode }}?</span>
+            <input id="open-price" appPesos name="openPrice" autocomplete="off"
+                   class="h-12 border rounded-lg px-3 text-xl text-right tabular-nums" [(ngModel)]="openPriceValue" />
+          </label>
+          @if (item.quantity !== 1) {
+            <p class="text-sm text-muted">Cantidad: {{ q(item.quantity) }} {{ item.found.unitCode }}</p>
+          }
+          <div class="flex justify-end gap-2">
+            <p-button label="Cancelar" [text]="true" severity="secondary" styleClass="min-h-11" (onClick)="openPriceOpen = false" />
+            <p-button type="submit" label="Agregar" icon="pi pi-plus" styleClass="min-h-11"
+                      [disabled]="!(openPriceValue && openPriceValue > 0)" />
+          </div>
+        </form>
+      }
     </p-dialog>
 
     <!-- Talla de un modelo (fase 8d) -->
@@ -675,6 +702,10 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   heldOpen = false;
   newCustomerOpen = false;
   holdLabel = '';
+  /** Precio libre: el producto que espera su precio y lo que se va escribiendo. */
+  readonly openPriceItem = signal<{ found: ProductLookup; quantity: number } | null>(null);
+  openPriceOpen = false;
+  openPriceValue: number | null = null;
   /** Pago mixto: los botones de medio de pago agregan una fila en lugar de cambiar el medio. */
   protected mixed = false;
   protected payments: PaymentDraft[] = [];
@@ -805,6 +836,10 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
    * cobra ese valor con el IVA del producto.
    */
   private addScanned(found: ProductLookup, multiplier: number): void {
+    if (found.openPrice) {
+      this.addLine(found, multiplier);
+      return;
+    }
     if (found.scaleAmount) {
       const quantity = quantityForAmount(Number(found.scaleAmount), Number(found.price), 0, Number(found.taxRate),
         this.config()?.pricesIncludeTax ?? true);
@@ -819,8 +854,29 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
     this.addLine(found, found.scaleQuantity ? quantity4(Number(found.scaleQuantity) * multiplier) : multiplier);
   }
 
+  /** Agrega el producto; uno de precio libre (decisión 253) primero pide el precio. */
   addLine(found: ProductLookup, quantity: number): void {
-    const key = `${found.productId}|${found.unitId}`;
+    if (found.openPrice) {
+      if (!this.auth.hasPermission(OPEN_PRICE_PERMISSION)) {
+        this.messages.add({
+          severity: 'warn',
+          summary: 'Producto de precio libre',
+          detail: `Tu usuario no puede vender ${found.name}: pídele el permiso al dueño del negocio.`,
+        });
+        this.focusScanner();
+        return;
+      }
+      this.askOpenPrice(found, quantity);
+      return;
+    }
+    this.pushLine(found, quantity, Number(found.price));
+  }
+
+  private pushLine(found: ProductLookup, quantity: number, unitPrice: number): void {
+    // Cada línea de precio libre va aparte: dos impresiones pueden tener precios distintos.
+    const key = found.openPrice
+      ? `${found.productId}|${found.unitId}|${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
+      : `${found.productId}|${found.unitId}`;
     this.updateLines((list) => {
       const existing = list.findIndex((l) => l.key === key);
       if (existing >= 0) {
@@ -828,10 +884,52 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
       }
       return [...list, {
         key, productId: found.productId, sku: found.sku, name: found.name, unitId: found.unitId,
-        unitCode: found.unitCode, quantity: quantity4(quantity), unitPrice: Number(found.price), discountPercent: 0,
+        unitCode: found.unitCode, quantity: quantity4(quantity), unitPrice, discountPercent: 0,
         taxRate: Number(found.taxRate), trackInventory: found.trackInventory, factor: Number(found.factor) || 1,
+        ...(found.openPrice ? { openPrice: true } : {}),
       }];
     });
+    this.focusScanner();
+  }
+
+  // ---------------------------------------------------------------- precio libre
+
+  private askOpenPrice(found: ProductLookup, quantity: number): void {
+    this.openPriceItem.set({ found, quantity });
+    this.openPriceValue = Number(found.price) > 0 ? Number(found.price) : null;
+    this.openPriceOpen = true;
+  }
+
+  confirmOpenPrice(): void {
+    const item = this.openPriceItem();
+    const price = Number(this.openPriceValue);
+    if (!item || !(price > 0)) {
+      return;
+    }
+    this.openPriceItem.set(null);
+    this.openPriceOpen = false;
+    this.pushLine(item.found, item.quantity, Math.round(price * 100) / 100);
+  }
+
+  openPriceClosed(): void {
+    this.openPriceItem.set(null);
+    this.focusScanner();
+  }
+
+  focusOpenPrice(): void {
+    setTimeout(() => {
+      const input = document.getElementById('open-price') as HTMLInputElement | null;
+      input?.focus();
+      input?.select();
+    }, 0);
+  }
+
+  /** Precio de una línea de precio libre, cambiado en el editor del carrito. */
+  setPrice(change: LinePriceChange): void {
+    if (!(change.unitPrice > 0)) {
+      return;
+    }
+    this.updateLines((list) => list.map((l) => (l.key === change.key && l.openPrice ? { ...l, unitPrice: change.unitPrice } : l)));
     this.focusScanner();
   }
 
@@ -1166,7 +1264,16 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
         const prices = results.filter((p): p is ProductLookup => p !== null);
         this.updateLines((list) => list.map((l) => {
           const price = prices.find((p) => p.productId === l.productId && p.unitId === l.unitId);
-          return price ? { ...l, unitPrice: Number(price.price), taxRate: Number(price.taxRate) } : l;
+          if (!price) {
+            return l;
+          }
+          // Precio libre (según el servidor, por si el producto cambió): se conserva el que escribió el cajero y solo
+          // se actualiza el impuesto. Si dejó de ser libre, toma el precio de la lista como cualquier línea.
+          if (price.openPrice && l.openPrice) {
+            return { ...l, taxRate: Number(price.taxRate) };
+          }
+          const { openPrice: _wasOpen, ...rest } = l;
+          return { ...rest, unitPrice: Number(price.price), taxRate: Number(price.taxRate) };
         }));
         const failed = current.filter((l, i) => results[i] === null);
         if (failed.length > 0) {
@@ -1434,7 +1541,7 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   focusScanner(attempt = 0): void {
     setTimeout(() => {
       if (this.searchOpen || this.variantOpen || this.customerOpen || this.payOpen || this.receiptOpen || this.helpOpen
-        || this.holdOpen || this.heldOpen || this.newCustomerOpen) {
+        || this.holdOpen || this.heldOpen || this.newCustomerOpen || this.openPriceOpen) {
         return;
       }
       if (document.querySelector('.p-dialog-mask') && attempt < 10) {
@@ -1461,7 +1568,8 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   /** Incluye la confirmación de cancelar y los diálogos que se están cerrando (su máscara sigue en la página). */
   private anyDialogOpen(): boolean {
     return this.searchOpen || this.variantOpen || this.customerOpen || this.payOpen || this.receiptOpen || this.helpOpen
-      || this.holdOpen || this.heldOpen || this.newCustomerOpen || document.querySelector('.p-dialog-mask') !== null;
+      || this.holdOpen || this.heldOpen || this.newCustomerOpen || this.openPriceOpen
+      || document.querySelector('.p-dialog-mask') !== null;
   }
 
   private draft(method: PaymentMethod, amount: number | null): PaymentDraft {

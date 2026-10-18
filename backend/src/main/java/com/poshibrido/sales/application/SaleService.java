@@ -72,6 +72,8 @@ public class SaleService {
     static final String SEQUENCE = "SALE";
     static final String REFERENCE_TYPE = "SALE";
     static final String DISCOUNT_PERMISSION = "sales:discount";
+    /** Vender productos de precio libre escribiendo el precio (decisión 253). */
+    static final String OPEN_PRICE_PERMISSION = "sales:open-price";
     static final int MAX_ITEMS = 200;
     static final int MAX_PAYMENTS = 10;
     private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
@@ -169,6 +171,18 @@ public class SaleService {
                 throw new NotFoundException("Producto no encontrado.");
             }
             ResolvedPrice price = pricing.price(line.productId(), line.unitId(), customer.priceListId());
+            if (price.openPrice()) {
+                // Precio libre (decisión 253): manda el precio que escribió el cajero (queda en la línea de la venta).
+                if (!CurrentActor.permissions().contains(OPEN_PRICE_PERMISSION)) {
+                    throw new ForbiddenException("Tu usuario no puede vender productos de precio libre ("
+                            + price.name() + "). Pídele el permiso al dueño del negocio.");
+                }
+                BigDecimal typed = line.expectedUnitPrice();
+                if (typed == null || typed.signum() <= 0) {
+                    throw new BusinessRuleException("Escribe el precio de " + price.name() + ".");
+                }
+                price = price.withTypedPrice(typed.setScale(2, RoundingMode.HALF_UP));
+            }
             BigDecimal quantity = line.quantity().setScale(4, RoundingMode.HALF_UP);
             if (quantity.signum() <= 0) {
                 throw new BusinessRuleException("La cantidad de " + product.name() + " debe ser mayor que cero.");
@@ -191,7 +205,8 @@ public class SaleService {
             maxDiscount = maxDiscount.max(discount);
             LineAmounts amounts = SaleCalculator.line(price.price(), quantity, discount, price.taxRate(),
                     cfg.pricesIncludeTax());
-            if (line.expectedUnitPrice() != null && line.expectedUnitPrice().compareTo(price.price()) != 0) {
+            if (!price.openPrice() && line.expectedUnitPrice() != null
+                    && line.expectedUnitPrice().compareTo(price.price()) != 0) {
                 changes.add(new PriceChangedException.Change(lineNo, price.sku(), price.name(),
                         line.expectedUnitPrice(), price.price()));
             }

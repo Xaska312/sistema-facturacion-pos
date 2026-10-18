@@ -185,6 +185,8 @@ export interface BusinessSettings {
   currency: string;
   receiptFooter: string;
   maxDiscountPercent: number;
+  /** Resumen de cada cierre de caja al correo del dueño (decisión 253). */
+  cashCloseEmail: boolean;
 }
 
 export interface Department {
@@ -275,6 +277,8 @@ export interface Product {
   costLocked: boolean;
   salePrice: number;
   trackInventory: boolean;
+  /** Precio libre (decisión 253): se pide el precio al vender; salePrice es el sugerido. */
+  openPrice?: boolean;
   tracksLots: boolean;
   active: boolean;
   conversions: ProductConversion[];
@@ -296,6 +300,7 @@ export interface ProductInput {
   cost: number;
   salePrice: number;
   trackInventory: boolean;
+  openPrice?: boolean;
   conversions: { unitId: string; factor: number; salePrice: number | null }[];
   barcodes: { barcode: string; unitId: string | null; internal: boolean }[];
   listPrices: { priceListId: string; unitId: string; price: number }[];
@@ -477,6 +482,8 @@ export interface ProductLookup {
   taxType: TaxType;
   taxRate: number;
   trackInventory: boolean;
+  /** Precio libre: el POS pide el precio al agregarlo. */
+  openPrice?: boolean;
   /** Etiqueta de báscula (fase 8e): el peso (cantidad) o el valor en pesos; null con un código normal. */
   scaleQuantity?: number | null;
   scaleAmount?: number | null;

@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
-import { CartPanelComponent, LineQuantityChange, RemovedLine } from './cart-panel.component';
+import { CartPanelComponent, LinePriceChange, LineQuantityChange, RemovedLine } from './cart-panel.component';
 import { CartLine, cartTotals } from './sale-math';
 
 const line = (over: Partial<CartLine> = {}): CartLine => ({
@@ -108,6 +108,29 @@ describe('CartPanelComponent', () => {
   it('sin líneas invita a buscar, tocar o escanear', () => {
     setLines([]);
     expect(element().textContent).toContain('Busca un producto, tócalo en la lista o escanéalo');
+  });
+
+  it('en una línea de precio libre el editor deja cambiar el precio', () => {
+    const prices: LinePriceChange[] = [];
+    component.priceChange.subscribe((c) => prices.push(c));
+    setLines([line({ key: 'imp|u|1', name: 'Impresión color', unitPrice: 1000, openPrice: true })]);
+    (element().querySelector('button[aria-haspopup="dialog"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(component['draftPrice']).toBe(1000);
+
+    component['draftPrice'] = 1500;
+    component.applyEdit();
+    expect(prices).toEqual([{ key: 'imp|u|1', unitPrice: 1500 }]);
+  });
+
+  it('una línea normal no ofrece cambiar el precio', () => {
+    const prices: LinePriceChange[] = [];
+    component.priceChange.subscribe((c) => prices.push(c));
+    (element().querySelector('button[aria-haspopup="dialog"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(component['draftPrice']).toBeNull();
+    component.applyEdit();
+    expect(prices).toEqual([]);
   });
 
   it('"Pausar venta" emite solo con productos en la venta', () => {

@@ -126,6 +126,12 @@ const TIMEZONE_LABEL: Record<string, string> = {
           <span><span class="font-medium">Los precios incluyen impuestos</span>
             <span class="block text-sm text-muted">El precio de venta ya trae el IVA incluido.</span></span>
         </label>
+        <label class="flex items-start gap-3">
+          <input type="checkbox" class="mt-1" formControlName="cashCloseEmail" />
+          <span><span class="font-medium">Enviarme el resumen de cada cierre de caja</span>
+            <span class="block text-sm text-muted">Al cerrar una caja, al correo del dueño llegan las ventas, los medios
+              de pago y la diferencia del arqueo, aunque cierre un cajero.</span></span>
+        </label>
         <div class="grid gap-4 md:grid-cols-2">
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">Zona horaria</span>
@@ -238,6 +244,7 @@ export class SettingsComponent implements OnInit {
     currency: ['COP', Validators.required],
     maxDiscountPercent: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
     receiptFooter: ['', Validators.maxLength(500)],
+    cashCloseEmail: [true],
   });
 
   ngOnInit(): void {

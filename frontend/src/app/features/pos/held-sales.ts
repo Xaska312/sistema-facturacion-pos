@@ -139,7 +139,8 @@ function isCartLine(value: unknown): value is CartLine {
     && typeof quantity === 'number' && quantity > 0
     && ['unitPrice', 'discountPercent', 'taxRate'].every((k) => typeof value[k] === 'number' && Number.isFinite(value[k]))
     && typeof value['trackInventory'] === 'boolean'
-    && (factor === undefined || (typeof factor === 'number' && factor > 0));
+    && (factor === undefined || (typeof factor === 'number' && factor > 0))
+    && (value['openPrice'] === undefined || typeof value['openPrice'] === 'boolean');
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

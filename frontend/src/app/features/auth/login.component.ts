@@ -16,7 +16,9 @@ import { XaskaLogoComponent } from '../../shared/brand/xaska-logo.component';
     <main class="min-h-screen flex items-center justify-center p-4">
       <form [formGroup]="form" (ngSubmit)="submit()"
             class="w-full max-w-sm card p-6 flex flex-col gap-4">
-        <h1 class="flex justify-center py-1"><app-xaska-logo size="lg" [wordmark]="true" [tag]="true" label="XASKA POS" /></h1>
+        <h1 class="flex justify-center pt-2 pb-1">
+          <app-xaska-logo [stacked]="true" [wordmark]="true" [tag]="true" label="XASKA POS" />
+        </h1>
         <p class="text-center text-muted -mt-2">Inicia sesión para continuar</p>
 
         <label class="flex flex-col gap-1">
