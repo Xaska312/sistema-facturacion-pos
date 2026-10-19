@@ -13,6 +13,7 @@ import com.poshibrido.parties.application.CustomerApi;
 import com.poshibrido.parties.application.CustomerApi.CustomerRef;
 import com.poshibrido.shared.error.BusinessRuleException;
 import com.poshibrido.shared.error.ConflictException;
+import com.poshibrido.shared.error.ForbiddenException;
 import com.poshibrido.shared.error.NotFoundException;
 import com.poshibrido.shared.security.CurrentActor;
 import jakarta.persistence.EntityManager;
@@ -106,6 +107,11 @@ public class CreditService {
         Optional<OpenSession> session = cash.lockOpenSessionOf(actor);
         if (method.affectsCash() && session.isEmpty()) {
             throw new BusinessRuleException("Abre tu caja para recibir abonos en efectivo.");
+        }
+        if (session.isEmpty() && !CurrentActor.permissions().contains(CreditLedger.MANAGE_PERMISSION)) {
+            // Sin caja el abono no queda en ningún cierre: solo el dueño o un administrador (QA SEC-F2).
+            throw new ForbiddenException("Abre tu caja para recibir abonos. Sin caja, solo el dueño o un administrador"
+                    + " los registra.");
         }
         CreditAccount account = ledger.lock(customerId);
         if (amount.compareTo(account.getBalance()) > 0) {

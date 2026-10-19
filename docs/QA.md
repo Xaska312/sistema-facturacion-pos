@@ -199,3 +199,23 @@ medio crear (UI-1), un negocio con la migración rota impidiendo arrancar a todo
 - **La prueba de carga del PC no es la del servidor**: la medida que cuenta se toma al desplegar.
 - **Facturación electrónica DIAN**: el POS emite tiquetes de venta, no factura electrónica. Integrarla (con un
   proveedor tecnológico autorizado) es una fase aparte si los clientes la necesitan.
+
+## 7. Fiado y caja compartida (2026-10-19, decisiones 255–256)
+
+Dos revisiones adversarias con subagentes (permisos y aislamiento; dinero y concurrencia), con las consultas
+probadas en PostgreSQL 16. Sin hallazgos altos. Aislamiento entre negocios, inyección SQL, asignación masiva,
+cupo con ventas simultáneas, libro vs. saldo, idempotencia de abonos y orden de bloqueos: sin problemas.
+
+| Id | Sev. | Hallazgo | Estado |
+|---|---|---|---|
+| MON-F1 | Media | Dos "unirse" a la vez dejaban al usuario en dos cajas; si una se cerraba durante una venta, la venta caía en la otra | Corregido: `lockMember` (FOR NO KEY UPDATE) serializa unirse, dejar y abrir. `CashIT.sharedRegisterSecurityAndConcurrency` |
+| MON-F2 | Media | Dos salidas de efectivo a la vez (dueño y alguien unido) podían sacar más de lo que había (el control de DIN-4 corría con bloqueo compartido) | Corregido: egresos y retiros bloquean la sesión en exclusiva (`lockForOutflow`). Mismo test |
+| SEC-F1 / MON-F4 | Media | Al volver personal una caja, quien se había unido seguía registrando egresos y consultando la caja | Corregido: `isMember` exige sesión abierta y caja compartida. Mismo test |
+| SEC-F2 | Media | Un vendedor o cajero sin caja podía registrar abonos por transferencia que no quedaban en ningún cierre | Corregido: sin caja abierta, solo `credit:manage` registra abonos. `CreditIT` |
+| SEC-F3 | Baja | Quien se unía veía todos los movimientos de la caja y podía calcular el esperado del cierre ciego | Corregido: sin `cash:read`/`cash:audit` y sin ser quien abrió, solo ve sus movimientos, y solo mientras la caja está abierta (después del cierre no consulta su informe, como el cierre ciego). Mismo test |
+| SEC-F4 | Baja | Unirse a una caja de otra sucursal respondía 422 con el código de la caja | Corregido: primero se revisa la sucursal (403 sin datos). Mismo test |
+| SEC-F6 | Baja | Dejar una caja compartida no quedaba en la auditoría | Corregido: `CASH_SESSION_LEFT`. Mismo test |
+| MON-F5 | Baja | El cupo se leía antes de bloquear la cuenta; sin cupo no se podía usar un saldo a favor | Corregido: el cupo se lee después de bloquear la cuenta (toma un cambio ya guardado; uno simultáneo aplica a la venta siguiente); sin cupo se fía solo contra saldo a favor |
+| SEC-F5 | Baja | Si a alguien le quitan la sucursal estando unido, sigue vendiendo hasta el cierre | Aceptado: igual que con una caja propia abierta; el acceso se revisa al unirse y al abrir |
+| MON-F3 | Baja | Anular un abono en efectivo no revisa si hay efectivo para devolverlo | Aceptado: igual que la anulación de ventas; lo hace solo el dueño o un administrador |
+| SEC-F7 | Info | Con la suscripción vencida no se reciben abonos ni se une a cajas; `/credit/accounts` no está en el límite de consultas pesadas | Aceptado (modo solo consulta, decisión 230); revisar si la cartera crece mucho |

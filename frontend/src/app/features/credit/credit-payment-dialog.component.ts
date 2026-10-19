@@ -6,6 +6,7 @@ import { CREDIT_METHOD_CODE, CreditAccount, CreditEntry, PaymentMethod } from '.
 import { CashApi } from '../../core/api/cash.api';
 import { CreditApi } from '../../core/api/credit.api';
 import { AuthService } from '../../core/auth/auth.service';
+import { permissionFlag } from '../../core/auth/permission-flag';
 import { newIdempotencyKey } from '../../core/api/sales.api';
 import { FormDialogComponent } from '../../shared/forms/form-dialog.component';
 import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
@@ -46,6 +47,8 @@ import { methodLabel } from '../pos/pos-labels';
           </div>
           @if (selected()?.affectsCash) {
             <small class="text-xs text-muted">El efectivo entra a tu caja abierta.</small>
+          } @else if (!canManage()) {
+            <small class="text-xs text-muted">Necesitas tu caja abierta (o estar en la caja compartida).</small>
           }
         </fieldset>
         @if (selected() && !selected()!.affectsCash) {
@@ -71,6 +74,8 @@ export class CreditPaymentDialogComponent {
   private readonly api = inject(CreditApi);
   private readonly cash = inject(CashApi);
   private readonly auth = inject(AuthService);
+  /** Sin caja abierta, solo quien tiene credit:manage registra abonos (QA SEC-F2). */
+  protected readonly canManage = permissionFlag('credit:manage');
 
   readonly visible = model(false);
   readonly account = input<CreditAccount | null>(null);

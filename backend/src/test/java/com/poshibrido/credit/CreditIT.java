@@ -180,10 +180,15 @@ class CreditIT extends IntegrationTest {
         api.postWith(c, "/api/v1/credit/payments/" + payment + "/void", "{\"reason\":\"x\"}")
                 .andExpect(status().isForbidden());
 
-        // Sin caja abierta no recibe abonos en efectivo (sí por transferencia)
+        // Sin caja abierta el vendedor no recibe abonos: en efectivo no hay dónde, y por transferencia no quedaría en
+        // ningún cierre (QA SEC-F2). El dueño sí, sin caja; el vendedor, unido a la caja compartida.
         Joined seller = api.joinAs(s, owner.tenantId(), "SELLER");
         pay(seller.session(), ana, "1000", CASH, null, key()).andExpect(status().is(422))
                 .andExpect(jsonPath("$.detail", containsString("Abre tu caja")));
+        pay(seller.session(), ana, "1000", TRANSFER, null, key()).andExpect(status().isForbidden());
+        pay(s, ana, "1000", TRANSFER, null, key()).andExpect(status().isCreated());
+        UUID shared = pos.openCash(s, CAJA_1, "0");
+        api.postEmpty(seller.session(), "/api/v1/cash/sessions/" + shared + "/join").andExpect(status().isOk());
         pay(seller.session(), ana, "1000", TRANSFER, null, key()).andExpect(status().isCreated());
         api.getWith(seller.session(), "/api/v1/credit/summary").andExpect(status().isOk());
 

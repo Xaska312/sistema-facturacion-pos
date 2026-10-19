@@ -414,8 +414,8 @@ export const MANUAL: readonly ManualChapter[] = [
           'Con "Recordar" se abre WhatsApp con un mensaje amable y el saldo listo para enviar.',
         ],
         tips: [
-          'Los abonos en efectivo entran a tu caja abierta y salen en el cierre como "Abonos de fiado". Por transferencia no necesitas caja abierta.',
-          'Los cajeros y vendedores fían dentro del cupo y reciben abonos; pasar el cupo y anular abonos solo lo hacen el dueño o un administrador.',
+          'Los abonos en efectivo entran a tu caja abierta y salen en el cierre como "Abonos de fiado". Por transferencia también necesitas tu caja abierta (el dueño o un administrador pueden registrarlo sin caja).',
+          'Los cajeros y vendedores fían dentro del cupo y reciben abonos con su caja abierta (o en la caja compartida); pasar el cupo, anular abonos y recibirlos sin caja solo lo hacen el dueño o un administrador.',
           'Si anulas una venta fiada, lo fiado se le descuenta al cliente solo.',
           'Los abonos pagan primero lo más viejo: la antigüedad muestra desde cuándo debe lo que queda.',
           'En los reportes de ventas por medio de pago, lo fiado aparece como "Fiado".',

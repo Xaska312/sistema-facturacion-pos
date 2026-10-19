@@ -63,6 +63,7 @@ public final class AuditLabels {
             Map.entry("CREDIT_PAYMENT_VOIDED", "Anuló un abono de fiado"),
             Map.entry("CASH_SESSION_CLOSED", "Cerró caja"),
             Map.entry("CASH_SESSION_JOINED", "Se unió a una caja compartida"),
+            Map.entry("CASH_SESSION_LEFT", "Dejó una caja compartida"),
             Map.entry("CASH_SESSION_OPENED", "Abrió caja"),
             Map.entry("INVENTORY_DOCUMENT_CREATED", "Registró un documento de inventario"),
             Map.entry("INVITATION_ACCEPTED", "Aceptó una invitación"),

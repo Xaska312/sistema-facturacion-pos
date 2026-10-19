@@ -44,13 +44,15 @@ public class CreditLedger implements CreditApi {
             throw new BusinessRuleException(
                     "Para fiar, elige el cliente de la venta: al Consumidor final no se le fía.");
         }
-        BigDecimal limit = debtor.creditLimit() == null ? BigDecimal.ZERO : debtor.creditLimit();
-        if (limit.signum() <= 0) {
+        CreditAccount account = lock(debtor.customerId());
+        // El cupo se lee con la cuenta ya bloqueada: si el dueño lo bajó mientras tanto, manda el nuevo (QA MON-F5).
+        BigDecimal limit = currentLimit(debtor.customerId());
+        BigDecimal after = account.getBalance().add(amount);
+        if (limit.signum() <= 0 && after.signum() > 0) {
+            // Sin cupo solo se fía contra un saldo a favor.
             throw new BusinessRuleException(debtor.name()
                     + " no tiene cupo de fiado. El dueño o un administrador se lo asigna en Clientes.");
         }
-        CreditAccount account = lock(debtor.customerId());
-        BigDecimal after = account.getBalance().add(amount);
         if (after.compareTo(limit) > 0 && !CurrentActor.permissions().contains(MANAGE_PERMISSION)) {
             BigDecimal available = limit.subtract(account.getBalance()).max(BigDecimal.ZERO);
             throw new BusinessRuleException("Esta venta pasa el cupo de fiado de " + debtor.name()
@@ -98,6 +100,12 @@ public class CreditLedger implements CreditApi {
         CreditAccount account = em.find(CreditAccount.class, customerId, LockModeType.PESSIMISTIC_WRITE);
         em.refresh(account);
         return account;
+    }
+
+    private BigDecimal currentLimit(UUID customerId) {
+        Object value = em.createNativeQuery("SELECT credit_limit FROM customers WHERE party_id = :id")
+                .setParameter("id", customerId).getSingleResult();
+        return value instanceof BigDecimal d ? d : new BigDecimal(String.valueOf(value));
     }
 
     /** 1500000 → "1.500.000". */

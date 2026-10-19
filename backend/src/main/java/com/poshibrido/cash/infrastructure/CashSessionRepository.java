@@ -48,10 +48,38 @@ public interface CashSessionRepository extends JpaRepository<CashSession, UUID> 
     @Query(value = CURRENT_OF + " FOR SHARE OF s", nativeQuery = true)
     List<UUID> lockOpenOf(@Param("userId") UUID userId);
 
-    /** El usuario vende en esta sesión compartida. */
-    @Query(value = "SELECT EXISTS (SELECT 1 FROM cash_session_users WHERE cash_session_id = :sessionId"
-            + " AND member_id = :userId)", nativeQuery = true)
+    /**
+     * El usuario vende en esta sesión: está unido, la sesión sigue abierta y la caja sigue compartida (QA SEC-F1: si
+     * la caja vuelve a ser personal o se cierra, quien se unió ya no registra movimientos ni la consulta).
+     */
+    @Query(value = """
+            SELECT EXISTS (SELECT 1 FROM cash_session_users u
+                           JOIN cash_sessions s ON s.id = u.cash_session_id
+                           JOIN cash_registers r ON r.id = s.cash_register_id
+                           WHERE u.cash_session_id = :sessionId AND u.member_id = :userId
+                             AND s.status = 'OPEN' AND r.shared)
+            """, nativeQuery = true)
     boolean isMember(@Param("sessionId") UUID sessionId, @Param("userId") UUID userId);
+
+    /** Sesiones abiertas a las que el usuario se había unido (para registrar que las deja). */
+    @Query(value = "SELECT u.cash_session_id FROM cash_session_users u JOIN cash_sessions s"
+            + " ON s.id = u.cash_session_id WHERE u.member_id = :userId AND s.status = 'OPEN'", nativeQuery = true)
+    List<UUID> joinedOpenOf(@Param("userId") UUID userId);
+
+    /**
+     * Serializa unirse, dejar y abrir caja de un mismo usuario (QA MON-F1: dos "unirse" a la vez lo dejaban en dos
+     * cajas). FOR NO KEY UPDATE para no chocar con los FOR KEY SHARE de las llaves foráneas.
+     */
+    @Query(value = "SELECT id FROM members WHERE id = :userId FOR NO KEY UPDATE", nativeQuery = true)
+    List<UUID> lockMember(@Param("userId") UUID userId);
+
+    /**
+     * Bloqueo exclusivo para sacar efectivo (egreso o retiro): dos salidas a la vez no pasan del efectivo que hay
+     * (QA MON-F2, con caja compartida). Espera a las ventas en curso (que toman FOR SHARE).
+     */
+    @Query(value = "SELECT id FROM cash_sessions WHERE id = :id AND status = 'OPEN' FOR NO KEY UPDATE",
+            nativeQuery = true)
+    List<UUID> lockForOutflow(@Param("id") UUID id);
 
     @Modifying
     @Query(value = "INSERT INTO cash_session_users (cash_session_id, member_id, joined_at)"

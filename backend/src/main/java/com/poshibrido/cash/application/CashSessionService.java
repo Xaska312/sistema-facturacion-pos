@@ -116,11 +116,13 @@ public class CashSessionService {
         if (session.getOpenedBy().equals(actor)) {
             return queries.toView(session);
         }
-        if (sessions.findByOpenedByAndStatus(actor, CashSessionStatus.OPEN).isPresent()) {
-            throw new ConflictException("Tienes tu propia caja abierta. Ciérrala para vender en otra.");
-        }
         RegisterRef register = registers.find(session.getCashRegisterId())
                 .orElseThrow(() -> new NotFoundException("Caja registradora no encontrada."));
+        // Primero el acceso a la sucursal: a otra sucursal no se le dice nada de sus cajas (QA SEC-F4).
+        Set<UUID> allowed = allowedBranches(actor);
+        if (allowed != null && !allowed.contains(register.branchId())) {
+            throw new ForbiddenException("No tienes acceso a esa sucursal.");
+        }
         if (!register.usable()) {
             throw new BusinessRuleException("La caja " + register.code() + " o su sucursal están inactivas.");
         }
@@ -128,14 +130,17 @@ public class CashSessionService {
             throw new BusinessRuleException("La caja " + register.code()
                     + " es personal: solo vende en ella quien la abrió.");
         }
-        Set<UUID> allowed = allowedBranches(actor);
-        if (allowed != null && !allowed.contains(register.branchId())) {
-            throw new ForbiddenException("No tienes acceso a la sucursal " + register.branchName() + ".");
+        sessions.lockMember(actor);
+        if (sessions.findByOpenedByAndStatus(actor, CashSessionStatus.OPEN).isPresent()) {
+            throw new ConflictException("Tienes tu propia caja abierta. Ciérrala para vender en otra.");
         }
         if (sessions.lockIfOpen(sessionId).isEmpty()) {
             throw new ConflictException("La caja " + register.code() + " ya se cerró.");
         }
-        sessions.leaveOpen(actor);
+        if (sessions.isMember(sessionId, actor)) {
+            return queries.toView(session);
+        }
+        leaveShared(actor);
         sessions.join(sessionId, actor);
         audit.log("CASH_SESSION_JOINED", "cash_session", sessionId, null, Map.of("memberId", actor));
         return queries.toView(session);
@@ -144,7 +149,21 @@ public class CashSessionService {
     /** Dejar de vender en la caja compartida (no cierra la caja). */
     @Transactional
     public void leave() {
-        sessions.leaveOpen(CurrentActor.requireUserId());
+        UUID actor = CurrentActor.requireUserId();
+        sessions.lockMember(actor);
+        leaveShared(actor);
+    }
+
+    /** Deja las cajas compartidas abiertas en las que vendía y lo deja en la auditoría (QA SEC-F6). */
+    private void leaveShared(UUID actor) {
+        List<UUID> joined = sessions.joinedOpenOf(actor);
+        if (joined.isEmpty()) {
+            return;
+        }
+        sessions.leaveOpen(actor);
+        for (UUID id : joined) {
+            audit.log("CASH_SESSION_LEFT", "cash_session", id, null, Map.of("memberId", actor));
+        }
     }
 
     @Transactional
@@ -162,6 +181,7 @@ public class CashSessionService {
         if (openingAmount == null || openingAmount.signum() < 0) {
             throw new BusinessRuleException("La base de apertura no puede ser negativa.");
         }
+        sessions.lockMember(actor);
         sessions.findByOpenedByAndStatus(actor, CashSessionStatus.OPEN).ifPresent(s -> {
             throw new ConflictException("Ya tienes una caja abierta. Ciérrala antes de abrir otra.");
         });
@@ -173,7 +193,7 @@ public class CashSessionService {
             throw new ConflictException("La caja " + register.code() + " ya está abierta por " + who + ".");
         }
         // Si vendía en una caja compartida, al abrir la suya la deja.
-        sessions.leaveOpen(actor);
+        leaveShared(actor);
         CashSession session = CashSession.open(registerId, register.branchId(), actor, openingAmount, blankToNull(notes));
         try {
             em.persist(session);
@@ -239,7 +259,10 @@ public class CashSessionService {
             // Caja compartida (decisión 256): quien se unió registra ingresos y egresos; los retiros, quien la abrió.
             throw new ForbiddenException("Los retiros los registra quien abrió la caja o un administrador.");
         }
-        if (sessions.lockIfOpen(sessionId).isEmpty()) {
+        // Las salidas bloquean la sesión en exclusiva: dos a la vez no sacan más de lo que hay (QA MON-F2).
+        boolean open = type.isEntry() ? !sessions.lockIfOpen(sessionId).isEmpty()
+                : !sessions.lockForOutflow(sessionId).isEmpty();
+        if (!open) {
             throw new BusinessRuleException("La sesión de caja está cerrada.");
         }
         if (!type.isEntry()) {

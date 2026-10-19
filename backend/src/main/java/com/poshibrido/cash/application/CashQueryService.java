@@ -93,8 +93,14 @@ public class CashQueryService {
 
     @Transactional(readOnly = true)
     public List<MovementView> movements(UUID sessionId) {
-        readable(sessionId);
-        List<CashMovement> list = movements.findByCashSessionIdOrderByEntryNoAsc(sessionId);
+        CashSession session = readable(sessionId);
+        UUID actor = CurrentActor.requireUserId();
+        // Quien se unió a una caja compartida ve solo sus movimientos: con los de todos podría calcular el esperado
+        // del cierre ciego (QA SEC-F3).
+        boolean onlyMine = !CashAccess.canReadAll() && !CashAccess.canAudit() && !session.getOpenedBy().equals(actor);
+        List<CashMovement> list = movements.findByCashSessionIdOrderByEntryNoAsc(sessionId).stream()
+                .filter(m -> !onlyMine || actor.equals(m.getCreatedBy()))
+                .toList();
         Map<UUID, String> names = memberDirectory.displayNames(
                 list.stream().map(CashMovement::getCreatedBy).filter(Objects::nonNull).collect(Collectors.toSet()));
         return list.stream().map(m -> toView(m, names)).toList();
