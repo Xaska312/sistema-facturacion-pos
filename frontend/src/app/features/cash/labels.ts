@@ -6,6 +6,8 @@ export const CASH_MOVEMENT_LABEL: Record<CashMovementType, string> = {
   INCOME: 'Ingreso',
   EXPENSE: 'Egreso',
   WITHDRAWAL: 'Retiro',
+  CREDIT_PAYMENT: 'Abono de fiado',
+  CREDIT_PAYMENT_VOID: 'Abono anulado',
 };
 
 export const SESSION_STATUS_LABEL: Record<CashSessionStatus, string> = {

@@ -9,7 +9,8 @@ import { AuthService } from '../../core/auth/auth.service';
 import { OpenCashComponent } from './open-cash.component';
 
 const register = (id: string, over: Partial<RegisterOption> = {}): RegisterOption =>
-  ({ id, code: id.toUpperCase(), name: 'Caja principal', branchId: 'b1', branchName: 'Principal', busy: false, busyBy: null, ...over });
+  ({ id, code: id.toUpperCase(), name: 'Caja principal', branchId: 'b1', branchName: 'Principal', busy: false, busyBy: null, shared: false,
+    openSessionId: null, ...over });
 
 describe('OpenCashComponent', () => {
   let cash: jasmine.SpyObj<CashApi>;
@@ -17,8 +18,9 @@ describe('OpenCashComponent', () => {
 
   beforeEach(() => {
     allowed = true;
-    cash = jasmine.createSpyObj<CashApi>('CashApi', ['registers', 'open']);
+    cash = jasmine.createSpyObj<CashApi>('CashApi', ['registers', 'open', 'join']);
     cash.open.and.returnValue(of({ id: 's1' } as CashSession));
+    cash.join.and.returnValue(of({ id: 's9', mine: false, shared: true } as CashSession));
     TestBed.configureTestingModule({
       imports: [OpenCashComponent],
       providers: [
@@ -95,5 +97,37 @@ describe('OpenCashComponent', () => {
     const fixture = await render();
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('Tu usuario no puede abrir cajas');
     expect(cash.registers).not.toHaveBeenCalled();
+  });
+
+  it('con una caja compartida abierta, se vende en ella sin abrir otra (decisión 256)', async () => {
+    cash.registers.and.returnValue(of([
+      register('caja-1', { busy: true, busyBy: 'Admin', shared: true, openSessionId: 's9' }),
+      register('caja-2'),
+    ]));
+    const fixture = await render();
+    const element = fixture.nativeElement as HTMLElement;
+    const opened: CashSession[] = [];
+    fixture.componentInstance.opened.subscribe((s) => opened.push(s));
+
+    expect(element.textContent).toContain('Vender en CAJA-1 · Caja principal (abierta por Admin)');
+    expect(element.textContent).toContain('O abre tu propia caja');
+    // La compartida abierta no sale entre las que se pueden abrir: la única libre queda elegida.
+    expect(element.querySelectorAll('button.register').length).toBe(0);
+    expect(element.textContent).toContain('CAJA-2 · Caja principal');
+
+    const join = Array.from(element.querySelectorAll('button')).find((b) => b.textContent?.includes('Vender en CAJA-1'));
+    join?.click();
+    expect(cash.join).toHaveBeenCalledWith('s9');
+    expect(opened.map((s) => s.id)).toEqual(['s9']);
+  });
+
+  it('quien solo vende ve las cajas compartidas abiertas y no el formulario de apertura', async () => {
+    const auth = TestBed.inject(AuthService) as unknown as { hasPermission: (p: string) => boolean };
+    auth.hasPermission = (p) => p === 'sales:create';
+    cash.registers.and.returnValue(of([register('caja-1', { busy: true, busyBy: 'Admin', shared: true, openSessionId: 's9' })]));
+    const fixture = await render();
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.textContent).toContain('Vender en CAJA-1');
+    expect(element.querySelector('#opening-amount')).toBeNull();
   });
 });

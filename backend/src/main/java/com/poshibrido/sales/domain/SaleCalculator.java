@@ -77,7 +77,7 @@ public final class SaleCalculator {
         }
         if (nonCash.compareTo(total) > 0) {
             throw new IllegalArgumentException(
-                    "Los pagos con tarjeta o transferencia no pueden superar el total; el cambio solo se da en efectivo.");
+                    "Los pagos con tarjeta, transferencia o fiado no pueden superar el total; el cambio solo se da en efectivo.");
         }
         if (paid.compareTo(total) < 0) {
             throw new IllegalArgumentException("Falta por pagar " + total.subtract(paid).toPlainString() + ".");

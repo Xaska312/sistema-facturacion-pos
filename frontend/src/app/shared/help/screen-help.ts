@@ -177,6 +177,16 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     ],
     terms: ['saldo-inicial', 'costo-promedio'],
   },
+  '/app/fiados': {
+    manual: 'fiado',
+    title: 'Fiados',
+    tips: [
+      'Para fiarle a un cliente, ponle un cupo en Clientes; al cobrar aparece "Fiado" con lo que tiene disponible.',
+      'Toca "Abonar" cuando venga a pagar: en efectivo, el dinero entra a tu caja abierta.',
+      'La antigüedad muestra desde cuándo debe lo que queda: los abonos pagan primero lo más viejo.',
+      '"Recordar" abre WhatsApp con un mensaje amable y el saldo listo para enviar.',
+    ],
+  },
   '/app/clientes': {
     manual: 'clientes',
     title: 'Clientes',

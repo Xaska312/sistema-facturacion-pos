@@ -43,7 +43,7 @@ import { LatestRequest } from '../../shared/latest-request';
       </label>
       <ng-template #actions let-row>
         @if (canManage()) {
-          <p-button label="Renombrar" icon="pi pi-pencil" size="small" [text]="true" (onClick)="openEdit(row)" />
+          <p-button label="Editar" icon="pi pi-pencil" size="small" [text]="true" (onClick)="openEdit(row)" />
           <p-button [label]="row.active ? 'Desactivar' : 'Activar'" size="small" [text]="true"
                     [icon]="row.active ? 'pi pi-ban' : 'pi pi-check-circle'"
                     [severity]="row.active ? 'danger' : 'success'" (onClick)="toggle(row)" />
@@ -51,7 +51,7 @@ import { LatestRequest } from '../../shared/latest-request';
       </ng-template>
     </app-data-table>
 
-    <app-form-dialog [(visible)]="dialogOpen" [header]="editing() ? 'Renombrar caja' : 'Nueva caja'" [form]="form"
+    <app-form-dialog [(visible)]="dialogOpen" [header]="editing() ? 'Editar caja' : 'Nueva caja'" [form]="form"
                      width="28rem" [save]="saveRequest" successMessage="Caja guardada" (saved)="load(query)">
       <div [formGroup]="form" class="flex flex-col gap-3">
         @if (!editing()) {
@@ -76,6 +76,14 @@ import { LatestRequest } from '../../shared/latest-request';
           <input pInputText id="register-name" formControlName="name" placeholder="Caja de la entrada" />
           <app-field-error [control]="form.controls.name" />
         </div>
+        <label class="flex items-start gap-2 text-sm">
+          <input type="checkbox" class="mt-1" formControlName="shared" />
+          <span>
+            <span class="font-medium">Compartida</span>
+            <span class="block text-muted">Una persona la abre (por ejemplo, en la mañana) y los demás de la sucursal
+              venden en ella hasta que se cierre. Sin marcar, cada persona abre y cierra su propia caja.</span>
+          </span>
+        </label>
       </div>
     </app-form-dialog>
   `,
@@ -101,6 +109,7 @@ export class CashRegistersComponent implements OnInit {
     { header: 'Código', cell: (r) => r.code, kind: 'mono', sortField: 'code' },
     { header: 'Nombre', cell: (r) => r.name, sortField: 'name' },
     { header: 'Sucursal', cell: (r) => this.branches().find((b) => b.id === r.branchId)?.name },
+    { header: 'Uso', cell: (r) => (r.shared ? 'Compartida' : 'Personal'), hideOnMobile: true },
     { header: 'Estado', cell: (r) => activeStatus(r.active, true), kind: 'status' },
   ];
 
@@ -108,6 +117,7 @@ export class CashRegistersComponent implements OnInit {
     branchId: ['', Validators.required],
     code: ['', [Validators.required, Validators.pattern(/^[A-Za-z0-9_-]{2,20}$/)]],
     name: ['', [Validators.required, Validators.maxLength(120)]],
+    shared: [false],
   });
 
   ngOnInit(): void {
@@ -137,7 +147,7 @@ export class CashRegistersComponent implements OnInit {
     this.editing.set(null);
     const active = this.activeBranches();
     const preferred = active.find((b) => b.id === this.branchFilter()) ?? active[0];
-    this.form.reset({ branchId: preferred?.id ?? '', code: '', name: '' });
+    this.form.reset({ branchId: preferred?.id ?? '', code: '', name: '', shared: false });
     this.form.controls.branchId.enable();
     this.form.controls.code.enable();
     this.dialogOpen = true;
@@ -145,7 +155,7 @@ export class CashRegistersComponent implements OnInit {
 
   openEdit(register: CashRegister): void {
     this.editing.set(register);
-    this.form.reset({ branchId: register.branchId, code: register.code, name: register.name });
+    this.form.reset({ branchId: register.branchId, code: register.code, name: register.name, shared: register.shared });
     this.form.controls.branchId.disable();
     this.form.controls.code.disable();
     this.dialogOpen = true;
@@ -155,8 +165,8 @@ export class CashRegistersComponent implements OnInit {
     const value = this.form.getRawValue();
     const current = this.editing();
     return current
-      ? this.api.renameCashRegister(current.id, value.name.trim())
-      : this.api.createCashRegister(value.branchId, value.code.trim(), value.name.trim());
+      ? this.api.updateCashRegister(current.id, value.name.trim(), value.shared)
+      : this.api.createCashRegister(value.branchId, value.code.trim(), value.name.trim(), value.shared);
   };
 
   toggle(register: CashRegister): void {

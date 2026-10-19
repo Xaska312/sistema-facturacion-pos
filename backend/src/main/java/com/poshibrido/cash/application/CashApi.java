@@ -31,4 +31,10 @@ public interface CashApi {
 
     /** Efectivo devuelto al anular una venta ({@code amount} positivo; sale de la caja). */
     void recordVoidCash(UUID sessionId, BigDecimal amount, UUID saleId, String label);
+
+    /** Abono en efectivo de un cliente a su fiado ({@code amount} positivo; entra a la caja). */
+    void recordCreditPaymentCash(UUID sessionId, BigDecimal amount, UUID entryId, String label);
+
+    /** Efectivo devuelto al anular un abono ({@code amount} positivo; sale de la caja). */
+    void recordCreditPaymentVoidCash(UUID sessionId, BigDecimal amount, UUID entryId, String label);
 }

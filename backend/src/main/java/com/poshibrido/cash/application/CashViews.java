@@ -19,16 +19,20 @@ public final class CashViews {
                                     boolean requiresReference) {
     }
 
-    /** Caja que el usuario puede abrir; {@code busy} si ya tiene una sesión abierta (de quien sea). */
+    /**
+     * Caja que el usuario puede abrir; {@code busy} si ya tiene una sesión abierta (de quien sea). Si además es
+     * compartida ({@code shared}), el usuario puede unirse a esa sesión ({@code openSessionId}) para vender en ella.
+     */
     public record RegisterOption(UUID id, String code, String name, UUID branchId, String branchName, boolean busy,
-                                 String busyBy) {
+                                 String busyBy, boolean shared, UUID openSessionId) {
     }
 
     public record SessionView(UUID id, UUID cashRegisterId, String registerCode, String registerName, UUID branchId,
                               String branchName, CashSessionStatus status, UUID openedBy, String openedByName,
                               Instant openedAt, BigDecimal openingAmount, String openingNotes, Instant closedAt,
                               UUID closedBy, String closedByName, BigDecimal countedAmount,
-                              BigDecimal expectedAmount, BigDecimal difference, String closingNotes, boolean mine) {
+                              BigDecimal expectedAmount, BigDecimal difference, String closingNotes, boolean mine,
+                              boolean shared) {
     }
 
     public record MovementView(Long entryNo, UUID id, CashMovementType type, BigDecimal amount, String reason,
@@ -39,10 +43,11 @@ public final class CashViews {
     /**
      * Efectivo de la sesión. Sin el permiso cash:audit (cierre ciego) solo se informan la base y lo contado: el
      * desglose, el esperado y la diferencia son nulos. {@code counted} es nulo mientras la sesión está abierta.
+     * {@code creditPayments}: abonos de fiado en efectivo menos los abonos anulados (decisión 255).
      */
     public record CashSection(BigDecimal opening, BigDecimal sales, BigDecimal voidRefunds, BigDecimal incomes,
-                              BigDecimal expenses, BigDecimal withdrawals, BigDecimal expected, BigDecimal counted,
-                              BigDecimal difference) {
+                              BigDecimal expenses, BigDecimal withdrawals, BigDecimal creditPayments,
+                              BigDecimal expected, BigDecimal counted, BigDecimal difference) {
     }
 
     /** Informe de cierre (Z) o parcial (X) si la sesión sigue abierta. */

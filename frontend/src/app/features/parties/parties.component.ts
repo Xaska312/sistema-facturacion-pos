@@ -1,5 +1,6 @@
 import { Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { Observable } from 'rxjs';
@@ -23,11 +24,11 @@ import { LatestRequest } from '../../shared/latest-request';
 /** Clientes o proveedores (según {@code kind} en los datos de la ruta). */
 @Component({
   selector: 'app-parties',
-  imports: [TermComponent, FormsModule, PesosInputDirective, ButtonModule, InputTextModule, DataTableComponent, PageHeaderComponent, FormDialogComponent],
+  imports: [RouterLink, TermComponent, FormsModule, PesosInputDirective, ButtonModule, InputTextModule, DataTableComponent, PageHeaderComponent, FormDialogComponent],
   template: `
     <app-page-header [title]="isCustomers() ? 'Clientes' : 'Proveedores'"
                      [description]="isCustomers()
-                       ? 'Personas y empresas a las que les vendes. Con su lista de precios y cupo de crédito.'
+                       ? 'Personas y empresas a las que les vendes. Con su lista de precios y cupo de fiado.'
                        : 'Personas y empresas a las que les compras.'">
       @if (canManage()) {
         <p-button [label]="isCustomers() ? 'Nuevo cliente' : 'Nuevo proveedor'" icon="pi pi-plus" (onClick)="openCreate()" />
@@ -48,6 +49,9 @@ import { LatestRequest } from '../../shared/latest-request';
         Ver inactivos
       </label>
       <ng-template #actions let-row>
+        @if (isCustomers() && canReadCredit() && !row.system && row.creditLimit > 0) {
+          <a pButton [routerLink]="['/app/fiados', row.id]" label="Fiado" icon="pi pi-book" size="small" [text]="true"></a>
+        }
         @if (canManage() && !row.system) {
           <p-button label="Editar" icon="pi pi-pencil" size="small" [text]="true" (onClick)="openEdit(row)" />
           <p-button [label]="row.active ? 'Desactivar' : 'Activar'" size="small" [text]="true"
@@ -150,9 +154,15 @@ import { LatestRequest } from '../../shared/latest-request';
             </select>
           </div>
           <div class="flex flex-col gap-1">
-            <label for="party-credit" class="text-sm font-medium">Cupo de crédito</label>
-            <input pInputText id="party-credit" appPesos [(ngModel)]="draft.creditLimit" />
-            <small class="text-xs text-muted">Valor máximo que puede quedar debiendo. 0 = no se le fía.</small>
+            <label for="party-credit" class="text-sm font-medium">Cupo de fiado</label>
+            <input pInputText id="party-credit" appPesos [(ngModel)]="draft.creditLimit" [disabled]="!canManageCredit()" />
+            <small class="text-xs text-muted">
+              @if (canManageCredit()) {
+                Lo máximo que puede quedar debiendo. 0 = no se le fía.
+              } @else {
+                Solo el dueño o un administrador asignan el cupo de fiado.
+              }
+            </small>
           </div>
         }
       </div>
@@ -170,6 +180,8 @@ export class PartiesComponent implements OnInit {
   private readonly organization = inject(OrganizationApi);
   private readonly confirm = inject(ConfirmService);
   protected readonly canManage = permissionFlag('parties:manage');
+  protected readonly canManageCredit = permissionFlag('credit:manage');
+  protected readonly canReadCredit = permissionFlag('credit:read');
 
   protected readonly documentTypesFor = documentTypesFor;
   protected readonly isCustomers = computed(() => this.kind() === 'customers');
@@ -199,7 +211,7 @@ export class PartiesComponent implements OnInit {
     const status: ColumnDef<Party> = { header: 'Estado', cell: (p) => partyStatus(p), kind: 'status' };
     return this.isCustomers()
       ? [...base, { header: 'Lista', cell: (p) => p.priceListName ?? 'General', hideOnMobile: true },
-        { header: 'Cupo', cell: (p) => p.creditLimit, kind: 'money' }, status]
+        { header: 'Cupo fiado', cell: (p) => p.creditLimit, kind: 'money', hideOnMobile: true }, status]
       : [...base, status];
   });
 
@@ -273,8 +285,14 @@ export class PartiesComponent implements OnInit {
     this.dialogOpen = true;
   }
 
-  protected readonly saveRequest = (): Observable<unknown> =>
-    this.api.save(this.kind(), this.editingId, toPartyInput(this.draft, this.isCustomers()));
+  protected readonly saveRequest = (): Observable<unknown> => {
+    const input = toPartyInput(this.draft, this.isCustomers());
+    if (this.isCustomers() && !this.canManageCredit()) {
+      // Sin credit:manage no se toca el cupo: nulo lo conserva (en uno nuevo queda en 0).
+      input.creditLimit = null;
+    }
+    return this.api.save(this.kind(), this.editingId, input);
+  };
 
   toggle(party: Party): void {
     this.confirm.toggleActive({

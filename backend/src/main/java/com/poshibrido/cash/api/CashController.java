@@ -73,7 +73,7 @@ public class CashController {
     }
 
     @GetMapping("/cash/registers")
-    @PreAuthorize("hasAuthority('cash:operate')")
+    @PreAuthorize("hasAnyAuthority('cash:operate', 'sales:create')")
     public List<RegisterOption> registers() {
         return service.registersForOpening();
     }
@@ -98,6 +98,21 @@ public class CashController {
     public MovementView addMovement(@PathVariable UUID id, @Valid @RequestBody MovementRequest request,
                                     @RequestHeader(name = "Idempotency-Key", required = false) String idempotencyKey) {
         return service.addMovement(id, request.type(), request.amount(), request.reason(), idempotencyKey);
+    }
+
+    /** Vender en una caja compartida que abrió otra persona (decisión 256). */
+    @PostMapping("/cash/sessions/{id}/join")
+    @PreAuthorize("hasAnyAuthority('cash:operate', 'sales:create')")
+    public SessionView join(@PathVariable UUID id) {
+        return service.join(id);
+    }
+
+    /** Dejar de vender en la caja compartida; 204. */
+    @PostMapping("/cash/sessions/current/leave")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasAnyAuthority('cash:operate', 'sales:create')")
+    public void leave() {
+        service.leave();
     }
 
     @PostMapping("/cash/sessions/{id}/close")

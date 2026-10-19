@@ -8,7 +8,9 @@ import { InputTextModule } from 'primeng/inputtext';
 import { SkeletonModule } from 'primeng/skeleton';
 import { catchError, finalize, forkJoin, map, of, switchMap } from 'rxjs';
 import {
+  CREDIT_METHOD_CODE,
   CashSession,
+  CreditAccount,
   Party,
   PaymentMethod,
   PosConfig,
@@ -22,6 +24,7 @@ import {
 } from '../../core/api/api.models';
 import { CashApi } from '../../core/api/cash.api';
 import { CatalogApi } from '../../core/api/catalog.api';
+import { CreditApi } from '../../core/api/credit.api';
 import { InventoryApi } from '../../core/api/inventory.api';
 import { PartiesApi } from '../../core/api/parties.api';
 import { SalesApi, newIdempotencyKey } from '../../core/api/sales.api';
@@ -344,21 +347,29 @@ const STOCK_PAGES = 5;
 
       <div class="flex items-center justify-between gap-2 mb-2">
         <p id="pay-methods" class="text-sm font-medium">{{ mixed ? 'Agregar otro medio' : 'Medio de pago' }}</p>
-        @if (methods().length > 1) {
+        @if (payMethods().length > 1) {
           <button type="button" class="tool-btn" [attr.aria-pressed]="mixed" (click)="setMixed(!mixed)">
             <i class="pi pi-clone" aria-hidden="true"></i>Pago mixto
           </button>
         }
       </div>
       <div class="grid grid-cols-3 gap-2 mb-4" role="group" aria-labelledby="pay-methods">
-        @for (m of methods(); track m.id) {
+        @for (m of payMethods(); track m.id) {
           <button type="button" class="method-btn" [attr.aria-pressed]="mixed ? null : selectedMethod() === m.id"
                   (click)="chooseMethod(m)">
             <i [class]="methodIcon(m.code) + ' text-2xl'" aria-hidden="true"></i>
             <span>{{ mixed ? '+ ' : '' }}{{ methodLabel(m.code, m.name) }}</span>
+            @if (m.code === creditCode && customerCredit(); as credit) {
+              <span class="text-xs text-muted">Disponible {{ cop(credit.available) }}</span>
+            }
           </button>
         }
       </div>
+      @if (customerCredit(); as credit) {
+        @if (credit.balance > 0) {
+          <p class="text-sm text-muted -mt-2 mb-3">{{ customer().name }} debe {{ cop(credit.balance) }} de fiado.</p>
+        }
+      }
 
       @let missingRefs = missingReferences();
       @for (p of payments; track $index; let i = $index) {
@@ -370,7 +381,7 @@ const STOCK_PAGES = 5;
                  class="h-12 w-40 border rounded-lg px-3 text-xl text-right tabular-nums"
                  [id]="'pay-' + i" [(ngModel)]="p.amount" (keydown)="trackAmountTyping($event, p)"
                  (keydown.enter)="confirmFromAmount(p)" />
-          @if (!p.affectsCash) {
+          @if (!p.affectsCash && methodCode(p.methodId) !== creditCode) {
             <input pInputText class="flex-1 min-w-32 h-12" [(ngModel)]="p.reference" maxlength="60"
                    [attr.aria-label]="'Referencia del pago con ' + methodShortName(p.methodId)"
                    [attr.aria-invalid]="missingRefs.includes(i)"
@@ -417,8 +428,11 @@ const STOCK_PAGES = 5;
       </div>
       @if (sum.nonCashExceeds) {
         <p class="text-danger text-sm mt-2" role="alert">
-          Tarjeta o transferencia no pueden superar el total: el cambio solo se da en efectivo.
+          Tarjeta, transferencia o fiado no pueden superar el total: el cambio solo se da en efectivo.
         </p>
+      }
+      @if (creditProblem(); as problem) {
+        <p class="text-danger text-sm mt-2" role="alert">{{ problem }}</p>
       }
       @if (missingRefs.length > 0) {
         <p class="text-danger text-sm mt-2" role="alert">Escribe la referencia del pago con {{ methodShortName(payments[missingRefs[0]].methodId) }}.</p>
@@ -628,6 +642,7 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   private readonly catalog = inject(CatalogApi);
   private readonly inventory = inject(InventoryApi);
   private readonly parties = inject(PartiesApi);
+  private readonly credit = inject(CreditApi);
   private readonly messages = inject(MessageService);
   private readonly confirm = inject(ConfirmService);
   protected readonly online = inject(OnlineService).online;
@@ -647,6 +662,7 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   protected readonly docShort = documentShortLabel;
   protected readonly methodIcon = methodIcon;
   protected readonly methodLabel = methodLabel;
+  protected readonly creditCode = CREDIT_METHOD_CODE;
   protected readonly shortcuts = POS_SHORTCUTS;
   /** Tablet o teléfono: el campo de código no abre el teclado en pantalla salvo que se pida (el lector no lo usa). */
   protected readonly coarsePointer = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
@@ -662,6 +678,14 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   /** Ritmo de tecleo en el monto del cobro, para reconocer una lectura del lector (QA UI-2). */
   private amountTyping = { start: 0, last: 0, count: 0, before: null as number | null };
   protected readonly methods = signal<PaymentMethod[]>([]);
+  /** Cuenta de fiado del cliente de la venta (decisión 255); null = Consumidor final, sin permiso o sin datos. */
+  protected readonly customerCredit = signal<CreditAccount | null>(null);
+  /** "Fiado" solo aparece si el cliente tiene cupo. */
+  protected readonly payMethods = computed(() => {
+    const credit = this.customerCredit();
+    const canCredit = credit !== null && credit.creditLimit > 0;
+    return this.methods().filter((m) => m.code !== CREDIT_METHOD_CODE || canCredit);
+  });
   protected readonly lines = signal<CartLine[]>([]);
   protected readonly customer = signal<CustomerChoice>({ id: '', name: 'Consumidor final', document: '222222222222', priceListId: null });
   /** Resultados de F2: productos y modelos con tallas (una fila por modelo, fase 8d). */
@@ -1183,6 +1207,7 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
     this.payments = [];
     this.mixed = false;
     this.customer.set({ ...target.customer });
+    this.loadCredit(target.customer.id);
     this.updateLines(() => target.lines.map((l) => ({ ...l })));
     this.refreshPrices(target.customer.id || null);
     this.focusScanner();
@@ -1248,7 +1273,22 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   private setCustomer(choice: CustomerChoice): void {
     this.customerOpen = false;
     this.customer.set(choice);
+    this.loadCredit(choice.id);
     this.refreshPrices(choice.id || null);
+  }
+
+  /** Saldo y cupo de fiado del cliente (sin credit:read o con error, no se ofrece Fiado). */
+  private loadCredit(customerId: string): void {
+    this.customerCredit.set(null);
+    if (!customerId || customerId === this.config()?.finalConsumerId || !this.auth.hasPermission('credit:read')) {
+      return;
+    }
+    this.credit.account(customerId).pipe(catchError(() => of(null))).subscribe((account) => {
+      // Si mientras tanto cambió el cliente, la respuesta ya no aplica.
+      if (this.customer().id === customerId) {
+        this.customerCredit.set(account);
+      }
+    });
   }
 
   /** Vuelve a pedir el precio vigente de cada línea para el cliente. */
@@ -1299,7 +1339,7 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
       return;
     }
     this.cart()?.closeEditor();
-    const cash = this.methods().find((m) => m.affectsCash) ?? this.methods()[0];
+    const cash = this.payMethods().find((m) => m.affectsCash) ?? this.payMethods()[0];
     this.mixed = false;
     this.payments = cash ? [this.draft(cash, this.totals().total)] : [];
     this.idempotencyKey ??= newIdempotencyKey('sale');
@@ -1428,7 +1468,30 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   }
 
   canConfirm(): boolean {
-    return this.paymentSummary().valid && this.missingReferences().length === 0 && !this.saving();
+    return this.paymentSummary().valid && this.missingReferences().length === 0 && this.creditProblem() === null
+      && !this.saving();
+  }
+
+  /**
+   * Fiado (decisión 255): solo a un cliente con cupo y, sin credit:manage, sin pasar lo disponible. El servidor lo
+   * vuelve a validar con el saldo del momento.
+   */
+  creditProblem(): string | null {
+    const fiado = this.payments
+      .filter((p) => this.methodCode(p.methodId) === CREDIT_METHOD_CODE)
+      .reduce((sum, p) => sum + Number(p.amount ?? 0), 0);
+    if (fiado <= 0) {
+      return null;
+    }
+    const credit = this.customerCredit();
+    if (!credit || credit.creditLimit <= 0) {
+      return 'Para fiar, elige un cliente con cupo de fiado.';
+    }
+    if (fiado > credit.available && !this.auth.hasPermission('credit:manage')) {
+      return `Pasa el cupo de ${this.customer().name}: tiene disponible ${formatCop(credit.available)}. `
+        + 'Cobra la diferencia con otro medio.';
+    }
+    return null;
   }
 
   confirmPayment(): void {
@@ -1468,6 +1531,15 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
       },
       error: (error: unknown) => {
         this.saving.set(false);
+        if (error instanceof HttpErrorResponse && error.status === 422) {
+          // Si cerraron la caja compartida donde vendía (decisión 256), se vuelve a la apertura sin perder el carrito.
+          this.cash.current().pipe(catchError(() => of(undefined))).subscribe((current) => {
+            if (current === null) {
+              this.payOpen = false;
+              this.session.set(null);
+            }
+          });
+        }
         if (error instanceof HttpErrorResponse && error.status === 409) {
           // Precios o impuestos cambiaron: se recargan los ajustes y el precio de cada línea.
           this.payOpen = false;

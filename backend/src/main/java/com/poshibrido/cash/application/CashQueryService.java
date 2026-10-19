@@ -93,8 +93,14 @@ public class CashQueryService {
 
     @Transactional(readOnly = true)
     public List<MovementView> movements(UUID sessionId) {
-        readable(sessionId);
-        List<CashMovement> list = movements.findByCashSessionIdOrderByEntryNoAsc(sessionId);
+        CashSession session = readable(sessionId);
+        UUID actor = CurrentActor.requireUserId();
+        // Quien se unió a una caja compartida ve solo sus movimientos: con los de todos podría calcular el esperado
+        // del cierre ciego (QA SEC-F3).
+        boolean onlyMine = !CashAccess.canReadAll() && !CashAccess.canAudit() && !session.getOpenedBy().equals(actor);
+        List<CashMovement> list = movements.findByCashSessionIdOrderByEntryNoAsc(sessionId).stream()
+                .filter(m -> !onlyMine || actor.equals(m.getCreatedBy()))
+                .toList();
         Map<UUID, String> names = memberDirectory.displayNames(
                 list.stream().map(CashMovement::getCreatedBy).filter(Objects::nonNull).collect(Collectors.toSet()));
         return list.stream().map(m -> toView(m, names)).toList();
@@ -127,14 +133,16 @@ public class CashQueryService {
         BigDecimal incomes = totals.getOrDefault(CashMovementType.INCOME, BigDecimal.ZERO);
         BigDecimal expenses = totals.getOrDefault(CashMovementType.EXPENSE, BigDecimal.ZERO);
         BigDecimal withdrawals = totals.getOrDefault(CashMovementType.WITHDRAWAL, BigDecimal.ZERO);
+        BigDecimal creditPayments = totals.getOrDefault(CashMovementType.CREDIT_PAYMENT, BigDecimal.ZERO)
+                .add(totals.getOrDefault(CashMovementType.CREDIT_PAYMENT_VOID, BigDecimal.ZERO));
         BigDecimal expected = session.isOpen()
                 ? CashCount.expected(session.getOpeningAmount(), totals.values())
                 : session.getExpectedAmount();
         // Cierre ciego: sin cash:audit no se muestra el esperado ni el desglose que permitiría calcularlo.
         CashSection cash = audit
-                ? new CashSection(session.getOpeningAmount(), sales, voids, incomes, expenses, withdrawals, expected,
-                        session.getCountedAmount(), session.getDifference())
-                : new CashSection(session.getOpeningAmount(), null, null, null, null, null, null,
+                ? new CashSection(session.getOpeningAmount(), sales, voids, incomes, expenses, withdrawals,
+                        creditPayments, expected, session.getCountedAmount(), session.getDifference())
+                : new CashSection(session.getOpeningAmount(), null, null, null, null, null, null, null,
                         session.getCountedAmount(), null);
         Summary summary = salesSummary.summarize(session.getId(), session.getClosedAt());
         SessionView view = toView(session, registerMap(), names(List.of(session)));
@@ -158,8 +166,9 @@ public class CashQueryService {
     private CashSession readable(UUID id) {
         CashSession session = sessions.findById(id)
                 .orElseThrow(() -> new NotFoundException("Sesión de caja no encontrada."));
-        if (!CashAccess.canReadAll() && !session.getOpenedBy().equals(CurrentActor.requireUserId())) {
-            throw new ForbiddenException("Solo puedes ver tus propias sesiones de caja.");
+        UUID actor = CurrentActor.requireUserId();
+        if (!CashAccess.canReadAll() && !session.getOpenedBy().equals(actor) && !sessions.isMember(id, actor)) {
+            throw new ForbiddenException("Solo puedes ver las cajas en las que vendes.");
         }
         return session;
     }
@@ -174,7 +183,7 @@ public class CashQueryService {
                 names.get(s.getOpenedBy()), s.getOpenedAt(), s.getOpeningAmount(), s.getOpeningNotes(),
                 s.getClosedAt(), s.getClosedBy(), s.getClosedBy() == null ? null : names.get(s.getClosedBy()),
                 s.getCountedAmount(), audit ? s.getExpectedAmount() : null, audit ? s.getDifference() : null,
-                s.getClosingNotes(), s.getOpenedBy().equals(actor));
+                s.getClosingNotes(), s.getOpenedBy().equals(actor), register != null && register.shared());
     }
 
     private Map<UUID, RegisterRef> registerMap() {

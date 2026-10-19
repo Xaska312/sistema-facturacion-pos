@@ -42,6 +42,6 @@ public class CashRegisterDirectory implements CashRegisterApi {
 
     private static RegisterRef toRef(CashRegister r, Branch b) {
         return new RegisterRef(r.getId(), r.getCode(), r.getName(), r.isActive(), b.getId(), b.getCode(), b.getName(),
-                b.isActive());
+                b.isActive(), r.isShared());
     }
 }

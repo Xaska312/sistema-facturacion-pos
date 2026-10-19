@@ -27,6 +27,7 @@ import java.util.UUID;
 public class CashLedger implements CashApi {
 
     private static final String SALE_REFERENCE = "SALE";
+    private static final String CREDIT_PAYMENT_REFERENCE = "CREDIT_PAYMENT";
 
     private final CashSessionRepository sessions;
     private final PaymentMethodRepository paymentMethods;
@@ -69,6 +70,20 @@ public class CashLedger implements CashApi {
     public void recordVoidCash(UUID sessionId, BigDecimal amount, UUID saleId, String label) {
         em.persist(CashMovement.record(sessionId, CashMovementType.SALE_VOID, amount, label, SALE_REFERENCE, saleId,
                 null, CurrentActor.userId().orElse(null)));
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void recordCreditPaymentCash(UUID sessionId, BigDecimal amount, UUID entryId, String label) {
+        em.persist(CashMovement.record(sessionId, CashMovementType.CREDIT_PAYMENT, amount, label,
+                CREDIT_PAYMENT_REFERENCE, entryId, null, CurrentActor.userId().orElse(null)));
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void recordCreditPaymentVoidCash(UUID sessionId, BigDecimal amount, UUID entryId, String label) {
+        em.persist(CashMovement.record(sessionId, CashMovementType.CREDIT_PAYMENT_VOID, amount, label,
+                CREDIT_PAYMENT_REFERENCE, entryId, null, CurrentActor.userId().orElse(null)));
     }
 
     /** La fila ya está bloqueada: se carga (o relee) la entidad para devolver sus datos actuales. */

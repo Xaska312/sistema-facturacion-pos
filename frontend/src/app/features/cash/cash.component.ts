@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
@@ -27,6 +27,7 @@ import { CashReportComponent } from './cash-report.component';
 import { CASH_MOVEMENT_LABEL } from './labels';
 import { TermComponent } from '../../shared/help/term.component';
 import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
+import { permissionFlag } from '../../core/auth/permission-flag';
 
 /** Mi caja: abrir con base, registrar ingresos/egresos/retiros y cerrar con arqueo ciego. */
 @Component({
@@ -49,14 +50,25 @@ import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
             <p class="text-lg font-medium">{{ s.registerCode }} · {{ s.registerName }}</p>
             <p class="text-sm text-muted">{{ s.branchName }} · abierta el {{ s.openedAt | date: 'short' }}</p>
             <p class="text-sm text-muted">Base de apertura: {{ cop(s.openingAmount) }}</p>
+            @if (!s.mine) {
+              <p class="text-sm mt-1"><i class="pi pi-users text-xs mr-1" aria-hidden="true"></i>Caja compartida, abierta
+                por {{ s.openedByName ?? 'otra persona' }}. Vendes en ella hasta que se cierre.</p>
+            }
           </div>
           <div class="flex flex-wrap gap-2 items-start">
             <a *hasPermission="'sales:create'" routerLink="/pos"><p-button label="Ir a vender" /></a>
             <p-button label="Ingreso" severity="secondary" [outlined]="true" (onClick)="openMovement('INCOME')" />
             <p-button label="Egreso" severity="secondary" [outlined]="true" (onClick)="openMovement('EXPENSE')" />
-            <p-button label="Retiro" severity="secondary" [outlined]="true" (onClick)="openMovement('WITHDRAWAL')" />
+            @if (s.mine || canAudit()) {
+              <p-button label="Retiro" severity="secondary" [outlined]="true" (onClick)="openMovement('WITHDRAWAL')" />
+            }
             <p-button label="Informe parcial" severity="secondary" [text]="true" (onClick)="showPartial()" />
-            <p-button label="Cerrar caja" severity="danger" (onClick)="openClose()" />
+            @if (s.mine || canAudit()) {
+              <p-button label="Cerrar caja" severity="danger" (onClick)="openClose()" />
+            }
+            @if (!s.mine) {
+              <p-button label="Dejar esta caja" severity="secondary" [text]="true" [loading]="saving()" (onClick)="leave()" />
+            }
           </div>
         </div>
       </section>
@@ -71,13 +83,22 @@ import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
       </app-data-table>
     } @else {
       <section class="card p-4">
-        <p class="mb-3">No tienes una caja abierta. Elige la caja y cuenta la
-          <app-term term="base-efectivo">base de efectivo</app-term>.</p>
+        @if (joinable().length > 0) {
+          <p class="mb-2 font-medium">Cajas compartidas abiertas</p>
+          <div class="flex flex-wrap gap-2 mb-4">
+            @for (r of joinable(); track r.id) {
+              <p-button icon="pi pi-users" [loading]="saving()" (onClick)="join(r)"
+                        [label]="'Vender en ' + r.code + ' (abierta por ' + (r.busyBy ?? 'otra persona') + ')'" />
+            }
+          </div>
+        }
+        <p class="mb-3">{{ joinable().length > 0 ? 'O abre tu propia caja:' : 'No tienes una caja abierta.' }} Elige la
+          caja y cuenta la <app-term term="base-efectivo">base de efectivo</app-term>.</p>
         @if (registers().length === 0) {
           <p class="text-sm text-muted">No hay cajas disponibles en tus sucursales.</p>
         }
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mb-4">
-          @for (r of registers(); track r.id) {
+          @for (r of openable(); track r.id) {
             <button type="button" class="text-left border rounded-xl p-3 disabled:opacity-50"
                     [class.border-brand]="registerId === r.id" [class.bg-brand-soft]="registerId === r.id"
                     [disabled]="r.busy" (click)="registerId = r.id">
@@ -172,6 +193,12 @@ export class CashComponent implements OnInit {
   protected readonly movements = signal<CashMovement[]>([]);
   protected readonly report = signal<CashReport | null>(null);
   protected readonly saving = signal(false);
+  protected readonly canAudit = permissionFlag('cash:audit');
+  /** Cajas compartidas que otra persona ya abrió (decisión 256). */
+  protected readonly joinable = computed(() =>
+    this.registers().filter((r) => r.busy && r.shared && r.openSessionId !== null));
+  protected readonly openable = computed(() =>
+    this.registers().filter((r) => !(r.busy && r.shared && r.openSessionId !== null)));
   protected movementType: ManualCashMovementType = 'INCOME';
 
   protected registerId: string | null = null;
@@ -201,7 +228,7 @@ export class CashComponent implements OnInit {
         } else {
           this.cash.registers().subscribe((list) => {
             this.registers.set(list);
-            const free = list.filter((r) => !r.busy);
+            const free = this.openable().filter((r) => !r.busy);
             this.registerId = free.length === 1 ? free[0].id : null;
           });
         }
@@ -225,6 +252,37 @@ export class CashComponent implements OnInit {
         this.saving.set(false);
         this.load();
       },
+    });
+  }
+
+  join(register: RegisterOption): void {
+    if (!register.openSessionId) {
+      return;
+    }
+    this.saving.set(true);
+    this.cash.join(register.openSessionId).subscribe({
+      next: () => {
+        this.saving.set(false);
+        this.messages.add({ severity: 'success', summary: `Vendes en ${register.code}` });
+        this.load();
+      },
+      error: () => {
+        this.saving.set(false);
+        this.load();
+      },
+    });
+  }
+
+  /** Deja de vender en la caja compartida (no la cierra). */
+  leave(): void {
+    this.saving.set(true);
+    this.cash.leave().subscribe({
+      next: () => {
+        this.saving.set(false);
+        this.movements.set([]);
+        this.load();
+      },
+      error: () => this.saving.set(false),
     });
   }
 

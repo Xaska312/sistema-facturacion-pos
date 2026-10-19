@@ -267,6 +267,21 @@ export const routes: Routes = [
           import('./features/inventory/document-editor.component').then((m) => m.InventoryDocumentEditorComponent),
       },
       {
+        path: 'fiados',
+        title: 'Fiados',
+        canActivate: [permissionGuard],
+        data: { permission: 'credit:read' },
+        loadComponent: () => import('./features/credit/credit.component').then((m) => m.CreditComponent),
+      },
+      {
+        path: 'fiados/:customerId',
+        title: 'Fiado del cliente',
+        canActivate: [permissionGuard],
+        data: { permission: 'credit:read' },
+        loadComponent: () =>
+          import('./features/credit/credit-account.component').then((m) => m.CreditAccountComponent),
+      },
+      {
         path: 'clientes',
         title: 'Clientes',
         canActivate: [permissionGuard],

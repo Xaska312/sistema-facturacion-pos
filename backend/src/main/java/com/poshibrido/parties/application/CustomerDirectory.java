@@ -1,5 +1,6 @@
 package com.poshibrido.parties.application;
 
+import com.poshibrido.parties.domain.Customer;
 import com.poshibrido.parties.domain.Party;
 import com.poshibrido.parties.infrastructure.CustomerRepository;
 import com.poshibrido.parties.infrastructure.PartyRepository;
@@ -20,12 +21,11 @@ public class CustomerDirectory implements CustomerApi {
     @Override
     @Transactional(readOnly = true)
     public Optional<CustomerRef> find(UUID customerId) {
-        return customers.findById(customerId).flatMap(c -> parties.findById(c.getPartyId()).map(p -> toRef(p,
-                c.getPriceListId(), c.isActive())));
+        return customers.findById(customerId).flatMap(c -> parties.findById(c.getPartyId()).map(p -> toRef(p, c)));
     }
 
-    private static CustomerRef toRef(Party p, UUID priceListId, boolean active) {
+    private static CustomerRef toRef(Party p, Customer c) {
         return new CustomerRef(p.getId(), p.getDocumentType().name(), p.getDocumentNumber(), p.getVerificationDigit(),
-                p.displayName(), priceListId, active);
+                p.displayName(), c.getPriceListId(), c.isActive(), c.getCreditLimit());
     }
 }

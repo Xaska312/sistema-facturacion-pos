@@ -57,12 +57,12 @@ export class OrganizationApi {
     });
   }
 
-  createCashRegister(branchId: string, code: string, name: string): Observable<CashRegister> {
-    return this.http.post<CashRegister>('/api/v1/cash-registers', { branchId, code, name });
+  createCashRegister(branchId: string, code: string, name: string, shared: boolean): Observable<CashRegister> {
+    return this.http.post<CashRegister>('/api/v1/cash-registers', { branchId, code, name, shared });
   }
 
-  renameCashRegister(id: string, name: string): Observable<CashRegister> {
-    return this.http.put<CashRegister>(`/api/v1/cash-registers/${id}`, { name });
+  updateCashRegister(id: string, name: string, shared: boolean): Observable<CashRegister> {
+    return this.http.put<CashRegister>(`/api/v1/cash-registers/${id}`, { name, shared });
   }
 
   setCashRegisterActive(id: string, active: boolean): Observable<CashRegister> {

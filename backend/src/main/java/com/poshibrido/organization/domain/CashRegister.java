@@ -34,6 +34,10 @@ public class CashRegister extends AuditableEntity {
     @Column(nullable = false)
     private boolean active;
 
+    /** Compartida: una persona la abre y los demás de la sucursal venden en ella (decisión 256). */
+    @Column(nullable = false)
+    private boolean shared;
+
     public static CashRegister create(UUID branchId, String code, String name) {
         CashRegister register = new CashRegister();
         register.id = Ids.newId();
@@ -46,6 +50,10 @@ public class CashRegister extends AuditableEntity {
 
     public void rename(String name) {
         this.name = name;
+    }
+
+    public void setShared(boolean shared) {
+        this.shared = shared;
     }
 
     public void deactivate() {
