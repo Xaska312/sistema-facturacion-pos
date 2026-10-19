@@ -76,11 +76,11 @@ const EMPTY_MODELS: PageResponse<ProductModelRow> = { content: [], page: 0, size
               @let badge = stockText(p);
               <li class="relative">
                 <button type="button" class="product-card" [disabled]="disabled()" [class.opacity-60]="badge === 'Agotado'"
-                        [attr.aria-label]="'Agregar ' + p.name + ', ' + cop(p.salePrice) + (badge ? ', ' + badge : '')"
+                        [attr.aria-label]="'Agregar ' + p.name + ', ' + priceText(p) + (badge ? ', ' + badge : '')"
                         (click)="pick.emit(p)">
                   <span class="font-medium leading-snug line-clamp-2 pr-8">{{ p.name }}</span>
                   <span class="mt-auto flex items-end justify-between gap-1 w-full">
-                    <span class="font-semibold">{{ cop(p.salePrice) }}</span>
+                    <span class="font-semibold">{{ priceText(p) }}</span>
                     @if (badge) {
                       <span class="text-xs rounded px-1.5 py-0.5"
                             [class.bg-danger-soft]="badge === 'Agotado'" [class.text-danger-soft-fg]="badge === 'Agotado'"
@@ -250,6 +250,11 @@ export class ProductGridComponent implements OnInit {
 
   isFavorite(id: string): boolean {
     return this.favoriteSet().has(id);
+  }
+
+  /** Precio libre (decisión 253): el precio se escribe al vender. */
+  protected priceText(product: Product): string {
+    return product.openPrice ? 'Precio libre' : this.cop(product.salePrice);
   }
 
   protected stockText(product: Product): string | null {

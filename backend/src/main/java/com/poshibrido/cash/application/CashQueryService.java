@@ -110,7 +110,14 @@ public class CashQueryService {
     // ---------------------------------------------------------------- uso interno del módulo
 
     public SessionReport buildReport(CashSession session) {
-        boolean audit = CashAccess.canAudit();
+        return buildReport(session, CashAccess.canAudit());
+    }
+
+    /**
+     * Con {@code audit} se incluye lo que el cierre ciego oculta (esperado, diferencia, desglose). El resumen por
+     * correo al dueño (decisión 253) lo pide completo aunque cierre un cajero.
+     */
+    public SessionReport buildReport(CashSession session, boolean audit) {
         Map<CashMovementType, BigDecimal> totals = new EnumMap<>(CashMovementType.class);
         for (Object[] row : movements.totalsByType(session.getId())) {
             totals.put((CashMovementType) row[0], row[1] instanceof BigDecimal d ? d : new BigDecimal(String.valueOf(row[1])));

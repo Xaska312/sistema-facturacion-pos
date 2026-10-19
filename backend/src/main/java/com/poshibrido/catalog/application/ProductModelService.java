@@ -285,7 +285,7 @@ public class ProductModelService {
     private Product.Data variantData(ProductModel model, String sku, String size, String color, UUID baseUnit,
                                      BigDecimal cost) {
         return new Product.Data(sku, CatalogVariants.name(model.getName(), size, color), model.getDescription(),
-                model.getCategoryId(), baseUnit, model.getTaxId(), cost, model.getSalePrice(), true);
+                model.getCategoryId(), baseUnit, model.getTaxId(), cost, model.getSalePrice(), true, false);
     }
 
     /** SKU libre: {@code PREFIJO-TALLA-COLOR}; si el color se abrevia igual que otro, se le agrega un número. */

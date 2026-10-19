@@ -1,13 +1,17 @@
 import { Component, effect, inject, input, signal, untracked, computed } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
-import { StockAlert } from '../../core/api/api.models';
+import { SlowMovers, StockAlert } from '../../core/api/api.models';
 import { InventoryApi } from '../../core/api/inventory.api';
+import { ReportsApi } from '../../core/api/reports.api';
 import { AuthService } from '../../core/auth/auth.service';
-import { formatQuantity } from '../../shared/money';
+import { formatCop, formatQuantity } from '../../shared/money';
 import { DOCUMENT_ROUTE } from '../inventory/labels';
 
-/** Productos en o por debajo del mínimo, con acceso directo a existencias y a un ajuste. */
+/**
+ * Productos en o por debajo del mínimo, con acceso directo a existencias y a un ajuste. Con reports:read avisa
+ * también cuánta plata hay quieta en productos que no se venden hace 90 días (decisión 254).
+ */
 @Component({
   selector: 'app-stock-alerts',
   imports: [RouterLink, ButtonModule],
@@ -53,12 +57,25 @@ import { DOCUMENT_ROUTE } from '../inventory/labels';
             }
           </div>
         }
+        @if (slow(); as v) {
+          @if (v.productCount > 0) {
+            <p class="mt-3 pt-3 border-t border-line text-sm flex items-start gap-2">
+              <i class="pi pi-clock text-muted mt-0.5" aria-hidden="true"></i>
+              <span>
+                {{ cop(v.totalValue) }} quietos en {{ v.productCount }} {{ v.productCount === 1 ? 'producto' : 'productos' }}
+                sin ventas hace {{ v.days }} días.
+                <a routerLink="/app/reportes" [queryParams]="{ vista: 'slow', sucursal: branchId() }" class="text-brand hover:underline">Ver cuáles</a>
+              </span>
+            </p>
+          }
+        }
       </section>
     }
   `,
 })
 export class StockAlertsComponent {
   private readonly inventory = inject(InventoryApi);
+  private readonly reports = inject(ReportsApi);
   private readonly auth = inject(AuthService);
 
   /** Sucursal del filtro (null = todas). */
@@ -68,13 +85,22 @@ export class StockAlertsComponent {
   protected readonly canAdjust = computed(() => this.auth.hasPermission('inventory:adjust'));
   protected readonly adjustRoute = DOCUMENT_ROUTE.ADJUSTMENT;
   protected readonly alerts = signal<StockAlert[]>([]);
+  protected readonly slow = signal<SlowMovers | null>(null);
   protected readonly q = formatQuantity;
+  protected readonly cop = formatCop;
 
   constructor() {
     effect(() => {
       const branchId = this.branchId();
       if (this.canRead()) {
         untracked(() => this.inventory.alerts(branchId).subscribe((list) => this.alerts.set(list)));
+      }
+      if (this.canRead() && this.auth.hasPermission('reports:read')) {
+        // Un aviso, no un error: si falla, simplemente no aparece.
+        untracked(() => this.reports.slowMovers(branchId, 90).subscribe({
+          next: (slow) => this.slow.set(slow),
+          error: () => this.slow.set(null),
+        }));
       }
     });
   }

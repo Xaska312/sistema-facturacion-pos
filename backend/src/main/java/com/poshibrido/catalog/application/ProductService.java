@@ -114,7 +114,7 @@ public class ProductService {
         Product.Data data = validData(command, sku, refs);
         if (product.isCostLocked() && command.cost() == null) {
             data = new Product.Data(data.sku(), data.name(), data.description(), data.categoryId(), data.baseUnitId(),
-                    data.taxId(), product.getCost(), data.salePrice(), data.trackInventory());
+                    data.taxId(), product.getCost(), data.salePrice(), data.trackInventory(), data.openPrice());
         }
         if (product.isCostLocked() && !data.baseUnitId().equals(product.getBaseUnitId())) {
             throw new BusinessRuleException("No se puede cambiar la unidad base de un producto que ya tiene "
@@ -182,7 +182,8 @@ public class ProductService {
             throw new BusinessRuleException("El impuesto no existe o está inactivo.");
         }
         return new Product.Data(sku, c.name().trim(), blankToNull(c.description()), c.categoryId(), c.baseUnitId(),
-                c.taxId(), c.cost() == null ? BigDecimal.ZERO : c.cost(), c.salePrice(), c.trackInventory());
+                c.taxId(), c.cost() == null ? BigDecimal.ZERO : c.cost(), c.salePrice(), c.trackInventory(),
+                c.openPrice());
     }
 
     private void apply(Product product, ProductCommand c, References refs) {
@@ -310,7 +311,7 @@ public class ProductService {
                 category == null ? null : category.getName(), p.getBaseUnitId(), code(unitById, p.getBaseUnitId()),
                 p.getTaxId(), tax == null ? null : tax.getCode(), tax == null ? null : tax.getType(),
                 tax == null ? null : tax.getRate(), p.getCost(), p.isCostLocked(), p.getSalePrice(), p.isTrackInventory(),
-                p.isTracksLots(), p.isActive(), conversions, barcodeViews, listPrices, p.getModelId(),
+                p.isOpenPrice(), p.isTracksLots(), p.isActive(), conversions, barcodeViews, listPrices, p.getModelId(),
                 p.getVariantSize(), p.getVariantColor());
     }
 
@@ -329,6 +330,7 @@ public class ProductService {
         data.put("cost", v.cost());
         data.put("salePrice", v.salePrice());
         data.put("trackInventory", v.trackInventory());
+        data.put("openPrice", v.openPrice());
         data.put("barcodes", v.barcodes().stream().map(ProductView.BarcodeView::barcode).toList());
         Map<String, Object> conversions = new HashMap<>();
         v.conversions().forEach(c -> conversions.put(Objects.toString(c.unitCode()), c.factor()));

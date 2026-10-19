@@ -12,6 +12,8 @@ import com.poshibrido.reporting.application.ReportViews.PaymentRow;
 import com.poshibrido.reporting.application.ReportViews.ProductRow;
 import com.poshibrido.reporting.application.ReportViews.SaleLine;
 import com.poshibrido.reporting.application.ReportViews.SalesRow;
+import com.poshibrido.reporting.application.ReportViews.SlowMoverRow;
+import com.poshibrido.reporting.application.ReportViews.SlowMovers;
 import com.poshibrido.reporting.application.ReportViews.Summary;
 import com.poshibrido.reporting.application.ReportViews.TaxRow;
 import com.poshibrido.shared.error.BusinessRuleException;
@@ -23,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -267,6 +270,62 @@ public class ReportQueryService {
     }
 
     // ---------------------------------------------------------------- inventario
+
+    /** Días que se aceptan para "Productos sin rotación". */
+    public static final int MIN_SLOW_DAYS = 7;
+    public static final int MAX_SLOW_DAYS = 365;
+
+    /**
+     * Productos sin rotación (decisión 254): con existencia en la sucursal, activos y con inventario, sin ventas
+     * completadas allí desde hace {@code days} días. Los creados dentro de ese periodo no cuentan (aún no han tenido
+     * tiempo de venderse). Ordenados por la plata quieta (existencia × costo promedio): primero los candidatos a
+     * promoción.
+     */
+    public SlowMovers slowMovers(UUID branchId, int days) {
+        if (days < MIN_SLOW_DAYS || days > MAX_SLOW_DAYS) {
+            throw new BusinessRuleException("El periodo debe estar entre " + MIN_SLOW_DAYS + " y " + MAX_SLOW_DAYS
+                    + " días.");
+        }
+        Instant since = today().minusDays(days).atStartOfDay(zone()).toInstant();
+        Query query = em.createNativeQuery("""
+                WITH last_sale AS (
+                    SELECT s.branch_id, si.product_id, max(s.created_at) AS last_at
+                    FROM sale_items si
+                    JOIN sales s ON s.id = si.sale_id
+                    WHERE s.status = 'COMPLETED' AND (:anyBranch OR s.branch_id = :branchId)
+                    GROUP BY s.branch_id, si.product_id
+                )
+                SELECT b.id AS branch_id, b.name AS branch_name, p.id AS product_id, p.sku AS sku,
+                       p.name AS product_name, c.name AS category_name, u.code AS unit_code, sb.quantity AS quantity,
+                       p.cost AS average_cost, round(sb.quantity * p.cost, 2) AS stock_value, ls.last_at AS last_sale_at
+                FROM stock_balances sb
+                JOIN products p ON p.id = sb.product_id
+                JOIN branches b ON b.id = sb.branch_id
+                LEFT JOIN categories c ON c.id = p.category_id
+                JOIN units u ON u.id = p.base_unit_id
+                LEFT JOIN last_sale ls ON ls.branch_id = sb.branch_id AND ls.product_id = sb.product_id
+                WHERE sb.lot_id IS NULL AND p.track_inventory AND p.active AND sb.quantity > 0
+                  AND (:anyBranch OR sb.branch_id = :branchId)
+                  AND p.created_at < :since
+                  AND (ls.last_at IS NULL OR ls.last_at < :since)
+                ORDER BY stock_value DESC, p.name
+                """);
+        query.setParameter("anyBranch", branchId == null);
+        query.setParameter("branchId", branchId == null ? NONE : branchId);
+        query.setParameter("since", since);
+        List<SlowMoverRow> rows = new ArrayList<>();
+        BigDecimal total = BigDecimal.ZERO;
+        for (Object row : query.getResultList()) {
+            Object[] r = (Object[]) row;
+            BigDecimal value = Rows.decimal(r[9]);
+            total = total.add(value);
+            rows.add(new SlowMoverRow(Rows.uuid(r[0]), Rows.str(r[1]), Rows.uuid(r[2]), Rows.str(r[3]),
+                    Rows.str(r[4]), Rows.str(r[5]), Rows.str(r[6]), Rows.decimal(r[7]), Rows.decimal(r[8]), value,
+                    Rows.instant(r[10])));
+        }
+        long products = rows.stream().map(SlowMoverRow::productId).distinct().count();
+        return new SlowMovers(days, rows, total, products);
+    }
 
     /** Existencias actuales × costo promedio, por sucursal y producto. */
     public InventoryValuation inventoryValuation(UUID branchId) {

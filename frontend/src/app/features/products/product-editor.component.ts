@@ -46,7 +46,9 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
             <input pInputText formControlName="name" placeholder="Ej.: Gaseosa cola 400 ml" />
           </label>
           <label class="flex flex-col gap-1">
-            <span class="text-sm font-medium">Precio de venta (al público)</span>
+            <span class="text-sm font-medium">
+              {{ form.controls.openPrice.value ? 'Precio sugerido (se cambia al vender)' : 'Precio de venta (al público)' }}
+            </span>
             <input pInputText appPesos="2" formControlName="salePrice" />
             <small class="text-muted">{{ formatCop(form.controls.salePrice.value) }} por {{ unitCode(form.controls.baseUnitId.value) }}</small>
           </label>
@@ -100,6 +102,15 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
               <small class="block text-muted">Desmárcalo para servicios o cosas que no cuentas (bolsas, domicilios).</small>
             </span>
           </label>
+          @if (!product()?.modelId) {
+            <label class="flex items-start gap-2">
+              <input type="checkbox" formControlName="openPrice" class="mt-1" />
+              <span>Precio libre: pedir el precio al vender
+                <small class="block text-muted">Para impresiones, anillados o servicios que cambian de precio. Al venderlo
+                  escribes cuánto cobras; el precio de arriba queda como sugerido.</small>
+              </span>
+            </label>
+          }
           <label class="flex flex-col gap-1 md:col-span-2">
             <span class="text-sm font-medium">Descripción (opcional)</span>
             <textarea formControlName="description" rows="2" class="border rounded px-2 py-2"></textarea>

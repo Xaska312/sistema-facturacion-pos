@@ -2,6 +2,7 @@ package com.poshibrido.mail;
 
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 
@@ -29,6 +30,27 @@ class MailTemplatesTest {
                 .contains("10 de octubre de 2026"); // 10:00 a. m. en Bogotá
         assertThat(mail.kind()).isEqualTo("invitacion");
         assertThat(mail.idempotencyKey()).isNotBlank();
+    }
+
+    @Test
+    void cashCloseSummaryShowsTotalsAndEscapesNames() {
+        MailTemplates.CashCloseSummary summary = new MailTemplates.CashCloseSummary("Papelería <b>Luz</b>", "Caja 1",
+                "Principal", "Laura", "Laura", Instant.parse("2026-10-18T13:00:00Z"),
+                Instant.parse("2026-10-18T23:00:00Z"), 47, new BigDecimal("1248500"), 1, new BigDecimal("3500"),
+                List.of(new MailTemplates.MethodLine("Efectivo", 40, new BigDecimal("1050000"))),
+                new BigDecimal("100000"), new BigDecimal("1150000"), new BigDecimal("1148500"),
+                new BigDecimal("-1500"), null);
+        MailMessage mail = templates.cashClosed("dueno@x.co", "Daniel", summary);
+
+        assertThat(mail.kind()).isEqualTo("cierre-de-caja");
+        assertThat(mail.subject()).contains("Caja 1").contains("Faltan $1.500");
+        assertThat(mail.html()).contains("Papelería &lt;b&gt;Luz&lt;/b&gt;").doesNotContain("<b>Luz</b>")
+                .contains("$1.248.500").contains("https://pos.midominio.com/app/caja/historial");
+        assertThat(mail.text()).contains("Ventas: 47 por $1.248.500").contains("Efectivo: $1.050.000 (40)")
+                .contains("Diferencia: Faltan $1.500").contains("Anuladas: 1 por $3.500");
+        assertThat(MailTemplates.differenceText(BigDecimal.ZERO)).isEqualTo("Sin diferencia");
+        assertThat(MailTemplates.differenceText(new BigDecimal("2000"))).isEqualTo("Sobran $2.000");
+        assertThat(MailTemplates.money(new BigDecimal("-1234567.40"))).isEqualTo("-$1.234.567");
     }
 
     @Test

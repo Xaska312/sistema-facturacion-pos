@@ -10,7 +10,7 @@ import java.util.UUID;
  */
 public record ProductCommand(String sku, String name, String description, UUID categoryId, UUID baseUnitId,
                              UUID taxId, BigDecimal cost, BigDecimal salePrice, boolean trackInventory,
-                             List<Conversion> conversions, List<Barcode> barcodes, List<ListPrice> listPrices) {
+                             boolean openPrice, List<Conversion> conversions, List<Barcode> barcodes, List<ListPrice> listPrices) {
 
     public record Conversion(UUID unitId, BigDecimal factor, BigDecimal salePrice) {
     }

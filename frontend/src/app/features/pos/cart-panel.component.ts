@@ -10,6 +10,12 @@ export interface LineQuantityChange {
   quantity: number;
 }
 
+/** Precio libre (decisión 253): el precio unitario que escribió el cajero. */
+export interface LinePriceChange {
+  key: string;
+  unitPrice: number;
+}
+
 export interface LineDiscountChange {
   key: string;
   discountPercent: number;
@@ -46,7 +52,7 @@ const UNDO_MS = 6000;
         @if (lines().length === 0) {
           <div class="h-full min-h-32 flex flex-col items-center justify-center gap-2 p-6 text-center text-muted">
             <i class="pi pi-barcode text-3xl" aria-hidden="true"></i>
-            <p>Escanea un producto o tócalo en la lista para empezar la venta.</p>
+            <p>Busca un producto, tócalo en la lista o escanéalo para empezar la venta.</p>
           </div>
         } @else {
           <ul class="divide-y" aria-label="Productos de la venta">
@@ -54,7 +60,7 @@ const UNDO_MS = 6000;
               @let short = shortages().get(line.key);
               <li class="px-2 py-1.5 flex items-center gap-1" [class.bg-warning-soft]="short !== undefined">
                 <button type="button" class="flex-1 min-w-0 min-h-11 text-left px-1 rounded-lg hover:bg-surface-alt"
-                        aria-haspopup="dialog" [attr.aria-label]="'Editar cantidad y descuento: ' + line.name"
+                        aria-haspopup="dialog" [attr.aria-label]="(line.openPrice ? 'Editar precio, cantidad y descuento: ' : 'Editar cantidad y descuento: ') + line.name"
                         (click)="openEditor($event, line)">
                   <span class="block font-medium leading-tight truncate">{{ line.name }}</span>
                   <span class="block text-xs text-muted">
@@ -112,9 +118,13 @@ const UNDO_MS = 6000;
           <p-button styleClass="w-full min-h-14 text-xl font-semibold" size="large" icon="pi pi-wallet"
                     label="Cobrar (F4)" [disabled]="!canCharge()" (onClick)="charge.emit()" />
         </div>
-        <div class="flex items-center justify-between gap-2">
+        <div class="flex flex-wrap items-center justify-between gap-x-2">
           <button type="button" class="pos-btn text-muted" [disabled]="lines().length === 0" (click)="cancelSale.emit()">
             Cancelar venta (Esc)
+          </button>
+          <button type="button" class="pos-btn text-brand" [disabled]="lines().length === 0 || disabled()"
+                  title="Guarda esta venta para atender a otro cliente y retomarla después" (click)="hold.emit()">
+            <i class="pi pi-pause" aria-hidden="true"></i>Pausar venta
           </button>
           @if (lastSaleNumber(); as number) {
             <button type="button" class="pos-btn text-brand" (click)="reprint.emit()">
@@ -129,6 +139,13 @@ const UNDO_MS = 6000;
       @if (editing(); as line) {
         <form class="flex flex-col gap-3 w-64" (ngSubmit)="applyEdit()">
           <p class="font-medium leading-tight">{{ line.name }}</p>
+          @if (line.openPrice) {
+            <label class="flex flex-col gap-1">
+              <span class="text-sm font-medium">Precio por {{ line.unitCode }} ($)</span>
+              <input id="edit-price" name="price" type="number" inputmode="numeric" min="0" step="any"
+                     class="h-12 border rounded-lg px-3 text-lg text-right" [(ngModel)]="draftPrice" />
+            </label>
+          }
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">Cantidad ({{ line.unitCode }})</span>
             <input id="edit-quantity" name="quantity" type="number" inputmode="decimal" min="0" step="any"
@@ -210,10 +227,14 @@ export class CartPanelComponent {
   readonly decimalUnits = input<ReadonlySet<string>>(new Set());
   readonly quantityChange = output<LineQuantityChange>();
   readonly discountChange = output<LineDiscountChange>();
+  /** Precio libre: nuevo precio unitario de la línea. */
+  readonly priceChange = output<LinePriceChange>();
   readonly removeLine = output<string>();
   readonly restoreLine = output<RemovedLine>();
   readonly charge = output<void>();
   readonly cancelSale = output<void>();
+  /** "Pausar venta": guardarla en espera para atender a otro cliente. */
+  readonly hold = output<void>();
   readonly customer = output<void>();
   readonly reprint = output<void>();
 
@@ -224,6 +245,7 @@ export class CartPanelComponent {
   protected readonly removed = signal<RemovedLine | null>(null);
   protected draftQuantity: number | null = null;
   protected draftDiscount: number | null = null;
+  protected draftPrice: number | null = null;
   /** "Vender por valor" (fase 8e): pesos escritos; la cantidad se calcula al vuelo. */
   protected draftAmount: number | null = null;
   private undoTimer: ReturnType<typeof setTimeout> | null = null;
@@ -278,6 +300,7 @@ export class CartPanelComponent {
     this.draftQuantity = line.quantity;
     this.draftAmount = null;
     this.draftDiscount = line.discountPercent;
+    this.draftPrice = line.openPrice ? line.unitPrice : null;
     this.editor().show(event);
   }
 
@@ -294,7 +317,8 @@ export class CartPanelComponent {
 
   focusEditor(): void {
     setTimeout(() => {
-      const input = document.getElementById('edit-quantity') as HTMLInputElement | null;
+      // En una línea de precio libre, lo primero que se corrige es el precio.
+      const input = (document.getElementById('edit-price') ?? document.getElementById('edit-quantity')) as HTMLInputElement | null;
       input?.focus();
       input?.select();
     }, 0);
@@ -304,6 +328,10 @@ export class CartPanelComponent {
     const line = this.editing();
     if (!line) {
       return;
+    }
+    const price = Number(this.draftPrice);
+    if (line.openPrice && this.draftPrice !== null && Number.isFinite(price) && price > 0 && price !== line.unitPrice) {
+      this.priceChange.emit({ key: line.key, unitPrice: Math.round(price * 100) / 100 });
     }
     const quantity = Number(this.draftQuantity);
     if (this.draftQuantity !== null && Number.isFinite(quantity) && quantity >= 0) {

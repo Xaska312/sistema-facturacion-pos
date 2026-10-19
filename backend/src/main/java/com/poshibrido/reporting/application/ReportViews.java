@@ -52,6 +52,18 @@ public final class ReportViews {
     public record InventoryValuation(List<InventoryRow> rows, BigDecimal totalValue, long productCount) {
     }
 
+    /**
+     * Producto con existencia que no se vende hace {@code days} días o más (decisión 254). {@code lastSaleAt} nulo =
+     * nunca se ha vendido en esa sucursal.
+     */
+    public record SlowMoverRow(UUID branchId, String branchName, UUID productId, String sku, String name,
+                               String categoryName, String unitCode, BigDecimal quantity, BigDecimal averageCost,
+                               BigDecimal value, Instant lastSaleAt) {
+    }
+
+    public record SlowMovers(int days, List<SlowMoverRow> rows, BigDecimal totalValue, long productCount) {
+    }
+
     public record SaleLine(String documentNumber, Instant createdAt, String status, String branchName,
                            String registerCode, String sellerName, String customerDocument, String customerName,
                            BigDecimal discountTotal, BigDecimal subtotal, BigDecimal taxTotal, BigDecimal total,

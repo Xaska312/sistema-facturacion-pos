@@ -10,10 +10,21 @@ export type ReportTab =
   | 'products'
   | 'categories'
   | 'taxes'
-  | 'inventory';
+  | 'inventory'
+  | 'slow';
+
+/** Días que se ofrecen en "Sin rotación" (decisión 254). */
+export const SLOW_DAYS = [30, 60, 90, 180] as const;
+export const DEFAULT_SLOW_DAYS = 90;
+
+/** Días válidos desde la URL (?dias=60); cualquier otro valor vuelve al de siempre. */
+export function slowDaysFrom(raw: string | null): number {
+  const value = Number(raw);
+  return (SLOW_DAYS as readonly number[]).includes(value) ? value : DEFAULT_SLOW_DAYS;
+}
 
 /** CSV que corresponde a cada pestaña (en el resumen: las ventas una por una). */
-export function csvFor(tab: ReportTab, productOrder: 'total' | 'quantity'):
+export function csvFor(tab: ReportTab, productOrder: 'total' | 'quantity', slowDays: number = DEFAULT_SLOW_DAYS):
   { report: CsvReport; extra: Record<string, string | number | null> } {
   switch (tab) {
     case 'summary':
@@ -34,6 +45,8 @@ export function csvFor(tab: ReportTab, productOrder: 'total' | 'quantity'):
       return { report: 'taxes', extra: {} };
     case 'inventory':
       return { report: 'inventory/valuation', extra: {} };
+    case 'slow':
+      return { report: 'inventory/slow-movers', extra: { days: slowDays } };
   }
 }
 

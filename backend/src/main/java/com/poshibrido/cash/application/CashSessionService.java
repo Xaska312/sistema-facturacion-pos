@@ -54,17 +54,20 @@ public class CashSessionService {
     private final MemberDirectory memberDirectory;
     private final CashQueryService queries;
     private final AuditLogger audit;
+    private final CashCloseNotifier closeNotifier;
     private final TransactionTemplate tx;
 
     public CashSessionService(CashSessionRepository sessions, CashMovementRepository movements,
                               CashRegisterApi registers, MemberDirectory memberDirectory, CashQueryService queries,
-                              AuditLogger audit, PlatformTransactionManager transactionManager) {
+                              AuditLogger audit, CashCloseNotifier closeNotifier,
+                              PlatformTransactionManager transactionManager) {
         this.sessions = sessions;
         this.movements = movements;
         this.registers = registers;
         this.memberDirectory = memberDirectory;
         this.queries = queries;
         this.audit = audit;
+        this.closeNotifier = closeNotifier;
         this.tx = new TransactionTemplate(transactionManager);
     }
 
@@ -251,6 +254,8 @@ public class CashSessionService {
         after.put("expected", session.getExpectedAmount());
         after.put("difference", session.getDifference());
         audit.log("CASH_SESSION_CLOSED", "cash_session", sessionId, null, after);
+        // Resumen al dueño: se arma después del commit, en su propia transacción (nunca deshace el cierre).
+        closeNotifier.sessionClosed(sessionId);
         return queries.buildReport(session);
     }
 

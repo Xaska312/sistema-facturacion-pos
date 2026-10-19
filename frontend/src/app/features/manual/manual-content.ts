@@ -108,11 +108,11 @@ export const MANUAL: readonly ManualChapter[] = [
       {
         id: 'registrar-venta',
         title: 'Agregar productos a la venta',
-        summary: 'La pantalla de venta funciona con lector de código de barras, con teclado o tocando los productos (ideal en tablet).',
+        summary: 'La pantalla de venta funciona con lector de código de barras, con teclado o tocando los productos (ideal en tablet y celular).',
         steps: [
           'Pasa el lector por el código de barras, o escribe el código o el SKU y pulsa Enter.',
           'Para varias unidades escribe la cantidad, un asterisco y el código: 3*7701234567890.',
-          'Si no tienes el código a mano, pulsa F2 (o "Buscar") y escribe parte del nombre.',
+          'Si no tienes el código a mano, pulsa F2 (o "Buscar") y escribe parte del nombre. En el celular toca el campo "Buscar producto por nombre o código" que está arriba.',
           'También puedes elegir una categoría y tocar el producto.',
         ],
         tips: [
@@ -120,7 +120,26 @@ export const MANUAL: readonly ManualChapter[] = [
           'Si quitas una línea por error, toca "Deshacer".',
           'Con la estrella dejas un producto en Favoritos para encontrarlo rápido.',
           'Si un producto no tiene existencias suficientes, el sistema te avisa. Solo deja vender sin existencias si lo permites en Ajustes.',
+          'En el celular la venta queda debajo de los productos: abajo siempre ves el total, "Ver venta" y "Cobrar".',
         ],
+      },
+      {
+        id: 'pausar-venta',
+        title: 'Pausar una venta y atender a otro cliente',
+        summary: 'Si un cliente se demora (busca la plata, va por otro producto, le estás registrando los datos), deja su venta en espera y sigue vendiendo.',
+        steps: [
+          'Con productos en la venta, toca "Pausar venta" (debajo de Cobrar).',
+          'Escribe un nombre para reconocerla (por ejemplo, "Señora de la gorra") y toca "Pausar venta".',
+          'Atiende al siguiente cliente normalmente.',
+          'Para seguir con la venta pausada toca "En espera" (junto al campo del código) y luego "Retomar".',
+        ],
+        tips: [
+          'Si al retomar tenías otra venta abierta, esa también queda en espera: no se pierde nada.',
+          'Al retomar, los precios se actualizan a los vigentes.',
+          'Las ventas en espera se guardan en ese equipo y para tu usuario durante 7 días. No apartan existencias.',
+          'Puedes tener hasta 10 ventas en espera.',
+        ],
+        who: 'Quien puede vender.',
       },
       {
         id: 'cobrar',
@@ -136,6 +155,7 @@ export const MANUAL: readonly ManualChapter[] = [
         ],
         tips: [
           'Si el cliente tiene una lista de precios (por ejemplo, mayorista), al elegirlo la venta usa sus precios.',
+          '¿El cliente no está registrado? En "Cambiar" (cliente) toca "Registrar cliente nuevo": lo creas ahí mismo sin perder la venta.',
           'Solo el efectivo entra al cajón; tarjeta y transferencia quedan registradas para el cuadre.',
           'Después de registrar, pulsa Enter o toca "Nueva venta" para seguir.',
         ],
@@ -218,6 +238,7 @@ export const MANUAL: readonly ManualChapter[] = [
           'El cierre es "ciego": quien cierra no ve cuánto debería haber, así el conteo es honesto. La diferencia la ve quien supervisa.',
           '"Informe parcial" muestra cómo va el turno sin cerrarlo.',
           'En "Historial de caja" están todos los turnos con su informe.',
+          'Al cerrar, al correo del dueño llega un resumen con las ventas, los medios de pago y la diferencia, aunque cierre un cajero. Se apaga en Ajustes.',
         ],
       },
     ],
@@ -244,6 +265,22 @@ export const MANUAL: readonly ManualChapter[] = [
           'Desactivar un producto lo oculta del punto de venta sin borrar su historia.',
         ],
         who: 'Propietario, Administrador y Bodeguero.',
+      },
+      {
+        id: 'precio-libre',
+        title: 'Precio libre: impresiones, servicios y "Varios"',
+        summary: 'Para lo que cambia de precio cada vez (impresiones, anillados, arreglos): al venderlo escribes cuánto cobras.',
+        steps: [
+          'En el producto marca "Precio libre: pedir el precio al vender". El precio que escribas queda como sugerido.',
+          'Al venderlo, la app pregunta "¿Cuánto cobras?". Escribe el valor y toca "Agregar".',
+          'Si te equivocaste, toca la línea en la venta y cambia el precio.',
+        ],
+        tips: [
+          'Cada vez que lo agregas va en su propia línea: dos impresiones pueden tener precios distintos.',
+          'Todo negocio trae el producto "Varios", de precio libre y sin inventario, para vender algo que todavía no has creado sin frenar la fila. Revisa su impuesto (viene con IVA 19 %).',
+          'Quién puede venderlo se define en Roles con el permiso "Vender productos de precio libre". Viene activado para Propietario, Administrador, Cajero y Vendedor.',
+          'El precio que se cobró queda en la venta y en los reportes.',
+        ],
       },
       {
         id: 'importar-productos',
@@ -437,6 +474,7 @@ export const MANUAL: readonly ManualChapter[] = [
         tips: [
           'Elige el periodo y la sucursal; cada pestaña muestra una vista del mismo periodo.',
           'Con "Exportar a Excel (CSV)" descargas la pestaña en un archivo que abre en Excel.',
+          '"Sin rotación" muestra los productos con existencia que no se venden hace 30, 60, 90 o 180 días, primero los que tienen más plata quieta: buenos candidatos para una promoción. En el inicio aparece un aviso con lo de 90 días.',
         ],
         who: 'Propietario, Administrador y Contador.',
       },
@@ -491,6 +529,7 @@ export const MANUAL: readonly ManualChapter[] = [
           'Permitir vender sin existencias: útil si aún no tienes el inventario exacto.',
           'Los precios incluyen impuestos: márcalo si el precio de venta que escribes ya trae el IVA.',
           'Pie del recibo: el texto que sale al final de cada tiquete.',
+          'Enviarme el resumen de cada cierre de caja: llega al correo del dueño cada vez que se cierra una caja.',
           'Marca: sube tu logo (sale en el encabezado y en el tiquete) y elige el color de la app entre los de la paleta; toca un color para verlo antes de guardarlo.',
         ],
         who: 'Para cambiarlos: Propietario y Administrador.',

@@ -13,6 +13,8 @@ import com.poshibrido.reporting.application.ReportViews.PaymentRow;
 import com.poshibrido.reporting.application.ReportViews.ProductRow;
 import com.poshibrido.reporting.application.ReportViews.SaleLine;
 import com.poshibrido.reporting.application.ReportViews.SalesRow;
+import com.poshibrido.reporting.application.ReportViews.SlowMoverRow;
+import com.poshibrido.reporting.application.ReportViews.SlowMovers;
 import com.poshibrido.reporting.application.ReportViews.Summary;
 import com.poshibrido.reporting.application.ReportViews.TaxRow;
 import com.poshibrido.shared.csv.CsvWriter;
@@ -146,6 +148,14 @@ public class ReportController {
         return reports.inventoryValuation(branchId);
     }
 
+    /** Productos con existencia que no se venden hace {@code days} días (decisión 254). */
+    @GetMapping("/inventory/slow-movers")
+    @PreAuthorize("hasAuthority('reports:read')")
+    public SlowMovers slowMovers(@RequestParam(required = false) UUID branchId,
+                                 @RequestParam(defaultValue = "90") int days) {
+        return reports.slowMovers(branchId, days);
+    }
+
     // ---------------------------------------------------------------- CSV
 
     @GetMapping("/sales/by-day.csv")
@@ -248,6 +258,21 @@ public class ReportController {
                     r.subtotal(), r.taxTotal(), r.total(), r.paymentMethods()));
             return csv("ventas", f.period(), w);
         });
+    }
+
+    @GetMapping("/inventory/slow-movers.csv")
+    @PreAuthorize("hasAuthority('reports:read')")
+    public ResponseEntity<byte[]> slowMoversCsv(@RequestParam(required = false) UUID branchId,
+                                                @RequestParam(defaultValue = "90") int days) {
+        CsvWriter w = writer().row("Sucursal", "SKU", "Producto", "Categoría", "Unidad", "Existencia",
+                "Costo promedio", "Valor", "Última venta");
+        SlowMovers slow = reports.slowMovers(branchId, days);
+        for (SlowMoverRow r : slow.rows()) {
+            w.row(r.branchName(), r.sku(), r.name(), r.categoryName(), r.unitCode(), r.quantity(), r.averageCost(),
+                    r.value(), r.lastSaleAt() == null ? "Nunca" : r.lastSaleAt());
+        }
+        w.row("Total", null, null, null, null, null, null, slow.totalValue(), null);
+        return file("sin-rotacion-" + days + "-dias_" + reports.today(), w, slow.rows().size());
     }
 
     @GetMapping("/inventory/valuation.csv")

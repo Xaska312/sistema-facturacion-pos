@@ -78,13 +78,15 @@ public class ProductController {
             @DecimalMin("0") @Digits(integer = 12, fraction = 2) BigDecimal cost,
             @NotNull @DecimalMin("0") @Digits(integer = 12, fraction = 2) BigDecimal salePrice,
             Boolean trackInventory,
+            /** Precio libre (decisión 253): se pide el precio al vender. Nulo = no. */
+            Boolean openPrice,
             @Size(max = 20) List<@Valid ConversionRequest> conversions,
             @Size(max = 50) List<@Valid BarcodeRequest> barcodes,
             @Size(max = 200) List<@Valid ListPriceRequest> listPrices) {
 
         ProductCommand toCommand() {
             return new ProductCommand(sku, name, description, categoryId, baseUnitId, taxId, cost, salePrice,
-                    trackInventory == null || trackInventory,
+                    trackInventory == null || trackInventory, Boolean.TRUE.equals(openPrice),
                     conversions == null ? List.of() : conversions.stream()
                             .map(c -> new ProductCommand.Conversion(c.unitId(), c.factor(), c.salePrice())).toList(),
                     barcodes == null ? List.of() : barcodes.stream()
@@ -118,13 +120,13 @@ public class ProductController {
     /** Lo que ve el lector: el precio resuelto y, con una etiqueta de báscula, el peso o el valor (fase 8e). */
     public record LookupView(UUID productId, String sku, String name, UUID unitId, String unitCode, BigDecimal factor,
                              BigDecimal price, UUID priceListId, boolean fromList, UUID taxId, TaxType taxType,
-                             BigDecimal taxRate, boolean trackInventory, BigDecimal scaleQuantity,
+                             BigDecimal taxRate, boolean trackInventory, boolean openPrice, BigDecimal scaleQuantity,
                              BigDecimal scaleAmount) {
 
         static LookupView of(ResolvedPrice p, BigDecimal scaleQuantity, BigDecimal scaleAmount) {
             return new LookupView(p.productId(), p.sku(), p.name(), p.unitId(), p.unitCode(), p.factor(), p.price(),
                     p.priceListId(), p.fromList(), p.taxId(), p.taxType(), p.taxRate(), p.trackInventory(),
-                    scaleQuantity, scaleAmount);
+                    p.openPrice(), scaleQuantity, scaleAmount);
         }
     }
 

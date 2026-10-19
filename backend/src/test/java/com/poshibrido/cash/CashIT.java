@@ -1,6 +1,7 @@
 package com.poshibrido.cash;
 
 import com.jayway.jsonpath.JsonPath;
+import com.poshibrido.mail.MailMessage;
 import com.poshibrido.sales.PosTestSupport;
 import com.poshibrido.support.IntegrationTest;
 import com.poshibrido.support.TestApi.Joined;
@@ -82,6 +83,14 @@ class CashIT extends IntegrationTest {
         assertThat(number(body(api.getWith(s, "/api/v1/cash/sessions/" + session)), "$.difference"))
                 .isEqualByComparingTo("-1000");
 
+        // El dueño recibe el resumen del cierre por correo (decisión 253), con lo que el cajero no ve
+        MailMessage summary = mailbox.last(owner.email(), "cierre-de-caja").orElseThrow();
+        assertThat(summary.subject()).contains("Cierre de caja").contains("Faltan $1.000");
+        assertThat(summary.text()).contains("Efectivo esperado: $69.000").contains("Efectivo contado: $68.000")
+                .contains("Ventas: 1 por $4.000");
+        assertThat(summary.html()).contains("Faltan $1.000");
+        assertThat(mailbox.sentTo(cashier.email())).noneMatch(m -> "cierre-de-caja".equals(m.kind()));
+
         // Una sesión cerrada no se reabre ni recibe movimientos
         pos.close(c, session, "68000").andExpect(status().isConflict());
         movement(c, session, "INCOME", "1000", "x").andExpect(status().is(422));
@@ -94,6 +103,24 @@ class CashIT extends IntegrationTest {
         String movements = body(api.getWith(s, "/api/v1/cash/sessions/" + session + "/movements"));
         List<String> types = JsonPath.read(movements, "$[*].type");
         assertThat(types).containsExactly("SALE", "INCOME", "EXPENSE", "WITHDRAWAL");
+    }
+
+    @Test
+    void cashCloseSummaryCanBeTurnedOff() throws Exception {
+        Owned owner = api.newTenant("sincorreo");
+        Session s = owner.tenant();
+        api.putWith(s, "/api/v1/settings", """
+                {"allowNegativeStock":false,"pricesIncludeTax":true,"timezone":"America/Bogota","currency":"COP",
+                 "receiptFooter":"Gracias","maxDiscountPercent":0,"cashCloseEmail":false}
+                """).andExpect(status().isOk()).andExpect(jsonPath("$.cashCloseEmail").value(false));
+        // Un PUT sin el campo (clientes viejos) conserva el valor
+        api.putWith(s, "/api/v1/settings", """
+                {"allowNegativeStock":false,"pricesIncludeTax":true,"timezone":"America/Bogota","currency":"COP",
+                 "receiptFooter":"Gracias","maxDiscountPercent":0}
+                """).andExpect(status().isOk()).andExpect(jsonPath("$.cashCloseEmail").value(false));
+        UUID session = pos.openCash(s, CAJA_1, "0");
+        pos.close(s, session, "0").andExpect(status().isOk());
+        assertThat(mailbox.last(owner.email(), "cierre-de-caja")).isEmpty();
     }
 
     @Test

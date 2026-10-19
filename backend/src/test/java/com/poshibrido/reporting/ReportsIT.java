@@ -137,7 +137,7 @@ class ReportsIT extends IntegrationTest {
 
         for (String path : List.of("/sales/by-day.csv", "/sales/by-branch.csv", "/sales/by-seller.csv",
                 "/sales/by-payment-method.csv", "/products.csv", "/categories.csv", "/taxes.csv",
-                "/inventory/valuation.csv")) {
+                "/inventory/valuation.csv", "/inventory/slow-movers.csv")) {
             String content = new String(api.getWith(s, "/api/v1/reports" + path).andExpect(status().isOk())
                     .andReturn().getResponse().getContentAsByteArray(), StandardCharsets.UTF_8);
             assertThat(content).as(path).contains(";");
@@ -145,6 +145,41 @@ class ReportsIT extends IntegrationTest {
         String taxes = new String(api.getWith(s, "/api/v1/reports/taxes.csv").andReturn().getResponse()
                 .getContentAsByteArray(), StandardCharsets.UTF_8);
         assertThat(taxes).contains("IVA;19;4;17647,05;3352,95");
+    }
+
+    @Test
+    void slowMoversListStockThatHasNotSoldInTheLastDays() throws Exception {
+        Scenario sc = scenario("repslow");
+        Session s = sc.owner().tenant();
+        UUID principal = api.principalBranchId(s);
+        UUID pen = product(s, "LAP", "Lapicero", IVA19, "1500", true);
+        api.postWith(s, "/api/v1/inventory/initial-balances", """
+                {"branchId":"%s","lines":[{"productId":"%s","quantity":30,"unitCost":500}]}
+                """.formatted(principal, pen)).andExpect(status().isCreated());
+
+        // Recién creados: aún no han tenido tiempo de venderse, no aparecen.
+        String fresh = body(api.getWith(s, "/api/v1/reports/inventory/slow-movers?days=90").andExpect(status().isOk()));
+        assertThat(((Number) JsonPath.read(fresh, "$.productCount")).intValue()).isZero();
+
+        // Con 200 días de creados: el lapicero nunca se vendió (aparece); la gaseosa se vendió hoy (no aparece).
+        jdbc.update("UPDATE t_" + sc.owner().slug() + ".products SET created_at = now() - interval '200 days' "
+                + "WHERE sku IN ('LAP', 'GAS')");
+        String slow = body(api.getWith(s, "/api/v1/reports/inventory/slow-movers?days=90").andExpect(status().isOk()));
+        assertThat(((Number) JsonPath.read(slow, "$.days")).intValue()).isEqualTo(90);
+        assertThat(((Number) JsonPath.read(slow, "$.productCount")).intValue()).isEqualTo(1);
+        assertThat((String) JsonPath.read(slow, "$.rows[0].sku")).isEqualTo("LAP");
+        assertThat(number(slow, "$.rows[0].quantity")).isEqualByComparingTo("30");
+        assertThat(number(slow, "$.rows[0].value")).isEqualByComparingTo("15000");
+        assertThat((Object) JsonPath.read(slow, "$.rows[0].lastSaleAt")).isNull();
+        assertThat(number(slow, "$.totalValue")).isEqualByComparingTo("15000");
+
+        // En la sede Norte no tiene existencia: nada que mostrar allá.
+        String north = body(api.getWith(s, "/api/v1/reports/inventory/slow-movers?days=90&branchId=" + sc.north())
+                .andExpect(status().isOk()));
+        assertThat(((Number) JsonPath.read(north, "$.productCount")).intValue()).isZero();
+
+        api.getWith(s, "/api/v1/reports/inventory/slow-movers?days=3").andExpect(status().is(422));
+        api.getWith(sc.cashier().session(), "/api/v1/reports/inventory/slow-movers").andExpect(status().isForbidden());
     }
 
     @Test

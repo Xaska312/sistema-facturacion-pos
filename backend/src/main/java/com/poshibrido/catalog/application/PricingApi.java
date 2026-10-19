@@ -13,7 +13,16 @@ public interface PricingApi {
 
     record ResolvedPrice(UUID productId, String sku, String name, UUID unitId, String unitCode, BigDecimal factor,
                          BigDecimal price, UUID priceListId, boolean fromList, UUID taxId, TaxType taxType,
-                         BigDecimal taxRate, boolean trackInventory) {
+                         BigDecimal taxRate, boolean trackInventory, boolean openPrice) {
+
+        /**
+         * Precio libre (decisión 253): el precio que escribió el cajero reemplaza al sugerido. No viene de una lista
+         * de precios.
+         */
+        public ResolvedPrice withTypedPrice(BigDecimal typed) {
+            return new ResolvedPrice(productId, sku, name, unitId, unitCode, factor, typed, null, false, taxId, taxType,
+                    taxRate, trackInventory, openPrice);
+        }
     }
 
     /**

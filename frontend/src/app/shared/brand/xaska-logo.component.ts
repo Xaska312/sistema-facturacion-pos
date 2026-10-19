@@ -13,7 +13,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'inline-flex' },
   template: `
-    <span class="xaska" [class.xaska-lg]="size() === 'lg'"
+    <span class="xaska" [class.xaska-lg]="size() === 'lg'" [class.xaska-stacked]="stacked()"
           [attr.role]="label() ? 'img' : null" [attr.aria-label]="label() || null"
           [attr.aria-hidden]="label() ? null : 'true'">
       <svg viewBox="-6 -6 112 112" class="xaska-icon" aria-hidden="true" focusable="false">
@@ -27,6 +27,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
         <polygon points="50,40 60,50 50,60 40,50" class="dot-on-tile" />
       </svg>
       @if (wordmark()) {
+        <span class="xaska-wordmark-row">
         <svg viewBox="-0.5 -0.5 379 73" class="xaska-name" aria-hidden="true" focusable="false">
           <g class="ink">
             <polygon points="0,0 23,29.6 31.6,21 15.2,0" />
@@ -48,6 +49,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
         @if (tag()) {
           <span class="xaska-tag">POS</span>
         }
+        </span>
       }
     </span>
   `,
@@ -88,6 +90,24 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
       background: var(--xaska-tag-bg);
       color: var(--xaska-tag-text);
     }
+    /* En fila, el nombre y la etiqueta siguen siendo hijos directos del flex (mismo espacio que antes). */
+    .xaska-wordmark-row {
+      display: contents;
+    }
+    /* Apilado (entrada): el símbolo arriba y centrado, y debajo el nombre con la etiqueta POS. */
+    .xaska-stacked {
+      --icon: 4.5rem;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .xaska-stacked .xaska-name {
+      height: 1.75rem;
+    }
+    .xaska-stacked .xaska-wordmark-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.625rem;
+    }
     .xaska-lg .xaska-tag {
       font-size: 0.8125rem;
       padding: 0.25rem 0.5rem;
@@ -100,6 +120,8 @@ export class XaskaLogoComponent {
   /** Agrega la etiqueta "POS" después del nombre. */
   readonly tag = input(false);
   readonly size = input<'md' | 'lg'>('md');
+  /** El símbolo arriba y centrado, con el nombre debajo (pantalla de entrada). */
+  readonly stacked = input(false);
   /** Nombre accesible; vacío = decorativo (cuando el texto ya está cerca). */
   readonly label = input('');
 

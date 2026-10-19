@@ -14,12 +14,15 @@ import {
   ProductReportRow,
   ReportSummary,
   SalesReportRow,
+  SlowMoverRow,
+  SlowMovers,
   TaxReportRow,
 } from '../../core/api/api.models';
 import { OrganizationApi } from '../../core/api/organization.api';
 import { ReportFilters, ReportsApi } from '../../core/api/reports.api';
 import { ChartComponent } from '../../shared/charts/chart.component';
 import { saveDownload } from '../../shared/download';
+import { formatDate } from '../../shared/format';
 import { formatCompactCop, formatCop, formatPercent, formatQuantity } from '../../shared/money';
 import { PageHeaderComponent } from '../../shared/page-header.component';
 import { PeriodFilterComponent } from '../../shared/period-filter.component';
@@ -29,7 +32,7 @@ import { DataTableComponent } from '../../shared/table/data-table.component';
 import { ColumnDef } from '../../shared/table/table';
 import { dayChart, paymentChart } from '../dashboard/dashboard-data';
 import { PeriodKey, PeriodSelection, periodFromParams, periodLabel, periodToParams, resolvePeriod } from './periods';
-import { ReportTab, csvFor, salesTotals } from './report-views';
+import { DEFAULT_SLOW_DAYS, ReportTab, SLOW_DAYS, csvFor, salesTotals, slowDaysFrom } from './report-views';
 import { TermComponent } from '../../shared/help/term.component';
 
 const TABS: { id: ReportTab; label: string }[] = [
@@ -42,6 +45,7 @@ const TABS: { id: ReportTab; label: string }[] = [
   { id: 'categories', label: 'Categorías' },
   { id: 'taxes', label: 'Impuestos' },
   { id: 'inventory', label: 'Inventario' },
+  { id: 'slow', label: 'Sin rotación' },
 ];
 
 const TAX_NAMES: Record<string, string> = {
@@ -70,8 +74,8 @@ const REPORT_PERIODS: readonly PeriodKey[] = ['today', 'yesterday', 'last7', 'la
 
     <div class="sticky top-14 z-20 -mx-4 md:-mx-6 px-4 md:px-6 py-2 mb-2 bg-ground">
       <app-period-filter [selection]="selection()" [options]="periods" [branches]="branches()"
-                         [showPeriod]="tab() !== 'inventory'" (selectionChange)="select($event)">
-        @if (tab() !== 'inventory') {
+                         [showPeriod]="!stockView()" (selectionChange)="select($event)">
+        @if (!stockView()) {
           <label periodExtra class="flex items-center gap-2 text-sm">
             <span class="text-muted">Vendedor</span>
             <select #sellerSelect class="border rounded-md px-2 py-1.5" [value]="sellerId() ?? ''"
@@ -252,6 +256,36 @@ const REPORT_PERIODS: readonly PeriodKey[] = ['today', 'yesterday', 'last7', 'la
           </app-data-table>
           <p class="text-xs text-muted mt-3">Existencias actuales × costo promedio ponderado.</p>
         }
+        @case ('slow') {
+          <div class="flex flex-wrap items-center gap-2 mb-4" role="group" aria-label="Sin ventas desde hace">
+            <span class="text-sm text-muted">Sin ventas en los últimos</span>
+            @for (d of slowDayOptions; track d) {
+              <button type="button" class="px-3 py-1.5 rounded-lg text-sm font-medium border border-line"
+                      [class.bg-brand]="slowDays() === d" [class.text-brand-contrast]="slowDays() === d"
+                      [class.bg-surface]="slowDays() !== d" [attr.aria-pressed]="slowDays() === d"
+                      (click)="setSlowDays(d)">{{ d }} días</button>
+            }
+          </div>
+          @if (slow(); as v) {
+            <div class="grid gap-3 grid-cols-1 sm:grid-cols-2 max-w-xl mb-4">
+              <app-stat-card label="Plata quieta" [value]="cop(v.totalValue)" icon="pi pi-clock"
+                             [hint]="'Existencias × costo de lo que no se vende hace ' + v.days + ' días'" />
+              <app-stat-card label="Productos sin rotación" [value]="v.productCount.toLocaleString('es-CO')" icon="pi pi-box" />
+            </div>
+          }
+          <app-data-table [columns]="slowColumns" [items]="slow()?.rows ?? null" [loading]="loading()"
+                          [trackBy]="slowKey" [pageSizeOptions]="[]" caption="Productos sin rotación"
+                          emptyIcon="pi pi-check-circle" emptyTitle="Todo se está vendiendo"
+                          emptyMessage="No hay productos con existencia sin ventas en ese periodo.">
+            <ng-template appCell="product" let-row>
+              <span class="font-mono text-xs text-muted">{{ row.sku }}</span> {{ row.name }}
+            </ng-template>
+          </app-data-table>
+          <p class="text-xs text-muted mt-3">
+            Productos con existencia que no se han vendido en ese periodo, primero los que tienen más plata quieta: son
+            los candidatos para una promoción. Los creados hace menos tiempo no aparecen.
+          </p>
+        }
       }
     }
 
@@ -297,6 +331,12 @@ export class ReportsComponent {
   protected readonly categories = signal<CategoryReportRow[]>([]);
   protected readonly taxes = signal<TaxReportRow[]>([]);
   protected readonly valuation = signal<InventoryValuation | null>(null);
+  /** Productos sin rotación (decisión 254). */
+  protected readonly slow = signal<SlowMovers | null>(null);
+  protected readonly slowDays = signal<number>(DEFAULT_SLOW_DAYS);
+  protected readonly slowDayOptions = SLOW_DAYS;
+  /** Pestañas de existencias de hoy: sin periodo ni vendedor. */
+  protected readonly stockView = computed(() => this.tab() === 'inventory' || this.tab() === 'slow');
 
   protected readonly range = computed(() => resolvePeriod(this.selection()));
   protected readonly periodText = computed(() => `Periodo: ${periodLabel(this.selection(), this.range())}`);
@@ -316,6 +356,7 @@ export class ReportsComponent {
   protected readonly categoryKey = (row: CategoryReportRow): string => row.categoryId ?? row.categoryName;
   protected readonly taxKey = (row: TaxReportRow): string => `${row.taxType}:${row.taxRate}`;
   protected readonly inventoryKey = (row: InventoryValuationRow): string => `${row.branchId}:${row.productId}`;
+  protected readonly slowKey = (row: SlowMoverRow): string => `${row.branchId}:${row.productId}`;
 
   protected readonly paymentColumns: ColumnDef<PaymentReportRow>[] = [
     { header: 'Medio de pago', cell: (r) => r.name },
@@ -354,6 +395,13 @@ export class ReportsComponent {
     { header: 'Costo promedio', cell: (r) => r.averageCost, kind: 'money', hideOnMobile: true },
     { header: 'Valor', cell: (r) => r.value, kind: 'money' },
   ];
+  protected readonly slowColumns: ColumnDef<SlowMoverRow>[] = [
+    { header: 'Sucursal', cell: (r) => r.branchName, hideOnMobile: true },
+    { header: 'Producto', cell: (r) => r.name, template: 'product' },
+    { header: 'Existencia', cell: (r) => `${formatQuantity(r.quantity)} ${r.unitCode}`, cellClass: 'text-right whitespace-nowrap' },
+    { header: 'Plata quieta', cell: (r) => r.value, kind: 'money' },
+    { header: 'Última venta', cell: (r) => (r.lastSaleAt ? formatDate(r.lastSaleAt) : 'Nunca'), cellClass: 'whitespace-nowrap' },
+  ];
 
   /** Evita que una respuesta vieja (de filtros anteriores) reemplace a la última. */
   private requestSeq = 0;
@@ -366,6 +414,7 @@ export class ReportsComponent {
       const view = params.get('vista');
       this.tab.set(TABS.some((t) => t.id === view) ? (view as ReportTab) : 'summary');
       this.productOrder.set(params.get('orden') === 'cantidad' ? 'quantity' : 'total');
+      this.slowDays.set(slowDaysFrom(params.get('dias')));
       this.reload();
     });
   }
@@ -380,6 +429,10 @@ export class ReportsComponent {
 
   setSeller(sellerId: string): void {
     this.updateUrl({ vendedor: sellerId || null });
+  }
+
+  setSlowDays(days: number): void {
+    this.updateUrl({ dias: days === DEFAULT_SLOW_DAYS ? null : String(days) });
   }
 
   setProductOrder(order: string): void {
@@ -409,7 +462,7 @@ export class ReportsComponent {
       });
     };
     // Vendedores con ventas en el periodo (sin el filtro de vendedor). Si el elegido no vendió, se quita el filtro.
-    if (this.tab() !== 'inventory') {
+    if (!this.stockView()) {
       this.reports.salesBy('by-seller', { ...filters, sellerId: null }).subscribe((rows) => {
         if (!current()) {
           return;
@@ -449,11 +502,14 @@ export class ReportsComponent {
       case 'inventory':
         run(this.reports.valuation(filters.branchId), (v) => this.valuation.set(v));
         break;
+      case 'slow':
+        run(this.reports.slowMovers(filters.branchId, this.slowDays()), (v) => this.slow.set(v));
+        break;
     }
   }
 
   download(): void {
-    const csv = csvFor(this.tab(), this.productOrder());
+    const csv = csvFor(this.tab(), this.productOrder(), this.slowDays());
     this.exporting.set(true);
     this.reports.csv(csv.report, this.filters(), csv.extra).subscribe({
       next: (response) => {

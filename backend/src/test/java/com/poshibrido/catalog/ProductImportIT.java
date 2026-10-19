@@ -32,7 +32,8 @@ class ProductImportIT extends IntegrationTest {
                 .andExpect(jsonPath("$.toCreate").value(3))
                 .andExpect(jsonPath("$.errors.length()").value(0))
                 .andExpect(jsonPath("$.applied").value(false));
-        api.getWith(owner.tenant(), "/api/v1/products").andExpect(jsonPath("$.totalElements").value(0));
+        // Solo "Varios", que trae todo negocio (decisión 253): la carga no creó nada.
+        api.getWith(owner.tenant(), "/api/v1/products").andExpect(jsonPath("$.totalElements").value(1));
     }
 
     @Test
@@ -87,7 +88,8 @@ class ProductImportIT extends IntegrationTest {
                 .andReturn().getResponse().getContentAsString();
         List<Integer> rows = JsonPath.read(report, "$.errors[*].row");
         assertThat(rows).containsExactly(3, 4, 5, 6, 7, 8);
-        api.getWith(owner.tenant(), "/api/v1/products").andExpect(jsonPath("$.totalElements").value(0));
+        // Solo "Varios", que trae todo negocio (decisión 253): la carga no creó nada.
+        api.getWith(owner.tenant(), "/api/v1/products").andExpect(jsonPath("$.totalElements").value(1));
     }
 
     @Test
