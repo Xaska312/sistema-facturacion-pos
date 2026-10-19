@@ -19,6 +19,7 @@ const ALLOWED_FILES = new Set([
   'core/theme/app-preset.ts', // la paleta de PrimeNG (debe coincidir con src/styles.css)
   'core/theme/brand-palettes.ts', // muestras de los colores de marca (fase 8c; deben coincidir con src/styles.css)
   'shared/receipt/receipt.component.ts', // el tiquete térmico se imprime siempre en negro sobre blanco
+  'features/orders/order-receipt.component.ts', // comprobante de pedido: mismo papel que el tiquete
 ]);
 
 const PALETTES = [

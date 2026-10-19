@@ -5,6 +5,7 @@ import com.poshibrido.cash.application.CashApi;
 import com.poshibrido.cash.application.CashApi.OpenSession;
 import com.poshibrido.cash.application.CashApi.PaymentMethodRef;
 import com.poshibrido.credit.application.CreditApi;
+import com.poshibrido.orders.application.OrderApi;
 import com.poshibrido.catalog.application.InventoryCatalogApi;
 import com.poshibrido.catalog.application.InventoryCatalogApi.StockProduct;
 import com.poshibrido.catalog.application.PricingApi;
@@ -43,6 +44,8 @@ import jakarta.persistence.PersistenceContext;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
@@ -76,12 +79,15 @@ public class SaleService {
     /** Vender productos de precio libre escribiendo el precio (decisión 253). */
     static final String OPEN_PRICE_PERMISSION = "sales:open-price";
     static final int MAX_ITEMS = 200;
+    /** Medio de pago "Anticipo" de los pedidos (decisión 258). */
+    static final String DEPOSIT_METHOD = "DEPOSIT";
     static final int MAX_PAYMENTS = 10;
     private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
     private static final Pattern IDEMPOTENCY_KEY = Pattern.compile("^[A-Za-z0-9_\\-]{8,100}$");
 
     private final CashApi cash;
     private final CreditApi credit;
+    private final OrderApi orders;
     private final StockLedger ledger;
     private final PricingApi pricing;
     private final InventoryCatalogApi catalog;
@@ -99,13 +105,14 @@ public class SaleService {
     @PersistenceContext
     private EntityManager em;
 
-    public SaleService(CashApi cash, CreditApi credit, StockLedger ledger, PricingApi pricing,
+    public SaleService(CashApi cash, CreditApi credit, OrderApi orders, StockLedger ledger, PricingApi pricing,
                        InventoryCatalogApi catalog, CustomerApi customers, BusinessSettingsApi settings, DocumentSequences sequences,
                        SaleRepository sales, SaleItemRepository saleItems, SalePaymentRepository salePayments,
                        SaleQueryService queries, AuditLogger audit, ApplicationEventPublisher events,
                        PlatformTransactionManager transactionManager) {
         this.cash = cash;
         this.credit = credit;
+        this.orders = orders;
         this.ledger = ledger;
         this.pricing = pricing;
         this.catalog = catalog;
@@ -136,7 +143,7 @@ public class SaleService {
         }
         UUID id;
         try {
-            id = tx.execute(status -> register(command, key, actor));
+            id = tx.execute(status -> register(command, key, actor, Options.POS));
         } catch (RuntimeException ex) {
             // Dos peticiones simultáneas con la misma clave: el índice único deja pasar una; la otra devuelve esa.
             Optional<UUID> winner = findByKey(key, actor);
@@ -148,7 +155,32 @@ public class SaleService {
         return queries.sale(id);
     }
 
-    private UUID register(Create c, String key, UUID actor) {
+    /**
+     * Venta de la entrega de un pedido por encargo (decisión 258): las líneas llevan el precio acordado en el pedido
+     * (no el de la lista) y su descripción, y {@code depositApplied} se paga con "Anticipo" (exactamente ese valor: el
+     * pedido lo descuenta de lo anticipado). Corre dentro de la transacción del pedido (que ya lo tiene bloqueado). La
+     * {@code Idempotency-Key} es obligatoria.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public UUID createForOrder(Create command, List<String> names, BigDecimal depositApplied, String idempotencyKey) {
+        return register(command, requireKey(idempotencyKey), CurrentActor.requireUserId(),
+                new Options(true, names, depositApplied == null ? BigDecimal.ZERO : depositApplied));
+    }
+
+    /** Venta ya registrada con esa clave por el usuario actual (para reintentos de la entrega de un pedido). */
+    public Optional<UUID> existingSale(String idempotencyKey) {
+        return findByKey(requireKey(idempotencyKey), CurrentActor.requireUserId());
+    }
+
+    /**
+     * {@code fromOrder}: entrega de un pedido; {@code names}: nombre de cada línea (o nulo = el del producto);
+     * {@code depositApplied}: lo que se paga con "Anticipo" (solo en la entrega de un pedido).
+     */
+    private record Options(boolean fromOrder, List<String> names, BigDecimal depositApplied) {
+        static final Options POS = new Options(false, null, BigDecimal.ZERO);
+    }
+
+    private UUID register(Create c, String key, UUID actor, Options options) {
         BusinessSettings cfg = settings.current();
         List<ItemLine> lines = requireItems(c.items());
         OpenSession session = cash.lockOpenSessionOf(actor)
@@ -174,7 +206,14 @@ public class SaleService {
                 throw new NotFoundException("Producto no encontrado.");
             }
             ResolvedPrice price = pricing.price(line.productId(), line.unitId(), customer.priceListId());
-            if (price.openPrice()) {
+            if (options.fromOrder()) {
+                // Pedido por encargo: manda el precio acordado al crear el pedido.
+                BigDecimal agreed = line.expectedUnitPrice();
+                if (agreed == null || agreed.signum() <= 0) {
+                    throw new BusinessRuleException("Falta el precio de " + price.name() + ".");
+                }
+                price = price.withTypedPrice(agreed.setScale(2, RoundingMode.HALF_UP));
+            } else if (price.openPrice()) {
                 // Precio libre (decisión 253): manda el precio que escribió el cajero (queda en la línea de la venta).
                 if (!CurrentActor.permissions().contains(OPEN_PRICE_PERMISSION)) {
                     throw new ForbiddenException("Tu usuario no puede vender productos de precio libre ("
@@ -208,7 +247,7 @@ public class SaleService {
             maxDiscount = maxDiscount.max(discount);
             LineAmounts amounts = SaleCalculator.line(price.price(), quantity, discount, price.taxRate(),
                     cfg.pricesIncludeTax());
-            if (!price.openPrice() && line.expectedUnitPrice() != null
+            if (!options.fromOrder() && !price.openPrice() && line.expectedUnitPrice() != null
                     && line.expectedUnitPrice().compareTo(price.price()) != 0) {
                 changes.add(new PriceChangedException.Change(lineNo, price.sku(), price.name(),
                         line.expectedUnitPrice(), price.price()));
@@ -235,6 +274,7 @@ public class SaleService {
         List<PaymentMethodRef> usedMethods = new ArrayList<>();
         List<PaymentInput> inputs = new ArrayList<>();
         int creditIndex = -1;
+        boolean depositSeen = false;
         for (PaymentLine p : paymentLines) {
             PaymentMethodRef method = p.paymentMethodId() == null ? null : methods.get(p.paymentMethodId());
             if (method == null || !method.active()) {
@@ -247,11 +287,24 @@ public class SaleService {
                 }
                 creditIndex = usedMethods.size();
             }
+            if (DEPOSIT_METHOD.equals(method.code())) {
+                // Solo la entrega de un pedido, y solo por lo que el pedido aplica de su anticipo (una línea).
+                if (!options.fromOrder()) {
+                    throw new BusinessRuleException("El anticipo solo se usa al entregar un pedido.");
+                }
+                if (depositSeen || p.amount() == null || p.amount().compareTo(options.depositApplied()) != 0) {
+                    throw new BusinessRuleException("El anticipo se aplica solo.");
+                }
+                depositSeen = true;
+            }
             if (method.requiresReference() && (p.reference() == null || p.reference().isBlank())) {
                 throw new BusinessRuleException("El pago con " + method.name() + " requiere una referencia.");
             }
             usedMethods.add(method);
             inputs.add(new PaymentInput(method.affectsCash(), p.amount()));
+        }
+        if (options.depositApplied().signum() > 0 && !depositSeen) {
+            throw new BusinessRuleException("Falta aplicar el anticipo del pedido.");
         }
         Settlement settlement;
         try {
@@ -281,7 +334,7 @@ public class SaleService {
             boolean isTracked = l.price().trackInventory();
             BigDecimal unitCost = isTracked ? stock.averageCost(l.line().productId()) : l.product().cost();
             em.persist(SaleItem.of(new SaleItem.Data(saleId, l.lineNo(), l.line().productId(), l.price().sku(),
-                    l.price().name(), l.price().unitId(), l.price().unitCode(), l.quantity(), l.price().factor(),
+                    itemName(options, l), l.price().unitId(), l.price().unitCode(), l.quantity(), l.price().factor(),
                     l.baseQuantity(), l.price().price(), l.amounts().gross(), l.discount(), l.amounts().discount(),
                     l.price().taxId(), l.price().taxType().name(), l.price().taxRate(), l.amounts().taxableBase(),
                     l.amounts().tax(), l.amounts().total(), unitCost == null ? BigDecimal.ZERO : unitCost, isTracked)));
@@ -364,6 +417,8 @@ public class SaleService {
                     .orElseThrow(() -> new BusinessRuleException("La caja de esta venta ya se cerró. Abre tu caja "
                             + "para devolver el efectivo y vuelve a anular."));
         }
+        // Si fue la entrega de un pedido, sus líneas vuelven a quedar pendientes (antes del inventario: orden de bloqueos).
+        orders.saleVoided(saleId);
         String label = "Anulación " + sale.documentNumber() + ": " + reason;
         if (label.length() > 255) {
             label = label.substring(0, 255);
@@ -398,6 +453,13 @@ public class SaleService {
     }
 
     // ------------------------------------------------------------------ apoyo
+
+    private static String itemName(Options options, PricedLine l) {
+        String custom = options.names() == null || options.names().size() < l.lineNo() ? null
+                : options.names().get(l.lineNo() - 1);
+        String name = custom == null || custom.isBlank() ? l.price().name() : custom.trim();
+        return name.length() > 200 ? name.substring(0, 200) : name;
+    }
 
     private record PricedLine(int lineNo, ItemLine line, StockProduct product, ResolvedPrice price,
                               BigDecimal quantity, BigDecimal baseQuantity, BigDecimal discount,

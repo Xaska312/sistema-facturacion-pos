@@ -501,7 +501,9 @@ export type CashMovementType =
   | 'EXPENSE'
   | 'WITHDRAWAL'
   | 'CREDIT_PAYMENT'
-  | 'CREDIT_PAYMENT_VOID';
+  | 'CREDIT_PAYMENT_VOID'
+  | 'ORDER_PAYMENT'
+  | 'ORDER_REFUND';
 export type ManualCashMovementType = 'INCOME' | 'EXPENSE' | 'WITHDRAWAL';
 
 export interface PaymentMethod {
@@ -581,6 +583,8 @@ export interface CashSection {
   withdrawals: number;
   /** Abonos de fiado en efectivo menos los anulados (decisión 255). */
   creditPayments: number | null;
+  /** Anticipos de pedidos en efectivo menos devoluciones (decisión 258). */
+  orderPayments: number | null;
   expected: number | null;
   counted: number | null;
   difference: number | null;
@@ -1102,6 +1106,9 @@ export interface ScalePlu {
 /** Código del medio de pago "Fiado". */
 export const CREDIT_METHOD_CODE = 'CREDIT';
 
+/** Código del medio de pago "Anticipo" (lo abonado a un pedido, se aplica al entregarlo; decisión 258). */
+export const DEPOSIT_METHOD_CODE = 'DEPOSIT';
+
 /**
  * Cuenta de fiado de un cliente. {@code balance} positivo = debe; negativo = saldo a favor. {@code available}: lo que
  * todavía se le puede fiar. La deuda por antigüedad supone que los abonos pagan primero lo más viejo.
@@ -1161,4 +1168,136 @@ export interface CreditPaymentInput {
   paymentMethodId: string;
   reference: string | null;
   notes: string | null;
+}
+
+// ---------------------------------------------------------------- pedidos por encargo (decisión 258)
+
+export type OrderStatus = 'OPEN' | 'DELIVERED' | 'CANCELLED';
+export type OrderFilter = 'OPEN' | 'OVERDUE' | 'DELIVERED' | 'CANCELLED' | 'ALL';
+export type OrderPaymentType = 'DEPOSIT' | 'REFUND' | 'APPLIED' | 'APPLIED_VOID';
+
+export interface OrderItem {
+  id: string;
+  lineNo: number;
+  productId: string;
+  sku: string;
+  productName: string;
+  unitCode: string;
+  description: string | null;
+  /** Medidas en metros (las dos o ninguna); con medidas, la cantidad es el área en m². */
+  width: number | null;
+  length: number | null;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+  delivered: boolean;
+  saleId: string | null;
+  saleNumber: string | null;
+  deliveredAt: string | null;
+}
+
+export interface OrderPayment {
+  id: string;
+  entryNo: number;
+  type: OrderPaymentType;
+  /** Con signo: positivo aumenta el anticipo disponible. */
+  amount: number;
+  methodCode: string | null;
+  methodName: string | null;
+  reference: string | null;
+  notes: string | null;
+  saleId: string | null;
+  saleNumber: string | null;
+  createdByName: string | null;
+  createdAt: string;
+}
+
+/**
+ * Pedido. {@code pendingTotal}: lo que falta entregar; {@code depositAvailable}: anticipo aún sin aplicar;
+ * {@code balanceDue}: lo que falta por pagar; {@code deposited}: anticipos recibidos menos devoluciones.
+ */
+export interface Order {
+  id: string;
+  number: string;
+  status: OrderStatus;
+  customerId: string;
+  customerName: string;
+  customerDocument: string;
+  customerPhone: string | null;
+  dueDate: string;
+  overdue: boolean;
+  address: string | null;
+  notes: string | null;
+  total: number;
+  deliveredTotal: number;
+  pendingTotal: number;
+  deposited: number;
+  depositAvailable: number;
+  balanceDue: number;
+  createdByName: string | null;
+  createdAt: string;
+  deliveredAt: string | null;
+  cancelledAt: string | null;
+  cancelReason: string | null;
+  items: OrderItem[];
+  payments: OrderPayment[];
+}
+
+export interface OrderRow {
+  id: string;
+  number: string;
+  status: OrderStatus;
+  customerId: string;
+  customerName: string;
+  dueDate: string;
+  overdue: boolean;
+  total: number;
+  deposited: number;
+  balanceDue: number;
+  itemCount: number;
+  deliveredCount: number;
+  createdAt: string;
+}
+
+export interface OrderSummary {
+  open: number;
+  overdue: number;
+  dueToday: number;
+  dueSoon: number;
+  balanceDue: number;
+}
+
+export interface OrderItemInput {
+  productId: string;
+  description: string | null;
+  width: number | null;
+  length: number | null;
+  quantity: number | null;
+  unitPrice: number;
+}
+
+export interface OrderInput {
+  customerId: string | null;
+  dueDate: string;
+  address: string | null;
+  notes: string | null;
+  items: OrderItemInput[];
+}
+
+export interface OrderPaymentInput {
+  amount: number;
+  paymentMethodId: string;
+  reference: string | null;
+  notes: string | null;
+}
+
+export interface OrderDeliverPayment {
+  paymentMethodId: string;
+  amount: number;
+  reference: string | null;
+}
+
+export interface OrderDelivery {
+  order: Order;
+  saleId: string;
 }

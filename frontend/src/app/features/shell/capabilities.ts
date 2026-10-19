@@ -18,6 +18,8 @@ const RULES: readonly CapabilityRule[] = [
   { permission: 'sales:open-price', text: 'vender productos de precio libre (impresiones, servicios)' },
   { permission: 'credit:collect', text: 'recibir abonos de fiados' },
   { permission: 'credit:manage', text: 'asignar cupos de fiado y anular abonos' },
+  { permission: 'orders:create', text: 'tomar pedidos por encargo, recibir anticipos y entregarlos' },
+  { permission: 'orders:manage', text: 'cancelar pedidos y devolver anticipos' },
   { permission: 'cash:read', text: 'ver el historial de caja' },
   { permission: 'cash:audit', text: 'ver las diferencias de los arqueos' },
   { permission: 'reports:read', text: 'ver el tablero y los reportes' },

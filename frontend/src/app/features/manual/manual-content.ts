@@ -192,6 +192,27 @@ export const MANUAL: readonly ManualChapter[] = [
         who: 'Quien tenga el permiso de anular ventas (por defecto, Propietario y Administrador).',
       },
       {
+        id: 'pedidos',
+        title: 'Pedidos por encargo',
+        summary: 'Para trabajos que se entregan después: mesones en mármol o granito, tortas, uniformes, muebles. Anota lo que pidió el cliente, recibe anticipos y, al entregar, se convierte en una venta.',
+        steps: [
+          'Ve a Pedidos y toca "Nuevo pedido". Elige el cliente (con su teléfono, para avisarle), la fecha de entrega y, si aplica, la dirección de instalación.',
+          'Agrega lo que pidió. Cada línea es un producto del catálogo: cóbralo por cantidad (3 unidades) o por medidas (ancho × largo en metros, para productos en M2). Escribe la descripción y el precio acordado.',
+          'Guarda y recibe el anticipo: en efectivo entra hoy a tu caja abierta; por transferencia queda con su referencia.',
+          'El día de la entrega abre el pedido y toca "Entregar". Marca lo que entregas (puede ser una parte): se registra una venta en tu caja, lo anticipado se descuenta solo y el cliente paga el resto como en el POS.',
+          'Con "Imprimir comprobante" o "Enviar por WhatsApp" le das al cliente el detalle del pedido, lo abonado y lo que falta.',
+        ],
+        tips: [
+          'Si no tienes el producto en el catálogo, crea uno genérico (por ejemplo "Mesón en granito" en M2 o "Torta por encargo" en unidades) con precio libre.',
+          'El pedido no mueve inventario ni ingresos: eso pasa al entregarlo. El anticipo sí entra a la caja el día que lo recibes y en el cierre sale como "Anticipos de pedidos".',
+          'Mientras esté abierto puedes editar lo pendiente; lo ya entregado no cambia.',
+          'En el inicio y en Pedidos ves los atrasados y los que se entregan hoy.',
+          'Si anulas la venta de una entrega, esas líneas vuelven a quedar pendientes y su anticipo vuelve a estar disponible.',
+          'Cancelar un pedido devuelve el anticipo que no se ha aplicado (en efectivo sale de tu caja). Solo el dueño o un administrador cancelan.',
+        ],
+        who: 'Propietario, Administrador, Cajero y Vendedor crean, cobran anticipos y entregan; el Contador solo consulta.',
+      },
+      {
         id: 'atajos',
         title: 'Atajos de teclado',
         summary: 'Con teclado y lector puedes vender sin tocar el mouse.',

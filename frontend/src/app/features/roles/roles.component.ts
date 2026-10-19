@@ -22,6 +22,7 @@ const MODULE_LABEL: Record<string, string> = {
   cash: 'Caja',
   sales: 'Ventas',
   credit: 'Fiados',
+  orders: 'Pedidos',
   reporting: 'Reportes',
   audit: 'Auditoría',
 };

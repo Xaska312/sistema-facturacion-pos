@@ -10,7 +10,11 @@ public enum CashMovementType {
     /** Abono en efectivo de un cliente a su fiado (decisión 255). */
     CREDIT_PAYMENT(true),
     /** Anulación de un abono en efectivo: el dinero sale de la caja. */
-    CREDIT_PAYMENT_VOID(false);
+    CREDIT_PAYMENT_VOID(false),
+    /** Anticipo en efectivo de un pedido por encargo (decisión 258). */
+    ORDER_PAYMENT(true),
+    /** Devolución en efectivo del anticipo de un pedido cancelado. */
+    ORDER_REFUND(false);
 
     private final boolean entry;
 

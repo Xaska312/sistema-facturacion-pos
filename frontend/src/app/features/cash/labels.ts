@@ -8,6 +8,8 @@ export const CASH_MOVEMENT_LABEL: Record<CashMovementType, string> = {
   WITHDRAWAL: 'Retiro',
   CREDIT_PAYMENT: 'Abono de fiado',
   CREDIT_PAYMENT_VOID: 'Abono anulado',
+  ORDER_PAYMENT: 'Anticipo de pedido',
+  ORDER_REFUND: 'Devolución de anticipo',
 };
 
 export const SESSION_STATUS_LABEL: Record<CashSessionStatus, string> = {
