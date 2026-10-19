@@ -33,6 +33,16 @@ export class CashApi {
     return this.http.get<RegisterOption[]>('/api/v1/cash/registers');
   }
 
+  /** Vender en una caja compartida que abrió otra persona (decisión 256). */
+  join(sessionId: string): Observable<CashSession> {
+    return this.http.post<CashSession>(`/api/v1/cash/sessions/${sessionId}/join`, null);
+  }
+
+  /** Dejar de vender en la caja compartida (no la cierra). */
+  leave(): Observable<void> {
+    return this.http.post<void>('/api/v1/cash/sessions/current/leave', null);
+  }
+
   /** Sesión abierta del usuario; {@code null} si no tiene caja abierta (204). */
   current(): Observable<CashSession | null> {
     return this.http

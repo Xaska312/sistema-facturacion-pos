@@ -35,9 +35,11 @@ public class CashRegisterController {
 
     private final CashRegisterService service;
 
-    public record CashRegisterResponse(UUID id, UUID branchId, String code, String name, boolean active) {
+    public record CashRegisterResponse(UUID id, UUID branchId, String code, String name, boolean active,
+                                       boolean shared) {
         static CashRegisterResponse of(CashRegister r) {
-            return new CashRegisterResponse(r.getId(), r.getBranchId(), r.getCode(), r.getName(), r.isActive());
+            return new CashRegisterResponse(r.getId(), r.getBranchId(), r.getCode(), r.getName(), r.isActive(),
+                    r.isShared());
         }
     }
 
@@ -45,10 +47,12 @@ public class CashRegisterController {
             @NotNull UUID branchId,
             @NotBlank @Pattern(regexp = "^[A-Za-z0-9_-]{2,20}$", message = "Solo letras, números, '_' o '-' (2 a 20)")
             String code,
-            @NotBlank @Size(max = 120) String name) {
+            @NotBlank @Size(max = 120) String name,
+            Boolean shared) {
     }
 
-    public record UpdateCashRegisterRequest(@NotBlank @Size(max = 120) String name) {
+    /** {@code shared} nulo deja la caja como está. */
+    public record UpdateCashRegisterRequest(@NotBlank @Size(max = 120) String name, Boolean shared) {
     }
 
     @GetMapping
@@ -71,13 +75,14 @@ public class CashRegisterController {
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAuthority('cash-registers:manage')")
     public CashRegisterResponse create(@Valid @RequestBody CreateCashRegisterRequest request) {
-        return CashRegisterResponse.of(service.create(request.branchId(), request.code(), request.name()));
+        return CashRegisterResponse.of(service.create(request.branchId(), request.code(), request.name(),
+                Boolean.TRUE.equals(request.shared())));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('cash-registers:manage')")
     public CashRegisterResponse update(@PathVariable UUID id, @Valid @RequestBody UpdateCashRegisterRequest request) {
-        return CashRegisterResponse.of(service.rename(id, request.name()));
+        return CashRegisterResponse.of(service.update(id, request.name(), request.shared()));
     }
 
     @PostMapping("/{id}/deactivate")

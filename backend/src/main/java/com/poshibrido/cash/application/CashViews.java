@@ -19,16 +19,20 @@ public final class CashViews {
                                     boolean requiresReference) {
     }
 
-    /** Caja que el usuario puede abrir; {@code busy} si ya tiene una sesión abierta (de quien sea). */
+    /**
+     * Caja que el usuario puede abrir; {@code busy} si ya tiene una sesión abierta (de quien sea). Si además es
+     * compartida ({@code shared}), el usuario puede unirse a esa sesión ({@code openSessionId}) para vender en ella.
+     */
     public record RegisterOption(UUID id, String code, String name, UUID branchId, String branchName, boolean busy,
-                                 String busyBy) {
+                                 String busyBy, boolean shared, UUID openSessionId) {
     }
 
     public record SessionView(UUID id, UUID cashRegisterId, String registerCode, String registerName, UUID branchId,
                               String branchName, CashSessionStatus status, UUID openedBy, String openedByName,
                               Instant openedAt, BigDecimal openingAmount, String openingNotes, Instant closedAt,
                               UUID closedBy, String closedByName, BigDecimal countedAmount,
-                              BigDecimal expectedAmount, BigDecimal difference, String closingNotes, boolean mine) {
+                              BigDecimal expectedAmount, BigDecimal difference, String closingNotes, boolean mine,
+                              boolean shared) {
     }
 
     public record MovementView(Long entryNo, UUID id, CashMovementType type, BigDecimal amount, String reason,

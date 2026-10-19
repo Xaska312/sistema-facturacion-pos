@@ -1531,6 +1531,15 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
       },
       error: (error: unknown) => {
         this.saving.set(false);
+        if (error instanceof HttpErrorResponse && error.status === 422) {
+          // Si cerraron la caja compartida donde vendía (decisión 256), se vuelve a la apertura sin perder el carrito.
+          this.cash.current().pipe(catchError(() => of(undefined))).subscribe((current) => {
+            if (current === null) {
+              this.payOpen = false;
+              this.session.set(null);
+            }
+          });
+        }
         if (error instanceof HttpErrorResponse && error.status === 409) {
           // Precios o impuestos cambiaron: se recargan los ajustes y el precio de cada línea.
           this.payOpen = false;

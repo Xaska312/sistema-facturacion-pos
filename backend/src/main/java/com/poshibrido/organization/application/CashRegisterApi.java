@@ -7,9 +7,12 @@ import java.util.UUID;
 /** Cajas registradoras del negocio actual para otros módulos (caja y ventas). */
 public interface CashRegisterApi {
 
-    /** Caja con los datos de su sucursal. {@code usable} = caja y sucursal activas. */
+    /**
+     * Caja con los datos de su sucursal. {@code usable} = caja y sucursal activas. {@code shared}: los demás de la
+     * sucursal venden en la sesión que alguien abrió (decisión 256).
+     */
     record RegisterRef(UUID id, String code, String name, boolean active, UUID branchId, String branchCode,
-                       String branchName, boolean branchActive) {
+                       String branchName, boolean branchActive, boolean shared) {
 
         public boolean usable() {
             return active && branchActive;

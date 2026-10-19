@@ -88,6 +88,8 @@ export interface CashRegister {
   code: string;
   name: string;
   active: boolean;
+  /** Compartida: una persona la abre y los demás de la sucursal venden en ella (decisión 256). */
+  shared: boolean;
 }
 
 export interface BranchInput {
@@ -518,6 +520,9 @@ export interface RegisterOption {
   branchName: string;
   busy: boolean;
   busyBy: string | null;
+  shared: boolean;
+  /** Sesión abierta de una caja compartida: el usuario puede unirse para vender en ella. */
+  openSessionId: string | null;
 }
 
 export interface CashSession {
@@ -541,7 +546,9 @@ export interface CashSession {
   expectedAmount: number | null;
   difference: number | null;
   closingNotes: string | null;
+  /** La abrió el usuario actual (si no, se unió a ella porque es compartida). */
   mine: boolean;
+  shared: boolean;
 }
 
 export interface CashMovement {

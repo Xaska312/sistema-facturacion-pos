@@ -174,6 +174,73 @@ class CashIT extends IntegrationTest {
         assertThat(number(report, "$.cash.incomes")).isEqualByComparingTo("1500");
     }
 
+    @Test
+    void sharedRegisterLetsOthersSellInTheOpenSession() throws Exception {
+        Owned owner = api.newTenant("compartida");
+        Session s = owner.tenant();
+        UUID product = pos.productWithStock(s, "P1", "4000", "10", "1000");
+        Joined seller = api.joinAs(s, owner.tenantId(), "SELLER");
+        Session v = seller.session();
+
+        // CAJA-1 viene compartida (decisión 256): el dueño la abre en la mañana
+        UUID session = pos.openCash(s, CAJA_1, "50000");
+        api.getWith(v, "/api/v1/cash/sessions/current").andExpect(status().isNoContent());
+        pos.sellCash(v, product, "1", "4000").andExpect(status().is(422));
+        api.getWith(v, "/api/v1/cash/registers").andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].code").value("CAJA-1"))
+                .andExpect(jsonPath("$[0].busy").value(true))
+                .andExpect(jsonPath("$[0].shared").value(true))
+                .andExpect(jsonPath("$[0].openSessionId").value(session.toString()));
+
+        // El vendedor se une y vende en ella
+        api.postEmpty(v, "/api/v1/cash/sessions/" + session + "/join").andExpect(status().isOk())
+                .andExpect(jsonPath("$.mine").value(false))
+                .andExpect(jsonPath("$.shared").value(true));
+        api.getWith(v, "/api/v1/cash/sessions/current").andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(session.toString()));
+        pos.sellCash(v, product, "1", "4000").andExpect(status().isCreated())
+                .andExpect(jsonPath("$.receipt.registerCode").value("CAJA-1"));
+
+        // Registra un egreso, pero no retiros, y no cierra la caja; sí ve el informe (ciego)
+        movement(v, session, "EXPENSE", "1000", "Domicilio").andExpect(status().isCreated());
+        movement(v, session, "WITHDRAWAL", "1000", "x").andExpect(status().isForbidden());
+        pos.close(v, session, "0").andExpect(status().isForbidden());
+        api.getWith(v, "/api/v1/cash/sessions/" + session + "/report").andExpect(status().isOk())
+                .andExpect(jsonPath("$.salesCount").value(1));
+        String report = body(api.getWith(s, "/api/v1/cash/sessions/" + session + "/report"));
+        assertThat(number(report, "$.cash.expected")).isEqualByComparingTo("53000");
+
+        // Una caja personal no admite a otros; quien tiene su caja abierta no se une a otra
+        String personal = body(api.postWith(s, "/api/v1/cash-registers", """
+                {"branchId":"%s","code":"CAJA-2","name":"Caja 2"}
+                """.formatted(api.principalBranchId(s))).andExpect(status().isCreated())
+                .andExpect(jsonPath("$.shared").value(false)));
+        UUID caja2 = UUID.fromString(JsonPath.read(personal, "$.id"));
+        Joined cashier = api.joinAs(s, owner.tenantId(), "CASHIER");
+        UUID cashierSession = pos.openCash(cashier.session(), caja2, "0");
+        api.postEmpty(v, "/api/v1/cash/sessions/" + cashierSession + "/join").andExpect(status().is(422));
+        api.postEmpty(cashier.session(), "/api/v1/cash/sessions/" + session + "/join").andExpect(status().isConflict());
+
+        // Dejar la caja: ya no vende en ella
+        api.postEmpty(v, "/api/v1/cash/sessions/current/leave").andExpect(status().isNoContent());
+        api.getWith(v, "/api/v1/cash/sessions/current").andExpect(status().isNoContent());
+        pos.sellCash(v, product, "1", "4000").andExpect(status().is(422));
+
+        // Se puede volver a marcar como compartida o personal
+        api.putWith(s, "/api/v1/cash-registers/" + caja2, """
+                {"name":"Caja 2","shared":true}
+                """).andExpect(status().isOk()).andExpect(jsonPath("$.shared").value(true));
+        api.putWith(s, "/api/v1/cash-registers/" + caja2, """
+                {"name":"Caja dos"}
+                """).andExpect(status().isOk()).andExpect(jsonPath("$.shared").value(true));
+
+        // Al cerrar la caja, quien se unió deja de tenerla
+        api.postEmpty(v, "/api/v1/cash/sessions/" + session + "/join").andExpect(status().isOk());
+        pos.close(s, session, "53000").andExpect(status().isOk());
+        api.getWith(v, "/api/v1/cash/sessions/current").andExpect(status().isNoContent());
+        api.postEmpty(v, "/api/v1/cash/sessions/" + session + "/join").andExpect(status().isConflict());
+    }
+
     private org.springframework.test.web.servlet.ResultActions movement(Session s, UUID session, String type,
                                                                         String amount, String reason) throws Exception {
         return api.postWith(s, "/api/v1/cash/sessions/" + session + "/movements", """

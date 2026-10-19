@@ -60,6 +60,7 @@ const ACTIONS: Readonly<Record<string, string>> = {
   CREDIT_PAYMENT_RECEIVED: 'Recibió un abono de fiado',
   CREDIT_PAYMENT_VOIDED: 'Anuló un abono de fiado',
   CASH_SESSION_CLOSED: 'Cerró caja',
+  CASH_SESSION_JOINED: 'Se unió a una caja compartida',
   CASH_SESSION_OPENED: 'Abrió caja',
   INVENTORY_DOCUMENT_CREATED: 'Registró un documento de inventario',
   INVITATION_ACCEPTED: 'Aceptó una invitación',

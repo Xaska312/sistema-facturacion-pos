@@ -160,8 +160,9 @@ public class CashQueryService {
     private CashSession readable(UUID id) {
         CashSession session = sessions.findById(id)
                 .orElseThrow(() -> new NotFoundException("Sesión de caja no encontrada."));
-        if (!CashAccess.canReadAll() && !session.getOpenedBy().equals(CurrentActor.requireUserId())) {
-            throw new ForbiddenException("Solo puedes ver tus propias sesiones de caja.");
+        UUID actor = CurrentActor.requireUserId();
+        if (!CashAccess.canReadAll() && !session.getOpenedBy().equals(actor) && !sessions.isMember(id, actor)) {
+            throw new ForbiddenException("Solo puedes ver las cajas en las que vendes.");
         }
         return session;
     }
@@ -176,7 +177,7 @@ public class CashQueryService {
                 names.get(s.getOpenedBy()), s.getOpenedAt(), s.getOpeningAmount(), s.getOpeningNotes(),
                 s.getClosedAt(), s.getClosedBy(), s.getClosedBy() == null ? null : names.get(s.getClosedBy()),
                 s.getCountedAmount(), audit ? s.getExpectedAmount() : null, audit ? s.getDifference() : null,
-                s.getClosingNotes(), s.getOpenedBy().equals(actor));
+                s.getClosingNotes(), s.getOpenedBy().equals(actor), register != null && register.shared());
     }
 
     private Map<UUID, RegisterRef> registerMap() {

@@ -37,7 +37,7 @@ public class CashRegisterService {
     }
 
     @Transactional
-    public CashRegister create(UUID branchId, String rawCode, String name) {
+    public CashRegister create(UUID branchId, String rawCode, String name, boolean shared) {
         Branch branch = branches.findById(branchId)
                 .orElseThrow(() -> new BusinessRuleException("La sucursal indicada no existe."));
         if (!branch.isActive()) {
@@ -47,19 +47,28 @@ public class CashRegisterService {
         if (registers.existsByBranchIdAndCode(branchId, code)) {
             throw new ConflictException("La sucursal ya tiene una caja con el código " + code + ".");
         }
-        CashRegister register = registers.save(CashRegister.create(branchId, code, name.trim()));
+        CashRegister created = CashRegister.create(branchId, code, name.trim());
+        created.setShared(shared);
+        CashRegister register = registers.save(created);
         audit.log("CASH_REGISTER_CREATED", "cash_register", register.getId(), null,
-                Map.of("branchId", branchId, "code", code, "name", register.getName()));
+                Map.of("branchId", branchId, "code", code, "name", register.getName(), "shared", shared));
         return register;
     }
 
+    /**
+     * {@code shared} nulo deja la caja como está. Al volverla personal, quienes se habían unido a su sesión abierta
+     * dejan de vender en ella (la consulta de la sesión exige que la caja siga compartida).
+     */
     @Transactional
-    public CashRegister rename(UUID id, String name) {
+    public CashRegister update(UUID id, String name, Boolean shared) {
         CashRegister register = get(id);
-        String before = register.getName();
+        Map<String, Object> before = Map.of("name", register.getName(), "shared", register.isShared());
         register.rename(name.trim());
-        audit.log("CASH_REGISTER_UPDATED", "cash_register", id, Map.of("name", before),
-                Map.of("name", register.getName()));
+        if (shared != null) {
+            register.setShared(shared);
+        }
+        audit.log("CASH_REGISTER_UPDATED", "cash_register", id, before,
+                Map.of("name", register.getName(), "shared", register.isShared()));
         return register;
     }
 

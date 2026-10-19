@@ -93,15 +93,18 @@ export const MANUAL: readonly ManualChapter[] = [
       {
         id: 'abrir-caja',
         title: 'Abrir la caja',
-        summary: 'Para vender necesitas tener tu caja abierta. La base es el efectivo que hay en el cajón al empezar.',
+        summary: 'Para vender necesitas una caja abierta: la tuya o una caja compartida que ya abrió otra persona. La base es el efectivo que hay en el cajón al empezar.',
         steps: [
           'Toca "Vender" en el menú (o "Mi caja").',
-          'Si hay más de una caja libre, elige la tuya. Escribe la base de efectivo: lo que hay en el cajón para dar cambio.',
+          'Si alguien ya abrió una caja compartida, toca "Vender en …" y listo: vendes en esa caja hasta que se cierre.',
+          'Si no, elige la caja (si hay más de una libre) y escribe la base de efectivo: lo que hay en el cajón para dar cambio.',
           'Toca "Abrir caja".',
         ],
         tips: [
-          'Cada persona abre su propia caja y solo puede tener una abierta a la vez.',
-          'Una caja la usa una persona a la vez; si tienes dos puntos de cobro, crea dos cajas en Configuración → Cajas.',
+          'Caja compartida: una persona la abre (por ejemplo, el dueño en la mañana) y los demás de la sucursal venden en ella. Solo quien la abrió o un administrador la cierra y registra retiros; los demás pueden registrar ingresos y egresos.',
+          'Caja personal: cada persona abre y cierra la suya. Se elige en Configuración → Cajas → Editar ("Compartida").',
+          'La caja que trae el negocio (CAJA-1) viene compartida. Si tienes dos cajones con dos cajeros, crea otra caja personal para cada uno.',
+          'Cada venta queda a nombre de quien la hizo, aunque la caja sea compartida (Reportes → por vendedor).',
         ],
         who: 'Propietario, Administrador, Cajero y Vendedor.',
       },

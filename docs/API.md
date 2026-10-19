@@ -161,10 +161,12 @@ Operar: `cash:operate`. Historial: `cash:read` (sin él, cada usuario ve solo su
 | Método | Ruta | Descripción |
 |---|---|---|
 | GET | `/payment-methods` | Medios de pago activos `{id, code: CASH\|CARD\|TRANSFER, name, affectsCash, requiresReference}` (`sales:create`, `sales:read`, `cash:read` o `cash:operate`) |
-| GET | `/cash/registers` | Cajas activas de las sucursales del usuario (todas con `branches:manage`) con `busy`/`busyBy` |
-| GET | `/cash/sessions/current` | Sesión abierta del usuario; **204** si no tiene (`cash:operate` o `sales:create`) |
-| POST | `/cash/sessions` | `{cashRegisterId, openingAmount, notes}` → 201. 409 si la caja o el usuario ya tienen una abierta; 403 sucursal no asignada |
-| POST | `/cash/sessions/{id}/movements` | `{type: INCOME\|EXPENSE\|WITHDRAWAL, amount > 0, reason}` → 201. Solo en la sesión propia y abierta. `Idempotency-Key` opcional |
+| GET | `/cash/registers` | Cajas activas de las sucursales del usuario (todas con `branches:manage`) con `busy`/`busyBy`, `shared` y `openSessionId` (sesión abierta de una caja compartida). `cash:operate` o `sales:create` |
+| GET | `/cash/sessions/current` | Sesión donde vende el usuario: la que abrió o la compartida a la que se unió (`mine` false, `shared` true); **204** si no tiene (`cash:operate` o `sales:create`) |
+| POST | `/cash/sessions/{id}/join` | Vender en una caja compartida abierta (decisión 256). 422 si la caja es personal; 409 si el usuario tiene su propia caja abierta o la sesión ya se cerró; 403 sucursal no asignada. Deja la compartida anterior |
+| POST | `/cash/sessions/current/leave` | Deja la caja compartida (no la cierra) → 204 |
+| POST | `/cash/sessions` | `{cashRegisterId, openingAmount, notes}` → 201. Si el usuario vendía en una caja compartida, la deja. 409 si la caja o el usuario ya tienen una abierta; 403 sucursal no asignada |
+| POST | `/cash/sessions/{id}/movements` | `{type: INCOME\|EXPENSE\|WITHDRAWAL, amount > 0, reason}` → 201. En la sesión propia y abierta; en una compartida, quien se unió registra ingresos y egresos (retiros solo quien la abrió o con `cash:audit`). `Idempotency-Key` opcional |
 | POST | `/cash/sessions/{id}/close` | `{countedAmount, notes}` → informe de cierre. Quien abrió o quien tenga `cash:audit`. 409 si ya está cerrada |
 | GET | `/cash/sessions?cashRegisterId=&branchId=&status=&userId=&from=&to=&page=&size=` | Historial (`cash:read`) |
 | GET | `/cash/sessions/{id}` · `/movements` · `/report` | Sesión, movimientos de efectivo e informe X/Z `{salesCount, salesTotal, voidedCount, voidedTotal, netSales, byMethod[], voidsHereCount, cash{opening, sales, voidRefunds, incomes, expenses, withdrawals, expected, counted, difference}, auditView}` |
