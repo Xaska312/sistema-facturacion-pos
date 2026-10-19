@@ -39,10 +39,11 @@ public final class CashViews {
     /**
      * Efectivo de la sesión. Sin el permiso cash:audit (cierre ciego) solo se informan la base y lo contado: el
      * desglose, el esperado y la diferencia son nulos. {@code counted} es nulo mientras la sesión está abierta.
+     * {@code creditPayments}: abonos de fiado en efectivo menos los abonos anulados (decisión 255).
      */
     public record CashSection(BigDecimal opening, BigDecimal sales, BigDecimal voidRefunds, BigDecimal incomes,
-                              BigDecimal expenses, BigDecimal withdrawals, BigDecimal expected, BigDecimal counted,
-                              BigDecimal difference) {
+                              BigDecimal expenses, BigDecimal withdrawals, BigDecimal creditPayments,
+                              BigDecimal expected, BigDecimal counted, BigDecimal difference) {
     }
 
     /** Informe de cierre (Z) o parcial (X) si la sesión sigue abierta. */

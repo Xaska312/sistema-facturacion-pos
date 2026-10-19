@@ -94,7 +94,7 @@ Paginación: `{ content, page, size, totalElements, totalPages }`.
 ## Permisos sembrados
 `settings:read|manage`, `branches:read|manage`, `cash-registers:manage`, `members:read|manage`, `roles:manage`,
 `products:read|manage`, `parties:read|manage`, `inventory:read|adjust|transfer`, `cash:operate|read|audit`,
-`sales:create|read|void|discount`, `reports:read`, `audit:read` (Fase 7-2: OWNER, ADMIN y ACCOUNTANT).
+`sales:create|read|void|discount|open-price`, `credit:read|collect|manage`, `reports:read`, `audit:read` (Fase 7-2: OWNER, ADMIN y ACCOUNTANT).
 Roles: OWNER y ADMIN (todos), CASHIER, SELLER, WAREHOUSE, ACCOUNTANT (ver `db/tenant/V2__seed_access_and_organization.sql`).
 
 ## Catálogo (Fase 3)
@@ -130,7 +130,7 @@ Leer: `parties:read`. Modificar: `parties:manage`.
 |---|---|---|
 | GET | `/customers?search=&includeInactive=&page=&size=` | Busca por nombre o documento; *Consumidor final* primero |
 | GET | `/customers/{id}` | |
-| POST | `/customers` · PUT `/customers/{id}` | Datos del tercero + `priceListId`, `creditLimit`. 409 documento ya registrado como cliente |
+| POST | `/customers` · PUT `/customers/{id}` | Datos del tercero + `priceListId`, `creditLimit` (cupo de fiado; en PUT, nulo lo conserva; asignarlo o cambiarlo exige `credit:manage`, si no 403). 409 documento ya registrado como cliente |
 | POST | `/customers/{id}/activate` · `/deactivate` | El tercero del sistema no se modifica (422) |
 | GET/POST/PUT | `/suppliers` … | Igual, sin lista ni cupo |
 
@@ -348,3 +348,17 @@ Etiquetas EAN-13 que empiezan por 2: prefijo + PLU + valor (peso o precio) + dí
 
 ## Ajustes de la Fase 8 (8f)
 - `GET /tenants/signup-terms` (cualquier cuenta con sesión) → `{activationCodeRequired, trialDays}`. Con `SUBSCRIPTION_TRIAL_WITHOUT_CODE=false` (por defecto) `POST /tenants` sin `activationCode` → 422 `ACTIVATION_CODE_REQUIRED`.
+
+## Fiado (Fase 10a, decisión 255)
+Medio de pago `CREDIT` ("Fiado", id …0704, no entra al efectivo): en `POST /sales` la parte fiada se carga a la cuenta del cliente. 422 si el cliente es el Consumidor final, no tiene cupo (`creditLimit` 0), hay dos líneas de fiado o, sin `credit:manage`, la venta pasa el cupo. Anular la venta descuenta lo fiado. Permisos: `credit:read` (ver), `credit:collect` (abonos), `credit:manage` (cupos, pasar el cupo, anular abonos).
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/credit/summary` | `{totalBalance, customers, upTo30Days, from31To60Days, over60Days, overLimit}` (solo quienes deben) |
+| GET | `/credit/accounts?search=&filter=DEBT\|ALL&page=&size=` | Cartera, primero los que más deben. `DEBT`: con saldo; `ALL`: también con cupo al día. `{customerId, name, documentType, formattedDocument, phone, active, creditLimit, balance, available, oldestDebtAt, upTo30Days, from31To60Days, over60Days, lastPaymentAt, lastPaymentAmount}` |
+| GET | `/credit/accounts/{customerId}` | La cuenta de un cliente (saldo 0 si nunca se le fió). 404 si no es cliente |
+| GET | `/credit/accounts/{customerId}/entries?page=&size=` | Estado de cuenta, lo más reciente primero: `{id, entryNo, type: SALE\|SALE_VOID\|PAYMENT\|PAYMENT_VOID, amount (con signo: + aumenta la deuda), balanceAfter, saleNumber, methodName, reference, notes, createdByName, createdAt, voided, voidReason, voidedAt}` |
+| POST | `/credit/accounts/{customerId}/payments` | `Idempotency-Key` obligatoria. `{amount, paymentMethodId, reference?, notes?}` → 201 movimiento. En efectivo exige la caja abierta de quien recibe (movimiento de caja `CREDIT_PAYMENT`). 422 si es más de lo que debe o el medio es Fiado |
+| POST | `/credit/payments/{entryId}/void` | `{reason}` (`credit:manage`). Si fue en efectivo, sale de la caja donde entró (o de la abierta de quien anula: `CREDIT_PAYMENT_VOID`). 409 si ya estaba anulado |
+
+La antigüedad supone que los abonos pagan primero lo más viejo. El informe de caja agrega `cash.creditPayments` (abonos en efectivo menos anulados). Auditoría: `CREDIT_PAYMENT_RECEIVED`, `CREDIT_PAYMENT_VOIDED`, `CREDIT_LIMIT_EXCEEDED`.

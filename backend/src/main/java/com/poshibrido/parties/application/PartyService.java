@@ -15,7 +15,9 @@ import com.poshibrido.parties.infrastructure.PartyRepository;
 import com.poshibrido.parties.infrastructure.SupplierRepository;
 import com.poshibrido.shared.error.BusinessRuleException;
 import com.poshibrido.shared.error.ConflictException;
+import com.poshibrido.shared.error.ForbiddenException;
 import com.poshibrido.shared.error.NotFoundException;
+import com.poshibrido.shared.security.CurrentActor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -41,6 +43,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class PartyService {
 
+    /** Asignar o cambiar el cupo de fiado (decisión 255). */
+    static final String CREDIT_MANAGE_PERMISSION = "credit:manage";
     private static final Pattern EMAIL = Pattern.compile("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
 
     private final PartyRepository parties;
@@ -69,6 +73,7 @@ public class PartyService {
 
     @Transactional
     public PartyView createCustomer(PartyCommand command, UUID priceListId, BigDecimal creditLimit) {
+        requireCreditPermission(BigDecimal.ZERO, creditLimit);
         Party.Data data = validate(command);
         UUID listId = validPriceList(priceListId);
         Party party = findOrCreate(data, true);
@@ -87,6 +92,7 @@ public class PartyService {
         Party.Data data = validate(command);
         requireDocumentFree(data, id);
         Map<String, Object> before = snapshot(party, customer);
+        requireCreditPermission(customer.getCreditLimit(), creditLimit);
         party.apply(data);
         customer.update(validPriceList(priceListId), creditLimit);
         audit.log("CUSTOMER_UPDATED", "customer", id, before, snapshot(party, customer));
@@ -323,5 +329,15 @@ public class PartyService {
 
     private static String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    /** Solo quien tiene credit:manage asigna o cambia el cupo de fiado (decisión 255). */
+    private static void requireCreditPermission(BigDecimal current, BigDecimal requested) {
+        if (requested == null || requested.compareTo(current) == 0) {
+            return;
+        }
+        if (!CurrentActor.permissions().contains(CREDIT_MANAGE_PERMISSION)) {
+            throw new ForbiddenException("Solo el dueño o un administrador asignan el cupo de fiado.");
+        }
     }
 }

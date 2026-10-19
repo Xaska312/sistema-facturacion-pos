@@ -492,7 +492,14 @@ export interface ProductLookup {
 // ---------------------------------------------------------------- Caja (Fase 5)
 
 export type CashSessionStatus = 'OPEN' | 'CLOSED';
-export type CashMovementType = 'SALE' | 'SALE_VOID' | 'INCOME' | 'EXPENSE' | 'WITHDRAWAL';
+export type CashMovementType =
+  | 'SALE'
+  | 'SALE_VOID'
+  | 'INCOME'
+  | 'EXPENSE'
+  | 'WITHDRAWAL'
+  | 'CREDIT_PAYMENT'
+  | 'CREDIT_PAYMENT_VOID';
 export type ManualCashMovementType = 'INCOME' | 'EXPENSE' | 'WITHDRAWAL';
 
 export interface PaymentMethod {
@@ -565,6 +572,8 @@ export interface CashSection {
   incomes: number;
   expenses: number;
   withdrawals: number;
+  /** Abonos de fiado en efectivo menos los anulados (decisión 255). */
+  creditPayments: number | null;
   expected: number | null;
   counted: number | null;
   difference: number | null;
@@ -1079,4 +1088,70 @@ export interface ScalePlu {
   sku: string;
   name: string;
   unitCode: string | null;
+}
+
+// ---------------------------------------------------------------- fiado (decisión 255)
+
+/** Código del medio de pago "Fiado". */
+export const CREDIT_METHOD_CODE = 'CREDIT';
+
+/**
+ * Cuenta de fiado de un cliente. {@code balance} positivo = debe; negativo = saldo a favor. {@code available}: lo que
+ * todavía se le puede fiar. La deuda por antigüedad supone que los abonos pagan primero lo más viejo.
+ */
+export interface CreditAccount {
+  customerId: string;
+  name: string;
+  documentType: DocumentType;
+  formattedDocument: string;
+  phone: string | null;
+  active: boolean;
+  creditLimit: number;
+  balance: number;
+  available: number;
+  oldestDebtAt: string | null;
+  upTo30Days: number;
+  from31To60Days: number;
+  over60Days: number;
+  lastPaymentAt: string | null;
+  lastPaymentAmount: number | null;
+}
+
+export interface CreditSummary {
+  totalBalance: number;
+  customers: number;
+  upTo30Days: number;
+  from31To60Days: number;
+  over60Days: number;
+  overLimit: number;
+}
+
+export type CreditEntryType = 'SALE' | 'SALE_VOID' | 'PAYMENT' | 'PAYMENT_VOID';
+
+export interface CreditEntry {
+  id: string;
+  entryNo: number;
+  type: CreditEntryType;
+  /** Con signo: positivo aumenta la deuda. */
+  amount: number;
+  balanceAfter: number;
+  saleId: string | null;
+  saleNumber: string | null;
+  paymentId: string | null;
+  methodCode: string | null;
+  methodName: string | null;
+  reference: string | null;
+  notes: string | null;
+  createdByName: string | null;
+  createdAt: string;
+  voided: boolean;
+  voidReason: string | null;
+  voidedAt: string | null;
+}
+
+export interface CreditPaymentInput {
+  amount: number;
+  paymentMethodId: string;
+  reference: string | null;
+  notes: string | null;
 }

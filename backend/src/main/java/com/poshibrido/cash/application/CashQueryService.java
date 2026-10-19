@@ -127,14 +127,16 @@ public class CashQueryService {
         BigDecimal incomes = totals.getOrDefault(CashMovementType.INCOME, BigDecimal.ZERO);
         BigDecimal expenses = totals.getOrDefault(CashMovementType.EXPENSE, BigDecimal.ZERO);
         BigDecimal withdrawals = totals.getOrDefault(CashMovementType.WITHDRAWAL, BigDecimal.ZERO);
+        BigDecimal creditPayments = totals.getOrDefault(CashMovementType.CREDIT_PAYMENT, BigDecimal.ZERO)
+                .add(totals.getOrDefault(CashMovementType.CREDIT_PAYMENT_VOID, BigDecimal.ZERO));
         BigDecimal expected = session.isOpen()
                 ? CashCount.expected(session.getOpeningAmount(), totals.values())
                 : session.getExpectedAmount();
         // Cierre ciego: sin cash:audit no se muestra el esperado ni el desglose que permitiría calcularlo.
         CashSection cash = audit
-                ? new CashSection(session.getOpeningAmount(), sales, voids, incomes, expenses, withdrawals, expected,
-                        session.getCountedAmount(), session.getDifference())
-                : new CashSection(session.getOpeningAmount(), null, null, null, null, null, null,
+                ? new CashSection(session.getOpeningAmount(), sales, voids, incomes, expenses, withdrawals,
+                        creditPayments, expected, session.getCountedAmount(), session.getDifference())
+                : new CashSection(session.getOpeningAmount(), null, null, null, null, null, null, null,
                         session.getCountedAmount(), null);
         Summary summary = salesSummary.summarize(session.getId(), session.getClosedAt());
         SessionView view = toView(session, registerMap(), names(List.of(session)));

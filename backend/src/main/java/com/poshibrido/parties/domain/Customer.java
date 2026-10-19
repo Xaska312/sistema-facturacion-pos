@@ -38,13 +38,17 @@ public class Customer extends AuditableEntity {
         Customer customer = new Customer();
         customer.partyId = partyId;
         customer.active = true;
+        customer.creditLimit = BigDecimal.ZERO.setScale(2);
         customer.update(priceListId, creditLimit);
         return customer;
     }
 
+    /** {@code creditLimit} nulo deja el cupo como está. */
     public void update(UUID priceListId, BigDecimal creditLimit) {
         this.priceListId = priceListId;
-        this.creditLimit = (creditLimit == null ? BigDecimal.ZERO : creditLimit).setScale(2, RoundingMode.HALF_UP);
+        if (creditLimit != null) {
+            this.creditLimit = creditLimit.setScale(2, RoundingMode.HALF_UP);
+        }
     }
 
     public void setActive(boolean active) {

@@ -4,9 +4,10 @@ import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { of, throwError } from 'rxjs';
-import { CashSession, PageResponse, Party, PosConfig, ProductLookup } from '../../core/api/api.models';
+import { CashSession, CreditAccount, PageResponse, Party, PaymentMethod, PosConfig, ProductLookup } from '../../core/api/api.models';
 import { CashApi } from '../../core/api/cash.api';
 import { CatalogApi } from '../../core/api/catalog.api';
+import { CreditApi } from '../../core/api/credit.api';
 import { InventoryApi } from '../../core/api/inventory.api';
 import { PartiesApi } from '../../core/api/parties.api';
 import { SalesApi } from '../../core/api/sales.api';
@@ -40,6 +41,7 @@ describe('PosComponent: celular, pausar venta y cliente nuevo', () => {
   let fixture: ComponentFixture<PosComponent>;
   let component: PosComponent;
   let sales: jasmine.SpyObj<SalesApi>;
+  let credit: jasmine.SpyObj<CreditApi>;
 
   beforeEach(() => {
     localStorage.removeItem(KEY);
@@ -59,6 +61,9 @@ describe('PosComponent: celular, pausar venta y cliente nuevo', () => {
     inventory.stock.and.returnValue(of(page([])));
     const parties = jasmine.createSpyObj<PartiesApi>('PartiesApi', ['search', 'save']);
     parties.search.and.returnValue(of(page<Party>([])));
+    credit = jasmine.createSpyObj<CreditApi>('CreditApi', ['account']);
+    // Por defecto los clientes no tienen fiado (sin cuenta = sin "Fiado" al cobrar).
+    credit.account.and.returnValue(throwError(() => new Error('sin cuenta')));
     const confirm = jasmine.createSpyObj<ConfirmService>('ConfirmService', ['ask']);
     confirm.ask.and.callFake((options: ConfirmOptions) => options.accept());
 
@@ -72,6 +77,7 @@ describe('PosComponent: celular, pausar venta y cliente nuevo', () => {
         { provide: CatalogApi, useValue: catalog },
         { provide: InventoryApi, useValue: inventory },
         { provide: PartiesApi, useValue: parties },
+        { provide: CreditApi, useValue: credit },
         { provide: ConfirmService, useValue: confirm },
         { provide: MessageService, useValue: jasmine.createSpyObj<MessageService>('MessageService', ['add']) },
         { provide: TourService, useValue: jasmine.createSpyObj<TourService>('TourService', ['offer', 'start']) },
@@ -247,5 +253,57 @@ describe('PosComponent: celular, pausar venta y cliente nuevo', () => {
     expect(component['customer']().name).toBe('Marta Gómez');
     expect(lines().length).toBe(1);
     expect(sales.price).toHaveBeenCalledWith('a', 'u', 'p1');
+  });
+
+  describe('fiado (decisión 255)', () => {
+    const methods: PaymentMethod[] = [
+      { id: 'cash', code: 'CASH', name: 'Efectivo', affectsCash: true, requiresReference: false },
+      { id: 'fiado', code: 'CREDIT', name: 'Fiado', affectsCash: false, requiresReference: false },
+    ];
+    const account = (overrides: Partial<CreditAccount> = {}): CreditAccount => ({
+      customerId: 'p1', name: 'Marta Gómez', documentType: 'CC', formattedDocument: '1', phone: null, active: true,
+      creditLimit: 50000, balance: 40000, available: 10000, oldestDebtAt: null, upTo30Days: 40000, from31To60Days: 0,
+      over60Days: 0, lastPaymentAt: null, lastPaymentAmount: null, ...overrides,
+    });
+    const marta = { id: 'p1', displayName: 'Marta Gómez', documentType: 'CC', formattedDocument: '1', priceListId: null } as Party;
+    const payMethods = () => component['payMethods']().map((m) => m.code);
+
+    beforeEach(() => component['methods'].set(methods));
+
+    it('"Fiado" solo aparece con un cliente que tiene cupo', () => {
+      expect(payMethods()).toEqual(['CASH']);
+      credit.account.and.returnValue(of(account({ creditLimit: 0, available: 0, balance: 0 })));
+      component.pickCustomer(marta);
+      expect(credit.account).toHaveBeenCalledWith('p1');
+      expect(payMethods()).toEqual(['CASH']);
+
+      credit.account.and.returnValue(of(account()));
+      component.pickCustomer(marta);
+      expect(payMethods()).toEqual(['CASH', 'CREDIT']);
+
+      component.resetCustomer();
+      expect(payMethods()).toEqual(['CASH']);
+    });
+
+    it('sin credit:manage no deja fiar más de lo disponible', () => {
+      const auth = TestBed.inject(AuthService) as unknown as { hasPermission: (p: string) => boolean };
+      auth.hasPermission = (p) => p !== 'credit:manage';
+      credit.account.and.returnValue(of(account()));
+      component.pickCustomer(marta);
+      component.addLine(lookup('a', 3000), 5);
+      component.openPayment();
+      component.chooseMethod(methods[1]);
+      expect(component.creditProblem()).toContain('Pasa el cupo de Marta Gómez');
+      expect(component.canConfirm()).toBeFalse();
+
+      component.setMixed(true);
+      component['payments'] = [
+        { methodId: 'cash', affectsCash: true, amount: 5000, reference: '' },
+        { methodId: 'fiado', affectsCash: false, amount: 10000, reference: '' },
+      ];
+      expect(component.creditProblem()).toBeNull();
+      expect(component.canConfirm()).toBeTrue();
+      component['payOpen'] = false;
+    });
   });
 });

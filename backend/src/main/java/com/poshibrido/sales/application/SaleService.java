@@ -4,6 +4,7 @@ import com.poshibrido.audit.application.AuditLogger;
 import com.poshibrido.cash.application.CashApi;
 import com.poshibrido.cash.application.CashApi.OpenSession;
 import com.poshibrido.cash.application.CashApi.PaymentMethodRef;
+import com.poshibrido.credit.application.CreditApi;
 import com.poshibrido.catalog.application.InventoryCatalogApi;
 import com.poshibrido.catalog.application.InventoryCatalogApi.StockProduct;
 import com.poshibrido.catalog.application.PricingApi;
@@ -80,6 +81,7 @@ public class SaleService {
     private static final Pattern IDEMPOTENCY_KEY = Pattern.compile("^[A-Za-z0-9_\\-]{8,100}$");
 
     private final CashApi cash;
+    private final CreditApi credit;
     private final StockLedger ledger;
     private final PricingApi pricing;
     private final InventoryCatalogApi catalog;
@@ -97,12 +99,13 @@ public class SaleService {
     @PersistenceContext
     private EntityManager em;
 
-    public SaleService(CashApi cash, StockLedger ledger, PricingApi pricing, InventoryCatalogApi catalog,
-                       CustomerApi customers, BusinessSettingsApi settings, DocumentSequences sequences,
+    public SaleService(CashApi cash, CreditApi credit, StockLedger ledger, PricingApi pricing,
+                       InventoryCatalogApi catalog, CustomerApi customers, BusinessSettingsApi settings, DocumentSequences sequences,
                        SaleRepository sales, SaleItemRepository saleItems, SalePaymentRepository salePayments,
                        SaleQueryService queries, AuditLogger audit, ApplicationEventPublisher events,
                        PlatformTransactionManager transactionManager) {
         this.cash = cash;
+        this.credit = credit;
         this.ledger = ledger;
         this.pricing = pricing;
         this.catalog = catalog;
@@ -231,10 +234,18 @@ public class SaleService {
         Map<UUID, PaymentMethodRef> methods = cash.paymentMethods();
         List<PaymentMethodRef> usedMethods = new ArrayList<>();
         List<PaymentInput> inputs = new ArrayList<>();
+        int creditIndex = -1;
         for (PaymentLine p : paymentLines) {
             PaymentMethodRef method = p.paymentMethodId() == null ? null : methods.get(p.paymentMethodId());
             if (method == null || !method.active()) {
                 throw new BusinessRuleException("Medio de pago no válido.");
+            }
+            if (CreditApi.METHOD_CODE.equals(method.code())) {
+                // Fiado (decisión 255): una sola línea; la cuenta del cliente se carga al final.
+                if (creditIndex >= 0) {
+                    throw new BusinessRuleException("Usa un solo pago fiado por venta.");
+                }
+                creditIndex = usedMethods.size();
             }
             if (method.requiresReference() && (p.reference() == null || p.reference().isBlank())) {
                 throw new BusinessRuleException("El pago con " + method.name() + " requiere una referencia.");
@@ -302,6 +313,11 @@ public class SaleService {
         if (settlement.cashNet().signum() > 0) {
             cash.recordSaleCash(session.id(), settlement.cashNet(), saleId, label);
         }
+        if (creditIndex >= 0) {
+            // Último bloqueo de la venta: la cuenta de fiado del cliente (valida el cupo).
+            credit.chargeSale(new CreditApi.Debtor(customer.id(), customer.name(), customer.creditLimit()),
+                    settlement.applied().get(creditIndex), saleId, session.id(), usedMethods.get(creditIndex).id());
+        }
 
         Map<String, Object> after = new LinkedHashMap<>();
         after.put("number", sale.documentNumber());
@@ -367,6 +383,8 @@ public class SaleService {
         if (refundSession != null) {
             cash.recordVoidCash(refundSession, cashNet, saleId, label);
         }
+        // Lo fiado de la venta se le descuenta al cliente (decisión 255).
+        credit.reverseSale(saleId);
         sale.voidSale(actor, reason, refundSession);
 
         Map<String, Object> after = new LinkedHashMap<>();

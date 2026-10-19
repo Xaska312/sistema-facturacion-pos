@@ -6,7 +6,11 @@ public enum CashMovementType {
     SALE_VOID(false),
     INCOME(true),
     EXPENSE(false),
-    WITHDRAWAL(false);
+    WITHDRAWAL(false),
+    /** Abono en efectivo de un cliente a su fiado (decisión 255). */
+    CREDIT_PAYMENT(true),
+    /** Anulación de un abono en efectivo: el dinero sale de la caja. */
+    CREDIT_PAYMENT_VOID(false);
 
     private final boolean entry;
 

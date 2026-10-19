@@ -399,6 +399,25 @@ export const MANUAL: readonly ManualChapter[] = [
           'Desactivar un cliente o proveedor lo oculta sin borrar su historia.',
         ],
       },
+      {
+        id: 'fiado',
+        title: 'Fiado: vender a crédito y recibir abonos',
+        summary: 'Fíale a tus clientes de confianza hasta un cupo, recibe sus abonos y mira quién te debe y desde cuándo.',
+        steps: [
+          'En Clientes, edita al cliente y escribe su "Cupo de fiado": lo máximo que puede quedar debiendo. Solo el dueño o un administrador lo asignan.',
+          'Al vender, elige el cliente. Al cobrar aparece "Fiado" con lo que tiene disponible: tócalo para fiar todo, o usa "Pago mixto" para que pague una parte y fíe el resto.',
+          'Cuando venga a pagar, ve a Fiados, busca al cliente y toca "Abonar". Escribe cuánto paga y con qué medio.',
+          'En Fiados ves cuánto te deben en total y por antigüedad (hasta 30 días, de 31 a 60 y más de 60). Toca un cliente para ver su estado de cuenta.',
+          'Con "Recordar" se abre WhatsApp con un mensaje amable y el saldo listo para enviar.',
+        ],
+        tips: [
+          'Los abonos en efectivo entran a tu caja abierta y salen en el cierre como "Abonos de fiado". Por transferencia no necesitas caja abierta.',
+          'Los cajeros y vendedores fían dentro del cupo y reciben abonos; pasar el cupo y anular abonos solo lo hacen el dueño o un administrador.',
+          'Si anulas una venta fiada, lo fiado se le descuenta al cliente solo.',
+          'Los abonos pagan primero lo más viejo: la antigüedad muestra desde cuándo debe lo que queda.',
+          'En los reportes de ventas por medio de pago, lo fiado aparece como "Fiado".',
+        ],
+      },
     ],
   },
   {

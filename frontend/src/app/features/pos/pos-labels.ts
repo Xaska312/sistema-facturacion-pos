@@ -5,6 +5,7 @@ const METHOD_LOOK: Record<string, { icon: string; label: string }> = {
   CASH: { icon: 'pi pi-money-bill', label: 'Efectivo' },
   CARD: { icon: 'pi pi-credit-card', label: 'Tarjeta' },
   TRANSFER: { icon: 'pi pi-mobile', label: 'Transferencia' },
+  CREDIT: { icon: 'pi pi-book', label: 'Fiado' },
 };
 
 export function methodIcon(code: string): string {
