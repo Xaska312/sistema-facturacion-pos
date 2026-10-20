@@ -2,7 +2,6 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
 import { CashReport, CashSession, PageResponse } from '../../core/api/api.models';
 import { CashApi, CashSessionFilters } from '../../core/api/cash.api';
 import { formatCop } from '../../shared/money';
@@ -10,7 +9,7 @@ import { PageHeaderComponent } from '../../shared/page-header.component';
 import { cashDifferenceStatus } from '../../shared/status';
 import { DataTableComponent } from '../../shared/table/data-table.component';
 import { ColumnDef, TableQuery, initialQuery } from '../../shared/table/table';
-import { CashReportComponent } from './cash-report.component';
+import { CashReportDialogComponent } from './cash-report-dialog.component';
 import { differenceLabel } from './labels';
 import { TermComponent } from '../../shared/help/term.component';
 import { permissionFlag } from '../../core/auth/permission-flag';
@@ -19,7 +18,7 @@ import { LatestRequest } from '../../shared/latest-request';
 /** Historial de sesiones de caja con su informe (permiso cash:read). */
 @Component({
   selector: 'app-cash-history',
-  imports: [TermComponent, FormsModule, RouterLink, ButtonModule, DialogModule, DataTableComponent, CashReportComponent,
+  imports: [TermComponent, FormsModule, RouterLink, ButtonModule, DataTableComponent, CashReportDialogComponent,
     PageHeaderComponent],
   template: `
     <app-page-header title="Historial de caja" description="Aperturas y cierres de todas las cajas, con su arqueo.">
@@ -57,11 +56,8 @@ import { LatestRequest } from '../../shared/latest-request';
       </ng-template>
     </app-data-table>
 
-    <p-dialog header="Informe de caja" [(visible)]="reportOpen" [modal]="true" [style]="{ width: '32rem' }">
-      @if (report(); as r) {
-        <app-cash-report [report]="r" />
-      }
-    </p-dialog>
+    <!-- Informe del turno: reimprimir el ticket o enviarlo por WhatsApp. -->
+    <app-cash-report-dialog [(visible)]="reportOpen" [report]="report()" />
   `,
 })
 export class CashHistoryComponent implements OnInit {
