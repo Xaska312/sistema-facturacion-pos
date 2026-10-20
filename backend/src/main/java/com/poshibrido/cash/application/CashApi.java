@@ -37,4 +37,10 @@ public interface CashApi {
 
     /** Efectivo devuelto al anular un abono ({@code amount} positivo; sale de la caja). */
     void recordCreditPaymentVoidCash(UUID sessionId, BigDecimal amount, UUID entryId, String label);
+
+    /** Anticipo en efectivo de un pedido ({@code amount} positivo; entra a la caja). */
+    void recordOrderPaymentCash(UUID sessionId, BigDecimal amount, UUID paymentId, String label);
+
+    /** Devolución en efectivo del anticipo de un pedido ({@code amount} positivo; sale de la caja). */
+    void recordOrderRefundCash(UUID sessionId, BigDecimal amount, UUID paymentId, String label);
 }

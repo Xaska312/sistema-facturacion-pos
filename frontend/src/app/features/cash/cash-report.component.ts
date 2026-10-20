@@ -54,6 +54,9 @@ import { differenceLabel } from './labels';
         @if (r.cash.creditPayments) {
           <p class="flex justify-between"><span>Abonos de fiado</span><span>{{ cop(r.cash.creditPayments) }}</span></p>
         }
+        @if (r.cash.orderPayments) {
+          <p class="flex justify-between"><span>Anticipos de pedidos</span><span>{{ cop(r.cash.orderPayments) }}</span></p>
+        }
         @if (r.auditView) {
           <p class="flex justify-between font-medium border-t mt-1 pt-1"><span>Esperado</span><span>{{ cop(r.cash.expected) }}</span></p>
         }

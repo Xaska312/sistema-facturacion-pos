@@ -187,6 +187,16 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
       '"Recordar" abre WhatsApp con un mensaje amable y el saldo listo para enviar.',
     ],
   },
+  '/app/pedidos': {
+    manual: 'pedidos',
+    title: 'Pedidos por encargo',
+    tips: [
+      'Crea el pedido con el cliente, la fecha de entrega y lo que pidió (por cantidad o por medidas en m²).',
+      'Los anticipos en efectivo entran hoy a tu caja abierta; al entregar se descuentan solos.',
+      '"Entregar" registra una venta con lo que entregas: puede ser todo o una parte.',
+      'Comparte el comprobante por WhatsApp o imprímelo para el cliente.',
+    ],
+  },
   '/app/clientes': {
     manual: 'clientes',
     title: 'Clientes',

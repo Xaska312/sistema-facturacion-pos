@@ -9,6 +9,7 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { catchError, finalize, forkJoin, map, of, switchMap } from 'rxjs';
 import {
   CREDIT_METHOD_CODE,
+  DEPOSIT_METHOD_CODE,
   CashSession,
   CreditAccount,
   Party,
@@ -684,7 +685,8 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   protected readonly payMethods = computed(() => {
     const credit = this.customerCredit();
     const canCredit = credit !== null && credit.creditLimit > 0;
-    return this.methods().filter((m) => m.code !== CREDIT_METHOD_CODE || canCredit);
+    // "Anticipo" solo lo usa la entrega de pedidos (decisión 258).
+    return this.methods().filter((m) => m.code !== DEPOSIT_METHOD_CODE && (m.code !== CREDIT_METHOD_CODE || canCredit));
   });
   protected readonly lines = signal<CartLine[]>([]);
   protected readonly customer = signal<CustomerChoice>({ id: '', name: 'Consumidor final', document: '222222222222', priceListId: null });

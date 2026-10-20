@@ -2,7 +2,7 @@ import { Component, inject, input, model, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
 import { Observable, tap } from 'rxjs';
-import { CREDIT_METHOD_CODE, CreditAccount, CreditEntry, PaymentMethod } from '../../core/api/api.models';
+import { CREDIT_METHOD_CODE, DEPOSIT_METHOD_CODE, CreditAccount, CreditEntry, PaymentMethod } from '../../core/api/api.models';
 import { CashApi } from '../../core/api/cash.api';
 import { CreditApi } from '../../core/api/credit.api';
 import { AuthService } from '../../core/auth/auth.service';
@@ -105,7 +105,7 @@ export class CreditPaymentDialogComponent {
       this.methodsRequested = true;
       this.cash.paymentMethods().subscribe({
         next: (list) => {
-          const usable = list.filter((m) => m.code !== CREDIT_METHOD_CODE);
+          const usable = list.filter((m) => m.code !== CREDIT_METHOD_CODE && m.code !== DEPOSIT_METHOD_CODE);
           this.methods.set(usable);
           this.methodId ||= this.defaultMethod(usable);
         },

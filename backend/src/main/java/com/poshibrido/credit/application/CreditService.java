@@ -97,7 +97,9 @@ public class CreditService {
             throw new BusinessRuleException("El abono debe ser mayor que cero.");
         }
         PaymentMethodRef method = c.paymentMethodId() == null ? null : cash.paymentMethods().get(c.paymentMethodId());
-        if (method == null || !method.active() || CreditApi.METHOD_CODE.equals(method.code())) {
+        // Ni "Fiado" ni "Anticipo" (decisión 258): un abono es dinero que entra.
+        if (method == null || !method.active() || CreditApi.METHOD_CODE.equals(method.code())
+                || "DEPOSIT".equals(method.code())) {
             throw new BusinessRuleException("Medio de pago no válido para un abono.");
         }
         String reference = blankToNull(c.reference());

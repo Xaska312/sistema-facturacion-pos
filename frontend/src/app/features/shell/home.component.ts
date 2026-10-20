@@ -7,6 +7,7 @@ import { DashboardComponent } from '../dashboard/dashboard.component';
 import { MyDayComponent } from '../dashboard/my-day.component';
 import { StockAlertsComponent } from '../dashboard/stock-alerts.component';
 import { FirstStepsComponent } from '../onboarding/first-steps.component';
+import { OrdersAlertComponent } from '../orders/orders-alert.component';
 import { describeCapabilities, firstName, greeting, quickActions } from './capabilities';
 
 /**
@@ -16,7 +17,7 @@ import { describeCapabilities, firstName, greeting, quickActions } from './capab
 @Component({
   selector: 'app-home',
   imports: [RouterLink, SkeletonModule, PageHeaderComponent, DashboardComponent, MyDayComponent, StockAlertsComponent,
-    FirstStepsComponent],
+    FirstStepsComponent, OrdersAlertComponent],
   template: `
     <app-page-header [title]="title" [description]="'Estás en ' + (auth.currentTenant()?.tradeName ?? 'tu negocio') + '.'" />
 
@@ -37,6 +38,9 @@ import { describeCapabilities, firstName, greeting, quickActions } from './capab
     }
 
     <app-first-steps class="block mb-5" />
+
+    <!-- Pedidos atrasados o para hoy (decisión 258); no ocupa espacio si no hay. -->
+    <app-orders-alert class="block mb-5 empty:hidden" />
 
     <!-- Las gráficas (Chart.js) se cargan aparte, después de pintar la página. -->
     @if (auth.hasPermission('reports:read')) {
