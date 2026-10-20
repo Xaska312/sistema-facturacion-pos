@@ -58,7 +58,12 @@ test('login → abrir caja → vender → cerrar caja', async ({ page, request }
   await closing.getByLabel('Efectivo contado').fill('55000');
   await closing.getByRole('button', { name: 'Cerrar caja' }).click();
 
-  const report = page.getByRole('dialog', { name: 'Informe de caja' });
-  await expect(report.getByText(/Informe de cierre \(Z\)/)).toBeVisible();
-  await expect(report.getByText('Cuadrada')).toBeVisible();
+  // Al cerrar se abre el informe con el ticket para imprimir y el resumen por WhatsApp (decisión 259).
+  const report = page.getByRole('dialog', { name: 'Cierre de caja' });
+  // El diálogo también trae el ticket oculto para imprimir: se revisa el informe en pantalla.
+  const onScreen = report.locator('app-cash-report');
+  await expect(onScreen.getByText(/Informe de cierre \(Z\)/)).toBeVisible();
+  await expect(onScreen.getByText('Cuadrada')).toBeVisible();
+  await expect(report.getByRole('button', { name: 'Imprimir ticket' })).toBeVisible();
+  await expect(report.getByRole('link', { name: /WhatsApp/ })).toBeVisible();
 });

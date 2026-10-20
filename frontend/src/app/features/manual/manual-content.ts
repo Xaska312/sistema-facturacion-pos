@@ -257,11 +257,12 @@ export const MANUAL: readonly ManualChapter[] = [
           'En "Mi caja" toca "Cerrar caja".',
           'Cuenta billetes y monedas y escribe el total.',
           'Confirma. Se guarda el informe del turno con las ventas por medio de pago, los movimientos y las anulaciones.',
+          'Se abre el informe: toca "Imprimir ticket" para sacarlo en la impresora del tiquete (para firmarlo y guardarlo con el dinero) o "Enviar por WhatsApp" para mandar el resumen.',
         ],
         tips: [
           'El cierre es "ciego": quien cierra no ve cuánto debería haber, así el conteo es honesto. La diferencia la ve quien supervisa.',
           '"Informe parcial" muestra cómo va el turno sin cerrarlo.',
-          'En "Historial de caja" están todos los turnos con su informe.',
+          'En "Historial de caja" están todos los turnos con su informe; desde "Informe" puedes reimprimir el ticket de un cierre.',
           'Al cerrar, al correo del dueño llega un resumen con las ventas, los medios de pago y la diferencia, aunque cierre un cajero. Se apaga en Ajustes.',
         ],
       },

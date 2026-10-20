@@ -23,7 +23,7 @@ import { PageHeaderComponent } from '../../shared/page-header.component';
 import { CellTemplateDirective } from '../../shared/table/cell-template.directive';
 import { DataTableComponent } from '../../shared/table/data-table.component';
 import { ColumnDef } from '../../shared/table/table';
-import { CashReportComponent } from './cash-report.component';
+import { CashReportDialogComponent } from './cash-report-dialog.component';
 import { CASH_MOVEMENT_LABEL } from './labels';
 import { TermComponent } from '../../shared/help/term.component';
 import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
@@ -33,7 +33,7 @@ import { permissionFlag } from '../../core/auth/permission-flag';
 @Component({
   selector: 'app-cash',
   imports: [TermComponent, SkeletonModule, FormsModule, PesosInputDirective, RouterLink, DatePipe, ButtonModule, DialogModule, InputTextModule, HasPermissionDirective,
-    CashReportComponent, PageHeaderComponent, DataTableComponent, CellTemplateDirective],
+    CashReportDialogComponent, PageHeaderComponent, DataTableComponent, CellTemplateDirective],
   template: `
     <app-page-header title="Mi caja" description="Abre tu caja con la base de efectivo, registra ingresos o retiros y ciérrala al final del turno.">
       <a *hasPermission="'cash:read'" pButton routerLink="/app/caja/historial" label="Historial de caja" icon="pi pi-history"
@@ -168,11 +168,8 @@ import { permissionFlag } from '../../core/auth/permission-flag';
       </ng-template>
     </p-dialog>
 
-    <p-dialog header="Informe de caja" [(visible)]="reportOpen" [modal]="true" [style]="{ width: '32rem' }">
-      @if (report(); as r) {
-        <app-cash-report [report]="r" />
-      }
-    </p-dialog>
+    <!-- Al cerrar se abre solo: ticket para imprimir y resumen por WhatsApp. -->
+    <app-cash-report-dialog [(visible)]="reportOpen" [report]="report()" />
   `,
 })
 export class CashComponent implements OnInit {
