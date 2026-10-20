@@ -45,7 +45,7 @@ const DAY = new Intl.DateTimeFormat('es-CO', { weekday: 'short', day: 'numeric',
 /** "mar, 20 oct 2026". */
 export function formatDay(value: string | null | undefined): string {
   const date = parseDay(value);
-  return date ? DAY.format(date).replace(/ /g, ' ').replace(/\./g, '') : '—';
+  return date ? DAY.format(date).replace(/[\u00a0\u202f]/g, ' ').replace(/\./g, '') : '—';
 }
 
 /** Días de calendario hasta la entrega: 0 = hoy, negativo = atrasado; null si la fecha no es válida. */
