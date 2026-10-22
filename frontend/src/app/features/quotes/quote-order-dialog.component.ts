@@ -33,7 +33,8 @@ import { isoDay } from '../orders/order-text';
           @if (q.customerId) {
             <p class="border rounded-lg px-3 py-2 text-sm"><span class="font-medium">{{ q.customerName }}</span>
               <span class="text-muted"> · {{ q.customerDocument }}</span></p>
-          } @else if (customer(); as c) {
+          } @else if (customer()) {
+            @let c = customer()!;
             <div class="flex flex-wrap items-center gap-3 border rounded-lg px-3 py-2 text-sm">
               <span class="font-medium">{{ c.displayName }}</span>
               <span class="text-muted">{{ docShort(c.documentType) }} {{ c.formattedDocument }}</span>

@@ -65,7 +65,8 @@ interface CustomerChoice {
             </label>
           </div>
           <small class="text-xs text-muted">Si acepta, lo registras como cliente al convertir la cotización en pedido.</small>
-        } @else if (customer(); as c) {
+        } @else if (customer()) {
+          @let c = customer()!;
           <div class="flex flex-wrap items-center gap-3 border rounded-lg px-3 py-2">
             <span class="pi pi-user text-muted" aria-hidden="true"></span>
             <span class="font-medium">{{ c.name }}</span>
