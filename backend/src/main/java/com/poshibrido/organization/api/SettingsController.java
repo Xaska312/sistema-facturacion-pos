@@ -6,6 +6,8 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -34,7 +36,10 @@ public class SettingsController {
             @Size(max = 500) String receiptFooter,
             @NotNull @DecimalMin("0") @DecimalMax("100") @Digits(integer = 3, fraction = 2) BigDecimal maxDiscountPercent,
             /** Resumen del cierre de caja al correo del dueño (decisión 253). Sin dato se conserva el actual. */
-            Boolean cashCloseEmail) {
+            Boolean cashCloseEmail,
+            /** Vigencia y condiciones por defecto de las cotizaciones (decisión 260). Sin dato se conserva. */
+            @Min(1) @Max(365) Integer quoteValidityDays,
+            @Size(max = 1000) String quoteTerms) {
     }
 
     @GetMapping
@@ -46,10 +51,14 @@ public class SettingsController {
     @PutMapping
     @PreAuthorize("hasAuthority('settings:manage')")
     public BusinessSettings update(@Valid @RequestBody SettingsRequest request) {
+        BusinessSettings current = service.current();
         boolean cashCloseEmail = request.cashCloseEmail() == null
-                ? service.current().cashCloseEmail() : request.cashCloseEmail();
+                ? current.cashCloseEmail() : request.cashCloseEmail();
+        int quoteValidityDays = request.quoteValidityDays() == null
+                ? current.quoteValidityDays() : request.quoteValidityDays();
+        String quoteTerms = request.quoteTerms() == null ? current.quoteTerms() : request.quoteTerms();
         return service.update(new BusinessSettings(request.allowNegativeStock(), request.pricesIncludeTax(),
                 request.timezone().trim(), request.currency().trim(), request.receiptFooter(),
-                request.maxDiscountPercent(), cashCloseEmail));
+                request.maxDiscountPercent(), cashCloseEmail, quoteValidityDays, quoteTerms));
     }
 }

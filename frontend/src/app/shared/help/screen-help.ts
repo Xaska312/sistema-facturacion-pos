@@ -197,6 +197,16 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
       'Comparte el comprobante por WhatsApp o imprímelo para el cliente.',
     ],
   },
+  '/app/cotizaciones': {
+    manual: 'cotizaciones',
+    title: 'Cotizaciones',
+    tips: [
+      'Cotiza a un cliente registrado o a alguien que aún no lo está (solo nombre y teléfono).',
+      'Cada línea puede llevar descuento; la vigencia y las condiciones por defecto se cambian en Ajustes.',
+      'Compártela en PDF o por WhatsApp. Si la aceptan, conviértela en pedido o en venta con los mismos precios.',
+      'Una vencida se renueva editando la fecha, o se duplica para hacer una nueva.',
+    ],
+  },
   '/app/clientes': {
     manual: 'clientes',
     title: 'Clientes',

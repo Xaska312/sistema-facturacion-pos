@@ -94,7 +94,9 @@ class OrganizationIT extends IntegrationTest {
                  "currency":"COP","receiptFooter":"Vuelva pronto","maxDiscountPercent":15.5}
                 """).andExpect(status().isOk())
                 .andExpect(jsonPath("$.allowNegativeStock").value(true))
-                .andExpect(jsonPath("$.receiptFooter").value("Vuelva pronto"));
+                .andExpect(jsonPath("$.receiptFooter").value("Vuelva pronto"))
+                // Sin dato, la vigencia y las condiciones de las cotizaciones quedan como estaban (decisión 260)
+                .andExpect(jsonPath("$.quoteValidityDays").value(15));
 
         assertThat(jdbc.queryForObject("SELECT setting_value FROM t_" + owner.slug()
                 + ".business_settings WHERE setting_key = 'max_discount_percent'", String.class)).isEqualTo("15.50");

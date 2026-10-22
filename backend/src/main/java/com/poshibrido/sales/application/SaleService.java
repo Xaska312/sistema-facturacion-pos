@@ -164,7 +164,18 @@ public class SaleService {
     @Transactional(propagation = Propagation.MANDATORY)
     public UUID createForOrder(Create command, List<String> names, BigDecimal depositApplied, String idempotencyKey) {
         return register(command, requireKey(idempotencyKey), CurrentActor.requireUserId(),
-                new Options(true, names, depositApplied == null ? BigDecimal.ZERO : depositApplied));
+                new Options(true, true, names, depositApplied == null ? BigDecimal.ZERO : depositApplied));
+    }
+
+    /**
+     * Venta de una cotización aceptada (decisión 260): las líneas llevan el precio y el descuento cotizados (no los de
+     * la lista) y su descripción; {@code expectedTotal} es el total de la cotización (si los impuestos cambiaron, 409).
+     * Corre dentro de la transacción de la cotización (que ya la tiene bloqueada).
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public UUID createForQuote(Create command, List<String> names, String idempotencyKey) {
+        return register(command, requireKey(idempotencyKey), CurrentActor.requireUserId(),
+                new Options(true, false, names, BigDecimal.ZERO));
     }
 
     /** Venta ya registrada con esa clave por el usuario actual (para reintentos de la entrega de un pedido). */
@@ -173,11 +184,12 @@ public class SaleService {
     }
 
     /**
-     * {@code fromOrder}: entrega de un pedido; {@code names}: nombre de cada línea (o nulo = el del producto);
-     * {@code depositApplied}: lo que se paga con "Anticipo" (solo en la entrega de un pedido).
+     * {@code agreedPrices}: el precio de cada línea es el acordado (pedido o cotización), no el de la lista;
+     * {@code fromOrder}: entrega de un pedido (permite "Anticipo"); {@code names}: nombre de cada línea (o nulo = el
+     * del producto); {@code depositApplied}: lo que se paga con "Anticipo" (solo en la entrega de un pedido).
      */
-    private record Options(boolean fromOrder, List<String> names, BigDecimal depositApplied) {
-        static final Options POS = new Options(false, null, BigDecimal.ZERO);
+    private record Options(boolean agreedPrices, boolean fromOrder, List<String> names, BigDecimal depositApplied) {
+        static final Options POS = new Options(false, false, null, BigDecimal.ZERO);
     }
 
     private UUID register(Create c, String key, UUID actor, Options options) {
@@ -206,8 +218,8 @@ public class SaleService {
                 throw new NotFoundException("Producto no encontrado.");
             }
             ResolvedPrice price = pricing.price(line.productId(), line.unitId(), customer.priceListId());
-            if (options.fromOrder()) {
-                // Pedido por encargo: manda el precio acordado al crear el pedido.
+            if (options.agreedPrices()) {
+                // Pedido por encargo o cotización: manda el precio acordado.
                 BigDecimal agreed = line.expectedUnitPrice();
                 if (agreed == null || agreed.signum() <= 0) {
                     throw new BusinessRuleException("Falta el precio de " + price.name() + ".");
@@ -247,7 +259,7 @@ public class SaleService {
             maxDiscount = maxDiscount.max(discount);
             LineAmounts amounts = SaleCalculator.line(price.price(), quantity, discount, price.taxRate(),
                     cfg.pricesIncludeTax());
-            if (!options.fromOrder() && !price.openPrice() && line.expectedUnitPrice() != null
+            if (!options.agreedPrices() && !price.openPrice() && line.expectedUnitPrice() != null
                     && line.expectedUnitPrice().compareTo(price.price()) != 0) {
                 changes.add(new PriceChangedException.Change(lineNo, price.sku(), price.name(),
                         line.expectedUnitPrice(), price.price()));

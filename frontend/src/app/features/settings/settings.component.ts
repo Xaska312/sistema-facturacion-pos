@@ -165,6 +165,23 @@ const TIMEZONE_LABEL: Record<string, string> = {
             política de cambios…</span>
         </label>
       </fieldset>
+      <fieldset class="flex flex-col gap-4" [disabled]="!canEdit()">
+        <legend class="text-base font-semibold mb-2">Cotizaciones</legend>
+        <label class="flex flex-col gap-1 max-w-xs">
+          <span class="text-sm font-medium">Días de vigencia por defecto</span>
+          <input pInputText type="number" min="1" max="365" step="1" formControlName="quoteValidityDays"
+                 aria-describedby="quote-days-help" />
+          <span id="quote-days-help" class="text-xs text-muted">Una cotización nueva vale hasta hoy más estos días
+            (de 1 a 365). Se puede cambiar en cada una.</span>
+        </label>
+        <label class="flex flex-col gap-1">
+          <span class="text-sm font-medium">Condiciones por defecto</span>
+          <textarea formControlName="quoteTerms" rows="3" maxlength="1000" class="border rounded px-2 py-2"
+                    aria-describedby="quote-terms-help"></textarea>
+          <span id="quote-terms-help" class="text-xs text-muted">Salen en el PDF de cada cotización nueva: anticipo,
+            tiempo de entrega, garantía, formas de pago…</span>
+        </label>
+      </fieldset>
       @if (canEdit()) {
         <div class="flex justify-end">
           <p-button type="submit" label="Guardar" [loading]="saving()" [disabled]="form.invalid || form.pristine" />
@@ -245,6 +262,8 @@ export class SettingsComponent implements OnInit {
     maxDiscountPercent: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
     receiptFooter: ['', Validators.maxLength(500)],
     cashCloseEmail: [true],
+    quoteValidityDays: [15, [Validators.required, Validators.min(1), Validators.max(365)]],
+    quoteTerms: ['', Validators.maxLength(1000)],
   });
 
   ngOnInit(): void {

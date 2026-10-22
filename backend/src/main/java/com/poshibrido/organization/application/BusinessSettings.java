@@ -5,8 +5,9 @@ import java.math.BigDecimal;
 /**
  * Ajustes del negocio, tipados. Los módulos de ventas e inventario los leen con {@link BusinessSettingsApi}.
  * {@code cashCloseEmail}: enviar al dueño el resumen de cada cierre de caja (decisión 253).
+ * {@code quoteValidityDays} y {@code quoteTerms}: vigencia y condiciones por defecto de las cotizaciones (decisión 260).
  */
 public record BusinessSettings(boolean allowNegativeStock, boolean pricesIncludeTax, String timezone,
                                String currency, String receiptFooter, BigDecimal maxDiscountPercent,
-                               boolean cashCloseEmail) {
+                               boolean cashCloseEmail, int quoteValidityDays, String quoteTerms) {
 }

@@ -213,6 +213,26 @@ export const MANUAL: readonly ManualChapter[] = [
         who: 'Propietario, Administrador, Cajero y Vendedor crean, cobran anticipos y entregan; el Contador solo consulta.',
       },
       {
+        id: 'cotizaciones',
+        title: 'Cotizaciones',
+        summary: 'Para pasarle precios a un cliente antes de que compre: un mesón, una lista de útiles, un pedido al por mayor. No mueve inventario ni dinero; si la aceptan, se convierte en pedido o en venta con los mismos precios.',
+        steps: [
+          'Ve a Cotizaciones y toca "Nueva cotización". Elige un cliente registrado o escribe el nombre y teléfono de alguien que aún no lo es.',
+          'Agrega los productos por cantidad o por medidas (ancho × largo, para productos en M2), con el precio y, si quieres, un descuento por línea.',
+          'Revisa hasta cuándo es válida (por defecto, los días que diga Ajustes) y las condiciones: anticipo, tiempo de entrega, garantía…',
+          'Con "Descargar PDF" la guardas o imprimes en hoja carta con tu logo; con "Enviar por WhatsApp" le mandas el resumen.',
+          'Si el cliente acepta, toca "Convertir en pedido" (para trabajos por encargo) o "Vender" (si se lleva todo ya, en tu caja abierta). Si no, "Rechazar" con el motivo.',
+        ],
+        tips: [
+          'Al convertir en pedido la cotización de alguien sin registrar, el sistema te pide registrarlo como cliente. Si la vendes sin registrarlo, la venta queda a consumidor final.',
+          'Una cotización vencida no se convierte: edítala para renovar la fecha y revisar los precios, o toca "Duplicar" para hacer una nueva igual.',
+          'En el pedido el descuento queda incluido en el precio de cada línea.',
+          'Los descuentos por encima del máximo de Ajustes necesitan el permiso de descuentos, igual que en el POS.',
+          'Los días de vigencia y el texto de condiciones por defecto se cambian en Ajustes > Cotizaciones.',
+        ],
+        who: 'Propietario, Administrador, Cajero y Vendedor cotizan y convierten; el Contador solo consulta.',
+      },
+      {
         id: 'atajos',
         title: 'Atajos de teclado',
         summary: 'Con teclado y lector puedes vender sin tocar el mouse.',
