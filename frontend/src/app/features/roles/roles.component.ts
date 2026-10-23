@@ -23,6 +23,7 @@ const MODULE_LABEL: Record<string, string> = {
   sales: 'Ventas',
   credit: 'Fiados',
   orders: 'Pedidos',
+  quotes: 'Cotizaciones',
   reporting: 'Reportes',
   audit: 'Auditoría',
 };

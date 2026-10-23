@@ -32,12 +32,15 @@ public class BusinessSettingsService implements BusinessSettingsApi {
     static final String RECEIPT_FOOTER = "receipt_footer";
     static final String MAX_DISCOUNT_PERCENT = "max_discount_percent";
     static final String CASH_CLOSE_EMAIL = "cash_close_email";
+    static final String QUOTE_VALIDITY_DAYS = "quote_validity_days";
+    static final String QUOTE_TERMS = "quote_terms";
 
     /** Monedas soportadas. En el MVP solo pesos colombianos. */
     private static final Set<String> CURRENCIES = Set.of("COP");
 
     private static final BusinessSettings DEFAULTS = new BusinessSettings(false, true, "America/Bogota", "COP",
-            "Gracias por su compra", BigDecimal.ZERO.setScale(2), true);
+            "Gracias por su compra", BigDecimal.ZERO.setScale(2), true, 15,
+            "Precios sujetos a cambio después de la fecha de validez.");
 
     private final BusinessSettingRepository repository;
     private final AuditLogger audit;
@@ -54,7 +57,9 @@ public class BusinessSettingsService implements BusinessSettingsApi {
                 values.getOrDefault(CURRENCY, DEFAULTS.currency()),
                 values.getOrDefault(RECEIPT_FOOTER, DEFAULTS.receiptFooter()),
                 decimal(values, MAX_DISCOUNT_PERCENT, DEFAULTS.maxDiscountPercent()),
-                bool(values, CASH_CLOSE_EMAIL, DEFAULTS.cashCloseEmail()));
+                bool(values, CASH_CLOSE_EMAIL, DEFAULTS.cashCloseEmail()),
+                integer(values, QUOTE_VALIDITY_DAYS, DEFAULTS.quoteValidityDays()),
+                values.getOrDefault(QUOTE_TERMS, DEFAULTS.quoteTerms()));
     }
 
     @Transactional
@@ -73,6 +78,9 @@ public class BusinessSettingsService implements BusinessSettingsApi {
         put(rows, MAX_DISCOUNT_PERCENT, ValueType.DECIMAL,
                 requested.maxDiscountPercent().setScale(2, RoundingMode.HALF_UP).toPlainString(), actor);
         put(rows, CASH_CLOSE_EMAIL, ValueType.BOOLEAN, Boolean.toString(requested.cashCloseEmail()), actor);
+        put(rows, QUOTE_VALIDITY_DAYS, ValueType.INTEGER, Integer.toString(requested.quoteValidityDays()), actor);
+        put(rows, QUOTE_TERMS, ValueType.STRING, requested.quoteTerms() == null ? "" : requested.quoteTerms().trim(),
+                actor);
 
         BusinessSettings after = current();
         audit.log("SETTINGS_UPDATED", "business_settings", null, asMap(before), asMap(after));
@@ -106,11 +114,26 @@ public class BusinessSettingsService implements BusinessSettingsApi {
         if (max == null || max.signum() < 0 || max.compareTo(BigDecimal.valueOf(100)) > 0) {
             throw new BusinessRuleException("El descuento máximo debe estar entre 0 y 100 %.");
         }
+        if (s.quoteValidityDays() < 1 || s.quoteValidityDays() > 365) {
+            throw new BusinessRuleException("La vigencia de las cotizaciones debe estar entre 1 y 365 días.");
+        }
+        if (s.quoteTerms() != null && s.quoteTerms().length() > 1000) {
+            throw new BusinessRuleException("Las condiciones de las cotizaciones superan 1.000 caracteres.");
+        }
     }
 
     private static boolean bool(Map<String, String> values, String key, boolean fallback) {
         String value = values.get(key);
         return value == null ? fallback : Boolean.parseBoolean(value);
+    }
+
+    private static int integer(Map<String, String> values, String key, int fallback) {
+        String value = values.get(key);
+        try {
+            return value == null ? fallback : Integer.parseInt(value.trim());
+        } catch (NumberFormatException ex) {
+            return fallback;
+        }
     }
 
     private static BigDecimal decimal(Map<String, String> values, String key, BigDecimal fallback) {
@@ -131,6 +154,8 @@ public class BusinessSettingsService implements BusinessSettingsApi {
         map.put(RECEIPT_FOOTER, s.receiptFooter());
         map.put(MAX_DISCOUNT_PERCENT, s.maxDiscountPercent());
         map.put(CASH_CLOSE_EMAIL, s.cashCloseEmail());
+        map.put(QUOTE_VALIDITY_DAYS, s.quoteValidityDays());
+        map.put(QUOTE_TERMS, s.quoteTerms());
         return map;
     }
 }

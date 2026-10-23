@@ -20,6 +20,7 @@ const RULES: readonly CapabilityRule[] = [
   { permission: 'credit:manage', text: 'asignar cupos de fiado y anular abonos' },
   { permission: 'orders:create', text: 'tomar pedidos por encargo, recibir anticipos y entregarlos' },
   { permission: 'orders:manage', text: 'cancelar pedidos y devolver anticipos' },
+  { permission: 'quotes:create', text: 'hacer cotizaciones y convertirlas en pedido o venta' },
   { permission: 'cash:read', text: 'ver el historial de caja' },
   { permission: 'cash:audit', text: 'ver las diferencias de los arqueos' },
   { permission: 'reports:read', text: 'ver el tablero y los reportes' },

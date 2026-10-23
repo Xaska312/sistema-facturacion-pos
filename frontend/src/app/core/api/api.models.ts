@@ -189,6 +189,9 @@ export interface BusinessSettings {
   maxDiscountPercent: number;
   /** Resumen de cada cierre de caja al correo del dueño (decisión 253). */
   cashCloseEmail: boolean;
+  /** Días de vigencia y condiciones por defecto de una cotización nueva (decisión 260). */
+  quoteValidityDays: number;
+  quoteTerms: string;
 }
 
 export interface Department {
@@ -1299,5 +1302,113 @@ export interface OrderDeliverPayment {
 
 export interface OrderDelivery {
   order: Order;
+  saleId: string;
+}
+
+// ---------------------------------------------------------------- cotizaciones (decisión 260)
+
+export type QuoteStatus = 'OPEN' | 'ACCEPTED' | 'REJECTED';
+/** OPEN = vigentes (abiertas y sin vencer); EXPIRED = abiertas con la fecha pasada. */
+export type QuoteFilter = 'OPEN' | 'EXPIRED' | 'ACCEPTED' | 'REJECTED' | 'ALL';
+export type QuoteConversion = 'ORDER' | 'SALE';
+
+export interface QuoteItem {
+  id: string;
+  lineNo: number;
+  productId: string;
+  sku: string;
+  productName: string;
+  unitCode: string;
+  description: string | null;
+  width: number | null;
+  length: number | null;
+  quantity: number;
+  unitPrice: number;
+  discountPercent: number;
+  total: number;
+}
+
+/** Cotización para un cliente registrado ({@code customerId}) o para un prospecto (nombre y teléfono). */
+export interface Quote {
+  id: string;
+  number: string;
+  status: QuoteStatus;
+  expired: boolean;
+  customerId: string | null;
+  customerName: string | null;
+  customerDocument: string | null;
+  customerPhone: string | null;
+  prospectName: string | null;
+  prospectPhone: string | null;
+  validUntil: string;
+  notes: string | null;
+  terms: string | null;
+  total: number;
+  createdByName: string | null;
+  createdAt: string;
+  convertedType: QuoteConversion | null;
+  convertedId: string | null;
+  convertedNumber: string | null;
+  convertedAt: string | null;
+  rejectedAt: string | null;
+  rejectReason: string | null;
+  items: QuoteItem[];
+}
+
+export interface QuoteRow {
+  id: string;
+  number: string;
+  status: QuoteStatus;
+  expired: boolean;
+  customerId: string | null;
+  partyName: string;
+  validUntil: string;
+  total: number;
+  itemCount: number;
+  convertedType: QuoteConversion | null;
+  convertedNumber: string | null;
+  createdAt: string;
+}
+
+export interface QuoteConfig {
+  validityDays: number;
+  terms: string;
+  pricesIncludeTax: boolean;
+  maxDiscountPercent: number;
+  /** Encabezado del PDF: nombre comercial y dirección y teléfono de la sede principal. */
+  businessName: string;
+  branchAddress: string | null;
+  branchPhone: string | null;
+}
+
+export interface QuoteItemInput {
+  productId: string;
+  description: string | null;
+  width: number | null;
+  length: number | null;
+  quantity: number | null;
+  unitPrice: number;
+  discountPercent: number;
+}
+
+export interface QuoteInput {
+  customerId: string | null;
+  prospectName: string | null;
+  prospectPhone: string | null;
+  validUntil: string | null;
+  notes: string | null;
+  terms: string | null;
+  items: QuoteItemInput[];
+}
+
+export interface QuoteToOrderInput {
+  customerId: string | null;
+  dueDate: string;
+  address: string | null;
+  notes: string | null;
+}
+
+export interface QuoteSaleResult {
+  quote: Quote;
   saleId: string;
 }

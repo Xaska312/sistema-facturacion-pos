@@ -64,7 +64,7 @@ El token viaja en el cuerpo, nunca en la URL de la API.
 ### Ajustes del negocio
 | Método | Ruta | Permiso | Descripción |
 |---|---|---|---|
-| GET | `/settings` | `settings:read` | `{allowNegativeStock, pricesIncludeTax, timezone, currency, receiptFooter, maxDiscountPercent}` |
+| GET | `/settings` | `settings:read` | `{allowNegativeStock, pricesIncludeTax, timezone, currency, receiptFooter, maxDiscountPercent, cashCloseEmail, quoteValidityDays, quoteTerms}` |
 | PUT | `/settings` | `settings:manage` | Mismo cuerpo, todos los campos. 422 zona horaria inválida o moneda distinta de COP; 400 descuento fuera de 0–100 |
 
 ### Usuarios, roles e invitaciones
@@ -380,3 +380,19 @@ Permisos: `orders:read` (ver), `orders:create` (crear, editar, anticipos y entre
 | POST | `/orders/{id}/cancel` | `{reason, refundMethodId?, reference?}` (`orders:manage`). Cancela lo pendiente y devuelve el anticipo disponible con `refundMethodId` (obligatorio si hay anticipo; en efectivo, `ORDER_REFUND` de la caja abierta; referencia si el medio la exige). Sobre un pedido ya cancelado con anticipo disponible (se anuló la venta de una entrega) solo lo devuelve (`ORDER_DEPOSIT_REFUNDED`). 409 si está entregado o cancelado sin nada que devolver |
 
 Anular (`POST /sales/{id}/void`) la venta de una entrega vuelve sus líneas a pendientes, devuelve lo aplicado al anticipo (`APPLIED_VOID`) y reabre el pedido; si el pedido ya estaba cancelado sigue cancelado y lo aplicado queda por devolver con `cancel`. El medio Anticipo tampoco sirve para abonar un fiado (422). El informe de caja agrega `cash.orderPayments` (anticipos en efectivo menos devoluciones). Auditoría: `ORDER_CREATED`, `ORDER_UPDATED`, `ORDER_PAYMENT_RECEIVED`, `ORDER_DELIVERED`, `ORDER_DELIVERY_VOIDED`, `ORDER_CANCELLED`, `ORDER_DEPOSIT_REFUNDED`.
+
+## Cotizaciones (Fase 10c, decisión 260)
+Permisos: `quotes:read` (ver; Propietario, Administrador, Cajero, Vendedor y Contador) y `quotes:create` (crear, editar, rechazar y convertir; todos menos el Contador). Convertir en pedido exige además `orders:create`; vender, `sales:create`. Una cotización no mueve inventario ni dinero.
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/quotes/config` | `{validityDays, terms, pricesIncludeTax, maxDiscountPercent, businessName, branchAddress, branchPhone}`: los valores por defecto de Ajustes y el encabezado del PDF (sede activa más antigua) |
+| GET | `/quotes?filter=OPEN\|EXPIRED\|ACCEPTED\|REJECTED\|ALL&search=&page=&size=` | `OPEN` (por defecto) = abiertas y vigentes; `EXPIRED` = abiertas con la fecha pasada (zona horaria del negocio). Las más recientes primero. Busca por nombre del cliente o del prospecto, documento, teléfono del prospecto o número (`COT-3` o `3`). `{id, number, status, expired, customerId, partyName, validUntil, total, itemCount, convertedType, convertedNumber, createdAt}` |
+| GET | `/quotes/{id}` | Cotización completa: `customerId/customerName/customerDocument/customerPhone` o `prospectName/prospectPhone`, `validUntil`, `expired`, `notes`, `terms`, `total`, `convertedType: ORDER\|SALE`, `convertedId`, `convertedNumber`, `convertedAt`, `rejectedAt`, `rejectReason`, `items[] {id, lineNo, productId, sku, productName, unitCode, description, width, length, quantity, unitPrice, discountPercent, total}` |
+| POST | `/quotes` | `{customerId?, prospectName?, prospectPhone?, validUntil?, notes?, terms?, items: [{productId, description?, width?, length?, quantity?, unitPrice, discountPercent?}]}` → 201. Cliente registrado (no el Consumidor final) o nombre del prospecto. Sin `validUntil`: hoy + `quoteValidityDays`; sin `terms` (nulo): las de Ajustes (`""` = sin condiciones). Líneas como en pedidos más `discountPercent` (0 a < 100); un descuento sobre `maxDiscountPercent` exige `sales:discount` (403). 422 con fecha anterior a hoy, sin líneas o un producto inactivo; 400 con más de 100 líneas |
+| PUT | `/quotes/{id}` | Mismo cuerpo; solo abiertas (también vencidas: así se renuevan). Reemplaza todas las líneas; la misma `validUntil` se acepta aunque ya pasó. `validUntil` o `terms` nulos conservan lo guardado (`terms: ""` las quita). 409 si está aceptada o rechazada |
+| POST | `/quotes/{id}/reject` | `{reason}` → cotización `REJECTED`. 409 si no está abierta |
+| POST | `/quotes/{id}/order` | `{customerId?, dueDate, address?, notes?}` → cotización `ACCEPTED` con `convertedType: ORDER`. Crea el pedido con las mismas líneas y medidas y el precio neto de descuento (`unitPrice × (100 − d) / 100`, a 2 decimales); `notes` vacío toma las de la cotización. Un prospecto exige `customerId` (queda asignado a la cotización). 422 si está vencida; 409 si ya no está abierta |
+| POST | `/quotes/{id}/sell` | `Idempotency-Key` obligatoria (la de la venta). `{customerId?, payments: [{paymentMethodId, amount, reference?}]}` → `{quote, saleId}`. Venta con los precios y descuentos cotizados en la caja abierta de quien vende (sin aviso de precio cambiado); un prospecto sin `customerId` queda a Consumidor final. Repetir la clave devuelve la misma venta; la clave de una venta de otra cotización → 409; también 409 si el total cambió con los impuestos de hoy (hay que editarla). 422 si está vencida o no hay caja abierta |
+
+Ajustes (`PUT /settings`) agrega `quoteValidityDays` (1 a 365, por defecto 15) y `quoteTerms` (hasta 1000 caracteres); sin dato se conserva el valor. Auditoría: `QUOTE_CREATED`, `QUOTE_UPDATED`, `QUOTE_REJECTED`, `QUOTE_CONVERTED` (con `type` y el pedido o la venta).
