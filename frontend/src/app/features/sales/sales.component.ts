@@ -17,6 +17,7 @@ import { ColumnDef, TableQuery, initialQuery } from '../../shared/table/table';
 import { BrandingService } from '../../core/theme/branding.service';
 import { ReceiptComponent } from '../../shared/receipt/receipt.component';
 import { ReceiptWidth, loadReceiptWidth, printReceipt } from '../../shared/receipt/receipt-prefs';
+import { saleWhatsAppLink } from './sale-text';
 import { permissionFlag } from '../../core/auth/permission-flag';
 import { LatestRequest } from '../../shared/latest-request';
 
@@ -80,6 +81,11 @@ const SALE_STATUS: Record<SaleStatus, StatusKey> = { COMPLETED: 'completed', VOI
             <p-button *hasPermission="'sales:void'" label="Anular" severity="danger" [text]="true"
                       (onClick)="openVoid()" />
           }
+        }
+        @if (detail(); as sale) {
+          <a pButton label="WhatsApp" icon="pi pi-whatsapp" severity="secondary" [outlined]="true" target="_blank"
+             rel="noopener noreferrer" [href]="saleWhatsApp(sale)"
+             aria-label="Enviar el recibo por WhatsApp (abre WhatsApp)"></a>
         }
         <p-button label="Reimprimir" severity="secondary" (onClick)="print()" />
         <p-button label="Cerrar" (onClick)="detailOpen = false" />
@@ -166,6 +172,11 @@ export class SalesComponent implements OnInit {
 
   print(): void {
     printReceipt();
+  }
+
+  /** Recibo en texto para enviarlo por WhatsApp (decisión 261). */
+  protected saleWhatsApp(sale: Sale): string {
+    return saleWhatsAppLink(sale);
   }
 
   openVoid(): void {

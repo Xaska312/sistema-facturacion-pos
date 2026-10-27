@@ -38,6 +38,7 @@ import { formatCop, formatQuantity } from '../../shared/money';
 import { BrandingService } from '../../core/theme/branding.service';
 import { ReceiptComponent } from '../../shared/receipt/receipt.component';
 import { ReceiptWidth, loadReceiptWidth, printReceipt, saveReceiptWidth } from '../../shared/receipt/receipt-prefs';
+import { saleWhatsAppLink } from '../sales/sale-text';
 import { TourService } from '../../shared/tour/tour.service';
 import { CartPanelComponent, LineDiscountChange, LinePriceChange, LineQuantityChange, RemovedLine } from './cart-panel.component';
 import { loadFavorites, saveFavorites, toggleFavorite } from './favorites';
@@ -482,6 +483,11 @@ const STOCK_PAGES = 5;
           </select>
           <p-button label="Imprimir tiquete" icon="pi pi-print" severity="secondary" [outlined]="true" styleClass="min-h-11"
                     (onClick)="print()" />
+          @if (lastSale(); as sale) {
+            <a pButton label="WhatsApp" icon="pi pi-whatsapp" severity="secondary" [outlined]="true" class="min-h-11"
+               target="_blank" rel="noopener noreferrer" [href]="saleWhatsApp(sale)"
+               aria-label="Enviar el recibo por WhatsApp (abre WhatsApp)"></a>
+          }
           <span class="flex-1"></span>
           <p-button id="new-sale" label="Nueva venta (Enter)" icon="pi pi-plus" styleClass="min-h-11"
                     (onClick)="receiptOpen = false" />
@@ -1559,6 +1565,11 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
 
   print(): void {
     printReceipt();
+  }
+
+  /** Recibo en texto para enviarlo por WhatsApp (decisión 261). */
+  protected saleWhatsApp(sale: Sale): string {
+    return saleWhatsAppLink(sale);
   }
 
   setWidth(value: ReceiptWidth | string): void {

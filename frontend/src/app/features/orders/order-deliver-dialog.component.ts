@@ -1,6 +1,4 @@
 import { Component, inject, input, model, output, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { InputTextModule } from 'primeng/inputtext';
 import { Observable, tap } from 'rxjs';
 import {
   CREDIT_METHOD_CODE,
@@ -17,9 +15,10 @@ import { OrdersApi } from '../../core/api/orders.api';
 import { newIdempotencyKey } from '../../core/api/sales.api';
 import { AuthService } from '../../core/auth/auth.service';
 import { FormDialogComponent } from '../../shared/forms/form-dialog.component';
-import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
 import { formatCop } from '../../shared/money';
-import { methodLabel } from '../pos/pos-labels';
+import { PaymentLinesComponent } from '../pos/payment-lines.component';
+import { newPaymentLine, paymentLinesProblem, toPaymentRequests } from '../pos/payment-lines';
+import { PaymentDraft } from '../pos/sale-math';
 import { deliveryAmounts, sizeText } from './order-text';
 
 /**
@@ -28,7 +27,7 @@ import { deliveryAmounts, sizeText } from './order-text';
  */
 @Component({
   selector: 'app-order-deliver-dialog',
-  imports: [FormsModule, InputTextModule, PesosInputDirective, FormDialogComponent],
+  imports: [FormDialogComponent, PaymentLinesComponent],
   template: `
     @if (order(); as o) {
       <app-form-dialog [(visible)]="visible" [header]="'Entregar pedido ' + o.number" width="34rem"
@@ -62,43 +61,8 @@ import { deliveryAmounts, sizeText } from './order-text';
         </div>
 
         @if (amounts().remaining > 0) {
-          <fieldset class="flex flex-col gap-1">
-            <legend class="text-sm font-medium mb-1">Cómo paga</legend>
-            <div class="flex flex-wrap gap-2">
-              @for (m of payMethods(); track m.id) {
-                <label class="flex items-center gap-2 min-h-11 px-3 border rounded-lg cursor-pointer"
-                       [class.border-brand]="methodId === m.id">
-                  <input type="radio" name="deliver-method" [value]="m.id" [(ngModel)]="methodId"
-                         (ngModelChange)="methodChanged()" />
-                  {{ label(m) }}
-                </label>
-              }
-            </div>
-          </fieldset>
-          @if (selected()?.affectsCash) {
-            <div class="flex flex-col gap-1">
-              <label for="deliver-tendered" class="text-sm font-medium">Recibe</label>
-              <input id="deliver-tendered" appPesos class="h-12 border rounded-lg px-3 text-xl text-right tabular-nums"
-                     [(ngModel)]="tendered" name="tendered" />
-              @if (change() > 0) {
-                <small class="text-sm font-medium">Cambio {{ cop(change()) }}</small>
-              }
-            </div>
-          } @else if (isCredit()) {
-            <small class="text-xs text-muted">
-              Queda fiado a {{ o.customerName }}. Cupo disponible {{ cop(credit()?.available ?? 0) }}.
-            </small>
-          } @else if (selected()) {
-            <div class="flex flex-col gap-1">
-              <label for="deliver-reference" class="text-sm font-medium">
-                Referencia
-                @if (!selected()!.requiresReference) {
-                  <span class="text-muted font-normal">(opcional)</span>
-                }
-              </label>
-              <input pInputText id="deliver-reference" name="reference" maxlength="60" [(ngModel)]="reference" />
-            </div>
-          }
+          <app-payment-lines [total]="amounts().remaining" [methods]="payMethods()" [creditAvailable]="creditAvailable()"
+                             [(lines)]="lines" />
         }
       </app-form-dialog>
     }
@@ -120,23 +84,19 @@ export class OrderDeliverDialogComponent {
   protected readonly methods = signal<PaymentMethod[]>([]);
   /** Cuenta de fiado del cliente: "Fiado" solo aparece si tiene cupo, como en el POS (decisión 255). */
   protected readonly credit = signal<CreditAccount | null>(null);
-  protected methodId = '';
-  protected tendered: number | null = null;
-  protected reference = '';
+  protected readonly lines = signal<PaymentDraft[]>([]);
   private idempotencyKey = '';
   private methodsRequested = false;
   protected readonly cop = formatCop;
   protected readonly size = sizeText;
 
-  /** Por defecto se entrega todo lo pendiente. */
+  /** Por defecto se entrega todo lo pendiente y se cobra el resto en efectivo. */
   prepare(order: Order): void {
     const pending = order.items.filter((i) => !i.delivered);
     this.pending.set(pending);
     this.chosen.set(new Set(pending.map((i) => i.id)));
-    this.reference = '';
     this.idempotencyKey = newIdempotencyKey('entrega');
-    this.methodId = this.methods().find((m) => m.affectsCash)?.id ?? this.methods()[0]?.id ?? '';
-    this.tendered = this.amountsFor(order).remaining || null;
+    this.resetLines(this.amountsFor(order).remaining);
     this.credit.set(null);
     if (this.auth.hasPermission('credit:read')) {
       this.creditApi.account(order.customerId).subscribe({
@@ -152,13 +112,20 @@ export class OrderDeliverDialogComponent {
       this.methodsRequested = true;
       this.cash.paymentMethods().subscribe({
         next: (list) => {
-          const usable = list.filter((m) => m.code !== DEPOSIT_METHOD_CODE);
-          this.methods.set(usable);
-          this.methodId ||= usable.find((m) => m.affectsCash)?.id ?? usable[0]?.id ?? '';
+          this.methods.set(list.filter((m) => m.code !== DEPOSIT_METHOD_CODE));
+          if (this.lines().every((l) => !l.methodId)) {
+            this.resetLines(this.amounts().remaining);
+          }
         },
         error: () => (this.methodsRequested = false),
       });
     }
+  }
+
+  /** Una sola línea en efectivo por lo que falta. */
+  private resetLines(remaining: number): void {
+    const cash = this.methods().find((m) => m.affectsCash) ?? this.methods()[0];
+    this.lines.set([newPaymentLine(cash, remaining)]);
   }
 
   toggle(item: OrderItem): void {
@@ -169,18 +136,11 @@ export class OrderDeliverDialogComponent {
       next.add(item.id);
     }
     this.chosen.set(next);
-    this.fitTendered();
-  }
-
-  methodChanged(): void {
-    this.fitTendered();
-  }
-
-  /** Lo recibido en efectivo se ajusta solo si quedó vacío o por debajo de lo que hay que pagar. */
-  private fitTendered(): void {
+    // Con un solo medio, el valor sigue a lo que hay que pagar (si quedó por debajo).
+    const lines = this.lines();
     const remaining = this.amounts().remaining;
-    if (this.tendered === null || Number(this.tendered) < remaining) {
-      this.tendered = remaining || null;
+    if (lines.length === 1 && Number(lines[0].amount ?? 0) < remaining) {
+      this.lines.set([{ ...lines[0], amount: remaining || null }]);
     }
   }
 
@@ -190,8 +150,9 @@ export class OrderDeliverDialogComponent {
     return this.methods().filter((m) => m.code !== CREDIT_METHOD_CODE || canCredit);
   }
 
-  protected isCredit(): boolean {
-    return this.selected()?.code === CREDIT_METHOD_CODE;
+  protected creditAvailable(): number | null {
+    const account = this.credit();
+    return account && account.creditLimit > 0 ? account.available : null;
   }
 
   private amountsFor(order: Order) {
@@ -203,20 +164,6 @@ export class OrderDeliverDialogComponent {
     return order ? this.amountsFor(order) : { total: 0, applied: 0, remaining: 0, leftover: 0, completes: false };
   }
 
-  protected selected(): PaymentMethod | undefined {
-    return this.payMethods().find((m) => m.id === this.methodId);
-  }
-
-  protected label(method: PaymentMethod): string {
-    return methodLabel(method.code, method.name);
-  }
-
-  protected change(): number {
-    const remaining = this.amounts().remaining;
-    const tendered = Number(this.tendered ?? 0);
-    return this.selected()?.affectsCash && tendered > remaining ? tendered - remaining : 0;
-  }
-
   protected problem(): string | null {
     const a = this.amounts();
     if (this.chosen().size === 0) {
@@ -226,31 +173,13 @@ export class OrderDeliverDialogComponent {
       return `Quedarían ${formatCop(a.leftover)} de anticipo sin aplicar. Revisa los precios del pedido o cancela lo `
         + 'pendiente para devolverlos.';
     }
-    if (a.remaining <= 0) {
-      return null;
-    }
-    const method = this.selected();
-    if (!method) {
-      return 'Elige cómo paga el cliente.';
-    }
-    if (method.affectsCash && Number(this.tendered ?? 0) < a.remaining) {
-      return `Recibe al menos ${formatCop(a.remaining)}.`;
-    }
-    if (method.requiresReference && !method.affectsCash && !this.isCredit() && !this.reference.trim()) {
-      return 'Escribe la referencia del pago.';
-    }
-    return null;
+    return a.remaining > 0 ? paymentLinesProblem(a.remaining, this.lines(), this.payMethods(), this.creditAvailable())
+      : null;
   }
 
   protected readonly saveRequest = (): Observable<OrderDelivery> => {
     const order = this.order()!;
-    const a = this.amounts();
-    const method = this.selected();
-    const payments = a.remaining > 0 && method ? [{
-      paymentMethodId: method.id,
-      amount: method.affectsCash ? Number(this.tendered) : a.remaining,
-      reference: method.affectsCash || this.isCredit() ? null : this.reference.trim() || null,
-    }] : [];
+    const payments = this.amounts().remaining > 0 ? toPaymentRequests(this.lines(), this.payMethods()) : [];
     const itemIds = this.pending().filter((i) => this.chosen().has(i.id)).map((i) => i.id);
     return this.api.deliver(order.id, itemIds, payments, this.idempotencyKey)
       .pipe(tap(() => (this.idempotencyKey = newIdempotencyKey('entrega'))));

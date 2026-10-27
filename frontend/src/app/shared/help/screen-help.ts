@@ -54,7 +54,7 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     title: 'Ventas',
     tips: [
       'Busca por número de venta (POS-12) o por el nombre del cliente.',
-      'Desde el detalle puedes reimprimir el tiquete.',
+      'Desde el detalle puedes reimprimir el tiquete o enviar el recibo por WhatsApp.',
       'Anular una venta devuelve las existencias y el efectivo; se pide un motivo y queda registrada.',
     ],
   },
@@ -193,8 +193,8 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     tips: [
       'Crea el pedido con el cliente, la fecha de entrega y lo que pidió (por cantidad o por medidas en m²).',
       'Los anticipos en efectivo entran hoy a tu caja abierta; al entregar se descuentan solos.',
-      '"Entregar" registra una venta con lo que entregas: puede ser todo o una parte.',
-      'Comparte el comprobante por WhatsApp o imprímelo para el cliente.',
+      '"Entregar" registra una venta con lo que entregas: puede ser todo o una parte, y pagar con varios medios (por ejemplo, efectivo y fiado).',
+      'Comparte el comprobante por WhatsApp, en PDF (hoja carta con tu logo) o imprímelo.',
     ],
   },
   '/app/cotizaciones': {

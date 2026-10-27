@@ -41,6 +41,11 @@ class BrandingIT extends IntegrationTest {
         api.putWith(cashier.session(), "/api/v1/branding/color", """
                 {"color":"rosa"}""").andExpect(status().isForbidden());
 
+        // Encabezado de pedidos y cotizaciones: nombre comercial y sede principal, para cualquier miembro.
+        api.getWith(cashier.session(), "/api/v1/branding/header").andExpect(status().isOk())
+                .andExpect(jsonPath("$.businessName").isNotEmpty())
+                .andExpect(jsonPath("$.branchName").value("Sede principal"));
+
         api.deleteWith(s, "/api/v1/branding/logo").andExpect(status().isOk())
                 .andExpect(jsonPath("$.logo").value(nullValue()));
     }

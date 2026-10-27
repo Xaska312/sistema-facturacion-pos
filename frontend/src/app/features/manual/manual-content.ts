@@ -171,6 +171,7 @@ export const MANUAL: readonly ManualChapter[] = [
           'Al terminar la venta toca "Imprimir tiquete".',
           'La primera vez elige el ancho del papel (80 mm o 58 mm); el navegador lo recuerda en ese equipo.',
           'Para reimprimir una venta anterior, búscala en Ventas, ábrela y toca "Reimprimir".',
+          'Con "WhatsApp" le envías al cliente el recibo en texto (productos, total y cómo pagó): eliges el contacto en WhatsApp.',
         ],
         tips: [
           'El texto del pie del tiquete (horarios, redes sociales…) se cambia en Configuración → Ajustes.',
@@ -199,10 +200,12 @@ export const MANUAL: readonly ManualChapter[] = [
           'Ve a Pedidos y toca "Nuevo pedido". Elige el cliente (con su teléfono, para avisarle), la fecha de entrega y, si aplica, la dirección de instalación.',
           'Agrega lo que pidió. Cada línea es un producto del catálogo: cóbralo por cantidad (3 unidades) o por medidas (ancho × largo en metros, para productos en M2). Escribe la descripción y el precio acordado.',
           'Guarda y recibe el anticipo: en efectivo entra hoy a tu caja abierta; por transferencia queda con su referencia.',
-          'El día de la entrega abre el pedido y toca "Entregar". Marca lo que entregas (puede ser una parte): se registra una venta en tu caja, lo anticipado se descuenta solo y el cliente paga el resto como en el POS.',
-          'Con "Imprimir comprobante" o "Enviar por WhatsApp" le das al cliente el detalle del pedido, lo abonado y lo que falta.',
+          'El día de la entrega abre el pedido y toca "Entregar". Marca lo que entregas (puede ser una parte): se registra una venta en tu caja y lo anticipado se descuenta solo.',
+          'El resto lo paga con uno o varios medios: con "Agregar otro medio" paga una parte en efectivo y deja el resto fiado (si tiene cupo), o combina efectivo y transferencia.',
+          'Con "Imprimir comprobante" (tiquete), "Descargar PDF" (hoja carta con tu logo, para enviarla) o "Enviar por WhatsApp" le das al cliente el detalle del pedido, lo abonado y lo que falta.',
         ],
         tips: [
+          'Para distribuidores: registra cada tienda como cliente con cupo de fiado, toma su pedido sin anticipo y al entregar fía lo que no te paguen; lo cobras después en Fiados con "Abonar".',
           'Si no tienes el producto en el catálogo, crea uno genérico (por ejemplo "Mesón en granito" en M2 o "Torta por encargo" en unidades) con precio libre.',
           'El pedido no mueve inventario ni ingresos: eso pasa al entregarlo. El anticipo sí entra a la caja el día que lo recibes y en el cierre sale como "Anticipos de pedidos".',
           'Mientras esté abierto puedes editar lo pendiente; lo ya entregado no cambia.',

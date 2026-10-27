@@ -3,6 +3,9 @@ package com.poshibrido.organization.application;
 import com.poshibrido.audit.application.AuditLogger;
 import com.poshibrido.shared.error.BusinessRuleException;
 import com.poshibrido.shared.security.CurrentActor;
+import com.poshibrido.tenancy.application.CurrentTenant;
+import com.poshibrido.tenancy.application.TenantApi;
+import com.poshibrido.tenancy.application.TenantInfo;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
@@ -34,12 +37,31 @@ public class BrandingService {
     static final int MAX_LOGO_BYTES = 150 * 1024;
 
     private final AuditLogger audit;
+    private final TenantApi tenants;
 
     @PersistenceContext
     private EntityManager em;
 
     /** {@code logo}: data URL ({@code data:image/png;base64,…}) o null. */
     public record Branding(String color, String logo, Instant updatedAt) {
+    }
+
+    /**
+     * Encabezado de los documentos para el cliente (pedido, cotización): nombre comercial y nombre, dirección y teléfono
+     * de la sede activa más antigua (la principal). Decisión 261.
+     */
+    public record BusinessHeader(String businessName, String branchName, String branchAddress, String branchPhone) {
+    }
+
+    @Transactional(readOnly = true)
+    public BusinessHeader header() {
+        String businessName = tenants.findInfo(CurrentTenant.require().id()).map(TenantInfo::tradeName).orElse("");
+        @SuppressWarnings("unchecked")
+        List<Object[]> rows = em.createNativeQuery(
+                "SELECT name, address, phone FROM branches WHERE active ORDER BY created_at, code LIMIT 1")
+                .getResultList();
+        Object[] b = rows.isEmpty() ? new Object[3] : rows.getFirst();
+        return new BusinessHeader(businessName, (String) b[0], (String) b[1], (String) b[2]);
     }
 
     @Transactional(readOnly = true)

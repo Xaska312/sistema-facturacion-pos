@@ -20,6 +20,7 @@ const ALLOWED_FILES = new Set([
   'core/theme/brand-palettes.ts', // muestras de los colores de marca (fase 8c; deben coincidir con src/styles.css)
   'shared/receipt/receipt.component.ts', // el tiquete térmico se imprime siempre en negro sobre blanco
   'features/orders/order-receipt.component.ts', // comprobante de pedido: mismo papel que el tiquete
+  'features/orders/order-document.component.ts', // pedido en hoja carta (PDF): negro sobre blanco
   'features/quotes/quote-document.component.ts', // cotización en PDF: se imprime siempre en negro sobre blanco
   'features/cash/cash-ticket.component.ts', // ticket del cierre de caja: mismo papel que el tiquete
 ]);
