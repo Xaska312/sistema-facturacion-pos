@@ -329,6 +329,7 @@ Color de una paleta cerrada y logo pequeño. Leer: cualquier miembro del negocio
 | Método | Ruta | Descripción |
 |---|---|---|
 | GET | `/branding` | `{color, logo (data URL o null), updatedAt}`. `color` ∈ turquesa (por defecto), azul, indigo, violeta, rosa, naranja, verde, grafito |
+| GET | `/branding/header` | Cualquier miembro (decisión 261): `{businessName, branchName, branchAddress, branchPhone}` para el encabezado de los documentos del cliente (pedido en hoja carta); la sede es la activa más antigua |
 | PUT | `/branding/color` | `{color}` → 422 si no es de la paleta |
 | PUT | `/branding/logo` | `{dataUrl}` (`data:image/…;base64,…`, máximo 150 KB de imagen). El tipo se comprueba por la firma del archivo: solo PNG, JPEG o WebP (422 para SVG u otros) |
 | DELETE | `/branding/logo` | Quita el logo |
@@ -396,3 +397,5 @@ Permisos: `quotes:read` (ver; Propietario, Administrador, Cajero, Vendedor y Con
 | POST | `/quotes/{id}/sell` | `Idempotency-Key` obligatoria (la de la venta). `{customerId?, payments: [{paymentMethodId, amount, reference?}]}` → `{quote, saleId}`. Venta con los precios y descuentos cotizados en la caja abierta de quien vende (sin aviso de precio cambiado); un prospecto sin `customerId` queda a Consumidor final. Repetir la clave devuelve la misma venta; la clave de una venta de otra cotización → 409; también 409 si el total cambió con los impuestos de hoy (hay que editarla). 422 si está vencida o no hay caja abierta |
 
 Ajustes (`PUT /settings`) agrega `quoteValidityDays` (1 a 365, por defecto 15) y `quoteTerms` (hasta 1000 caracteres); sin dato se conserva el valor. Auditoría: `QUOTE_CREATED`, `QUOTE_UPDATED`, `QUOTE_REJECTED`, `QUOTE_CONVERTED` (con `type` y el pedido o la venta).
+
+Pedidos y cotizaciones (decisión 261): `POST /orders/{id}/deliver` y `POST /quotes/{id}/sell` ya aceptaban varios `payments`; la pantalla ahora los usa (por ejemplo, efectivo + Fiado dentro del cupo).

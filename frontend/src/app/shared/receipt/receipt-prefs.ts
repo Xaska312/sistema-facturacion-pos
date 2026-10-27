@@ -21,11 +21,13 @@ export function saveReceiptWidth(width: ReceiptWidth): void {
 
 /**
  * Imprime el tiquete marcado como {@code .receipt-print-root}: lo copia como hijo directo de {@code <body>} y
- * styles.css oculta todo lo demás al imprimir (así no se imprime el espacio de la página).
+ * styles.css oculta todo lo demás al imprimir (así no se imprime el espacio de la página). Con {@code selector} se
+ * imprime otro documento de la pantalla, que también lleva la clase {@code receipt-print-root} (por ejemplo, la
+ * hoja carta de un pedido).
  */
-export function printReceipt(): void {
+export function printReceipt(selector = '.receipt-print-root'): void {
   setTimeout(() => {
-    const source = document.querySelector('.receipt-print-root');
+    const source = document.querySelector(selector);
     if (!source) {
       window.print();
       return;

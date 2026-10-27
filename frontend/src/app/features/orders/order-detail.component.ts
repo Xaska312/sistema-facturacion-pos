@@ -13,6 +13,7 @@ import {
   OrderPayment,
   PaymentMethod,
 } from '../../core/api/api.models';
+import { BrandingApi, BusinessHeader } from '../../core/api/branding.api';
 import { CashApi } from '../../core/api/cash.api';
 import { OrdersApi } from '../../core/api/orders.api';
 import { AuthService } from '../../core/auth/auth.service';
@@ -28,6 +29,7 @@ import { StatusBadgeComponent } from '../../shared/status-badge.component';
 import { methodLabel } from '../pos/pos-labels';
 import { OrderDeliverDialogComponent } from './order-deliver-dialog.component';
 import { OrderPaymentDialogComponent } from './order-payment-dialog.component';
+import { OrderDocumentComponent } from './order-document.component';
 import { OrderReceiptComponent } from './order-receipt.component';
 import { PAYMENT_LABEL, dueLabel, formatDay, orderBadge, orderWhatsAppLink, sizeText } from './order-text';
 
@@ -39,7 +41,7 @@ import { PAYMENT_LABEL, dueLabel, formatDay, orderBadge, orderWhatsAppLink, size
   selector: 'app-order-detail',
   imports: [FormsModule, RouterLink, ButtonModule, InputTextModule, PageHeaderComponent, StatCardComponent,
     StatusBadgeComponent, FormDialogComponent, OrderPaymentDialogComponent, OrderDeliverDialogComponent,
-    OrderReceiptComponent],
+    OrderReceiptComponent, OrderDocumentComponent],
   template: `
     <app-page-header [title]="order() ? 'Pedido ' + order()!.number : 'Pedido'" [description]="subtitle()">
       <a pButton routerLink="/app/pedidos" label="Todos los pedidos" icon="pi pi-arrow-left" severity="secondary"
@@ -81,6 +83,8 @@ import { PAYMENT_LABEL, dueLabel, formatDay, orderBadge, orderWhatsAppLink, size
         }
         <p-button label="Imprimir comprobante" icon="pi pi-print" severity="secondary" [outlined]="true"
                   (onClick)="print()" />
+        <p-button label="Descargar PDF" icon="pi pi-file-pdf" severity="secondary" [outlined]="true"
+                  (onClick)="printDocument()" />
         <a pButton label="Enviar por WhatsApp" icon="pi pi-whatsapp" severity="secondary" [outlined]="true"
            target="_blank" rel="noopener noreferrer" [href]="whatsApp(o)"
            [attr.aria-label]="'Enviar el comprobante a ' + o.customerName + ' por WhatsApp (abre WhatsApp)'"></a>
@@ -169,6 +173,8 @@ import { PAYMENT_LABEL, dueLabel, formatDay, orderBadge, orderWhatsAppLink, size
 
       <app-order-receipt class="receipt-print-root" [order]="o" [businessName]="businessName()" [width]="width"
                          [logo]="brandLogo()" />
+      <app-order-document class="receipt-print-root order-doc-root" [order]="o" [header]="header()"
+                          [businessName]="businessName()" [logo]="brandLogo()" />
     }
 
     <app-order-payment-dialog [(visible)]="paymentOpen" [order]="order()" (paid)="paid($event)" />
@@ -237,6 +243,8 @@ export class OrderDetailComponent {
   protected readonly canSell = permissionFlag('sales:create');
 
   protected readonly order = signal<Order | null>(null);
+  /** Encabezado de la hoja carta (nombre, dirección y teléfono del negocio). */
+  protected readonly header = signal<BusinessHeader | null>(null);
   protected readonly refundMethods = signal<PaymentMethod[]>([]);
   protected paymentOpen = false;
   protected deliverOpen = false;
@@ -254,6 +262,7 @@ export class OrderDetailComponent {
   protected readonly size = sizeText;
 
   constructor() {
+    inject(BrandingApi).header().subscribe({ next: (h) => this.header.set(h), error: () => undefined });
     effect(() => {
       const id = this.id();
       untracked(() => {
@@ -332,6 +341,11 @@ export class OrderDetailComponent {
 
   print(): void {
     printReceipt();
+  }
+
+  /** Hoja carta: en el diálogo de impresión se elige "Guardar como PDF" para enviarla por WhatsApp o correo. */
+  printDocument(): void {
+    printReceipt('.order-doc-root');
   }
 
   openPayment(): void {

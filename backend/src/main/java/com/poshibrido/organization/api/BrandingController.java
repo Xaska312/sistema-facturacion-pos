@@ -37,6 +37,12 @@ public class BrandingController {
         return service.current();
     }
 
+    /** Encabezado de los documentos que se le entregan al cliente (decisión 261). Cualquier miembro. */
+    @GetMapping("/header")
+    public BrandingService.BusinessHeader header() {
+        return service.header();
+    }
+
     @PutMapping("/color")
     @PreAuthorize("hasAuthority('settings:manage')")
     public Branding color(@Valid @RequestBody ColorRequest request) {
