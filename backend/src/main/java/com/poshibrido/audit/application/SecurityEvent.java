@@ -30,6 +30,10 @@ public enum SecurityEvent {
     TENANT_CLOSED,
     /** Intento de cerrar un negocio con la contraseña equivocada (posible sesión robada). */
     TENANT_CLOSE_DENIED,
+    /** El administrador eliminó definitivamente un negocio (decisión 262). */
+    TENANT_DELETED,
+    /** Intento de eliminar con la contraseña o el nombre equivocados. */
+    TENANT_DELETE_DENIED,
     /** Confirmó su correo con el enlace. */
     EMAIL_VERIFIED,
     /** Pidió restablecer la contraseña (con {@code user_id} nulo si el correo no existe). */

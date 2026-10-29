@@ -8,11 +8,13 @@ import com.poshibrido.tenancy.application.TenantSummary;
 import com.poshibrido.tenancy.domain.TenantStatus;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -41,6 +43,14 @@ public class PlatformTenantController {
     @PostMapping("/{tenantId}/suspend")
     public TenantSummary suspend(@PathVariable UUID tenantId, @Valid @RequestBody SuspendTenantRequest request) {
         return administration.suspend(tenantId, CurrentActor.requireUserId(), request.reason());
+    }
+
+    /** Eliminación definitiva de un negocio suspendido (decisión 262). 204. */
+    @PostMapping("/{tenantId}/delete")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable UUID tenantId, @Valid @RequestBody DeleteTenantRequest request) {
+        administration.delete(tenantId, CurrentActor.requireUserId(), request.confirmation(), request.password(),
+                request.reason());
     }
 
     @PostMapping("/{tenantId}/reactivate")

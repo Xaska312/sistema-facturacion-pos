@@ -19,6 +19,8 @@ export const EVENT_LABEL: Readonly<Record<string, string>> = {
   TENANT_REACTIVATED: 'Negocio reactivado',
   TENANT_CLOSED: 'Negocio cerrado por su dueño',
   TENANT_CLOSE_DENIED: 'Contraseña errada al cerrar un negocio',
+  TENANT_DELETED: 'Negocio eliminado definitivamente',
+  TENANT_DELETE_DENIED: 'Contraseña errada al eliminar un negocio',
   EMAIL_VERIFIED: 'Correo confirmado',
   PASSWORD_RESET_REQUESTED: 'Pidió restablecer la contraseña',
   PASSWORD_RESET: 'Contraseña restablecida',
@@ -27,7 +29,7 @@ export const EVENT_LABEL: Readonly<Record<string, string>> = {
 /** Eventos que merecen atención (se resaltan en la lista). */
 const WARNING_EVENTS: ReadonlySet<string> = new Set([
   'LOGIN_FAILED', 'ACCOUNT_LOCKED', 'TENANT_ACCESS_DENIED', 'REFRESH_TOKEN_REUSED', 'RATE_LIMITED',
-  'TENANT_PROVISIONING_FAILED', 'TENANT_CLOSE_DENIED',
+  'TENANT_PROVISIONING_FAILED', 'TENANT_CLOSE_DENIED', 'TENANT_DELETED', 'TENANT_DELETE_DENIED',
 ]);
 
 const REASON_LABEL: Readonly<Record<string, string>> = {
@@ -49,7 +51,8 @@ export function isWarningEvent(event: string): boolean {
 export function eventDetail(e: Pick<SecurityEvent, 'event' | 'details'>): string | null {
   const d = e.details ?? {};
   const reason = typeof d['reason'] === 'string' ? d['reason'] : null;
-  if ((e.event === 'LOGIN_FAILED' || e.event === 'TENANT_CLOSE_DENIED') && reason) {
+  if ((e.event === 'LOGIN_FAILED' || e.event === 'TENANT_CLOSE_DENIED' || e.event === 'TENANT_DELETE_DENIED')
+    && reason) {
     return REASON_LABEL[reason] ?? reason;
   }
   if (e.event === 'RATE_LIMITED' && typeof d['path'] === 'string') {
@@ -66,6 +69,7 @@ export const TENANT_STATUS_LABEL: Readonly<Record<TenantStatus, string>> = {
   PROVISIONING: 'Creando…',
   SUSPENDED: 'Suspendido',
   FAILED: 'Falló la creación',
+  DELETED: 'Eliminado',
 };
 
 /** Insignia del estado del negocio en la consola. */
@@ -77,6 +81,8 @@ export function tenantStatusKey(status: TenantStatus): StatusKey {
       return 'voided';
     case 'FAILED':
       return 'expired';
+    case 'DELETED':
+      return 'inactive';
     default:
       return 'pending';
   }

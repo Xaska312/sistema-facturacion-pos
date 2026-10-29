@@ -22,6 +22,9 @@ export interface PlatformTenant {
   suspendedAt: string | null;
   suspensionReason: string | null;
   closedByOwner: boolean;
+  /** Eliminado definitivamente (decisión 262). */
+  deletedAt: string | null;
+  deletionReason: string | null;
 }
 
 export interface SecurityEvent {
@@ -68,6 +71,11 @@ export class PlatformApi {
 
   suspend(tenantId: string, reason: string): Observable<TenantSummary> {
     return this.http.post<TenantSummary>(`${this.base}/tenants/${tenantId}/suspend`, { reason });
+  }
+
+  /** Eliminación definitiva de un negocio suspendido: borra todos sus datos (decisión 262). */
+  deleteTenant(tenantId: string, confirmation: string, password: string, reason: string): Observable<void> {
+    return this.http.post<void>(`${this.base}/tenants/${tenantId}/delete`, { confirmation, password, reason });
   }
 
   reactivate(tenantId: string): Observable<TenantSummary> {

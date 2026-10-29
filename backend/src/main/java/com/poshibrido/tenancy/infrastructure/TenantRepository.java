@@ -15,7 +15,8 @@ public interface TenantRepository extends JpaRepository<Tenant, UUID> {
 
     @Query("""
             select t from Tenant t
-            where t.id in :ids or t.ownerUserId = :ownerId
+            where (t.id in :ids or t.ownerUserId = :ownerId)
+              and t.status <> com.poshibrido.tenancy.domain.TenantStatus.DELETED
             order by t.tradeName
             """)
     List<Tenant> findVisibleTo(@Param("ids") Collection<UUID> ids, @Param("ownerId") UUID ownerId);

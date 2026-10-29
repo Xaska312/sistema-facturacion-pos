@@ -12,6 +12,8 @@ const STATUS_LABEL: Record<TenantSummary['status'], string> = {
   PROVISIONING: 'Creando…',
   SUSPENDED: 'Suspendido',
   FAILED: 'Falló la creación',
+  // No aparece: un negocio eliminado sale de la lista de sus miembros (decisión 262).
+  DELETED: 'Eliminado',
 };
 
 @Component({

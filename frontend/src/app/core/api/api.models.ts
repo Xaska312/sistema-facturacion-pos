@@ -1,7 +1,7 @@
 /** Modelos de la API (espejo de los DTO del backend). */
 
 export type BusinessType = 'RETAIL' | 'PHARMACY' | 'RESTAURANT' | 'SERVICES';
-export type TenantStatus = 'PROVISIONING' | 'ACTIVE' | 'SUSPENDED' | 'FAILED';
+export type TenantStatus = 'PROVISIONING' | 'ACTIVE' | 'SUSPENDED' | 'FAILED' | 'DELETED';
 
 export interface UserSummary {
   id: string;

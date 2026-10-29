@@ -26,7 +26,7 @@ import java.util.regex.Pattern;
  * <ul>
  *   <li>General: {@code app.rate-limit.api-per-minute} (300 por defecto). Un cajero con lector de códigos hace
  *       unas pocas por venta; un script abusivo las supera.</li>
- *   <li>Pesadas: {@code app.rate-limit.heavy-per-minute} (20): descargas CSV, importar productos y cerrar un
+ *   <li>Pesadas: {@code app.rate-limit.heavy-per-minute} (20): descargas CSV, importar productos, cerrar o eliminar un
  *       negocio (pide contraseña). Cuentan además en el límite general.</li>
  * </ul>
  * Va después de la autenticación (necesita el usuario). La primera petición rechazada de cada clave y ventana queda
@@ -38,7 +38,7 @@ public class ApiRateLimitFilter extends OncePerRequestFilter {
     static final long WINDOW_MILLIS = 60_000;
     private static final int MAX_TRACKED_KEYS = 50_000;
     private static final Pattern HEAVY = Pattern.compile(
-            "^/api/v1/(.*\\.csv|products/import|tenants/[^/]+/close)$");
+            "^/api/v1/(.*\\.csv|products/import|tenants/[^/]+/close|platform/tenants/[^/]+/delete)$");
 
     private final int generalLimit;
     private final int heavyLimit;

@@ -53,7 +53,8 @@ public class TenantAdministrationService {
     public record PlatformTenantView(UUID id, String slug, String legalName, String tradeName, String businessType,
                                      String status, UUID ownerId, String ownerEmail, String ownerName,
                                      long activeMembers, Instant createdAt, Instant suspendedAt,
-                                     String suspensionReason, boolean closedByOwner) {
+                                     String suspensionReason, boolean closedByOwner, Instant deletedAt,
+                                     String deletionReason) {
     }
 
     private final TenantRepository tenants;
@@ -120,7 +121,8 @@ public class TenantAdministrationService {
                            u.email AS owner_email, u.full_name AS owner_name,
                            (SELECT count(*) FROM platform.memberships m
                              WHERE m.tenant_id = t.id AND m.status = 'ACTIVE') AS active_members,
-                           t.created_at, t.suspended_at, t.suspension_reason, t.closed_by_owner
+                           t.created_at, t.suspended_at, t.suspension_reason, t.closed_by_owner,
+                           t.deleted_at, t.deletion_reason
                     """ + tables + where + " ORDER BY t.created_at DESC, t.id DESC LIMIT ? OFFSET ?",
                     (rs, i) -> {
                         return new PlatformTenantView(
@@ -137,7 +139,9 @@ public class TenantAdministrationService {
                                 instant(rs.getTimestamp("created_at")),
                                 instant(rs.getTimestamp("suspended_at")),
                                 rs.getString("suspension_reason"),
-                                rs.getBoolean("closed_by_owner"));
+                                rs.getBoolean("closed_by_owner"),
+                                instant(rs.getTimestamp("deleted_at")),
+                                rs.getString("deletion_reason"));
                     },
                     pageArgs.toArray());
         }
@@ -184,6 +188,49 @@ public class TenantAdministrationService {
         notifyOwner(tenant, owner -> templates.tenantReactivated(owner.email(), owner.fullName(),
                 tenant.getTradeName()));
         return TenantSummary.of(tenant, adminId);
+    }
+
+    /**
+     * Eliminación definitiva (decisión 262): solo un negocio suspendido (o que no se pudo crear). Exige escribir su
+     * nombre comercial y la contraseña del administrador. Borra el schema con todos sus datos, las membresías, las
+     * invitaciones y las sesiones del negocio; la ficha queda como DELETED (nombre, fecha, quién y por qué) y se
+     * conservan la suscripción, los pagos y los eventos de seguridad. Los datos siguen en los respaldos hasta que
+     * estos vencen. Los errores de confirmación son 422 y quedan en los eventos de seguridad.
+     */
+    @Transactional(noRollbackFor = BusinessRuleException.class)
+    public void delete(UUID tenantId, UUID adminId, String confirmation, String password, String reason) {
+        Tenant tenant = require(tenantId);
+        if (tenant.getStatus() != TenantStatus.SUSPENDED && tenant.getStatus() != TenantStatus.FAILED) {
+            throw new ConflictException("Primero suspende el negocio: solo se elimina un negocio suspendido.");
+        }
+        if (reason == null || reason.isBlank()) {
+            throw new BusinessRuleException("Escribe el motivo de la eliminación.");
+        }
+        if (confirmation == null || !confirmation.trim().equalsIgnoreCase(tenant.getTradeName().trim())) {
+            throw new BusinessRuleException("Escribe el nombre del negocio exactamente como aparece: "
+                    + tenant.getTradeName() + ".");
+        }
+        if (!users.passwordMatches(adminId, password)) {
+            securityEvents.record(SecurityEvent.TENANT_DELETE_DENIED, adminId, null, tenantId,
+                    Map.of("reason", "BAD_PASSWORD"));
+            throw new BusinessRuleException("La contraseña no es correcta.");
+        }
+        String schema = tenant.getSchemaName();
+        sessions.revokeAllTenantSessions(tenantId);
+        jdbc.update("DELETE FROM platform.refresh_tokens WHERE tenant_id = ?", tenantId);
+        // Las líneas de invitation_roles e invitation_branches se borran en cascada.
+        int invitations = jdbc.update("DELETE FROM platform.invitations WHERE tenant_id = ?", tenantId);
+        int members = jdbc.update("DELETE FROM platform.memberships WHERE tenant_id = ?", tenantId);
+        schemas.drop(schema);
+        tenant.markDeleted(adminId, reason.trim(), Instant.now());
+        afterStatusChange(tenant);
+        Map<String, Object> details = new LinkedHashMap<>();
+        details.put("tradeName", tenant.getTradeName());
+        details.put("slug", tenant.getSlug());
+        details.put("reason", tenant.getDeletionReason());
+        details.put("members", members);
+        details.put("invitations", invitations);
+        securityEvents.record(SecurityEvent.TENANT_DELETED, adminId, null, tenantId, details);
     }
 
     // ---------------------------------------------------------------- dueño
