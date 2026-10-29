@@ -211,7 +211,8 @@ public class SubscriptionService implements SubscriptionApi {
                       FROM platform.subscriptions s
                       JOIN platform.tenants t ON t.id = s.tenant_id
                       JOIN platform.users u ON u.id = t.owner_user_id
-                      JOIN platform.plans p ON p.code = s.plan_code) x
+                      JOIN platform.plans p ON p.code = s.plan_code
+                      WHERE t.status <> 'DELETED') x
                 WHERE (CAST(? AS VARCHAR) IS NULL OR x.effective = CAST(? AS VARCHAR))
                   AND (CAST(? AS VARCHAR) IS NULL OR lower(x.trade_name) LIKE CAST(? AS VARCHAR) ESCAPE '\\'
                        OR lower(x.slug) LIKE CAST(? AS VARCHAR) ESCAPE '\\'

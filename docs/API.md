@@ -235,9 +235,10 @@ Eventos: `REGISTERED`, `LOGIN_SUCCEEDED`, `LOGIN_FAILED` (`details.reason`: `UNK
 Administradores de plataforma: `platform_admin = true` en la base; `PLATFORM_ADMIN_EMAILS` lo aplica al arrancar a las cuentas que ya existen con esos correos **y con el correo confirmado** (y se lo quita a las demás si la lista no está vacía). Su token trae `padm` y `/auth/me` devuelve `user.platformAdmin = true`.
 | Método | Ruta | Respuesta |
 |---|---|---|
-| GET | `/platform/tenants?q=&status=&page=&size=` | Página de `{id, slug, legalName, tradeName, businessType, status, ownerId, ownerEmail, ownerName, activeMembers, createdAt, suspendedAt, suspensionReason, closedByOwner}`. `q`: nombre, razón social, identificador o correo del dueño |
+| GET | `/platform/tenants?q=&status=&page=&size=` | Página de `{id, slug, legalName, tradeName, businessType, status, ownerId, ownerEmail, ownerName, activeMembers, createdAt, suspendedAt, deletedAt, deletionReason, suspensionReason, closedByOwner}`. `q`: nombre, razón social, identificador o correo del dueño |
 | POST | `/platform/tenants/{id}/suspend` `{reason}` | `TenantSummary`. Motivo obligatorio (máx. 300; lo ven los miembros). 409 si no está activo |
 | POST | `/platform/tenants/{id}/reactivate` | `TenantSummary`. 409 si no está suspendido |
+| POST | `/platform/tenants/{id}/delete` `{confirmation, password, reason}` | 204 (decisión 262). Eliminación definitiva de un negocio `SUSPENDED` o `FAILED` (409 si no): `confirmation` es el nombre comercial (sin distinguir mayúsculas), `password` la del administrador; error en cualquiera → 422 (`TENANT_DELETE_DENIED` si es la contraseña). Borra el schema `t_<slug>`, las membresías, las invitaciones y los refresh tokens del negocio; la ficha queda `DELETED` con `deletedAt`, `deletionReason` (también en la lista) y se conservan la suscripción y los pagos. Evento `TENANT_DELETED`. Cuenta como operación pesada en el límite de solicitudes |
 
 Suspender revoca los refresh tokens de todos los miembros del negocio; los access tokens vigentes reciben 403 ("El negocio no está disponible.", `code: TENANT_UNAVAILABLE`). Queda en los eventos (`TENANT_SUSPENDED`, `TENANT_REACTIVATED`) y en la auditoría del negocio (`BUSINESS_SUSPENDED`, `BUSINESS_REACTIVATED`, sin autor).
 

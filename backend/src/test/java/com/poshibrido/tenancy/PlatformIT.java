@@ -120,6 +120,63 @@ class PlatformIT extends IntegrationTest {
                 .andExpect(status().isOk());
     }
 
+    @Test
+    void platformAdminDeletesSuspendedBusinessForGood() throws Exception {
+        Owned owner = api.newTenant("borrar");
+        Joined cashier = api.joinAs(owner.tenant(), owner.tenantId(), "CASHIER");
+        Session admin = platformAdmin();
+        String base = "/api/v1/platform/tenants/" + owner.tenantId();
+        String tradeName = "Tienda " + owner.slug();
+        String schema = "t_" + owner.slug();
+        String delete = """
+                {"confirmation":"%s","password":"%s","reason":"Pidió la eliminación por escrito"}""";
+
+        // Un negocio activo no se elimina: primero se suspende. El dueño tampoco puede usar esta ruta.
+        api.postWith(admin, base + "/delete", delete.formatted(tradeName, TestApi.PASSWORD))
+                .andExpect(status().isConflict());
+        api.postWith(owner.tenant(), base + "/delete", delete.formatted(tradeName, TestApi.PASSWORD))
+                .andExpect(status().isForbidden());
+        api.postWith(admin, base + "/suspend", "{\"reason\":\"Cierre del negocio\"}").andExpect(status().isOk());
+
+        // Nombre o contraseña equivocados: 422 y nada cambia; la contraseña errada queda registrada.
+        api.postWith(admin, base + "/delete", delete.formatted("Otro nombre", TestApi.PASSWORD))
+                .andExpect(status().is(422));
+        api.postWith(admin, base + "/delete", delete.formatted(tradeName, "ClaveEquivocada1"))
+                .andExpect(status().is(422));
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM platform.security_events"
+                + " WHERE event = 'TENANT_DELETE_DENIED' AND tenant_id = ?", Integer.class, owner.tenantId()))
+                .isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM information_schema.schemata WHERE schema_name = ?",
+                Integer.class, schema)).isEqualTo(1);
+
+        api.postWith(admin, base + "/delete", delete.formatted(" " + tradeName.toUpperCase(), TestApi.PASSWORD))
+                .andExpect(status().isNoContent());
+
+        // Sin schema, miembros ni invitaciones; la ficha queda como eliminada con el motivo.
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM information_schema.schemata WHERE schema_name = ?",
+                Integer.class, schema)).isZero();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM platform.memberships WHERE tenant_id = ?",
+                Integer.class, owner.tenantId())).isZero();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM platform.invitations WHERE tenant_id = ?",
+                Integer.class, owner.tenantId())).isZero();
+        assertThat(jdbc.queryForObject("SELECT status FROM platform.tenants WHERE id = ?", String.class,
+                owner.tenantId())).isEqualTo("DELETED");
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM platform.security_events"
+                + " WHERE event = 'TENANT_DELETED' AND tenant_id = ?", Integer.class, owner.tenantId()))
+                .isEqualTo(1);
+        api.getWith(admin, "/api/v1/platform/tenants?status=DELETED&q=" + owner.slug())
+                .andExpect(jsonPath("$.content[0].status").value("DELETED"))
+                .andExpect(jsonPath("$.content[0].deletionReason").value("Pidió la eliminación por escrito"))
+                .andExpect(jsonPath("$.content[0].activeMembers").value(0));
+
+        // Ya no aparece al dueño ni al cajero, y no se reactiva ni se vuelve a eliminar.
+        api.getWith(api.login(owner.email()), "/api/v1/tenants").andExpect(jsonPath("$.length()").value(0));
+        api.getWith(api.login(cashier.email()), "/api/v1/tenants").andExpect(jsonPath("$.length()").value(0));
+        api.postWith(admin, base + "/reactivate", "{}").andExpect(status().isConflict());
+        api.postWith(admin, base + "/delete", delete.formatted(tradeName, TestApi.PASSWORD))
+                .andExpect(status().isConflict());
+    }
+
     private static String body(String confirmation, String password) {
         return """
                 {"confirmation":"%s","password":"%s","reason":"Me retiro"}

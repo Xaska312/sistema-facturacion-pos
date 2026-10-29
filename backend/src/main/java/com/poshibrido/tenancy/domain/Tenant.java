@@ -62,6 +62,15 @@ public class Tenant extends AuditableEntity {
     @Column(name = "closed_by_owner", nullable = false)
     private boolean closedByOwner;
 
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
+    @Column(name = "deleted_by")
+    private UUID deletedBy;
+
+    @Column(name = "deletion_reason")
+    private String deletionReason;
+
     public static Tenant startProvisioning(String slug, String legalName, String tradeName,
                                            BusinessType businessType, UUID ownerUserId) {
         Tenant tenant = new Tenant();
@@ -104,6 +113,21 @@ public class Tenant extends AuditableEntity {
         this.closedByOwner = byOwner;
         this.suspensionReason = reason == null || reason.isBlank() ? null
                 : reason.trim().substring(0, Math.min(reason.trim().length(), 300));
+    }
+
+    /** Eliminación definitiva (decisión 262): solo de un negocio suspendido o que no se pudo crear. */
+    public void markDeleted(UUID by, String reason, Instant now) {
+        if (status != TenantStatus.SUSPENDED && status != TenantStatus.FAILED) {
+            throw new IllegalStateException("Solo se elimina un negocio suspendido o fallido");
+        }
+        this.status = TenantStatus.DELETED;
+        this.suspendedAt = null;
+        this.suspendedBy = null;
+        this.suspensionReason = null;
+        this.closedByOwner = false;
+        this.deletedAt = now;
+        this.deletedBy = by;
+        this.deletionReason = reason.length() > 300 ? reason.substring(0, 300) : reason;
     }
 
     public void reactivate() {
