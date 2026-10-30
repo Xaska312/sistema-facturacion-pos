@@ -115,7 +115,7 @@ import { PAYMENT_LABEL, dueLabel, formatDay, orderBadge, orderWhatsAppLink, size
       }
 
       <section class="card p-4 mb-4">
-        <h2 class="font-semibold mb-2">Qué pidió</h2>
+        <h2 class="font-bold tracking-tight mb-2">Qué pidió</h2>
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead class="bg-surface-alt text-left">
@@ -155,7 +155,7 @@ import { PAYMENT_LABEL, dueLabel, formatDay, orderBadge, orderWhatsAppLink, size
       </section>
 
       <section class="card p-4">
-        <h2 class="font-semibold mb-2">Anticipos y entregas</h2>
+        <h2 class="font-bold tracking-tight mb-2">Anticipos y entregas</h2>
         @for (p of o.payments; track p.id) {
           <div class="flex flex-wrap justify-between gap-2 py-2 border-t first:border-t-0 text-sm">
             <span>

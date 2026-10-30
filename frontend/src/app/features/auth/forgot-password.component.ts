@@ -6,15 +6,16 @@ import { InputTextModule } from 'primeng/inputtext';
 import { AuthService } from '../../core/auth/auth.service';
 import { InlineErrorScope } from '../../core/errors/inline-errors';
 import { problemMessage } from '../../core/errors/problem';
+import { AuthLayoutComponent } from '../../shared/layout/auth-layout.component';
 
 /** "¿Olvidaste tu contraseña?": pide el enlace para crear una nueva (la respuesta no revela si el correo existe). */
 @Component({
   selector: 'app-forgot-password',
-  imports: [ReactiveFormsModule, RouterLink, ButtonModule, InputTextModule],
+  imports: [ReactiveFormsModule, RouterLink, ButtonModule, InputTextModule, AuthLayoutComponent],
   template: `
-    <main class="min-h-screen flex items-center justify-center p-4">
-      <section class="w-full max-w-sm card p-6 flex flex-col gap-4">
-        <h1 class="text-2xl font-semibold text-center">Recuperar contraseña</h1>
+    <app-auth-layout>
+      <section class="card p-6 sm:p-8 flex flex-col gap-4">
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Recuperar contraseña</h1>
         @if (sentTo(); as email) {
           <p>
             Si hay una cuenta con <strong>{{ email }}</strong>, te enviamos un enlace para crear una contraseña nueva.
@@ -38,7 +39,7 @@ import { problemMessage } from '../../core/errors/problem';
           <a routerLink="/login" class="text-sm text-center text-brand hover:underline">Volver a iniciar sesión</a>
         }
       </section>
-    </main>
+    </app-auth-layout>
   `,
 })
 export class ForgotPasswordComponent {

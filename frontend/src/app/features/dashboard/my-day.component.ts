@@ -17,7 +17,7 @@ import { permissionFlag } from '../../core/auth/permission-flag';
   imports: [ButtonModule, SkeletonModule, ChartComponent, EmptyStateComponent, StatCardComponent],
   template: `
     <section aria-labelledby="my-day-title" class="flex flex-col gap-4">
-      <h2 id="my-day-title" class="text-lg font-semibold">Mi día</h2>
+      <h2 id="my-day-title" class="text-lg font-bold tracking-tight">Mi día</h2>
       @if (error()) {
         <div class="card p-6 flex flex-col items-center gap-3 text-center" role="alert">
           <p class="font-semibold">No pudimos cargar tus ventas de hoy</p>

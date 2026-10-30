@@ -69,7 +69,7 @@ import { MANUAL_GLOSSARY, filterManual, normalize } from './manual-content';
 
         @for (chapter of chapters(); track chapter.id) {
           <section [id]="chapter.id" class="chapter" [attr.aria-labelledby]="chapter.id + '-title'">
-            <h2 [id]="chapter.id + '-title'" class="text-xl font-semibold flex items-center gap-2 mb-4">
+            <h2 [id]="chapter.id + '-title'" class="text-xl font-bold tracking-tight flex items-center gap-2 mb-4">
               <i [class]="chapter.icon + ' text-brand'" aria-hidden="true"></i>{{ chapter.title }}
             </h2>
             <div class="flex flex-col gap-4">
@@ -122,7 +122,7 @@ import { MANUAL_GLOSSARY, filterManual, normalize } from './manual-content';
 
         @if (glossary().length) {
           <section id="glosario" aria-labelledby="glosario-title">
-            <h2 id="glosario-title" class="text-xl font-semibold flex items-center gap-2 mb-4">
+            <h2 id="glosario-title" class="text-xl font-bold tracking-tight flex items-center gap-2 mb-4">
               <i class="pi pi-book text-brand" aria-hidden="true"></i>Palabras clave
             </h2>
             <dl class="card p-5 grid gap-4 sm:grid-cols-2">

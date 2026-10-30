@@ -51,7 +51,7 @@ import { ColumnDef } from '../../shared/table/table';
 
     @if (report(); as r) {
       <section class="card p-4 mt-4 max-w-3xl">
-        <h2 class="font-medium mb-2">{{ r.applied ? 'Importación completada' : 'Resultado de la validación' }}</h2>
+        <h2 class="font-bold tracking-tight mb-2">{{ r.applied ? 'Importación completada' : 'Resultado de la validación' }}</h2>
         <p class="text-sm text-muted">
           {{ r.totalRows }} filas · {{ r.toCreate }} nuevos · {{ r.toUpdate }} actualizados
           @if (r.newCategories.length > 0) {

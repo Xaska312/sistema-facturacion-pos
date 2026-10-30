@@ -74,7 +74,7 @@ interface DashboardView {
         <div class="grid gap-4 lg:grid-cols-3" [class.opacity-60]="loading()">
           <section class="card p-4 lg:col-span-2 min-w-0" aria-labelledby="main-chart-title" data-tour="main-chart">
             <header class="flex flex-wrap items-center justify-between gap-2 mb-3">
-              <h2 id="main-chart-title" class="font-semibold">{{ mainTitle() }}</h2>
+              <h2 id="main-chart-title" class="font-bold tracking-tight">{{ mainTitle() }}</h2>
               @if (v.hours) {
                 <div class="flex gap-1 p-1 rounded-lg bg-surface-alt text-sm" role="group" aria-label="Vista de la gráfica">
                   <button type="button" class="px-2.5 py-1 rounded-md" [class.bg-surface]="!showWeek()"
@@ -107,7 +107,7 @@ interface DashboardView {
           </section>
 
           <section class="card p-4 min-w-0" aria-labelledby="payments-title">
-            <h2 id="payments-title" class="font-semibold mb-3">Medios de pago</h2>
+            <h2 id="payments-title" class="font-bold tracking-tight mb-3">Medios de pago</h2>
             @if (v.payments.labels.length === 0) {
               <p class="text-sm text-muted">Sin pagos en el periodo.</p>
             } @else {
@@ -118,7 +118,7 @@ interface DashboardView {
 
           <section class="card p-4 lg:col-span-2 min-w-0" aria-labelledby="products-title">
             <header class="flex items-center justify-between gap-2 mb-3">
-              <h2 id="products-title" class="font-semibold">Productos más vendidos</h2>
+              <h2 id="products-title" class="font-bold tracking-tight">Productos más vendidos</h2>
               <a routerLink="/app/reportes" [queryParams]="reportsParams('products')"
                  class="text-sm text-brand hover:underline">Ver todos</a>
             </header>

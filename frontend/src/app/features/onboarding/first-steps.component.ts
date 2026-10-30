@@ -41,7 +41,7 @@ import {
         <section class="card p-4 md:p-5" aria-labelledby="first-steps-title">
           <header class="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 id="first-steps-title" class="text-lg font-semibold">
+              <h2 id="first-steps-title" class="text-lg font-bold tracking-tight">
                 {{ p.complete ? '¡Tu negocio está listo para vender!' : 'Primeros pasos' }}
               </h2>
               <p class="text-sm text-muted">

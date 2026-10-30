@@ -18,7 +18,7 @@ import { shrinkImage } from '../../shared/image-shrink';
   template: `
     <section class="card p-4 md:p-6 mt-6 flex flex-col gap-5 max-w-2xl" aria-labelledby="branding-title">
       <div>
-        <h2 id="branding-title" class="text-base font-semibold">Marca</h2>
+        <h2 id="branding-title" class="text-base font-bold tracking-tight">Marca</h2>
         <p class="text-sm text-muted">Tu logo sale en el encabezado y en el tiquete; el color, en botones y enlaces de todo el equipo.</p>
       </div>
 

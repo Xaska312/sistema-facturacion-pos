@@ -42,7 +42,7 @@ const MODULE_LABEL: Record<string, string> = {
         <article class="card p-4 flex flex-col gap-2">
           <header class="flex items-start justify-between gap-2">
             <div>
-              <h2 class="font-medium">{{ role.name }}</h2>
+              <h2 class="font-bold tracking-tight">{{ role.name }}</h2>
             </div>
             @if (role.systemRole) {
               <app-status-badge status="system" />

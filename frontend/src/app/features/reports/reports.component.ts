@@ -122,7 +122,7 @@ const REPORT_PERIODS: readonly PeriodKey[] = ['today', 'yesterday', 'last7', 'la
                              [hint]="cop(s.voidedTotal)" />
             </div>
             <section class="card p-4 text-sm max-w-xl" aria-labelledby="summary-detail">
-              <h2 id="summary-detail" class="font-semibold mb-2">Detalle</h2>
+              <h2 id="summary-detail" class="font-bold tracking-tight mb-2">Detalle</h2>
               <dl class="flex flex-col gap-1">
                 <div class="flex justify-between"><dt>Ventas brutas</dt><dd class="tabular-nums">{{ cop(s.grossTotal) }}</dd></div>
                 <div class="flex justify-between"><dt>Descuentos</dt><dd class="tabular-nums">-{{ cop(s.discountTotal) }}</dd></div>
@@ -147,7 +147,7 @@ const REPORT_PERIODS: readonly PeriodKey[] = ['today', 'yesterday', 'last7', 'la
         @case ('days') {
           <ng-container [ngTemplateOutlet]="totalsRow" [ngTemplateOutletContext]="{ $implicit: days() }" />
           <section class="card p-4 mb-4">
-            <h2 class="font-semibold mb-3">Ventas por día</h2>
+            <h2 class="font-bold tracking-tight mb-3">Ventas por día</h2>
             <app-chart [kind]="dayData().labels.length > 31 ? 'line' : 'bar'" [labels]="dayData().labels"
                        [series]="dayData().series" categoryHeader="Día" ariaLabel="Ventas por día del periodo" />
           </section>
@@ -183,7 +183,7 @@ const REPORT_PERIODS: readonly PeriodKey[] = ['today', 'yesterday', 'last7', 'la
         @case ('payments') {
           <div class="grid gap-4 lg:grid-cols-2">
             <section class="card p-4">
-              <h2 class="font-semibold mb-3">
+              <h2 class="font-bold tracking-tight mb-3">
                 Distribución por <app-term term="medios-pago">medio de pago</app-term>
               </h2>
               @if (paymentData().labels.length === 0) {
@@ -209,7 +209,7 @@ const REPORT_PERIODS: readonly PeriodKey[] = ['today', 'yesterday', 'last7', 'la
           </div>
           @if (products().length > 0) {
             <section class="card p-4 mb-4">
-              <h2 class="font-semibold mb-3">Los 10 primeros</h2>
+              <h2 class="font-bold tracking-tight mb-3">Los 10 primeros</h2>
               <app-chart [horizontal]="true" [labels]="topProductLabels()" [series]="topProductSeries()"
                          categoryHeader="Producto" ariaLabel="Los 10 productos más vendidos"
                          [format]="productOrder() === 'quantity' ? qty : cop"

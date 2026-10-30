@@ -7,19 +7,18 @@ import { PasswordModule } from 'primeng/password';
 import { AuthService } from '../../core/auth/auth.service';
 import { problemMessage } from '../../core/errors/problem';
 import { safeReturnUrl } from '../../core/auth/return-url';
-import { XaskaLogoComponent } from '../../shared/brand/xaska-logo.component';
+import { AuthLayoutComponent } from '../../shared/layout/auth-layout.component';
 
 @Component({
   selector: 'app-login',
-  imports: [ReactiveFormsModule, RouterLink, ButtonModule, InputTextModule, PasswordModule, XaskaLogoComponent],
+  imports: [ReactiveFormsModule, RouterLink, ButtonModule, InputTextModule, PasswordModule, AuthLayoutComponent],
   template: `
-    <main class="min-h-screen flex items-center justify-center p-4">
-      <form [formGroup]="form" (ngSubmit)="submit()"
-            class="w-full max-w-sm card p-6 flex flex-col gap-4">
-        <h1 class="flex justify-center pt-2 pb-1">
-          <app-xaska-logo [stacked]="true" [wordmark]="true" [tag]="true" label="XASKA POS" />
-        </h1>
-        <p class="text-center text-muted -mt-2">Inicia sesión para continuar</p>
+    <app-auth-layout>
+      <form [formGroup]="form" (ngSubmit)="submit()" class="card p-6 sm:p-8 flex flex-col gap-4">
+        <div class="mb-1">
+          <h1 class="text-3xl font-extrabold tracking-tight">Inicia sesión</h1>
+          <p class="text-muted mt-1">Entra a tu cuenta de XASKA POS</p>
+        </div>
 
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Correo</span>
@@ -38,7 +37,7 @@ import { XaskaLogoComponent } from '../../shared/brand/xaska-logo.component';
           <p class="text-sm text-danger" role="alert">{{ error() }}</p>
         }
 
-        <p-button type="submit" label="Ingresar" [loading]="loading()" [disabled]="form.invalid" styleClass="w-full" />
+        <p-button type="submit" label="Ingresar" [loading]="loading()" [disabled]="form.invalid" styleClass="w-full" size="large" />
 
         <p class="text-sm text-center">
           ¿No tienes cuenta? <a routerLink="/registro" [queryParams]="returnUrl ? { returnUrl: returnUrl } : {}"
@@ -53,7 +52,7 @@ import { XaskaLogoComponent } from '../../shared/brand/xaska-logo.component';
           <a routerLink="/privacidad" class="hover:text-fg hover:underline">Política de datos</a>
         </p>
       </form>
-    </main>
+    </app-auth-layout>
   `,
 })
 export class LoginComponent {

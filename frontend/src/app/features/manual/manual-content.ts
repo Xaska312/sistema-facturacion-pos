@@ -55,7 +55,7 @@ export const MANUAL: readonly ManualChapter[] = [
         summary: 'Cada negocio tiene sus propios productos, ventas, cajas y usuarios, separados de los de otros negocios.',
         steps: [
           'Confirma tu correo (es necesario para crear un negocio).',
-          'En "Elige el negocio con el que vas a trabajar", toca "+ Crear un negocio".',
+          'En "Elige el negocio con el que vas a trabajar", toca "Crear un negocio".',
           'Escribe el nombre comercial (el que ven tus clientes) y la razón social.',
           'Revisa el identificador que se propone: solo minúsculas, números y "_". No se puede cambiar después.',
           'Toca "Continuar" y luego "Crear negocio". En unos segundos entras al negocio.',

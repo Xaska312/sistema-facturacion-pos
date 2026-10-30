@@ -70,6 +70,13 @@
   --xaska-dot: #4f46e5;
   --xaska-tag-bg: #e0e7ff;
   --xaska-tag-text: #312e81;
+  /* Panel de marca de las pantallas de entrada (AuthLayoutComponent): igual en claro y oscuro. */
+  --xaska-panel: #1e1b4b;
+  --xaska-panel-2: #3730a3;
+  --xaska-panel-fg: #ffffff;
+  --xaska-panel-muted: #c7d2fe;
+  --xaska-panel-tile: rgb(255 255 255 / 0.08);
+  --xaska-panel-line: rgb(255 255 255 / 0.14);
 }
 
 .app-dark {
@@ -385,11 +392,11 @@
   }
 }
 
-/* Tarjeta estándar (antes "bg-white rounded-xl shadow"). */
+/* Tarjeta estándar, en baldosa como el inicio (identidad, decisión 264; antes 0.75rem). */
 @utility card {
   background-color: var(--surface);
   border: 1px solid var(--surface-border);
-  border-radius: 0.75rem;
+  border-radius: 1.25rem;
   box-shadow: var(--elevation-card);
 }
 

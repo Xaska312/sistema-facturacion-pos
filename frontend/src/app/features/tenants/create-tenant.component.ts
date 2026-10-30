@@ -10,6 +10,7 @@ import { AuthService } from '../../core/auth/auth.service';
 import { problemMessage } from '../../core/errors/problem';
 import { VerifyEmailBannerComponent } from '../auth/verify-email-banner.component';
 import { slugify } from './slugify';
+import { AuthLayoutComponent } from '../../shared/layout/auth-layout.component';
 
 /** 403 del backend al crear un negocio sin haber confirmado el correo. */
 export function isEmailNotVerified(error: unknown): boolean {
@@ -32,13 +33,14 @@ export function isActivationCodeRequired(error: unknown): boolean {
  */
 @Component({
   selector: 'app-create-tenant',
-  imports: [ReactiveFormsModule, RouterLink, ButtonModule, InputTextModule, VerifyEmailBannerComponent],
+  imports: [ReactiveFormsModule, RouterLink, ButtonModule, InputTextModule, VerifyEmailBannerComponent,
+    AuthLayoutComponent],
   template: `
-    <main class="min-h-screen flex items-center justify-center p-4">
-      <section class="w-full max-w-lg card p-6 flex flex-col gap-4">
+    <app-auth-layout width="lg">
+      <section class="card p-6 sm:p-8 flex flex-col gap-4">
         <header>
-          <p class="text-xs text-muted">Paso {{ step() }} de 2</p>
-          <h1 class="text-xl font-semibold">Crear negocio</h1>
+          <p class="text-xs font-bold uppercase tracking-wider text-brand">Paso {{ step() }} de 2</p>
+          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Crear negocio</h1>
         </header>
 
         <app-verify-email-banner />
@@ -72,7 +74,7 @@ export function isActivationCodeRequired(error: unknown): boolean {
                 <small class="text-danger font-medium">{{ activationCodeError() }}</small>
               }
             </label>
-            <div class="rounded-lg bg-surface-alt p-3 text-sm mt-1">
+            <div class="rounded-xl bg-surface-alt p-3 text-sm mt-1">
               Tipo de negocio: <strong>Comercio (RETAIL)</strong>
               <span class="text-muted"> — farmacia, restaurante y servicios llegarán después.</span>
             </div>
@@ -96,7 +98,7 @@ export function isActivationCodeRequired(error: unknown): boolean {
           }
         </form>
       </section>
-    </main>
+    </app-auth-layout>
   `,
 })
 export class CreateTenantComponent {

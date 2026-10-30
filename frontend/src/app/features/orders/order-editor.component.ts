@@ -97,7 +97,7 @@ interface CustomerChoice {
     </section>
 
     <section class="card p-4 mt-4 max-w-5xl flex flex-col gap-3">
-      <h2 class="font-semibold">Qué pidió</h2>
+      <h2 class="font-bold tracking-tight">Qué pidió</h2>
       @if (deliveredItems().length > 0) {
         <div class="text-sm border rounded-lg p-3 bg-surface-alt">
           <p class="font-medium mb-1">Ya entregado (no cambia)</p>

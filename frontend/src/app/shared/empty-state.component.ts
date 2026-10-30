@@ -10,7 +10,7 @@ import { ButtonModule } from 'primeng/button';
   imports: [ButtonModule],
   template: `
     <div class="flex flex-col items-center text-center gap-2 py-10 px-4" role="status">
-      <span class="inline-flex size-14 items-center justify-center rounded-full bg-brand-soft text-brand-soft-fg mb-1"
+      <span class="inline-flex size-14 items-center justify-center rounded-2xl bg-brand-soft text-brand-soft-fg mb-1"
             aria-hidden="true">
         <i [class]="icon()" class="text-xl"></i>
       </span>

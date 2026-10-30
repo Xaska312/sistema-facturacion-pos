@@ -10,11 +10,11 @@ import { ButtonModule } from 'primeng/button';
   template: `
     <section class="min-h-[60vh] flex items-center justify-center p-6" [class.min-h-screen]="standalone()">
       <div class="max-w-md text-center">
-        <span class="inline-flex size-16 items-center justify-center rounded-full bg-brand-soft text-brand-soft-fg mb-4">
+        <span class="inline-flex size-16 items-center justify-center rounded-2xl bg-brand-soft text-brand-soft-fg mb-4">
           <i [class]="icon()" class="text-2xl" aria-hidden="true"></i>
         </span>
         <p class="text-sm font-semibold text-brand mb-1">{{ code() }}</p>
-        <h1 class="text-2xl font-semibold mb-2">{{ heading() }}</h1>
+        <h1 class="text-3xl font-extrabold tracking-tight mb-2">{{ heading() }}</h1>
         <p class="text-muted mb-6">{{ message() }}</p>
         <div class="flex flex-wrap justify-center gap-2">
           <a pButton routerLink="/app" icon="pi pi-home" label="Ir al inicio"></a>

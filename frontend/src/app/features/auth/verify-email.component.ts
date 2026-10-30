@@ -3,24 +3,25 @@ import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { InlineErrorScope } from '../../core/errors/inline-errors';
 import { problemMessage } from '../../core/errors/problem';
+import { AuthLayoutComponent } from '../../shared/layout/auth-layout.component';
 
 type State = 'checking' | 'done' | 'failed';
 
 /** Página del enlace "Confirmar mi correo" ({@code /verificar-correo?token=…}); funciona con o sin sesión. */
 @Component({
   selector: 'app-verify-email',
-  imports: [RouterLink],
+  imports: [RouterLink, AuthLayoutComponent],
   template: `
-    <main class="min-h-screen flex items-center justify-center p-4">
-      <section class="w-full max-w-sm card p-6 flex flex-col gap-4 text-center">
+    <app-auth-layout>
+      <section class="card p-6 sm:p-8 flex flex-col gap-4 text-center">
         @switch (state()) {
           @case ('checking') {
-            <h1 class="text-xl font-semibold">Confirmando tu correo…</h1>
+            <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Confirmando tu correo…</h1>
             <i class="pi pi-spin pi-spinner text-2xl text-muted" aria-hidden="true"></i>
           }
           @case ('done') {
             <i class="pi pi-check-circle text-4xl text-success" aria-hidden="true"></i>
-            <h1 class="text-xl font-semibold">¡Correo confirmado!</h1>
+            <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">¡Correo confirmado!</h1>
             @if (auth.isAuthenticated()) {
               <p class="text-muted">Ya puedes crear tu negocio.</p>
               <a routerLink="/negocios" class="btn-link">Continuar</a>
@@ -31,7 +32,7 @@ type State = 'checking' | 'done' | 'failed';
           }
           @case ('failed') {
             <i class="pi pi-times-circle text-4xl text-danger" aria-hidden="true"></i>
-            <h1 class="text-xl font-semibold">No pudimos confirmar tu correo</h1>
+            <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">No pudimos confirmar tu correo</h1>
             <p class="text-muted">{{ error() }}</p>
             <p class="text-sm text-muted">
               @if (auth.isAuthenticated()) {
@@ -45,7 +46,7 @@ type State = 'checking' | 'done' | 'failed';
           }
         }
       </section>
-    </main>
+    </app-auth-layout>
   `,
   styles: `
     .btn-link {

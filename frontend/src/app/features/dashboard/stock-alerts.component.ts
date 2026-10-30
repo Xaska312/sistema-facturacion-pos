@@ -19,7 +19,7 @@ import { DOCUMENT_ROUTE } from '../inventory/labels';
     @if (canRead()) {
       <section class="card p-4 h-full flex flex-col" aria-labelledby="stock-alerts-title">
         <header class="flex items-center justify-between gap-2 mb-3">
-          <h2 id="stock-alerts-title" class="font-semibold flex items-center gap-2">
+          <h2 id="stock-alerts-title" class="font-bold tracking-tight flex items-center gap-2">
             <i class="pi pi-exclamation-triangle text-warning" aria-hidden="true"></i>Alertas de existencias
           </h2>
           @if (alerts().length > 0) {

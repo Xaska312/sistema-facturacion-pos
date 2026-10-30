@@ -5,8 +5,8 @@ import { AuthService } from '../../core/auth/auth.service';
 import { safeReturnUrl } from '../../core/auth/return-url';
 import { problemMessage } from '../../core/errors/problem';
 import { LegalService } from '../../core/legal/legal.service';
-import { XaskaLogoComponent } from '../../shared/brand/xaska-logo.component';
 import { LEGAL_OWNER } from './legal-content';
+import { AuthLayoutComponent } from '../../shared/layout/auth-layout.component';
 
 /**
  * "Aceptar términos" (decisión 250): sale a quien entra sin haber aceptado las versiones vigentes (cuentas creadas
@@ -14,12 +14,11 @@ import { LEGAL_OWNER } from './legal-content';
  */
 @Component({
   selector: 'app-accept-legal',
-  imports: [RouterLink, ButtonModule, XaskaLogoComponent],
+  imports: [RouterLink, ButtonModule, AuthLayoutComponent],
   template: `
-    <main class="min-h-screen flex items-center justify-center p-4">
-      <section class="w-full max-w-md card p-6 flex flex-col gap-4" aria-labelledby="accept-title">
-        <div class="flex justify-center py-1"><app-xaska-logo [wordmark]="true" [tag]="true" label="XASKA POS" /></div>
-        <h1 id="accept-title" class="text-xl font-semibold text-center">Antes de seguir</h1>
+    <app-auth-layout width="md">
+      <section class="card p-6 sm:p-8 flex flex-col gap-4" aria-labelledby="accept-title">
+        <h1 id="accept-title" class="text-2xl sm:text-3xl font-extrabold tracking-tight">Antes de seguir</h1>
         <p class="text-sm leading-relaxed">
           Para usar XASKA POS necesitamos que aceptes los
           <a routerLink="/terminos" target="_blank" class="text-brand hover:underline">Términos y Condiciones</a>
@@ -37,7 +36,7 @@ import { LEGAL_OWNER } from './legal-content';
         <p-button label="Salir" severity="secondary" [text]="true" styleClass="w-full" [disabled]="saving()"
                   (onClick)="logout()" />
       </section>
-    </main>
+    </app-auth-layout>
   `,
 })
 export class AcceptLegalComponent {
