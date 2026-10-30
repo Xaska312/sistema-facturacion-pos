@@ -31,7 +31,7 @@ export function isActivationCodeRequired(error: unknown): boolean {
 
 /**
  * Asistente de creación de negocio en dos pasos: datos del negocio y confirmación. El tipo (Fase 12a, decisión 267)
- * se elige aquí: Comercio o Servicios; Restaurante y Farmacia salen como "Pronto". Se cambia después en Ajustes.
+ * se elige aquí: Comercio, Servicios o Restaurante; Farmacia sale como "Pronto". Se cambia después en Ajustes.
  */
 @Component({
   selector: 'app-create-tenant',

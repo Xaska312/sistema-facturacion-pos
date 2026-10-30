@@ -1,6 +1,7 @@
 import {
   FirstStepCounts,
   buildFirstSteps,
+  buildRestaurantSteps,
   dismissFirstSteps,
   firstStepsKey,
   firstStepsProgress,
@@ -53,5 +54,25 @@ describe('primeros pasos', () => {
     restoreFirstSteps(key, storage);
     expect(isFirstStepsDismissed(key, storage)).toBeFalse();
     expect(isFirstStepsDismissed(key, null)).toBeFalse();
+  });
+});
+
+describe('primeros pasos de un restaurante', () => {
+  const restaurant = { ...fresh, tables: 0, modifierGroups: 0, stations: 1, consumptionTax: 0 };
+
+  it('empieza por las mesas y no pide existencias', () => {
+    const steps = buildRestaurantSteps(restaurant, new Set(['module:tables', 'module:modifiers', 'module:kitchen']));
+    expect(steps.map((s) => s.id)).toEqual(['tables', 'categories', 'products', 'modifiers', 'stations', 'tips', 'team',
+      'cash', 'sale']);
+    expect(firstStepsProgress(steps).next?.id).toBe('tables');
+    expect(steps.find((s) => s.id === 'sale')?.route).toBe('/app/mesas');
+  });
+
+  it('sin adiciones ni cocina esos pasos no salen; lo opcional no impide terminar', () => {
+    const steps = buildRestaurantSteps({ ...restaurant, tables: 8, categories: 3, products: 20, cashSessions: 1, sales: 1 },
+      new Set(['module:tables']));
+    expect(steps.map((s) => s.id)).not.toContain('modifiers');
+    expect(steps.map((s) => s.id)).not.toContain('stations');
+    expect(firstStepsProgress(steps).complete).toBeTrue();
   });
 });

@@ -21,8 +21,11 @@ public enum BusinessType {
     RETAIL(true, EnumSet.of(CREDIT, ORDERS, QUOTES, VARIANTS, SCALE)),
     /** Farmacia: "Pronto" para el público (Fase 13); el administrador de plataforma la asigna a pilotos. */
     PHARMACY(false, EnumSet.of(CREDIT, ORDERS, QUOTES)),
-    /** Restaurante: "Pronto" para el público (Fase 12b); el administrador de plataforma lo asigna a pilotos. */
-    RESTAURANT(false, EnumSet.of(CREDIT, ORDERS, MODIFIERS, TABLES, KITCHEN)),
+    /**
+     * Restaurante (Fase 12b, abierto al público en la decisión 273): mesas, cocina, adiciones y pedidos (encargos). Sin
+     * fiado: en restaurantes casi no se usa; se prende en Ajustes.
+     */
+    RESTAURANT(true, EnumSet.of(ORDERS, MODIFIERS, TABLES, KITCHEN)),
     /** Servicios (taller, impresiones, instalaciones…). */
     SERVICES(true, EnumSet.of(CREDIT, ORDERS, QUOTES));
 

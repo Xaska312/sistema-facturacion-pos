@@ -58,7 +58,7 @@ export const MANUAL: readonly ManualChapter[] = [
           'En "Elige el negocio con el que vas a trabajar", toca "Crear un negocio".',
           'Escribe el nombre comercial (el que ven tus clientes) y la razón social.',
           'Revisa el identificador que se propone: solo minúsculas, números y "_". No se puede cambiar después.',
-          'Elige el tipo de negocio: Comercio o Servicios (Restaurante y Farmacia llegan pronto).',
+          'Elige el tipo de negocio: Comercio, Servicios o Restaurante (Farmacia llega pronto).',
           'Toca "Continuar" y luego "Crear negocio". En unos segundos entras al negocio.',
         ],
         tips: [
@@ -291,6 +291,21 @@ export const MANUAL: readonly ManualChapter[] = [
     title: 'Mesas, cocina y comandas',
     icon: 'pi pi-table',
     sections: [
+      {
+        id: 'empezar-restaurante',
+        title: 'Empezar con un restaurante',
+        summary: 'Al crear el negocio elige "Restaurante": trae mesas, cocina y comandas, adiciones y pedidos (el fiado se '
+          + 'prende en Ajustes si lo necesitas). En el inicio, "Primeros pasos" te guía en orden.',
+        steps: [
+          'Crea tus zonas y mesas.',
+          'Crea las categorías (entradas, platos, bebidas…) y carga tu menú.',
+          'Crea las adiciones con las plantillas: término de la carne, tamaños, salsas, "sin…".',
+          'Si tienes bar, créalo en Comandas → Estaciones y asígnale las bebidas.',
+          'En Ajustes revisa la propina sugerida y, si eres responsable de INC, aplícalo a tus categorías.',
+          'Invita a tus meseros (rol Mesero) y a la cocina (rol Cocina), abre la caja y atiende tu primera mesa.',
+        ],
+        who: 'El dueño del negocio.',
+      },
       {
         id: 'configurar-mesas',
         title: 'Configurar las mesas',

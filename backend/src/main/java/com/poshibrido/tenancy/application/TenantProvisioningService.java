@@ -78,10 +78,10 @@ public class TenantProvisioningService {
             throw new BusinessRuleException(
                     "El identificador debe iniciar con letra y contener solo minúsculas, números o '_' (3 a 41).");
         }
-        // Restaurante y Farmacia salen como "Pronto": solo el administrador de plataforma los asigna (decisión 267).
+        // Farmacia sale como "Pronto": solo el administrador de plataforma la asigna (decisiones 267 y 273).
         if (!command.businessType().isOpen()) {
-            throw new BusinessRuleException("Ese tipo de negocio estará disponible pronto. Por ahora elige Comercio o "
-                    + "Servicios; te avisamos cuando puedas cambiarlo.");
+            throw new BusinessRuleException("Ese tipo de negocio estará disponible pronto. Por ahora elige Comercio, "
+                    + "Servicios o Restaurante; te avisamos cuando puedas cambiarlo.");
         }
         UserSummary owner = users.requireActive(ownerId);
         // Solo con el correo confirmado: un negocio a nombre de un correo ajeno no debe poder existir.

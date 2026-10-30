@@ -70,8 +70,8 @@ class BusinessModulesIT extends IntegrationTest {
         api.putWith(cashier.session(), "/api/v1/business-profile",
                 "{\"businessType\":\"RETAIL\",\"modules\":[\"CREDIT\"]}").andExpect(status().isForbidden());
 
-        // Restaurante es "Pronto": el dueño no lo puede elegir.
-        api.putWith(off, "/api/v1/business-profile", "{\"businessType\":\"RESTAURANT\",\"modules\":[]}")
+        // Farmacia es "Pronto": el dueño no la puede elegir (Restaurante ya es abierto, decisión 273).
+        api.putWith(off, "/api/v1/business-profile", "{\"businessType\":\"PHARMACY\",\"modules\":[]}")
                 .andExpect(status().is(422));
 
         // Al prender el fiado otra vez, la cuenta de Marta sigue ahí.
@@ -97,6 +97,11 @@ class BusinessModulesIT extends IntegrationTest {
                 {"slug":"%s","legalName":"Taller S.A.S.","tradeName":"Taller","businessType":"SERVICES"}
                 """.formatted(TestApi.uniqueSlug("taller"))).andExpect(status().isCreated())
                 .andExpect(jsonPath("$.businessType").value("SERVICES"));
+        // Restaurante se elige al crear el negocio (decisión 273).
+        api.postWith(api.registerAndLogin("asadero"), "/api/v1/tenants", """
+                {"slug":"%s","legalName":"Asadero S.A.S.","tradeName":"Asadero","businessType":"RESTAURANT"}
+                """.formatted(TestApi.uniqueSlug("asadero"))).andExpect(status().isCreated())
+                .andExpect(jsonPath("$.businessType").value("RESTAURANT"));
 
         Owned owner = api.newTenant("piloto");
         Session admin = platformAdmin();
@@ -106,10 +111,10 @@ class BusinessModulesIT extends IntegrationTest {
                 .andExpect(jsonPath("$.businessType").value("RESTAURANT"));
         api.getWith(owner.platform(), "/api/v1/tenants").andExpect(jsonPath("$[0].businessType").value("RESTAURANT"));
 
-        // El piloto conserva su tipo al ajustar sus módulos; tiene los de Restaurante (fiado, pedidos, adiciones, mesas, cocina).
+        // El negocio asignado tiene los módulos de Restaurante (pedidos, adiciones, mesas, cocina; sin fiado).
         Session pilot = api.selectTenant(api.login(owner.email()), owner.tenantId());
         api.getWith(pilot, "/api/v1/business-profile")
-                .andExpect(jsonPath("$.modules.length()").value(5));
+                .andExpect(jsonPath("$.modules.length()").value(4));
         api.putWith(pilot, "/api/v1/business-profile", "{\"businessType\":\"RESTAURANT\",\"modules\":[\"ORDERS\"]}")
                 .andExpect(status().isOk()).andExpect(jsonPath("$.businessType").value("RESTAURANT"));
     }

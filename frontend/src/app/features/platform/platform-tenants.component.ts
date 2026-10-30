@@ -20,7 +20,7 @@ import { BusinessTypePickerComponent } from '../../shared/business-type-picker.c
 import { XIconComponent } from '../../shared/icons/xicon.component';
 
 /**
- * Negocios de toda la plataforma: buscar, cambiar el tipo (también Restaurante y Farmacia para pilotos, decisión 267),
+ * Negocios de toda la plataforma: buscar, cambiar el tipo (también Farmacia para pilotos, decisiones 267 y 273),
  * suspender (con motivo), reactivar y eliminar definitivamente (decisión 262).
  */
 @Component({
@@ -106,7 +106,7 @@ import { XIconComponent } from '../../shared/icons/xicon.component';
                      submitLabel="Cambiar tipo" submitIcon="pi pi-check" [dirty]="newType !== target()?.businessType"
                      [invalidMessage]="newType === target()?.businessType ? 'Elige un tipo distinto al actual.' : null"
                      [save]="typeRequest" successMessage="Tipo de negocio cambiado" (saved)="load(query)"
-                     description="Aquí puedes asignar Restaurante o Farmacia a negocios piloto. El negocio queda con los módulos de ese tipo; su dueño los ajusta en Ajustes. No se borra ningún dato.">
+                     description="Aquí puedes asignar también Farmacia a negocios piloto. El negocio queda con los módulos de ese tipo; su dueño los ajusta en Ajustes. No se borra ningún dato.">
       <p id="platform-type-title" class="sr-only">Tipo de negocio</p>
       <app-business-type-picker [value]="newType" [current]="null" [allowSoon]="true" labelledBy="platform-type-title"
                                 (pick)="newType = $event.code" />

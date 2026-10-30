@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, Injector, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { SkeletonModule } from 'primeng/skeleton';
@@ -6,6 +6,9 @@ import { Observable, catchError, forkJoin, map, of } from 'rxjs';
 import { AccessApi } from '../../core/api/access.api';
 import { CashApi } from '../../core/api/cash.api';
 import { CatalogApi } from '../../core/api/catalog.api';
+import { DiningApi } from '../../core/api/dining.api';
+import { KitchenApi } from '../../core/api/kitchen.api';
+import { ModifiersApi } from '../../core/api/modifiers.api';
 import { InventoryApi } from '../../core/api/inventory.api';
 import { OrganizationApi } from '../../core/api/organization.api';
 import { SalesApi } from '../../core/api/sales.api';
@@ -14,7 +17,9 @@ import { MISC_PRODUCT_SKU } from '../products/product-form';
 import {
   FirstStep,
   FirstStepCounts,
+  RestaurantStepCounts,
   buildFirstSteps,
+  buildRestaurantSteps,
   dismissFirstSteps,
   firstStepsKey,
   firstStepsProgress,
@@ -141,6 +146,7 @@ export class FirstStepsComponent implements OnInit {
   private readonly access = inject(AccessApi);
   private readonly cash = inject(CashApi);
   private readonly sales = inject(SalesApi);
+  private readonly injector = inject(Injector);
 
   /** El dueño o quien puede cambiar los ajustes del negocio. */
   protected readonly eligible = computed(() => (this.auth.currentTenant()?.owner ?? false) || this.auth.hasPermission('settings:manage'));
@@ -193,6 +199,23 @@ export class FirstStepsComponent implements OnInit {
       sales: count('sales:read', () => this.sales.search({ from: null, to: null, status: null, search: null, cashSessionId: null }, 0, 1)
         .pipe(map((p) => p.totalElements))),
     };
-    forkJoin(counts).subscribe((result) => this.steps.set(buildFirstSteps(result)));
+    if (this.auth.currentTenant()?.businessType !== 'RESTAURANT') {
+      forkJoin(counts).subscribe((result) => this.steps.set(buildFirstSteps(result)));
+      return;
+    }
+    // Restaurante: mesas, adiciones, estaciones e INC (las API se piden solo aquí).
+    const dining = this.injector.get(DiningApi);
+    const modifiers = this.injector.get(ModifiersApi);
+    const kitchen = this.injector.get(KitchenApi);
+    const restaurant: { [K in keyof RestaurantStepCounts]: Observable<RestaurantStepCounts[K]> } = {
+      ...counts,
+      tables: count('tables:manage', () => dining.zones(null).pipe(
+        map((zones) => zones.reduce((n, z) => n + z.tables.filter((t) => t.active).length, 0)))),
+      modifierGroups: count('modifiers:manage', () => modifiers.list().pipe(map((list) => list.length))),
+      stations: count('kitchen:manage', () => kitchen.stations().pipe(map((list) => list.filter((x) => x.active).length))),
+      consumptionTax: count('products:read', () => this.catalog.taxes().pipe(
+        map((list) => (list.some((t) => t.type === 'INC' && t.active) ? 1 : 0)))),
+    };
+    forkJoin(restaurant).subscribe((result) => this.steps.set(buildRestaurantSteps(result, this.auth.permissions())));
   }
 }
