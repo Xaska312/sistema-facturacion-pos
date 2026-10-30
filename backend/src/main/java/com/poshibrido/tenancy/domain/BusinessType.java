@@ -4,6 +4,7 @@ import java.util.EnumSet;
 import java.util.Set;
 
 import static com.poshibrido.tenancy.domain.BusinessModule.CREDIT;
+import static com.poshibrido.tenancy.domain.BusinessModule.KITCHEN;
 import static com.poshibrido.tenancy.domain.BusinessModule.MODIFIERS;
 import static com.poshibrido.tenancy.domain.BusinessModule.ORDERS;
 import static com.poshibrido.tenancy.domain.BusinessModule.QUOTES;
@@ -21,7 +22,7 @@ public enum BusinessType {
     /** Farmacia: "Pronto" para el público (Fase 13); el administrador de plataforma la asigna a pilotos. */
     PHARMACY(false, EnumSet.of(CREDIT, ORDERS, QUOTES)),
     /** Restaurante: "Pronto" para el público (Fase 12b); el administrador de plataforma lo asigna a pilotos. */
-    RESTAURANT(false, EnumSet.of(CREDIT, ORDERS, MODIFIERS, TABLES)),
+    RESTAURANT(false, EnumSet.of(CREDIT, ORDERS, MODIFIERS, TABLES, KITCHEN)),
     /** Servicios (taller, impresiones, instalaciones…). */
     SERVICES(true, EnumSet.of(CREDIT, ORDERS, QUOTES));
 

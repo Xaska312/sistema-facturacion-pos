@@ -15,7 +15,9 @@ import { XIconComponent } from '../../shared/icons/xicon.component';
 import { formatCop, formatQuantity } from '../../shared/money';
 import { PageHeaderComponent } from '../../shared/page-header.component';
 import {
+  GROUP_TEMPLATES,
   GroupDraft,
+  GroupTemplate,
   appliesTo,
   draftFrom,
   draftProblem,
@@ -50,7 +52,7 @@ function isoDay(date: Date): string {
     @if (groups(); as list) {
       @if (list.length === 0) {
         <app-empty-state icon="pi pi-plus-circle" title="Aún no tienes adiciones"
-                         message="Crea un grupo como Tamaño (Mediano, Grande +$4.000) o Extras (Shot extra +$3.000) y aplícalo a una categoría."
+                         message="Crea un grupo como Tamaño (Mediano, Grande +$4.000) o el término de la carne con una plantilla, y aplícalo a una categoría."
                          [actionLabel]="canManage() ? 'Crear el primer grupo' : null" (action)="openNew()" />
       } @else {
         <ul class="grid gap-4 md:grid-cols-2 xl:grid-cols-3" aria-label="Grupos de adiciones">
@@ -114,6 +116,20 @@ function isoDay(date: Date): string {
     <app-form-dialog [(visible)]="editorOpen" [header]="editing() ? 'Editar ' + editing()!.name : 'Nuevo grupo de adiciones'"
                      width="44rem" [dirty]="dirty" [invalidMessage]="problem()" [save]="saveRequest"
                      [successMessage]="editing() ? 'Grupo guardado' : 'Grupo creado'" (saved)="load()">
+      @if (!editing()) {
+        <!-- Plantillas (Fase 12b-3): llenan el editor; se ajustan antes de guardar. -->
+        <div class="flex flex-col gap-2">
+          <p class="text-sm font-semibold">Empieza con una plantilla</p>
+          <div class="grid gap-2 sm:grid-cols-2" role="group" aria-label="Plantillas">
+            @for (t of templates; track t.key) {
+              <button type="button" class="template" [class.template--on]="template() === t.key" (click)="useTemplate(t)">
+                <span class="block font-semibold">{{ t.label }}</span>
+                <span class="block text-xs text-muted">{{ t.hint }}</span>
+              </button>
+            }
+          </div>
+        </div>
+      }
       <div class="flex flex-col gap-1">
         <label for="group-name" class="text-sm font-semibold">Nombre del grupo</label>
         <input pInputText id="group-name" maxlength="60" placeholder="Tamaño, Licor, Extras…" [(ngModel)]="draft.name"
@@ -253,6 +269,16 @@ function isoDay(date: Date): string {
       border: 1px solid var(--surface-border);
       cursor: pointer;
     }
+    .template {
+      min-height: 3.5rem;
+      padding: 0.5rem 0.75rem;
+      border-radius: 1rem;
+      border: 1px solid var(--surface-border);
+      background: var(--surface);
+      text-align: left;
+    }
+    .template:hover { border-color: var(--brand); }
+    .template--on { border-color: var(--brand); background: var(--brand-soft); }
     .choice:has(input:checked) { border-color: var(--brand); background: var(--brand-soft); }
     .choice input { margin-top: 0.25rem; accent-color: var(--brand); }
   `,
@@ -272,6 +298,9 @@ export class ModifiersComponent implements OnInit {
   protected readonly q = formatQuantity;
   protected readonly rule = ruleLabel;
   protected readonly applies = appliesTo;
+  protected readonly templates = GROUP_TEMPLATES;
+  /** Plantilla con que se llenó el editor (para marcarla). */
+  protected readonly template = signal<string | null>(null);
 
   protected editorOpen = false;
   protected draft: GroupDraft = emptyDraft();
@@ -323,12 +352,21 @@ export class ModifiersComponent implements OnInit {
   }
 
   private open(draft: GroupDraft): void {
+    this.template.set(null);
     this.draft = draft;
     this.dirty = false;
     this.productSearch = '';
     this.productResults.set([]);
     this.touch(false);
     this.editorOpen = true;
+  }
+
+  protected useTemplate(t: GroupTemplate): void {
+    // Conserva a qué se aplica si ya se había elegido.
+    const { categoryIds, products } = this.draft;
+    this.draft = { ...t.build(), categoryIds, products };
+    this.template.set(t.key);
+    this.touch();
   }
 
   protected touch(changed = true): void {

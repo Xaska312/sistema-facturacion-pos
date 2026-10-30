@@ -106,10 +106,10 @@ class BusinessModulesIT extends IntegrationTest {
                 .andExpect(jsonPath("$.businessType").value("RESTAURANT"));
         api.getWith(owner.platform(), "/api/v1/tenants").andExpect(jsonPath("$[0].businessType").value("RESTAURANT"));
 
-        // El piloto conserva su tipo al ajustar sus módulos; tiene los de Restaurante (fiado, pedidos, adiciones, mesas).
+        // El piloto conserva su tipo al ajustar sus módulos; tiene los de Restaurante (fiado, pedidos, adiciones, mesas, cocina).
         Session pilot = api.selectTenant(api.login(owner.email()), owner.tenantId());
         api.getWith(pilot, "/api/v1/business-profile")
-                .andExpect(jsonPath("$.modules.length()").value(4));
+                .andExpect(jsonPath("$.modules.length()").value(5));
         api.putWith(pilot, "/api/v1/business-profile", "{\"businessType\":\"RESTAURANT\",\"modules\":[\"ORDERS\"]}")
                 .andExpect(status().isOk()).andExpect(jsonPath("$.businessType").value("RESTAURANT"));
     }

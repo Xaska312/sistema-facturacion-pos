@@ -115,3 +115,31 @@ export function appliesTo(group: Pick<ModifierGroup, 'categories' | 'products'>)
   }
   return parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(', ')} y ${parts[parts.length - 1]}`;
 }
+
+/** Plantilla para crear un grupo común con un toque (Fase 12b-3): se abre en el editor para ajustarla. */
+export interface GroupTemplate {
+  key: string;
+  label: string;
+  /** Lo que trae, para la ficha. */
+  hint: string;
+  build(): GroupDraft;
+}
+
+function templateDraft(name: string, options: string[], multiple: boolean, required: boolean, max = 3): GroupDraft {
+  return {
+    ...emptyDraft(),
+    name, multiple, required, max,
+    options: options.map((o) => ({ ...newOption(), name: o })),
+  };
+}
+
+export const GROUP_TEMPLATES: readonly GroupTemplate[] = [
+  { key: 'term', label: 'Término de la carne', hint: 'Azul, medio, tres cuartos, bien asado · obligatorio',
+    build: () => templateDraft('Término', ['Azul', 'Medio', 'Tres cuartos', 'Bien asado'], false, true) },
+  { key: 'size', label: 'Tamaño', hint: 'Personal, mediano, grande · pon el precio de cada uno',
+    build: () => templateDraft('Tamaño', ['Personal', 'Mediano', 'Grande'], false, true) },
+  { key: 'sauces', label: 'Salsas', hint: 'Rosada, BBQ, tártara, ajo, piña · hasta 3',
+    build: () => templateDraft('Salsas', ['Rosada', 'BBQ', 'Tártara', 'Ajo', 'Piña'], true, false, 3) },
+  { key: 'without', label: 'Sin…', hint: 'Sin cebolla, sin tomate, sin lechuga, sin salsas · varias',
+    build: () => templateDraft('Sin', ['Sin cebolla', 'Sin tomate', 'Sin lechuga', 'Sin salsas', 'Sin queso'], true, false, 5) },
+];

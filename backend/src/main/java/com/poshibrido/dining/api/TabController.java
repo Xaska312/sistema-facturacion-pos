@@ -40,6 +40,7 @@ import java.util.UUID;
 /**
  * Cuentas abiertas (Fase 12b-2, decisión 269), con el módulo {@code module:tables}. Atender: {@code tables:operate};
  * cobrar: además {@code sales:create} y caja abierta ({@code POST /{id}/charge} exige {@code Idempotency-Key}).
+ * Enviar a cocina (Fase 12b-3): además {@code kitchen:send} con el módulo {@code module:kitchen}.
  */
 @RestController
 @RequiredArgsConstructor
@@ -72,7 +73,8 @@ public class TabController {
                               @Size(max = 140) String note) {
     }
 
-    public record ItemsRequest(@NotEmpty @Size(max = 50) List<@Valid @NotNull ItemRequest> items) {
+    /** {@code send}: enviar a cocina de una vez (Fase 12b-3). */
+    public record ItemsRequest(@NotEmpty @Size(max = 50) List<@Valid @NotNull ItemRequest> items, Boolean send) {
     }
 
     public record ReasonRequest(@NotBlank @Size(max = 200) String reason) {
@@ -119,7 +121,15 @@ public class TabController {
                                 .map(m -> new ModifierChoices.Choice(m.optionId(), m.quantity() == null ? 1 : m.quantity()))
                                 .toList(),
                         i.note()))
-                .toList());
+                .toList(), Boolean.TRUE.equals(request.send()));
+    }
+
+    /** Envía a cocina lo que la cuenta tiene sin enviar. */
+    @PostMapping("/{id}/send")
+    @PreAuthorize("hasAuthority('tables:operate') and hasAuthority('module:tables') and hasAuthority('kitchen:send')"
+            + " and hasAuthority('module:kitchen')")
+    public TabView send(@PathVariable UUID id) {
+        return service.sendPending(id);
     }
 
     @PostMapping("/{id}/items/{itemId}/void")

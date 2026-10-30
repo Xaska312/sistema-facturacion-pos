@@ -75,7 +75,7 @@ describe('dockItems (decisión 263)', () => {
     expect(dockItems(visibleMenu((p) => !p.startsWith('quotes:')), 'SERVICES').map((m) => m.label))
       .toEqual(['Inicio', 'Vender', 'Mi caja', 'Ventas', 'Pedidos', 'Clientes']);
     expect(dockItems(visibleMenu(() => true), 'RESTAURANT').map((m) => m.label))
-      .toEqual(['Inicio', 'Vender', 'Mesas', 'Mi caja', 'Ventas', 'Productos', 'Pedidos']);
+      .toEqual(['Inicio', 'Vender', 'Mesas', 'Comandas', 'Mi caja', 'Ventas', 'Productos']);
     expect(dockItems(visibleMenu(() => true), 'PHARMACY').map((m) => m.label))
       .toEqual(['Inicio', 'Vender', 'Mi caja', 'Ventas', 'Productos', 'Existencias', 'Clientes']);
   });

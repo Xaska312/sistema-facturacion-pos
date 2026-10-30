@@ -18,6 +18,7 @@ import { HelpPanelComponent } from '../../shared/help/help-panel.component';
 import { helpForUrl } from '../../shared/help/screen-help';
 import { TourId } from '../../shared/tour/tour';
 import { TourService } from '../../shared/tour/tour.service';
+import { KitchenPrinterService } from '../kitchen/kitchen-printer';
 import { buildBreadcrumbs } from './breadcrumbs';
 import { EXACT_MATCH_ROUTES, MENU, dockItems, initials, visibleMenu } from './menu';
 import { subscriptionBanner } from './subscription-banner';
@@ -256,6 +257,7 @@ export class ShellComponent {
   private readonly router = inject(Router);
   private readonly tours = inject(TourService);
   private readonly subscriptionApi = inject(SubscriptionApi);
+  private readonly kitchenPrinter = inject(KitchenPrinterService);
   private readonly mainElement = viewChild.required<ElementRef<HTMLElement>>('main');
 
   protected readonly exactRoutes = EXACT_MATCH_ROUTES;
@@ -328,6 +330,10 @@ export class ShellComponent {
         this.pageTitle.set(deepestTitle(this.router.routerState.snapshot.root));
         this.helpOpen.set(false);
       });
+
+    // Si este equipo es impresora de comandas (Fase 12b-3), imprime desde cualquier pantalla.
+    this.kitchenPrinter.start();
+    inject(DestroyRef).onDestroy(() => this.kitchenPrinter.stop());
 
     this.subscriptionApi.current().subscribe({
       next: (s) => this.sub.set(s),

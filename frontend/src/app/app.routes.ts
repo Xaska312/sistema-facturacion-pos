@@ -250,6 +250,21 @@ export const routes: Routes = [
         loadComponent: () => import('./features/dining/tab.component').then((m) => m.TabComponent),
       },
       {
+        // Cocina y comandas (Fase 12b-3): solo con el módulo encendido.
+        path: 'comandas',
+        title: 'Comandas',
+        canActivate: [permissionGuard],
+        data: { permission: 'kitchen:send', module: 'module:kitchen' },
+        loadComponent: () => import('./features/kitchen/tickets.component').then((m) => m.TicketsComponent),
+      },
+      {
+        path: 'comandas/estaciones',
+        title: 'Estaciones de cocina',
+        canActivate: [permissionGuard],
+        data: { permission: 'kitchen:manage', module: 'module:kitchen' },
+        loadComponent: () => import('./features/kitchen/stations.component').then((m) => m.StationsComponent),
+      },
+      {
         // Adiciones (Fase 12b-1): solo con el módulo encendido.
         path: 'adiciones',
         title: 'Adiciones',

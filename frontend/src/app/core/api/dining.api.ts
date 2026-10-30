@@ -91,6 +91,9 @@ export interface TabItem {
   addedAt: string;
   addedByName: string | null;
   sentAt: string | null;
+  /** Comanda en que salió a cocina (Fase 12b-3). */
+  ticketNumber: number | null;
+  stationName: string | null;
   voided: boolean;
   voidedAt: string | null;
   voidedByName: string | null;
@@ -118,6 +121,18 @@ export interface Tab {
   saleId: string | null;
   total: number;
   items: TabItem[];
+  /** Comandas de la cuenta (Fase 12b-3). */
+  tickets: TicketSummary[];
+}
+
+/** Comanda vista desde la cuenta. */
+export interface TicketSummary {
+  id: string;
+  number: number;
+  stationName: string;
+  sentAt: string;
+  printCount: number;
+  items: number;
 }
 
 export interface OpenTabInput {
@@ -198,8 +213,14 @@ export class DiningApi {
     return this.http.put<Tab>(`/api/v1/tabs/${id}`, input);
   }
 
-  addItems(id: string, items: TabItemInput[]): Observable<Tab> {
-    return this.http.post<Tab>(`/api/v1/tabs/${id}/items`, { items });
+  /** Con {@code send}, lo agregado sale a cocina en la misma operación (Fase 12b-3). */
+  addItems(id: string, items: TabItemInput[], send = false): Observable<Tab> {
+    return this.http.post<Tab>(`/api/v1/tabs/${id}/items`, { items, send });
+  }
+
+  /** Envía a cocina lo que la cuenta tiene sin enviar. */
+  send(id: string): Observable<Tab> {
+    return this.http.post<Tab>(`/api/v1/tabs/${id}/send`, null);
   }
 
   voidItem(id: string, itemId: string, reason: string): Observable<Tab> {

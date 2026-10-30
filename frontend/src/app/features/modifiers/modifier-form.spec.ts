@@ -1,5 +1,5 @@
 import { ModifierGroup } from '../../core/api/modifiers.api';
-import { appliesTo, draftFrom, draftProblem, emptyDraft, ruleLabel, toInput } from './modifier-form';
+import { GROUP_TEMPLATES, appliesTo, draftFrom, draftProblem, emptyDraft, ruleLabel, toInput } from './modifier-form';
 
 const group: ModifierGroup = {
   id: 'g1', name: 'Extras', minSelect: 0, maxSelect: 4, active: true,
@@ -52,5 +52,27 @@ describe('editor de adiciones (Fase 12b-1)', () => {
     expect(ruleLabel({ minSelect: 1, maxSelect: 1 })).toBe('Obligatorio · Se elige una');
     expect(appliesTo(group)).toBe('Granizados, Cocteles y Granizado de mango');
     expect(appliesTo({ categories: [], products: [] })).toBe('Aún no se aplica a ningún producto');
+  });
+});
+
+describe('plantillas de adiciones (Fase 12b-3)', () => {
+  it('el término de la carne es obligatorio, de una sola opción y sin precio', () => {
+    const term = GROUP_TEMPLATES.find((t) => t.key === 'term')!.build();
+    expect(draftProblem(term)).toBeNull();
+    const input = toInput(term);
+    expect(input.name).toBe('Término');
+    expect([input.minSelect, input.maxSelect]).toEqual([1, 1]);
+    expect(input.options.map((o) => o.name)).toEqual(['Azul', 'Medio', 'Tres cuartos', 'Bien asado']);
+    expect(input.options.every((o) => o.priceDelta === 0)).toBeTrue();
+  });
+
+  it('todas se pueden guardar tal cual y cada una es un borrador nuevo', () => {
+    for (const t of GROUP_TEMPLATES) {
+      expect(draftProblem(t.build())).withContext(t.label).toBeNull();
+    }
+    const salsas = GROUP_TEMPLATES.find((t) => t.key === 'sauces')!;
+    salsas.build().options[0].name = 'Otra';
+    expect(salsas.build().options[0].name).toBe('Rosada');
+    expect(toInput(salsas.build()).minSelect).toBe(0);
   });
 });

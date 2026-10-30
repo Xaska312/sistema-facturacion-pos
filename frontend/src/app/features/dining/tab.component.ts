@@ -26,6 +26,7 @@ import { ProductGridComponent } from '../pos/product-grid.component';
 import { modifierSummary } from '../pos/sale-math';
 import { VariantPickerComponent } from '../pos/variant-picker.component';
 import { activeItems, itemExtras, itemTotal, kindGlyph, openFor } from './dining-labels';
+import { KitchenPrinterService } from '../kitchen/kitchen-printer';
 import { PendingItem, addPending, pendingPrice, pendingTotal, stepPending, toItemInputs } from './pending-items';
 
 /** Producto esperando su precio libre o sus adiciones antes de entrar al pedido. */
@@ -39,6 +40,9 @@ interface Picking {
  * Cuenta abierta (Fase 12b-2, decisión 269): a un lado los productos para pedir (con adiciones y nota), al otro la
  * cuenta con lo ya pedido. Lo nuevo queda "por agregar" hasta tocar "Agregar a la cuenta". Desde aquí se mueve de
  * mesa, se une con otra, se cambian sus datos, se cancela o se cobra (en Vender).
+ *
+ * Con Cocina y comandas (Fase 12b-3, decisión 270) el botón es "Enviar a cocina": agrega y sale la comanda de una vez;
+ * cada línea dice en qué comanda salió y abajo están las comandas para reimprimirlas.
  */
 @Component({
   selector: 'app-tab',
@@ -108,7 +112,7 @@ interface Picking {
                aria-label="Cuenta">
           @if (pending().length > 0) {
             <div class="card p-4 border-brand">
-              <h2 class="font-bold mb-2">Por agregar</h2>
+              <h2 class="font-bold mb-2">{{ canSend() ? 'Por enviar' : 'Por agregar' }}</h2>
               <ul class="divide-y divide-line" aria-label="Productos por agregar">
                 @for (p of pending(); track p.key) {
                   <li class="py-2 flex items-center gap-2">
@@ -130,13 +134,22 @@ interface Picking {
                   </li>
                 }
               </ul>
-              <p-button styleClass="w-full min-h-12 mt-3 font-bold" icon="pi pi-check" [loading]="saving()"
-                        [label]="'Agregar a la cuenta · ' + cop(pendingSum())" (onClick)="savePending()" />
+              <p-button styleClass="w-full min-h-12 mt-3 font-bold" [icon]="canSend() ? 'pi pi-send' : 'pi pi-check'"
+                        [loading]="saving()"
+                        [label]="(canSend() ? 'Enviar a cocina · ' : 'Agregar a la cuenta · ') + cop(pendingSum())"
+                        (onClick)="savePending()" />
             </div>
           }
 
           <div class="card p-4">
             <h2 class="font-bold mb-2">Pedido</h2>
+            @if (isOpen() && canSend() && unsent() > 0) {
+              <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-warning-soft text-warning-soft-fg px-3 py-2 mb-2"
+                   role="status">
+                <span class="text-sm font-semibold">{{ unsent() === 1 ? '1 producto sin enviar' : unsent() + ' productos sin enviar' }} a cocina</span>
+                <p-button label="Enviar ahora" icon="pi pi-send" size="small" [loading]="sending()" (onClick)="sendPending()" />
+              </div>
+            }
             @if (items().length === 0) {
               <p class="text-sm text-muted py-4 text-center">Aún no hay productos. Toca los productos para pedirlos.</p>
             } @else {
@@ -153,6 +166,11 @@ interface Picking {
                           Quitado por {{ i.voidedByName }}: {{ i.voidReason }}
                         } @else {
                           {{ i.addedByName }} · {{ time(i.addedAt) }}
+                          @if (i.ticketNumber) {
+                            · <span class="font-semibold text-brand">{{ i.stationName }} #{{ i.ticketNumber }}</span>
+                          } @else if (i.sentAt) {
+                            · <span class="font-semibold text-brand">En cocina</span>
+                          }
                         }
                       </p>
                     </div>
@@ -171,6 +189,23 @@ interface Picking {
               <span class="text-2xl font-extrabold tracking-tight tabular-nums">{{ cop(t.total) }}</span>
             </p>
             <p class="text-xs text-muted">Con los precios de cuando se pidió; al cobrar se usa el precio vigente.</p>
+            @if (t.tickets.length > 0) {
+              <div class="mt-3 pt-3 border-t border-line">
+                <h3 class="text-sm font-bold mb-1">Comandas</h3>
+                <ul class="flex flex-col gap-1" aria-label="Comandas de la cuenta">
+                  @for (k of t.tickets; track k.id) {
+                    <li class="flex items-center justify-between gap-2 text-sm">
+                      <span><span class="font-semibold">{{ k.stationName }} #{{ k.number }}</span>
+                        <span class="text-muted"> · {{ time(k.sentAt) }} · {{ k.items === 1 ? '1 producto' : k.items + ' productos' }}</span></span>
+                      @if (canSend()) {
+                        <p-button [label]="k.printCount === 0 ? 'Imprimir' : 'Reimprimir'" icon="pi pi-print" [text]="true"
+                                  size="small" (onClick)="printTicket(k.id)" />
+                      }
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
             @if (isOpen() && canCharge()) {
               <p-button styleClass="w-full min-h-14 mt-3 text-lg font-bold" icon="pi pi-wallet" label="Cobrar"
                         [disabled]="items().length === 0 || pending().length > 0" (onClick)="charge()" />
@@ -225,7 +260,8 @@ interface Picking {
     <app-form-dialog [(visible)]="voidOpen" [header]="'Quitar ' + (voiding()?.name ?? '')" width="26rem" submitLabel="Quitar"
                      submitIcon="pi pi-trash" [destructive]="true" [dirty]="reason.length > 0"
                      [invalidMessage]="reason.trim() ? null : 'Escribe el motivo.'" [save]="voidRequest"
-                     successMessage="Producto quitado" (saved)="apply($event)">
+                     successMessage="Producto quitado" (saved)="apply($event)"
+                     [description]="voiding()?.sentAt ? 'Ya salió a cocina: avísale a cocina que no lo prepare.' : null">
       <div class="flex flex-col gap-1">
         <label for="void-reason" class="text-sm font-semibold">Motivo</label>
         <input pInputText id="void-reason" maxlength="200" placeholder="El cliente cambió de opinión" [(ngModel)]="reason" />
@@ -360,8 +396,16 @@ export class TabComponent implements OnInit, HasUnsavedChanges {
   private readonly modifiersApi = inject(ModifiersApi);
   private readonly messages = inject(MessageService);
   private readonly auth = inject(AuthService);
+  private readonly printer = inject(KitchenPrinterService);
 
   protected readonly canCharge = permissionFlag('sales:create');
+  private readonly kitchenOn = permissionFlag('module:kitchen');
+  private readonly kitchenSend = permissionFlag('kitchen:send');
+  /** Con Cocina y comandas: el botón envía a cocina (Fase 12b-3). */
+  protected readonly canSend = computed(() => this.kitchenOn() && this.kitchenSend());
+  /** Líneas vigentes que no han salido a cocina (agregadas antes de tener cocina o sin enviar). */
+  protected readonly unsent = computed(() => this.items().filter((i) => !i.sentAt).length);
+  protected readonly sending = signal(false);
   protected readonly tab = signal<Tab | null>(null);
   protected readonly notFound = signal(false);
   protected readonly isOpen = computed(() => this.tab()?.status === 'OPEN');
@@ -540,14 +584,37 @@ export class TabComponent implements OnInit, HasUnsavedChanges {
       return;
     }
     this.saving.set(true);
-    this.api.addItems(this.id, toItemInputs(this.pending())).pipe(finalize(() => this.saving.set(false))).subscribe({
+    const send = this.canSend();
+    this.api.addItems(this.id, toItemInputs(this.pending()), send).pipe(finalize(() => this.saving.set(false))).subscribe({
       next: (t) => {
         this.tab.set(t);
         this.pending.set([]);
         this.pane.set('tab');
-        this.messages.add({ severity: 'success', summary: 'Agregado a la cuenta', life: 2000 });
+        this.messages.add({ severity: 'success', summary: send ? 'Enviado a cocina' : 'Agregado a la cuenta', life: 2000 });
       },
       error: (e: unknown) => this.messages.add({ severity: 'error', summary: 'No se agregó', detail: problemMessage(e) }),
+    });
+  }
+
+  protected sendPending(): void {
+    if (this.sending()) {
+      return;
+    }
+    this.sending.set(true);
+    this.api.send(this.id).pipe(finalize(() => this.sending.set(false))).subscribe({
+      next: (t) => {
+        this.tab.set(t);
+        this.messages.add({ severity: 'success', summary: 'Enviado a cocina', life: 2000 });
+      },
+      error: (e: unknown) => this.messages.add({ severity: 'error', summary: 'No se envió', detail: problemMessage(e) }),
+    });
+  }
+
+  /** Imprime aquí la comanda (la segunda vez queda como reimpresión en la auditoría). */
+  protected printTicket(ticketId: string): void {
+    this.printer.printNow(ticketId);
+    this.tab.update((t) => t && {
+      ...t, tickets: t.tickets.map((k) => (k.id === ticketId ? { ...k, printCount: k.printCount + 1 } : k)),
     });
   }
 

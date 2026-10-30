@@ -26,7 +26,7 @@ class BusinessModuleTest {
                 SCALE);
         assertThat(BusinessType.SERVICES.defaultModules()).containsExactlyInAnyOrder(CREDIT, ORDERS, QUOTES);
         assertThat(BusinessType.RESTAURANT.defaultModules()).containsExactlyInAnyOrder(CREDIT, ORDERS, MODIFIERS,
-                BusinessModule.TABLES);
+                BusinessModule.TABLES, BusinessModule.KITCHEN);
         assertThat(BusinessType.PHARMACY.defaultModules()).containsExactlyInAnyOrder(CREDIT, ORDERS, QUOTES);
         assertThat(EnumSet.allOf(BusinessType.class).stream().filter(BusinessType::isOpen))
                 .containsExactlyInAnyOrder(BusinessType.RETAIL, BusinessType.SERVICES);
@@ -54,7 +54,18 @@ class BusinessModuleTest {
         assertThat(BusinessModule.effectivePermissions(roles, EnumSet.allOf(BusinessModule.class)))
                 .containsExactly("credit:manage", "orders:manage", "quotes:read", "audit:read", "module:credit",
                         "module:orders", "module:quotes", "module:variants", "module:scale", "module:modifiers",
-                        "module:tables");
+                        "module:tables", "module:kitchen");
+    }
+
+    @Test
+    void kitchenNeedsTables() {
+        assertThat(BusinessModule.KITCHEN.requires()).contains(BusinessModule.TABLES);
+        assertThat(BusinessModule.TABLES.requires()).isEmpty();
+        assertThat(BusinessModule.missingRequirement(EnumSet.of(BusinessModule.KITCHEN, CREDIT)))
+                .contains(BusinessModule.KITCHEN);
+        assertThat(BusinessModule.missingRequirement(EnumSet.of(BusinessModule.KITCHEN, BusinessModule.TABLES)))
+                .isEmpty();
+        assertThat(BusinessModule.owning("kitchen:send")).contains(BusinessModule.KITCHEN);
     }
 
     @Test

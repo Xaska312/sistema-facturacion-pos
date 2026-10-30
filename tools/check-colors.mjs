@@ -23,6 +23,7 @@ const ALLOWED_FILES = new Set([
   'features/orders/order-document.component.ts', // pedido en hoja carta (PDF): negro sobre blanco
   'features/quotes/quote-document.component.ts', // cotización en PDF: se imprime siempre en negro sobre blanco
   'features/cash/cash-ticket.component.ts', // ticket del cierre de caja: mismo papel que el tiquete
+  'features/kitchen/comanda-print.ts', // comanda de cocina (Fase 12b-3): mismo papel que el tiquete
 ]);
 
 const PALETTES = [

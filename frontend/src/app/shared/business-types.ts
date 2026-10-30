@@ -6,7 +6,7 @@ import { XIconName } from './icons/xicons';
  * propone los módulos y el dueño los prende o apaga en Ajustes. Restaurante y Farmacia salen como "Pronto" (solo los
  * asigna la consola de plataforma a negocios piloto).
  */
-export type BusinessModule = 'CREDIT' | 'ORDERS' | 'QUOTES' | 'VARIANTS' | 'SCALE' | 'MODIFIERS' | 'TABLES';
+export type BusinessModule = 'CREDIT' | 'ORDERS' | 'QUOTES' | 'VARIANTS' | 'SCALE' | 'MODIFIERS' | 'TABLES' | 'KITCHEN';
 
 export interface BusinessTypeInfo {
   code: BusinessType;
@@ -23,6 +23,8 @@ export interface BusinessModuleInfo {
   label: string;
   description: string;
   glyph: XIconName;
+  /** Módulo que necesita encendido (Cocina se alimenta de las cuentas de Mesas). */
+  requires?: BusinessModule;
 }
 
 export const BUSINESS_TYPES: readonly BusinessTypeInfo[] = [
@@ -31,7 +33,7 @@ export const BUSINESS_TYPES: readonly BusinessTypeInfo[] = [
   { code: 'SERVICES', label: 'Servicios', description: 'Taller, impresiones, instalaciones, mantenimiento…',
     glyph: 'type-services', open: true, defaultModules: ['CREDIT', 'ORDERS', 'QUOTES'] },
   { code: 'RESTAURANT', label: 'Restaurante', description: 'Mesas, comandas y cocina.', glyph: 'type-restaurant',
-    open: false, defaultModules: ['CREDIT', 'ORDERS', 'MODIFIERS', 'TABLES'] },
+    open: false, defaultModules: ['CREDIT', 'ORDERS', 'MODIFIERS', 'TABLES', 'KITCHEN'] },
   { code: 'PHARMACY', label: 'Farmacia', description: 'Lotes, vencimientos y factura electrónica.', glyph: 'type-pharmacy',
     open: false, defaultModules: ['CREDIT', 'ORDERS', 'QUOTES'] },
 ];
@@ -46,6 +48,8 @@ export const BUSINESS_MODULES: readonly BusinessModuleInfo[] = [
     glyph: 'modifiers' },
   { code: 'TABLES', label: 'Mesas', description: 'Mesas por zona y cuentas abiertas: mesa, para llevar y domicilio.',
     glyph: 'tables' },
+  { code: 'KITCHEN', label: 'Cocina y comandas', description: 'Enviar lo pedido a cocina y bar, e imprimir comandas.',
+    glyph: 'kitchen', requires: 'TABLES' },
 ];
 
 export function businessTypeInfo(code: BusinessType | null | undefined): BusinessTypeInfo {
@@ -64,6 +68,7 @@ const MODULE_BY_PERMISSION_PREFIX: Readonly<Record<string, BusinessModule>> = {
   quotes: 'QUOTES',
   modifiers: 'MODIFIERS',
   tables: 'TABLES',
+  kitchen: 'KITCHEN',
 };
 
 /** Módulo del que depende un permiso de rol, o null si es de la base. */
@@ -75,4 +80,13 @@ export function permissionModule(permission: string): BusinessModule | null {
 export function sortModules(modules: Iterable<BusinessModule>): BusinessModule[] {
   const set = new Set(modules);
   return BUSINESS_MODULES.map((m) => m.code).filter((code) => set.has(code));
+}
+
+/** Quita los módulos a los que les falta el que necesitan (al apagar Mesas se apaga Cocina). */
+export function withRequirements(modules: Iterable<BusinessModule>): BusinessModule[] {
+  const set = new Set(modules);
+  return sortModules([...set].filter((code) => {
+    const needs = BUSINESS_MODULES.find((m) => m.code === code)?.requires;
+    return !needs || set.has(needs);
+  }));
 }

@@ -3,7 +3,8 @@ import { activeItems, itemExtras, itemTotal, kindGlyph, kindLabel, minutesOpen, 
 
 const item = (over: Partial<TabItem> = {}): TabItem => ({
   id: 'i', position: 1, productId: 'p', unitId: null, name: 'Hamburguesa', quantity: 2, unitPrice: 18000, basePrice: 18000,
-  openPrice: false, note: null, modifiers: [], addedAt: '2026-10-30T15:00:00Z', addedByName: 'Ana', sentAt: null,
+  openPrice: false, note: null, modifiers: [], addedAt: '2026-10-30T15:00:00Z', addedByName: 'Ana', sentAt: null, ticketNumber: null,
+  stationName: null,
   voided: false, voidedAt: null, voidedByName: null, voidReason: null, ...over,
 });
 

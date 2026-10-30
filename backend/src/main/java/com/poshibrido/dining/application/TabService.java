@@ -46,6 +46,9 @@ import java.util.UUID;
  * productos en varios momentos (con adiciones y nota), se mueven de mesa, se unen, se cancelan con motivo y se cobran
  * completas: el cobro las vuelve una venta normal (caja, inventario, tiquete) con el precio vigente. Quitar un producto
  * no lo borra (queda con motivo); lo que ya salió a cocina (Fase 12b-3) necesita {@code tables:void}.
+ *
+ * <p>Con el módulo de cocina (Fase 12b-3, decisión 270), agregar puede enviar de una vez: lo pedido sale en una comanda
+ * por estación ({@code kitchen:send}).
  */
 @Service
 @RequiredArgsConstructor
@@ -53,6 +56,7 @@ public class TabService {
 
     static final String VOID_PERMISSION = "tables:void";
     static final String OPEN_PRICE_PERMISSION = "sales:open-price";
+    static final String SEND_PERMISSION = "kitchen:send";
     static final int MAX_ITEMS_PER_TAB = 200;
     static final int MAX_NOTE = 140;
     private static final BigDecimal MAX_QUANTITY = new BigDecimal("9999");
@@ -64,6 +68,7 @@ public class TabService {
     private final CashApi cash;
     private final MemberDirectory members;
     private final AuditLogger audit;
+    private final KitchenService kitchen;
 
     @PersistenceContext
     private EntityManager em;
@@ -114,9 +119,11 @@ public class TabService {
                     (String) m[3], ((Number) m[4]).intValue(), DiningService.money(m[5])));
         }
         List<Object[]> itemRows = dining.rows("""
-                SELECT id, position, product_id, unit_id, name, quantity, unit_price, base_price, open_price, note,
-                       added_at, added_by, sent_at, voided_at, voided_by, void_reason
-                FROM tab_items WHERE tab_id = :t ORDER BY position""", Map.of("t", id));
+                SELECT i.id, i.position, i.product_id, i.unit_id, i.name, i.quantity, i.unit_price, i.base_price,
+                       i.open_price, i.note, i.added_at, i.added_by, i.sent_at, i.voided_at, i.voided_by, i.void_reason,
+                       k.number, k.station_name
+                FROM tab_items i LEFT JOIN kitchen_tickets k ON k.id = i.ticket_id
+                WHERE i.tab_id = :t ORDER BY i.position""", Map.of("t", id));
         Set<UUID> people = new HashSet<>();
         people.add((UUID) r[14]);
         itemRows.forEach(i -> {
@@ -139,14 +146,14 @@ public class TabService {
             items.add(new TabItemView(itemId, ((Number) i[1]).intValue(), (UUID) i[2], (UUID) i[3], (String) i[4],
                     quantity, unitPrice, DiningService.money(i[7]), (Boolean) i[8], (String) i[9],
                     mods.getOrDefault(itemId, List.of()), Rows.instant(i[10]), names.get((UUID) i[11]), Rows.instant(i[12]),
-                    voided, Rows.instant(i[13]), i[14] == null ? null : names.get((UUID) i[14]), (String) i[15]));
+                    i[16] == null ? null : ((Number) i[16]).longValue(), (String) i[17], voided, Rows.instant(i[13]), i[14] == null ? null : names.get((UUID) i[14]), (String) i[15]));
         }
         long number = ((Number) r[1]).longValue();
         String kind = (String) r[2];
         return new TabView((UUID) r[0], number, kind, (String) r[3], TabLabels.label(kind, number, (String) r[6],
                 (String) r[9]), (UUID) r[4], (UUID) r[5], (String) r[6], (String) r[7], Rows.integer(r[8]), (String) r[9],
                 (String) r[10], (String) r[11], (String) r[12], Rows.instant(r[13]), names.get((UUID) r[14]),
-                Rows.instant(r[15]), (UUID) r[16], total, items);
+                Rows.instant(r[15]), (UUID) r[16], total, items, kitchen.ticketsOfTab(id));
     }
 
     // ------------------------------------------------------------------ abrir y datos
@@ -211,11 +218,15 @@ public class TabService {
 
     // ------------------------------------------------------------------ productos
 
+    /** Agrega lo pedido; con {@code send}, además lo envía a cocina en la misma operación. */
     @Transactional
-    public TabView addItems(UUID id, List<ItemInput> inputs) {
+    public TabView addItems(UUID id, List<ItemInput> inputs, boolean send) {
         Tab tab = lockOpen(id);
         if (inputs == null || inputs.isEmpty()) {
             throw new BusinessRuleException("Agrega al menos un producto.");
+        }
+        if (send) {
+            requireCanSend();
         }
         long current = count("SELECT count(*) FROM tab_items WHERE tab_id = :t", Map.of("t", id));
         if (current + inputs.size() > MAX_ITEMS_PER_TAB) {
@@ -229,6 +240,7 @@ public class TabService {
         UUID actor = CurrentActor.requireUserId();
         Instant now = Instant.now();
         List<String> added = new ArrayList<>();
+        List<UUID> newItems = new ArrayList<>();
         for (ItemInput in : inputs) {
             if (in == null || in.productId() == null || in.quantity() == null) {
                 throw new BusinessRuleException("Cada producto necesita su cantidad.");
@@ -262,6 +274,7 @@ public class TabService {
             }
             BigDecimal unitPrice = base.add(chosen.perUnit()).max(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP);
             UUID itemId = Ids.newId();
+            newItems.add(itemId);
             position++;
             em.createNativeQuery("""
                     INSERT INTO tab_items (id, tab_id, position, product_id, unit_id, name, quantity, unit_price,
@@ -287,7 +300,39 @@ public class TabService {
         }
         touch(id);
         audit.log("TAB_ITEMS_ADDED", "tab", id, null, Map.of("label", tab.label(), "items", added));
+        if (send) {
+            kitchen.send(id, tab.label(), tab.branchId(), newItems);
+        }
         return get(id);
+    }
+
+    /** Envía a cocina todo lo de la cuenta que no se ha enviado (lo agregado sin enviar o antes de tener cocina). */
+    @Transactional
+    public TabView sendPending(UUID id) {
+        Tab tab = lockOpen(id);
+        requireCanSend();
+        List<UUID> pending = new ArrayList<>();
+        for (Object[] r : dining.rows("""
+                SELECT id, position FROM tab_items WHERE tab_id = :t AND sent_at IS NULL AND voided_at IS NULL
+                ORDER BY position""", Map.of("t", id))) {
+            pending.add((UUID) r[0]);
+        }
+        if (pending.isEmpty()) {
+            throw new BusinessRuleException("No hay nada por enviar a cocina.");
+        }
+        kitchen.send(id, tab.label(), tab.branchId(), pending);
+        touch(id);
+        return get(id);
+    }
+
+    private static void requireCanSend() {
+        Set<String> permissions = CurrentActor.permissions();
+        if (!permissions.contains(BusinessModule.KITCHEN.authority())) {
+            throw new BusinessRuleException("La cocina y las comandas están apagadas en este negocio.");
+        }
+        if (!permissions.contains(SEND_PERMISSION)) {
+            throw new ForbiddenException("Tu usuario no puede enviar a cocina.");
+        }
     }
 
     /** Quitar un producto: queda en la cuenta con el motivo; lo que ya salió a cocina necesita {@code tables:void}. */

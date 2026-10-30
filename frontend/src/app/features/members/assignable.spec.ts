@@ -21,6 +21,15 @@ describe('assignableRoles', () => {
     const mine = new Set(['sales:void', 'members:manage', 'sales:create']);
     expect(assignableRoles(roles, mine).map((r) => r.code)).toEqual(['ADMIN', 'SELLER']);
   });
+
+  it('los permisos de un módulo apagado no impiden asignar el rol (Fase 12b-3)', () => {
+    const waiter = role('WAITER', ['sales:create', 'tables:operate', 'kitchen:send']);
+    // Mesas encendido y Cocina apagado: el Mesero se puede asignar.
+    expect(assignableRoles([waiter], new Set(['sales:create', 'tables:operate', 'module:tables'])).length).toBe(1);
+    // Con Cocina encendida hace falta tener kitchen:send.
+    expect(assignableRoles([waiter], new Set(['sales:create', 'tables:operate', 'module:tables', 'module:kitchen'])).length)
+      .toBe(0);
+  });
 });
 
 describe('toggleIn', () => {

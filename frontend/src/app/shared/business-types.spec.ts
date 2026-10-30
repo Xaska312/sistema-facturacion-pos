@@ -1,11 +1,19 @@
 import { XICONS } from './icons/xicons';
-import { BUSINESS_MODULES, BUSINESS_TYPES, businessTypeInfo, moduleAuthority, permissionModule, sortModules } from './business-types';
+import {
+  BUSINESS_MODULES,
+  BUSINESS_TYPES,
+  businessTypeInfo,
+  moduleAuthority,
+  permissionModule,
+  sortModules,
+  withRequirements,
+} from './business-types';
 import { canChooseType } from './business-type-picker.component';
 
 describe('tipos de negocio y módulos (Fase 12a)', () => {
   it('Comercio trae todos los módulos y solo Comercio y Servicios se eligen al crear', () => {
     expect(businessTypeInfo('RETAIL').defaultModules).toEqual(['CREDIT', 'ORDERS', 'QUOTES', 'VARIANTS', 'SCALE']);
-    expect(businessTypeInfo('RESTAURANT').defaultModules).toEqual(['CREDIT', 'ORDERS', 'MODIFIERS', 'TABLES']);
+    expect(businessTypeInfo('RESTAURANT').defaultModules).toEqual(['CREDIT', 'ORDERS', 'MODIFIERS', 'TABLES', 'KITCHEN']);
     expect(BUSINESS_TYPES.filter((t) => t.open).map((t) => t.label)).toEqual(['Comercio', 'Servicios']);
     expect([...BUSINESS_TYPES, ...BUSINESS_MODULES].every((x) => x.glyph in XICONS)).toBeTrue();
   });
@@ -20,7 +28,13 @@ describe('tipos de negocio y módulos (Fase 12a)', () => {
     expect(permissionModule('credit:collect')).toBe('CREDIT');
     expect(permissionModule('quotes:read')).toBe('QUOTES');
     expect(permissionModule('modifiers:manage')).toBe('MODIFIERS');
+    expect(permissionModule('kitchen:send')).toBe('KITCHEN');
     expect(permissionModule('sales:create')).toBeNull();
+  });
+
+  it('Cocina necesita Mesas: sin Mesas se apaga (Fase 12b-3)', () => {
+    expect(withRequirements(['KITCHEN', 'CREDIT'])).toEqual(['CREDIT']);
+    expect(withRequirements(['KITCHEN', 'TABLES'])).toEqual(['TABLES', 'KITCHEN']);
   });
 
   it('un tipo "Pronto" solo se elige si el negocio ya lo tiene', () => {

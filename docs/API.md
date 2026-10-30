@@ -87,14 +87,26 @@ En `POST /sales` cada ítem acepta `modifiers: [{optionId, quantity}]` y `note` 
 | POST / PUT | `/dining/zones[/{id}]` | `tables:manage` | `{branchId, name}` / `{name, position, active}`. Nombre único en la sucursal (409). No se desactiva con cuentas abiertas (409) |
 | POST / PUT | `/dining/tables[/{id}]` | `tables:manage` | `{zoneId, name, seats?}` / `{zoneId, name, seats, position, active}`. Nombre único en la sucursal |
 | POST | `/tabs` | `tables:operate` | `{kind: TABLE\|TAKEAWAY\|DELIVERY, tableId?, branchId?, guests?, customerName?, phone?, address?, notes?}` → 201 `TabView`. Mesa con cuenta abierta → 409; domicilio sin dirección → 422 |
-| GET / PUT | `/tabs/{id}` | `tables:operate` | `TabView`: `{id, number, kind, status (OPEN, CHARGED, CANCELLED, MERGED), label, branchId, tableId, tableName, zoneName, guests, customerName, phone, address, notes, openedAt, openedByName, closedAt, saleId, total, items}`; cada ítem con `unitPrice` (con adiciones, al pedir), `basePrice`, `openPrice`, `note`, `modifiers`, `addedByName`, `sentAt`, `voided`, `voidReason`. PUT cambia `{guests, customerName, phone, address, notes}` |
-| POST | `/tabs/{id}/items` | `tables:operate` | `{items: [{productId, unitId?, quantity, unitPrice? (solo precio libre), modifiers?, note?}]}` (máx. 50 por vez, 200 por cuenta). Adiciones validadas como en la venta |
+| GET / PUT | `/tabs/{id}` | `tables:operate` | `TabView`: `{id, number, kind, status (OPEN, CHARGED, CANCELLED, MERGED), label, branchId, tableId, tableName, zoneName, guests, customerName, phone, address, notes, openedAt, openedByName, closedAt, saleId, total, items}`; cada ítem con `unitPrice` (con adiciones, al pedir), `basePrice`, `openPrice`, `note`, `modifiers`, `addedByName`, `sentAt`, `ticketNumber`, `stationName`, `voided`, `voidReason`; y `tickets: [{id, number, stationName, sentAt, printCount, items}]` (Fase 12b-3). PUT cambia `{guests, customerName, phone, address, notes}` |
+| POST | `/tabs/{id}/items` | `tables:operate` | `{items: [{productId, unitId?, quantity, unitPrice? (solo precio libre), modifiers?, note?}], send?}` (máx. 50 por vez, 200 por cuenta). Adiciones validadas como en la venta. `send: true` (Fase 12b-3) además los envía a cocina: necesita `kitchen:send` y `module:kitchen` (si no, 403/422) |
+| POST | `/tabs/{id}/send` | `tables:operate` + `kitchen:send` | Envía a cocina lo que la cuenta tiene sin enviar (Fase 12b-3); sin nada pendiente → 422 |
 | POST | `/tabs/{id}/items/{itemId}/void` | `tables:operate` | `{reason}`: queda tachado. Lo que ya salió a cocina (`sentAt`, Fase 12b-3) necesita `tables:void` |
 | POST | `/tabs/{id}/move` · `/merge` | `tables:operate` | `{tableId}` (mesa libre de la sucursal) · `{fromTabId}` (sus productos pasan a esta; la otra queda `MERGED`) |
 | POST | `/tabs/{id}/cancel` | `tables:operate` (+ `tables:void` si tiene productos) | `{reason}` |
 | POST | `/tabs/{id}/charge` | `tables:operate` + `sales:create` | `Idempotency-Key` obligatoria. `{customerId?, payments, expectedTotal}` → 201 con la venta (como `POST /sales`; precio vigente, adiciones, nota y `notes` = nombre de la cuenta). Caja abierta de la misma sucursal (422). Ya cobrada → 409; repetir con la misma clave devuelve la misma venta |
 
 Todas las acciones de cuentas, zonas y mesas quedan en la auditoría (`TAB_*`, `DINING_ZONE_*`, `DINING_TABLE_*`).
+
+### Cocina y comandas (Fase 12b-3, decisión 270; requieren `module:kitchen`, que necesita Mesas)
+| Método | Ruta | Permiso | Descripción |
+|---|---|---|---|
+| GET | `/kitchen/stations` | `kitchen:send` o `kitchen:manage` | `[{id, name, main, position, active, categories: [{id, name}], products: [{id, name}]}]`, la principal primero |
+| POST / PUT | `/kitchen/stations[/{id}]` | `kitchen:manage` | `{name, main?, active?, position?, categoryIds?, productIds?}`. Nombre único (409); máx. 10 estaciones. Una categoría o un producto van a una sola estación (si estaban en otra, pasan a esta). La principal no se desactiva ni se desmarca: se marca otra como principal (422) |
+| GET | `/kitchen/tickets?branchId&stationId&pending` | `kitchen:send` | Comandas de las últimas 12 h, la más nueva primero (máx. 80). `pending=true`: las no impresas de las últimas 2 h, la más vieja primero (impresora automática). `TicketView`: `{id, number, branchId, tabId, tabLabel, kind, guests, notes, stationId, stationName, sentAt, sentByName, status, printCount, items: [{id, name, quantity, note, voided, modifiers: [{groupName, name, quantity, highlight}]}]}`; `highlight`: elección de un grupo obligatorio de una sola opción (el término) |
+| GET | `/kitchen/tickets/{id}` | `kitchen:send` | Una comanda |
+| POST | `/kitchen/tickets/{id}/print` | `kitchen:send` | `{auto?}`: registra una impresión y devuelve la comanda. `auto: true` la reclama la impresora automática (409 si otro equipo ya la imprimió); a mano siempre, y si ya estaba impresa queda `KITCHEN_TICKET_REPRINTED` en la auditoría |
+
+Enviar deja `KITCHEN_SENT` (cuenta, comandas y productos); las estaciones, `KITCHEN_STATION_CREATED/UPDATED`. Cada producto va a la estación que tenga él mismo, si no a la de su categoría y si no a la principal ("Cocina", que viene creada).
 
 ### Ajustes del negocio
 | Método | Ruta | Permiso | Descripción |
