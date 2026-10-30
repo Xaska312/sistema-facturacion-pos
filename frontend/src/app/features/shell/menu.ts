@@ -68,8 +68,18 @@ export const DOCK_BY_TYPE: Readonly<Record<BusinessType, readonly string[]>> = {
 };
 
 export function dockItems(visible: readonly MenuItem[], type: BusinessType = 'RETAIL'): MenuItem[] {
-  return DOCK_BY_TYPE[type].map((route) => visible.find((item) => item.route === route))
+  const items = DOCK_BY_TYPE[type].map((route) => visible.find((item) => item.route === route))
     .filter((item): item is MenuItem => item !== undefined);
+  // Quien casi no tiene nada en el dock de su tipo (la cocina en un Comercio con mesas) ve sus pantallas de Ventas.
+  if (items.length < 3) {
+    for (const extra of visible.filter((m) => m.section === 'Ventas' && !items.includes(m))) {
+      if (items.length >= DOCK_BY_TYPE[type].length) {
+        break;
+      }
+      items.push(extra);
+    }
+  }
+  return items;
 }
 
 /** Rutas con subrutas propias en el menú: solo se marcan activas en su ruta exacta. */

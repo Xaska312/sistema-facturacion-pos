@@ -76,6 +76,9 @@ describe('dockItems (decisión 263)', () => {
       .toEqual(['Inicio', 'Vender', 'Mi caja', 'Ventas', 'Pedidos', 'Clientes']);
     expect(dockItems(visibleMenu(() => true), 'RESTAURANT').map((m) => m.label))
       .toEqual(['Inicio', 'Vender', 'Mesas', 'Cocina', 'Comandas', 'Mi caja', 'Ventas']);
+    // La cocina en un Comercio con mesas: su pantalla entra al dock (Fase 12b-4).
+    const cook = new Set(['branches:read', 'kitchen:view']);
+    expect(dockItems(visibleMenu((p) => cook.has(p)), 'RETAIL').map((m) => m.label)).toEqual(['Inicio', 'Cocina']);
     expect(dockItems(visibleMenu(() => true), 'PHARMACY').map((m) => m.label))
       .toEqual(['Inicio', 'Vender', 'Mi caja', 'Ventas', 'Productos', 'Existencias', 'Clientes']);
   });
