@@ -14,6 +14,7 @@ import com.poshibrido.shared.error.ForbiddenException;
 import com.poshibrido.shared.error.UnauthorizedException;
 import com.poshibrido.tenancy.application.TenantApi;
 import com.poshibrido.tenancy.application.TenantRef;
+import com.poshibrido.tenancy.domain.BusinessModule;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -220,7 +221,9 @@ public class AuthService {
         }
         return tenantApi.findActive(tenantId)
                 .filter(tenant -> accessApi.isMemberActive(tenant.schema(), user.getId()))
-                .map(tenant -> new TenantAccess(tenant, accessApi.permissionsOf(tenant.schema(), user.getId())));
+                // Fase 12a: sin los permisos de los módulos apagados y con la autoridad de cada módulo encendido.
+                .map(tenant -> new TenantAccess(tenant, BusinessModule.effectivePermissions(
+                        accessApi.permissionsOf(tenant.schema(), user.getId()), tenantApi.modulesOf(tenant.id()))));
     }
 
     private record TenantAccess(TenantRef tenant, List<String> permissions) {

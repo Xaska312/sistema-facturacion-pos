@@ -2,16 +2,20 @@ package com.poshibrido.tenancy.api;
 
 import com.poshibrido.shared.api.PageResponse;
 import com.poshibrido.shared.security.CurrentActor;
+import com.poshibrido.tenancy.application.BusinessProfileService;
 import com.poshibrido.tenancy.application.TenantAdministrationService;
 import com.poshibrido.tenancy.application.TenantAdministrationService.PlatformTenantView;
 import com.poshibrido.tenancy.application.TenantSummary;
+import com.poshibrido.tenancy.domain.BusinessType;
 import com.poshibrido.tenancy.domain.TenantStatus;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -31,6 +35,10 @@ import java.util.UUID;
 public class PlatformTenantController {
 
     private final TenantAdministrationService administration;
+    private final BusinessProfileService profiles;
+
+    public record BusinessTypeRequest(@NotNull BusinessType businessType) {
+    }
 
     @GetMapping
     public PageResponse<PlatformTenantView> list(@RequestParam(required = false) String q,
@@ -51,6 +59,15 @@ public class PlatformTenantController {
     public void delete(@PathVariable UUID tenantId, @Valid @RequestBody DeleteTenantRequest request) {
         administration.delete(tenantId, CurrentActor.requireUserId(), request.confirmation(), request.password(),
                 request.reason());
+    }
+
+    /**
+     * Asigna el tipo de negocio, también los "Pronto" (Restaurante, Farmacia) a negocios piloto (decisión 267). El
+     * negocio queda con los módulos de ese tipo.
+     */
+    @PutMapping("/{tenantId}/business-type")
+    public TenantSummary businessType(@PathVariable UUID tenantId, @Valid @RequestBody BusinessTypeRequest request) {
+        return profiles.assignByPlatform(tenantId, CurrentActor.requireUserId(), request.businessType());
     }
 
     @PostMapping("/{tenantId}/reactivate")

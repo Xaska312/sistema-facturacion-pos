@@ -52,6 +52,14 @@ describe('guards', () => {
     expect(TestBed.inject(Router).serializeUrl(result)).toBe('/app/sin-permiso');
   });
 
+  it('permissionGuard bloquea una pantalla de un módulo apagado aunque tenga el permiso (Fase 12a)', () => {
+    auth.hasPermission.and.callFake((p: string) => p === 'products:read');
+    const result = run(permissionGuard, { permission: 'products:read', module: 'module:variants' }) as UrlTree;
+    expect(TestBed.inject(Router).serializeUrl(result)).toBe('/app/sin-permiso');
+    auth.hasPermission.and.returnValue(true);
+    expect(run(permissionGuard, { permission: 'products:read', module: 'module:variants' })).toBeTrue();
+  });
+
   it('permissionGuard deja pasar con el permiso', () => {
     auth.hasPermission.and.returnValue(true);
     expect(run(permissionGuard, { permission: 'branches:read' })).toBeTrue();

@@ -14,6 +14,7 @@ import { formatCop } from '../../shared/money';
 import { FormDialogComponent } from '../../shared/forms/form-dialog.component';
 import { PageHeaderComponent } from '../../shared/page-header.component';
 import { BrandingSectionComponent } from './branding-section.component';
+import { BusinessProfileSectionComponent } from './business-profile-section.component';
 
 /** Zonas horarias de Colombia y vecinas más usadas; el backend acepta cualquier zona IANA válida. */
 export const TIMEZONES = ['America/Bogota', 'America/Panama', 'America/Lima', 'America/Guayaquil', 'America/Caracas'];
@@ -35,9 +36,11 @@ const TIMEZONE_LABEL: Record<string, string> = {
 @Component({
   selector: 'app-settings',
   imports: [ReactiveFormsModule, FormsModule, ButtonModule, InputTextModule, PageHeaderComponent, FormDialogComponent,
-    BrandingSectionComponent],
+    BrandingSectionComponent, BusinessProfileSectionComponent],
   template: `
-    <app-page-header title="Ajustes del negocio" description="Cómo funciona tu negocio: inventario, impuestos, zona horaria, moneda, tiquete y marca." />
+    <app-page-header title="Ajustes del negocio" description="Cómo funciona tu negocio: tipo y módulos, inventario, impuestos, zona horaria, moneda, tiquete y marca." />
+
+    <app-business-profile-section />
 
     @if (sub(); as s) {
       <section class="card p-4 md:p-6 mb-6 flex flex-col gap-4 max-w-2xl">
@@ -165,23 +168,26 @@ const TIMEZONE_LABEL: Record<string, string> = {
             política de cambios…</span>
         </label>
       </fieldset>
-      <fieldset class="flex flex-col gap-4" [disabled]="!canEdit()">
-        <legend class="text-base font-semibold mb-2">Cotizaciones</legend>
-        <label class="flex flex-col gap-1 max-w-xs">
-          <span class="text-sm font-medium">Días de vigencia por defecto</span>
-          <input pInputText type="number" min="1" max="365" step="1" formControlName="quoteValidityDays"
-                 aria-describedby="quote-days-help" />
-          <span id="quote-days-help" class="text-xs text-muted">Una cotización nueva vale hasta hoy más estos días
-            (de 1 a 365). Se puede cambiar en cada una.</span>
-        </label>
-        <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium">Condiciones por defecto</span>
-          <textarea formControlName="quoteTerms" rows="3" maxlength="1000" class="border rounded px-2 py-2"
-                    aria-describedby="quote-terms-help"></textarea>
-          <span id="quote-terms-help" class="text-xs text-muted">Salen en el PDF de cada cotización nueva: anticipo,
-            tiempo de entrega, garantía, formas de pago…</span>
-        </label>
-      </fieldset>
+      <!-- Con Cotizaciones apagado (Fase 12a) sus valores se conservan pero no se muestran. -->
+      @if (hasQuotes()) {
+        <fieldset class="flex flex-col gap-4" [disabled]="!canEdit()">
+          <legend class="text-base font-semibold mb-2">Cotizaciones</legend>
+          <label class="flex flex-col gap-1 max-w-xs">
+            <span class="text-sm font-medium">Días de vigencia por defecto</span>
+            <input pInputText type="number" min="1" max="365" step="1" formControlName="quoteValidityDays"
+                   aria-describedby="quote-days-help" />
+            <span id="quote-days-help" class="text-xs text-muted">Una cotización nueva vale hasta hoy más estos días
+              (de 1 a 365). Se puede cambiar en cada una.</span>
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="text-sm font-medium">Condiciones por defecto</span>
+            <textarea formControlName="quoteTerms" rows="3" maxlength="1000" class="border rounded px-2 py-2"
+                      aria-describedby="quote-terms-help"></textarea>
+            <span id="quote-terms-help" class="text-xs text-muted">Salen en el PDF de cada cotización nueva: anticipo,
+              tiempo de entrega, garantía, formas de pago…</span>
+          </label>
+        </fieldset>
+      }
       @if (canEdit()) {
         <div class="flex justify-end">
           <p-button type="submit" label="Guardar" [loading]="saving()" [disabled]="form.invalid || form.pristine" />
@@ -240,6 +246,7 @@ export class SettingsComponent implements OnInit {
   protected readonly cop = formatCop;
 
   protected readonly canEdit = computed(() => this.auth.hasPermission('settings:manage'));
+  protected readonly hasQuotes = computed(() => this.auth.hasPermission('module:quotes'));
   /** Solo el dueño puede eliminar (cerrar) el negocio; el backend lo vuelve a comprobar. */
   protected readonly isOwner = computed(() => this.auth.currentTenant()?.owner === true);
   protected readonly tradeName = computed(() => this.auth.currentTenant()?.tradeName ?? null);

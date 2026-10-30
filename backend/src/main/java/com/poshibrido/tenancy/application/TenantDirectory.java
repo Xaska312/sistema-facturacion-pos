@@ -1,6 +1,7 @@
 package com.poshibrido.tenancy.application;
 
 import com.poshibrido.identity.application.MembershipApi;
+import com.poshibrido.tenancy.domain.BusinessModule;
 import com.poshibrido.tenancy.domain.Tenant;
 import com.poshibrido.tenancy.domain.TenantStatus;
 import com.poshibrido.tenancy.infrastructure.TenantMigrationFailures;
@@ -11,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -61,6 +63,12 @@ public class TenantDirectory implements TenantApi {
     public Optional<TenantInfo> findInfo(UUID tenantId) {
         return tenants.findById(tenantId).map(t -> new TenantInfo(t.getId(), t.getSlug(), t.getSchemaName(),
                 t.getTradeName(), t.getStatus(), t.getOwnerUserId()));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Set<BusinessModule> modulesOf(UUID tenantId) {
+        return tenants.findById(tenantId).map(Tenant::getModules).orElseGet(() -> EnumSet.noneOf(BusinessModule.class));
     }
 
     public void evict(UUID tenantId) {

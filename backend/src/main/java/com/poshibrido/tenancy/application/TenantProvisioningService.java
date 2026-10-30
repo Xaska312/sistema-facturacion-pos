@@ -12,6 +12,7 @@ import com.poshibrido.shared.error.EmailNotVerifiedException;
 import com.poshibrido.shared.error.NotFoundException;
 import com.poshibrido.shared.error.ServiceUnavailableException;
 import com.poshibrido.subscription.application.SubscriptionApi;
+import com.poshibrido.tenancy.domain.BusinessModule;
 import com.poshibrido.tenancy.domain.Tenant;
 import com.poshibrido.tenancy.domain.TenantSchemas;
 import com.poshibrido.tenancy.domain.TenantStatus;
@@ -77,8 +78,10 @@ public class TenantProvisioningService {
             throw new BusinessRuleException(
                     "El identificador debe iniciar con letra y contener solo minúsculas, números o '_' (3 a 41).");
         }
-        if (!command.businessType().isAvailable()) {
-            throw new BusinessRuleException("El tipo de negocio " + command.businessType() + " aún no está disponible.");
+        // Restaurante y Farmacia salen como "Pronto": solo el administrador de plataforma los asigna (decisión 267).
+        if (!command.businessType().isOpen()) {
+            throw new BusinessRuleException("Ese tipo de negocio estará disponible pronto. Por ahora elige Comercio o "
+                    + "Servicios; te avisamos cuando puedas cambiarlo.");
         }
         UserSummary owner = users.requireActive(ownerId);
         // Solo con el correo confirmado: un negocio a nombre de un correo ajeno no debe poder existir.
@@ -130,6 +133,7 @@ public class TenantProvisioningService {
                 data.put("legalName", t.getLegalName());
                 data.put("tradeName", t.getTradeName());
                 data.put("businessType", t.getBusinessType());
+                data.put("modules", BusinessModule.format(t.getModules()));
                 securityEvents.record(SecurityEvent.TENANT_CREATED, owner.id(), owner.email(), tenantId, data);
                 // Auditoría del negocio: quién lo creó y con qué datos (el sembrado del dueño ya dejó
                 // TENANT_PROVISIONED, sin datos).

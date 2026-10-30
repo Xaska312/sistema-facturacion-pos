@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
-  ActivationCode, CodeInput, CreatedCodes, PageResponse, PaymentInput, Plan, PlanInput, Subscription, SubscriptionRow,
+  ActivationCode, BusinessType, CodeInput, CreatedCodes, PageResponse, PaymentInput, Plan, PlanInput, Subscription, SubscriptionRow,
   SubscriptionStatus, TenantStatus, TenantSummary,
 } from './api.models';
 
@@ -12,7 +12,7 @@ export interface PlatformTenant {
   slug: string;
   legalName: string;
   tradeName: string;
-  businessType: string;
+  businessType: BusinessType;
   status: TenantStatus;
   ownerId: string;
   ownerEmail: string;
@@ -76,6 +76,11 @@ export class PlatformApi {
   /** Eliminación definitiva de un negocio suspendido: borra todos sus datos (decisión 262). */
   deleteTenant(tenantId: string, confirmation: string, password: string, reason: string): Observable<void> {
     return this.http.post<void>(`${this.base}/tenants/${tenantId}/delete`, { confirmation, password, reason });
+  }
+
+  /** Tipo de negocio, también los "Pronto" para pilotos (Fase 12a); el negocio queda con los módulos del tipo. */
+  setBusinessType(tenantId: string, businessType: BusinessType): Observable<TenantSummary> {
+    return this.http.put<TenantSummary>(`${this.base}/tenants/${tenantId}/business-type`, { businessType });
   }
 
   reactivate(tenantId: string): Observable<TenantSummary> {

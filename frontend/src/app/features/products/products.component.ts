@@ -16,11 +16,17 @@ import { LatestRequest } from '../../shared/latest-request';
   selector: 'app-products',
   imports: [FormsModule, RouterLink, ButtonModule, DataTableComponent, PageHeaderComponent],
   template: `
-    <app-page-header title="Productos" description="Lo que vendes: precio, impuesto, unidad y códigos de barras. Los productos con tallas y colores están en «Con tallas».">
-      <a pButton routerLink="/app/productos/modelos" label="Con tallas" icon="pi pi-th-large" severity="secondary"
-         [outlined]="true"></a>
-      <a pButton routerLink="/app/bascula" label="Báscula" icon="pi pi-calculator" severity="secondary"
-         [outlined]="true"></a>
+    <app-page-header title="Productos" [description]="'Lo que vendes: precio, impuesto, unidad y códigos de barras.'
+                       + (hasVariants() ? ' Los productos con tallas y colores están en «Con tallas».' : '')">
+      <!-- Solo con su módulo encendido (Fase 12a). -->
+      @if (hasVariants()) {
+        <a pButton routerLink="/app/productos/modelos" label="Con tallas" icon="pi pi-th-large" severity="secondary"
+           [outlined]="true"></a>
+      }
+      @if (hasScale()) {
+        <a pButton routerLink="/app/bascula" label="Báscula" icon="pi pi-calculator" severity="secondary"
+           [outlined]="true"></a>
+      }
       @if (canManage()) {
         <a pButton routerLink="/app/productos/importar" label="Importar desde Excel" icon="pi pi-file-excel" severity="secondary"
            [outlined]="true"></a>
@@ -65,6 +71,8 @@ export class ProductsComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly confirm = inject(ConfirmService);
   protected readonly canManage = permissionFlag('products:manage');
+  protected readonly hasVariants = permissionFlag('module:variants');
+  protected readonly hasScale = permissionFlag('module:scale');
 
   protected readonly page = signal<PageResponse<Product> | null>(null);
   protected readonly categories = signal<Category[]>([]);

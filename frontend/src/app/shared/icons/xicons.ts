@@ -68,6 +68,19 @@ export const XICONS = {
     fill: '<path d="M12 3 3 8l9 5 9-5z"/>' },
   security: { stroke: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><rect x="9" y="11" width="6" height="5" rx="1"/><path d="M10.5 11V9.5a1.5 1.5 0 0 1 3 0V11"/>',
     fill: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>' },
+  // Tipos de negocio y módulos (Fase 12a).
+  'type-retail': { stroke: '<path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/><path d="M9 12a3 3 0 0 0 6 0"/>',
+    fill: '<path d="M5 8h14l-1 12H6z"/>' },
+  'type-services': { stroke: '<path d="M14.5 5.5a4 4 0 0 0-5 5L4 16v4h4l5.5-5.5a4 4 0 0 0 5-5l-2.5 2.5-2.5-.5-.5-2.5z"/>',
+    fill: '<circle cx="15" cy="9" r="4"/>' },
+  'type-restaurant': { stroke: '<path d="M6 3v7a2 2 0 0 0 4 0V3M8 3v18"/><path d="M17 21V3c-2 0-3.5 2.5-3.5 6v3H17"/>',
+    fill: '<path d="M13.5 9c0-3.5 1.5-6 3.5-6v9h-3.5z"/><rect x="6" y="3" width="4" height="9" rx="2"/>' },
+  'type-pharmacy': { stroke: '<rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 7.5v9M7.5 12h9"/>',
+    fill: '<rect x="3" y="3" width="18" height="18" rx="4"/>' },
+  variants: { stroke: '<path d="M9 3 4 6l2 4 2-1v12h8V9l2 1 2-4-5-3a3 3 0 0 1-6 0z"/>',
+    fill: '<path d="M8 9v12h8V9z"/>' },
+  scale: { stroke: '<path d="M12 4v16M6 20h12M5 7h14"/><path d="M5 7 2.5 13a2.5 2.5 0 0 0 5 0zM19 7l-2.5 6a2.5 2.5 0 0 0 5 0z"/>',
+    fill: '<path d="M2.5 13a2.5 2.5 0 0 0 5 0zM16.5 13a2.5 2.5 0 0 0 5 0z"/>' },
 } as const satisfies Record<string, XIconDef>;
 
 export type XIconName = keyof typeof XICONS;

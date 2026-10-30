@@ -110,7 +110,7 @@ public class ProductModelController {
 
     @PostMapping("/api/v1/size-scales")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAuthority('products:manage')")
+    @PreAuthorize("hasAuthority('products:manage') and hasAuthority('module:variants')")
     public SizeScaleView createScale(@Valid @RequestBody ScaleRequest request) {
         return scales.create(request.name(), request.toSizes());
     }
@@ -143,7 +143,7 @@ public class ProductModelController {
 
     @PostMapping("/api/v1/product-models")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAuthority('products:manage')")
+    @PreAuthorize("hasAuthority('products:manage') and hasAuthority('module:variants')")
     public ModelView create(@Valid @RequestBody ModelRequest request) {
         return models.create(request.toCommand());
     }
@@ -155,7 +155,7 @@ public class ProductModelController {
     }
 
     @PostMapping("/api/v1/product-models/{id}/variants")
-    @PreAuthorize("hasAuthority('products:manage')")
+    @PreAuthorize("hasAuthority('products:manage') and hasAuthority('module:variants')")
     public ModelView addVariants(@PathVariable UUID id, @Valid @RequestBody VariantsRequest request) {
         return models.addVariants(id, request.sizes(), request.colors());
     }

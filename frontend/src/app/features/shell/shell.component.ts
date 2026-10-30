@@ -268,10 +268,10 @@ export class ShellComponent {
   protected readonly bannerClosed = signal(false);
   protected readonly canManageSettings = computed(() => this.auth.permissions().has('settings:manage'));
 
-  /** Módulos del dock, según los permisos. */
+  /** Módulos del dock, según los permisos y el tipo de negocio (Fase 12a). */
   protected readonly dock = computed(() => {
     const permissions = this.auth.permissions();
-    return dockItems(visibleMenu((p) => permissions.has(p)));
+    return dockItems(visibleMenu((p) => permissions.has(p)), this.auth.currentTenant()?.businessType ?? 'RETAIL');
   });
   protected readonly crumbs = computed(() => buildBreadcrumbs(this.url(), this.pageTitle(), MENU));
   protected readonly helpTopic = computed(() => helpForUrl(this.url()));

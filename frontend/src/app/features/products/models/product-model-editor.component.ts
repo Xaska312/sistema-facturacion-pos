@@ -173,7 +173,7 @@ const BARCODE = /^[A-Za-z0-9.-]{1,48}$/;
               }
             </p>
           </div>
-          @if (canEdit() && m.active) {
+          @if (canEdit() && canAdd() && m.active) {
             <p-button label="Agregar tallas o colores" icon="pi pi-plus" size="small" [outlined]="true"
                       (onClick)="openAdd(m)" />
           }
@@ -274,6 +274,8 @@ export class ProductModelEditorComponent implements OnInit, HasUnsavedChanges {
   private readonly messages = inject(MessageService);
   private readonly confirm = inject(ConfirmService);
   protected readonly canEdit = permissionFlag('products:manage');
+  /** Con Tallas y colores apagado (Fase 12a) el modelo se edita, pero no se le agregan tallas ni colores. */
+  protected readonly canAdd = permissionFlag('module:variants');
   protected readonly formatCop = formatCop;
   protected readonly Number = Number;
 
