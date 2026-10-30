@@ -267,7 +267,7 @@ interface Picking {
                   <button type="button" class="qty" [attr.aria-label]="'Uno menos de ' + i.name" (click)="pickPart(i, -1)">
                     <i class="pi pi-minus" aria-hidden="true"></i>
                   </button>
-                  <span class="min-w-7 text-center font-bold tabular-nums">{{ picked()[i.id] ?? 0 }}</span>
+                  <span class="min-w-7 text-center font-bold tabular-nums">{{ pickedOf(i.id) }}</span>
                   <button type="button" class="qty" [attr.aria-label]="'Uno más de ' + i.name" (click)="pickPart(i, 1)">
                     <i class="pi pi-plus" aria-hidden="true"></i>
                   </button>
@@ -831,6 +831,10 @@ export class TabComponent implements OnInit, HasUnsavedChanges {
     this.picked.set({});
     this.splitInto = Math.max(2, this.tab()?.guests ?? 2);
     this.chargeOpen = true;
+  }
+
+  protected pickedOf(id: string): number {
+    return this.picked()[id] ?? 0;
   }
 
   protected pickPart(item: TabItem, delta: number): void {
