@@ -282,6 +282,11 @@ export const routes: Routes = [
           import('./features/credit/credit-account.component').then((m) => m.CreditAccountComponent),
       },
       {
+        path: 'todo',
+        title: 'Todo',
+        loadComponent: () => import('./features/shell/all-modules.component').then((m) => m.AllModulesComponent),
+      },
+      {
         path: 'pedidos',
         title: 'Pedidos',
         canActivate: [permissionGuard],

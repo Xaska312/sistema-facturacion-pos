@@ -44,8 +44,10 @@ test.afterAll(async () => {
   await api?.dispose();
 });
 
-function sideMenu(page: Page): Locator {
-  return page.getByRole('complementary', { name: 'Menú principal' }).getByRole('navigation', { name: 'Secciones' });
+/** "Todo" (decisión 263): todos los módulos que permite el rol, agrupados. */
+async function modules(page: Page): Promise<Locator> {
+  await page.goto('/app/todo');
+  return page.getByRole('navigation', { name: 'Todos los módulos' });
 }
 
 async function enterAs(page: Page, role: string): Promise<void> {
@@ -53,9 +55,15 @@ async function enterAs(page: Page, role: string): Promise<void> {
 }
 
 async function expectMenu(page: Page, role: string): Promise<void> {
-  const menu = sideMenu(page);
-  await expect(menu.getByRole('link', { name: 'Inicio', exact: true })).toBeVisible();
+  // Inicio está siempre en el dock; lo demás se revisa en "Todo".
+  await expect(page.getByRole('navigation', { name: 'Módulos' }).getByRole('link', { name: 'Inicio', exact: true }))
+    .toBeVisible();
+  const menu = await modules(page);
+  await expect(menu).toBeVisible();
   for (const label of MENU) {
+    if (label === 'Inicio') {
+      continue;
+    }
     const link = menu.getByRole('link', { name: label, exact: true });
     if (VISIBLE[role].includes(label)) {
       await expect(link, `${role} ve "${label}"`).toBeVisible();
@@ -65,7 +73,6 @@ async function expectMenu(page: Page, role: string): Promise<void> {
   }
 }
 
-/** Abrir la dirección a mano lleva a "sin permiso" (el menú no es la única barrera). */
 async function expectForbidden(page: Page, path: string): Promise<void> {
   await page.goto(path);
   await expect(page).toHaveURL(/\/app\/sin-permiso$/);
@@ -85,7 +92,7 @@ test('Vendedor: abre su caja y vende; consulta clientes sin crearlos', async ({ 
   await expectMenu(page, 'SELLER');
 
   // Decisión 201: el Vendedor cobra con su propia caja.
-  await sideMenu(page).getByRole('link', { name: 'Vender', exact: true }).click();
+  await (await modules(page)).getByRole('link', { name: 'Vender', exact: true }).click();
   await expect(page).toHaveURL(/\/pos$/);
   await expect(page.getByRole('heading', { name: 'No tienes una caja abierta' })).toBeVisible();
   await page.getByLabel('Base de efectivo').fill('20000');
@@ -140,9 +147,9 @@ test('Bodeguero: registra un ajuste leyendo el código dos veces; no vende', asy
 test('Contador: consulta reportes y auditoría; no vende ni administra usuarios', async ({ page }) => {
   await enterAs(page, 'ACCOUNTANT');
   await expectMenu(page, 'ACCOUNTANT');
-  await sideMenu(page).getByRole('link', { name: 'Reportes', exact: true }).click();
+  await (await modules(page)).getByRole('link', { name: 'Reportes', exact: true }).click();
   await expect(page).toHaveURL(/\/app\/reportes/);
-  await sideMenu(page).getByRole('link', { name: 'Auditoría', exact: true }).click();
+  await (await modules(page)).getByRole('link', { name: 'Auditoría', exact: true }).click();
   await expect(page).toHaveURL(/\/app\/auditoria/);
   await expectForbidden(page, '/pos');
   await expectForbidden(page, '/app/usuarios');
