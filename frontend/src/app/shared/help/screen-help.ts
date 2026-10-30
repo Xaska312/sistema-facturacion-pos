@@ -268,8 +268,7 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     title: 'Ajustes del negocio',
     tips: [
       'El tipo de negocio y sus módulos deciden lo que ves en el dock y en el inicio; solo el dueño los cambia.',
-      'Si vendes sin inventario exacto, puedes permitir ventas sin existencias.',
-      'Indica si tus precios ya incluyen el IVA.',
+      'Indica si tus precios ya incluyen el IVA y si se puede vender sin existencias.',
       'El pie del recibo sale al final de cada tiquete (por ejemplo, horarios o redes sociales).',
       'Si eres el dueño, al final puedes eliminar el negocio: queda suspendido y sus datos se conservan.',
     ],
