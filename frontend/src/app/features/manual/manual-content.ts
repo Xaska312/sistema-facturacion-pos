@@ -55,7 +55,7 @@ export const MANUAL: readonly ManualChapter[] = [
         summary: 'Cada negocio tiene sus propios productos, ventas, cajas y usuarios, separados de los de otros negocios.',
         steps: [
           'Confirma tu correo (es necesario para crear un negocio).',
-          'En "Elige el negocio con el que vas a trabajar", toca "+ Crear un negocio".',
+          'En "Elige el negocio con el que vas a trabajar", toca "Crear un negocio".',
           'Escribe el nombre comercial (el que ven tus clientes) y la razón social.',
           'Revisa el identificador que se propone: solo minúsculas, números y "_". No se puede cambiar después.',
           'Toca "Continuar" y luego "Crear negocio". En unos segundos entras al negocio.',
@@ -83,6 +83,20 @@ export const MANUAL: readonly ManualChapter[] = [
           'En cada pantalla, el botón de ayuda (?) explica qué hacer y algunas tienen un recorrido guiado.',
         ],
       },
+      {
+        id: 'moverse',
+        title: 'Moverse por la aplicación',
+        summary: 'Abajo de la pantalla está el dock con los módulos del día a día; "Todo" reúne los demás.',
+        steps: [
+          'Toca un ícono del dock para ir a Inicio, Vender, Mi caja, Ventas, Fiados, Pedidos o Productos (los que tu rol permita).',
+          'Toca "Todo" (o presiona Ctrl + K) para ver todos los módulos agrupados y buscar uno por su nombre.',
+          'En "Todo", escribe parte del nombre y presiona Enter para abrir el primero que coincide.',
+        ],
+        tips: [
+          'El logo de XASKA arriba a la izquierda siempre te lleva al inicio.',
+          'Los íconos toman el color de tu negocio (se cambia en Ajustes → Marca).',
+        ],
+      },
     ],
   },
   {
@@ -95,7 +109,7 @@ export const MANUAL: readonly ManualChapter[] = [
         title: 'Abrir la caja',
         summary: 'Para vender necesitas una caja abierta: la tuya o una caja compartida que ya abrió otra persona. La base es el efectivo que hay en el cajón al empezar.',
         steps: [
-          'Toca "Vender" en el menú (o "Mi caja").',
+          'Toca "Vender" en el dock de abajo o en el inicio (o "Mi caja").',
           'Si alguien ya abrió una caja compartida, toca "Vender en …" y listo: vendes en esa caja hasta que se cierre.',
           'Si no, elige la caja (si hay más de una libre) y escribe la base de efectivo: lo que hay en el cajón para dar cambio.',
           'Toca "Abrir caja".',

@@ -1,4 +1,5 @@
-import { MENU, initials, visibleMenu, withHeadings } from './menu';
+import { XICONS } from '../../shared/icons/xicons';
+import { DOCK_ROUTES, MENU, dockItems, initials, visibleMenu, withHeadings } from './menu';
 
 describe('visibleMenu', () => {
   it('oculta opciones sin permiso', () => {
@@ -46,9 +47,21 @@ describe('withHeadings', () => {
 });
 
 describe('MENU', () => {
-  it('cada opción tiene icono de PrimeIcons y una ruta única', () => {
+  it('cada opción tiene icono de PrimeIcons, ícono propio de XASKA y una ruta única', () => {
     expect(MENU.every((m) => /^pi pi-[a-z-]+$/.test(m.icon))).toBeTrue();
+    expect(MENU.every((m) => m.glyph in XICONS)).toBeTrue();
     expect(new Set(MENU.map((m) => m.route)).size).toBe(MENU.length);
+  });
+});
+
+describe('dockItems (decisión 263)', () => {
+  it('pone en el dock los módulos del día a día que el usuario puede ver, en orden', () => {
+    expect(DOCK_ROUTES.every((route) => MENU.some((m) => m.route === route))).toBeTrue();
+    const cashier = new Set(['sales:create', 'sales:read', 'cash:operate', 'products:read']);
+    expect(dockItems(visibleMenu((p) => cashier.has(p))).map((m) => m.label))
+      .toEqual(['Inicio', 'Vender', 'Mi caja', 'Ventas', 'Productos']);
+    expect(dockItems(visibleMenu(() => true)).length).toBe(7);
+    expect(dockItems(visibleMenu(() => false)).map((m) => m.label)).toEqual(['Inicio']);
   });
 });
 

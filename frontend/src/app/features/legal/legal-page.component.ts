@@ -32,7 +32,7 @@ import { LEGAL_OWNER, LegalKind, legalDocument } from './legal-content';
 
       @for (section of doc().sections; track section.id) {
         <section [id]="section.id" class="flex flex-col gap-2 scroll-mt-20" [attr.aria-labelledby]="section.id + '-title'">
-          <h2 [id]="section.id + '-title'" class="text-lg font-semibold">{{ section.title }}</h2>
+          <h2 [id]="section.id + '-title'" class="text-lg font-bold tracking-tight">{{ section.title }}</h2>
           @for (block of section.blocks; track $index) {
             @if (block.p) {
               <p class="leading-relaxed">{{ block.p }}</p>

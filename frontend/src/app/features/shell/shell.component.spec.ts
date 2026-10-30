@@ -7,15 +7,12 @@ import { EMPTY, of } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { Subscription } from '../../core/api/api.models';
 import { SubscriptionApi } from '../../core/api/subscription.api';
-import { UI_PREF_KEYS } from '../../shared/ui-prefs';
 import { ShellComponent } from './shell.component';
 
 @Component({ template: '<p>contenido</p>' })
 class PageComponent {}
 
 describe('ShellComponent', () => {
-  let savedCollapsed: string | null;
-
   const permissions = signal(new Set(['sales:create', 'cash:operate', 'branches:read']));
   const auth = {
     permissions,
@@ -27,8 +24,6 @@ describe('ShellComponent', () => {
   };
 
   beforeEach(async () => {
-    savedCollapsed = localStorage.getItem(UI_PREF_KEYS.sidebarCollapsed);
-    localStorage.removeItem(UI_PREF_KEYS.sidebarCollapsed);
     await TestBed.configureTestingModule({
       imports: [ShellComponent],
       providers: [
@@ -40,6 +35,7 @@ describe('ShellComponent', () => {
             children: [
               { path: '', title: 'Inicio', component: PageComponent },
               { path: 'sucursales', title: 'Sucursales', component: PageComponent },
+              { path: 'todo', title: 'Todo', component: PageComponent },
             ],
           },
         ]),
@@ -52,40 +48,25 @@ describe('ShellComponent', () => {
     }).compileComponents();
   });
 
-  afterEach(() => {
-    if (savedCollapsed === null) {
-      localStorage.removeItem(UI_PREF_KEYS.sidebarCollapsed);
-    } else {
-      localStorage.setItem(UI_PREF_KEYS.sidebarCollapsed, savedCollapsed);
-    }
-  });
-
-  it('muestra solo las opciones permitidas, con iconos, y el negocio actual', () => {
+  it('pone en el dock solo los módulos permitidos, con su ícono, más "Todo" (decisión 263)', () => {
     const fixture = TestBed.createComponent(ShellComponent);
     fixture.detectChanges();
     const element = fixture.nativeElement as HTMLElement;
-    const labels = Array.from(element.querySelectorAll('aside a.nav-link')).map((a) => a.textContent?.trim());
-    expect(labels).toEqual(['Inicio', 'Vender', 'Mi caja', 'Sucursales']);
-    expect(element.querySelectorAll('aside a.nav-link i.pi').length).toBe(4);
+    const dock = element.querySelector('nav[aria-label="Módulos"]') as HTMLElement;
+    const labels = Array.from(dock.querySelectorAll('a.dock-item')).map((a) => a.textContent?.trim());
+    expect(labels).toEqual(['Inicio', 'Vender', 'Mi caja', 'Todo']);
+    expect(dock.querySelectorAll('app-xicon svg').length).toBe(4);
+    expect(dock.querySelector('a[href="/app/todo"]')).not.toBeNull();
     expect(element.textContent).toContain('Tienda Demo');
     expect(element.querySelector('.avatar')?.textContent?.trim()).toBe('AP');
   });
 
-  it('contrae el menú a solo iconos y recuerda la elección', () => {
+  it('abre "Todo" con Ctrl + K', async () => {
     const fixture = TestBed.createComponent(ShellComponent);
     fixture.detectChanges();
-    const element = fixture.nativeElement as HTMLElement;
-    const toggle = element.querySelector<HTMLButtonElement>('aside button[aria-expanded]');
-    expect(toggle?.getAttribute('aria-expanded')).toBe('true');
-
-    toggle?.click();
-    fixture.detectChanges();
-    expect(toggle?.getAttribute('aria-expanded')).toBe('false');
-    expect(localStorage.getItem(UI_PREF_KEYS.sidebarCollapsed)).toBe('true');
-    // Las etiquetas siguen disponibles para lectores de pantalla.
-    const firstLabel = element.querySelector('aside a.nav-link span');
-    expect(firstLabel?.classList.contains('sr-only')).toBeTrue();
-    expect(firstLabel?.textContent).toContain('Inicio');
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }));
+    await fixture.whenStable();
+    expect(TestBed.inject(Router).url).toBe('/app/todo');
   });
 
   it('actualiza las migas de pan al navegar', async () => {

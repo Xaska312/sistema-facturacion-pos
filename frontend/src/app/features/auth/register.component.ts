@@ -9,15 +9,16 @@ import { AuthService } from '../../core/auth/auth.service';
 import { problemMessage } from '../../core/errors/problem';
 import { safeReturnUrl } from '../../core/auth/return-url';
 import { LEGAL_OWNER } from '../legal/legal-content';
+import { AuthLayoutComponent } from '../../shared/layout/auth-layout.component';
 
 @Component({
   selector: 'app-register',
-  imports: [ReactiveFormsModule, RouterLink, ButtonModule, InputTextModule, PasswordModule],
+  imports: [ReactiveFormsModule, RouterLink, ButtonModule, InputTextModule, PasswordModule, AuthLayoutComponent],
   template: `
-    <main class="min-h-screen flex items-center justify-center p-4">
+    <app-auth-layout width="md">
       <form [formGroup]="form" (ngSubmit)="submit()"
-            class="w-full max-w-sm card p-6 flex flex-col gap-4">
-        <h1 class="text-2xl font-semibold text-center">Crear cuenta</h1>
+            class="card p-6 sm:p-8 flex flex-col gap-4">
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Crear cuenta</h1>
 
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Nombre completo</span>
@@ -61,7 +62,7 @@ import { LEGAL_OWNER } from '../legal/legal-content';
                                 class="text-brand hover:underline">Inicia sesión</a>
         </p>
       </form>
-    </main>
+    </app-auth-layout>
   `,
 })
 export class RegisterComponent {

@@ -8,17 +8,17 @@ import { sparklinePoints } from './sparkline';
 @Component({
   selector: 'app-stat-card',
   template: `
-    <article class="card p-4 flex flex-col gap-2 min-w-0">
+    <article class="card p-5 flex flex-col gap-2 min-w-0">
       <div class="flex items-center justify-between gap-2">
         <p class="text-sm text-muted truncate">{{ label() }}</p>
         @if (icon()) {
-          <span class="inline-flex size-8 items-center justify-center rounded-lg bg-brand-soft text-brand-soft-fg shrink-0"
+          <span class="inline-flex size-9 items-center justify-center rounded-xl bg-brand-soft text-brand-soft-fg shrink-0"
                 aria-hidden="true">
             <i [class]="icon()"></i>
           </span>
         }
       </div>
-      <p class="text-2xl font-semibold tabular-nums truncate">{{ value() }}</p>
+      <p class="text-2xl font-extrabold tracking-tight tabular-nums truncate">{{ value() }}</p>
       <div class="flex items-end justify-between gap-2 min-h-7">
         <div class="text-xs">
           @if (change() !== null) {

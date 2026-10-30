@@ -117,7 +117,7 @@ interface CustomerChoice {
     </section>
 
     <section class="card p-4 mt-4 max-w-5xl flex flex-col gap-3">
-      <h2 class="font-semibold">Qué cotizas</h2>
+      <h2 class="font-bold tracking-tight">Qué cotizas</h2>
       <form class="flex flex-wrap gap-2" (ngSubmit)="searchProducts()">
         <input pInputText name="productSearch" class="flex-1 min-w-64" [(ngModel)]="productText"
                aria-label="Buscar producto o servicio" placeholder="Busca el producto o servicio (nombre o SKU) y presiona Enter" />

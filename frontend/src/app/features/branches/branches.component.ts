@@ -69,7 +69,7 @@ const CODE_PATTERN = /^[A-Za-z0-9_-]{2,20}$/;
         <div class="grid sm:grid-cols-2 gap-3">
           <div class="flex flex-col gap-1">
             <label for="branch-department" class="text-sm font-medium">Departamento</label>
-            <select id="branch-department" formControlName="departmentCode" class="border rounded-md px-2 py-2"
+            <select id="branch-department" formControlName="departmentCode" class="border rounded-[10px] px-3 min-h-11"
                     (change)="loadCities()">
               <option value="">—</option>
               @for (d of departments(); track d.code) {
@@ -79,7 +79,7 @@ const CODE_PATTERN = /^[A-Za-z0-9_-]{2,20}$/;
           </div>
           <div class="flex flex-col gap-1">
             <label for="branch-city" class="text-sm font-medium">Municipio</label>
-            <select id="branch-city" formControlName="cityCode" class="border rounded-md px-2 py-2">
+            <select id="branch-city" formControlName="cityCode" class="border rounded-[10px] px-3 min-h-11">
               <option value="">—</option>
               @for (c of cities(); track c.code) {
                 <option [value]="c.code">{{ c.name }}</option>

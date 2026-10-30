@@ -121,7 +121,7 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
         <section class="card p-4 flex flex-col gap-2">
           <header class="flex items-center justify-between">
             <div>
-              <h2 class="font-medium">Códigos de barras</h2>
+              <h2 class="font-bold tracking-tight">Códigos de barras</h2>
               <p class="text-xs text-muted">Escanea aquí el código del empaque. Si no tiene, toca "Generar código interno".</p>
             </div>
             @if (editable()) {
@@ -164,7 +164,7 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
           <section class="card p-4 flex flex-col gap-2">
             <header class="flex items-center justify-between">
               <div>
-                <h2 class="font-medium">Presentaciones</h2>
+                <h2 class="font-bold tracking-tight">Presentaciones</h2>
                 <p class="text-xs text-muted">Ej.: una caja de 24 unidades. Si no pones precio, se calcula precio base × factor.</p>
               </div>
               @if (editable()) {
@@ -207,7 +207,7 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
             <section class="card p-4 flex flex-col gap-2">
               <header class="flex items-center justify-between">
                 <div>
-                  <h2 class="font-medium">Precios en otras listas</h2>
+                  <h2 class="font-bold tracking-tight">Precios en otras listas</h2>
                   <p class="text-xs text-muted">Si una lista no tiene precio para una unidad, se usa el de la lista General.</p>
                 </div>
                 @if (editable()) {

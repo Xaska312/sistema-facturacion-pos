@@ -7,6 +7,7 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { CashSession, RegisterOption } from '../../core/api/api.models';
 import { CashApi } from '../../core/api/cash.api';
 import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
+import { XIconComponent } from '../../shared/icons/xicon.component';
 import { permissionFlag } from '../../core/auth/permission-flag';
 
 /**
@@ -16,15 +17,15 @@ import { permissionFlag } from '../../core/auth/permission-flag';
  */
 @Component({
   selector: 'app-open-cash',
-  imports: [FormsModule, PesosInputDirective, RouterLink, ButtonModule, SkeletonModule],
+  imports: [FormsModule, PesosInputDirective, RouterLink, ButtonModule, SkeletonModule, XIconComponent],
   template: `
-    <section class="card w-full max-w-xl p-6 flex flex-col gap-5" aria-labelledby="open-cash-title">
+    <section class="card w-full max-w-xl p-6 flex flex-col gap-5 rounded-[1.75rem]" aria-labelledby="open-cash-title">
       <div class="flex items-start gap-3">
-        <span class="size-12 shrink-0 rounded-full bg-brand-soft text-brand-soft-fg inline-flex items-center justify-center">
-          <i class="pi pi-wallet text-xl" aria-hidden="true"></i>
+        <span class="size-14 shrink-0 rounded-2xl bg-brand-soft inline-flex items-center justify-center">
+          <app-xicon name="cash" [size]="32" />
         </span>
         <div>
-          <h1 id="open-cash-title" class="text-xl font-semibold">No tienes una caja abierta</h1>
+          <h1 id="open-cash-title" class="text-xl font-extrabold tracking-tight">No tienes una caja abierta</h1>
           <p class="text-muted">
             @if (joinable().length > 0) {
               Vende en la caja que ya está abierta{{ canOperate() ? ' o abre la tuya.' : '.' }}

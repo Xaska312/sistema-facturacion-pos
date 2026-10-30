@@ -106,7 +106,7 @@ import { partyName, partyPhone, quoteBadge, quoteWhatsAppLink, validLabel } from
       }
 
       <section class="card p-4 mb-4">
-        <h2 class="font-semibold mb-2">Qué se cotizó</h2>
+        <h2 class="font-bold tracking-tight mb-2">Qué se cotizó</h2>
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead class="bg-surface-alt text-left">

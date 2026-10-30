@@ -1,5 +1,5 @@
 import { Product, ProductModelRow } from '../../core/api/api.models';
-import { firstName, gridCards, groupSearchResults, modelNameOf, searchRows } from './pos-cards';
+import { firstName, gridCards, groupSearchResults, initial, modelNameOf, searchRows } from './pos-cards';
 
 const product = (id: string, name: string, over: Partial<Product> = {}): Product => ({
   id, sku: id.toUpperCase(), name, description: null, categoryId: null, categoryName: null, baseUnitId: 'u',
@@ -51,5 +51,12 @@ describe('pos-cards (fase 8d)', () => {
     const rows = searchRows([product('x', 'Tenis de mesa')], [model('m', 'Tenis Runner')]);
     expect(rows.map((r) => `${r.kind}:${r.kind === 'model' ? r.name : r.product.name}`))
       .toEqual(['product:Tenis de mesa', 'model:Tenis Runner']);
+  });
+
+  it('toma la inicial de la baldosa saltando signos y en mayúscula', () => {
+    expect(initial('gaseosa 400 ml')).toBe('G');
+    expect(initial('"ñame" por libra')).toBe('Ñ');
+    expect(initial('  3 x 2 jabón')).toBe('3');
+    expect(initial('***')).toBe('·');
   });
 });

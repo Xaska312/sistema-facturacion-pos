@@ -32,7 +32,7 @@ const GAP = 12;
         <section #card class="tour-card" role="dialog" aria-modal="true" aria-labelledby="tour-title"
                  aria-describedby="tour-text" [style.top.px]="cardTop()" [style.left.px]="cardLeft()">
           <p class="text-xs font-medium text-muted">Paso {{ active.index + 1 }} de {{ active.tour.steps.length }}</p>
-          <h2 id="tour-title" class="text-base font-semibold mt-1">{{ step.title }}</h2>
+          <h2 id="tour-title" class="text-base font-bold tracking-tight mt-1">{{ step.title }}</h2>
           <p id="tour-text" class="text-sm text-muted mt-1">{{ step.text }}</p>
           <div class="flex items-center gap-2 mt-4">
             <button type="button" class="tour-link" (click)="tour.finish()">Saltar</button>

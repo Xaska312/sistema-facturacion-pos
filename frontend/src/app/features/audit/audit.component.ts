@@ -50,17 +50,17 @@ export function actorText(name: string | null, id: string | null): string {
                     (queryChange)="load($event)">
       <label tableToolbar class="flex items-center gap-2 text-sm">
         <span>Desde</span>
-        <input type="date" class="border rounded-md px-2 py-2" [max]="filters.to ?? ''"
+        <input type="date" class="border rounded-[10px] px-3 min-h-11" [max]="filters.to ?? ''"
                [(ngModel)]="filters.from" (ngModelChange)="reloadFirstPage()" />
       </label>
       <label tableToolbar class="flex items-center gap-2 text-sm">
         <span>Hasta</span>
-        <input type="date" class="border rounded-md px-2 py-2" [min]="filters.from ?? ''"
+        <input type="date" class="border rounded-[10px] px-3 min-h-11" [min]="filters.from ?? ''"
                [(ngModel)]="filters.to" (ngModelChange)="reloadFirstPage()" />
       </label>
       <label tableToolbar class="flex items-center gap-2 text-sm">
         <span>Usuario</span>
-        <select class="border rounded-md px-2 py-2 max-w-48" [(ngModel)]="filters.actorId" (ngModelChange)="reloadFirstPage()">
+        <select class="border rounded-[10px] px-3 min-h-11 max-w-48" [(ngModel)]="filters.actorId" (ngModelChange)="reloadFirstPage()">
           <option [ngValue]="null">Todos</option>
           @for (actor of actors(); track actor.id) {
             <option [ngValue]="actor.id">{{ actorName(actor) }}</option>
@@ -69,7 +69,7 @@ export function actorText(name: string | null, id: string | null): string {
       </label>
       <label tableToolbar class="flex items-center gap-2 text-sm">
         <span>Módulo</span>
-        <select class="border rounded-md px-2 py-2 max-w-48" [ngModel]="filters.entity" (ngModelChange)="changeEntity($event)">
+        <select class="border rounded-[10px] px-3 min-h-11 max-w-48" [ngModel]="filters.entity" (ngModelChange)="changeEntity($event)">
           <option [ngValue]="null">Todos</option>
           @for (option of entities(); track option.value) {
             <option [ngValue]="option.value">{{ option.label }}</option>
@@ -78,7 +78,7 @@ export function actorText(name: string | null, id: string | null): string {
       </label>
       <label tableToolbar class="flex items-center gap-2 text-sm">
         <span>Acción</span>
-        <select class="border rounded-md px-2 py-2 max-w-56" [(ngModel)]="filters.action" (ngModelChange)="reloadFirstPage()">
+        <select class="border rounded-[10px] px-3 min-h-11 max-w-56" [(ngModel)]="filters.action" (ngModelChange)="reloadFirstPage()">
           <option [ngValue]="null">Todas</option>
           @for (option of actionChoices(); track option.value) {
             <option [ngValue]="option.value">{{ option.label }}</option>

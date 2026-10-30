@@ -2,6 +2,7 @@ import { Component, DestroyRef, inject, input, output, signal, viewChild } from 
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { Popover, PopoverModule } from 'primeng/popover';
+import { XIconComponent } from '../../shared/icons/xicon.component';
 import { formatCop, formatQuantity } from '../../shared/money';
 import { CartLine, CartTotals, lineAmounts, quantityForAmount, stepQuantity } from './sale-math';
 
@@ -36,98 +37,107 @@ const UNDO_MS = 6000;
  */
 @Component({
   selector: 'app-cart-panel',
-  imports: [FormsModule, ButtonModule, PopoverModule],
+  imports: [FormsModule, ButtonModule, PopoverModule, XIconComponent],
   template: `
-    <aside aria-label="Venta actual" class="card h-full flex flex-col min-h-0">
-      <div class="px-3 py-2 border-b flex items-center gap-2">
-        <i class="pi pi-user text-muted" aria-hidden="true"></i>
-        <div class="flex-1 min-w-0">
-          <p class="text-xs text-muted">Cliente</p>
-          <p class="font-medium truncate">{{ customerName() }}</p>
-        </div>
-        <button type="button" class="pos-btn text-brand" [disabled]="disabled()" (click)="customer.emit()">Cambiar</button>
-      </div>
-
-      <div class="flex-1 min-h-0 overflow-y-auto">
-        @if (lines().length === 0) {
-          <div class="h-full min-h-32 flex flex-col items-center justify-center gap-2 p-6 text-center text-muted">
-            <i class="pi pi-barcode text-3xl" aria-hidden="true"></i>
-            <p>Busca un producto, tócalo en la lista o escanéalo para empezar la venta.</p>
+    <aside aria-label="Venta actual" class="h-full flex flex-col gap-3 min-h-0">
+      <div class="card flex-1 flex flex-col min-h-0 overflow-hidden">
+        <div class="px-3 py-2 border-b flex items-center gap-2">
+          <app-xicon name="customers" [size]="26" />
+          <div class="flex-1 min-w-0">
+            <p class="text-xs text-muted">Cliente</p>
+            <p class="font-medium truncate">{{ customerName() }}</p>
           </div>
-        } @else {
-          <ul class="divide-y" aria-label="Productos de la venta">
-            @for (line of lines(); track line.key) {
-              @let short = shortages().get(line.key);
-              <li class="px-2 py-1.5 flex items-center gap-1" [class.bg-warning-soft]="short !== undefined">
-                <button type="button" class="flex-1 min-w-0 min-h-11 text-left px-1 rounded-lg hover:bg-surface-alt"
-                        aria-haspopup="dialog" [attr.aria-label]="(line.openPrice ? 'Editar precio, cantidad y descuento: ' : 'Editar cantidad y descuento: ') + line.name"
-                        (click)="openEditor($event, line)">
-                  <span class="block font-medium leading-tight truncate">{{ line.name }}</span>
-                  <span class="block text-xs text-muted">
-                    {{ q(line.quantity) }} {{ line.unitCode }} × {{ cop(line.unitPrice) }}
-                    @if (line.discountPercent > 0) {
-                      <span class="text-success"> · −{{ q(line.discountPercent) }} %</span>
-                    }
-                  </span>
-                  @if (short !== undefined) {
-                    <span class="flex items-center gap-1 text-xs font-medium text-warning-soft-fg">
-                      <i class="pi pi-exclamation-triangle text-xs" aria-hidden="true"></i>
-                      {{ short > 0 ? 'Solo hay ' + q(short) + ' en existencia' : 'Agotado en esta sucursal' }}
+          <button type="button" class="pos-btn text-brand" [disabled]="disabled()" (click)="customer.emit()">Cambiar</button>
+        </div>
+
+        <div class="flex-1 min-h-0 overflow-y-auto">
+          @if (lines().length === 0) {
+            <div class="h-full min-h-32 flex flex-col items-center justify-center gap-2 p-6 text-center text-muted">
+              <app-xicon name="sell" [size]="44" />
+              <p>Busca un producto, tócalo en la lista o escanéalo para empezar la venta.</p>
+            </div>
+          } @else {
+            <ul class="divide-y" aria-label="Productos de la venta">
+              @for (line of lines(); track line.key) {
+                @let short = shortages().get(line.key);
+                <li class="px-2 py-1.5 flex items-center gap-1" [class.bg-warning-soft]="short !== undefined">
+                  <button type="button" class="flex-1 min-w-0 min-h-11 text-left px-1 rounded-lg hover:bg-surface-alt"
+                          aria-haspopup="dialog" [attr.aria-label]="(line.openPrice ? 'Editar precio, cantidad y descuento: ' : 'Editar cantidad y descuento: ') + line.name"
+                          (click)="openEditor($event, line)">
+                    <span class="block font-medium leading-tight truncate">{{ line.name }}</span>
+                    <span class="block text-xs text-muted">
+                      {{ q(line.quantity) }} {{ line.unitCode }} × {{ cop(line.unitPrice) }}
+                      @if (line.discountPercent > 0) {
+                        <span class="text-success"> · −{{ q(line.discountPercent) }} %</span>
+                      }
                     </span>
-                  }
-                </button>
-                <span class="w-20 text-right font-semibold whitespace-nowrap">{{ cop(lineTotal(line)) }}</span>
-                <div class="flex items-center" role="group" [attr.aria-label]="'Cantidad de ' + line.name">
-                  <button type="button" class="qty-btn" [attr.aria-label]="'Uno menos de ' + line.name"
-                          [disabled]="disabled()" (click)="step(line, -1)">
-                    <i class="pi pi-minus" aria-hidden="true"></i>
+                    @if (short !== undefined) {
+                      <span class="flex items-center gap-1 text-xs font-medium text-warning-soft-fg">
+                        <i class="pi pi-exclamation-triangle text-xs" aria-hidden="true"></i>
+                        {{ short > 0 ? 'Solo hay ' + q(short) + ' en existencia' : 'Agotado en esta sucursal' }}
+                      </span>
+                    }
                   </button>
-                  <span class="min-w-8 text-center font-medium tabular-nums" aria-live="polite">{{ q(line.quantity) }}</span>
-                  <button type="button" class="qty-btn" [attr.aria-label]="'Uno más de ' + line.name"
-                          [disabled]="disabled()" (click)="step(line, 1)">
-                    <i class="pi pi-plus" aria-hidden="true"></i>
+                  <span class="w-20 text-right font-semibold whitespace-nowrap">{{ cop(lineTotal(line)) }}</span>
+                  <div class="flex items-center" role="group" [attr.aria-label]="'Cantidad de ' + line.name">
+                    <button type="button" class="qty-btn" [attr.aria-label]="'Uno menos de ' + line.name"
+                            [disabled]="disabled()" (click)="step(line, -1)">
+                      <i class="pi pi-minus" aria-hidden="true"></i>
+                    </button>
+                    <span class="min-w-8 text-center font-medium tabular-nums" aria-live="polite">{{ q(line.quantity) }}</span>
+                    <button type="button" class="qty-btn" [attr.aria-label]="'Uno más de ' + line.name"
+                            [disabled]="disabled()" (click)="step(line, 1)">
+                      <i class="pi pi-plus" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                  <button type="button" class="qty-btn text-danger" [attr.aria-label]="'Quitar ' + line.name"
+                          [disabled]="disabled()" (click)="remove(line)">
+                    <i class="pi pi-trash" aria-hidden="true"></i>
                   </button>
-                </div>
-                <button type="button" class="qty-btn text-danger" [attr.aria-label]="'Quitar ' + line.name"
-                        [disabled]="disabled()" (click)="remove(line)">
-                  <i class="pi pi-trash" aria-hidden="true"></i>
-                </button>
-              </li>
-            }
-          </ul>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+
+        @if (removed(); as r) {
+          <div role="status" class="mx-2 mb-2 px-3 py-1 rounded-lg bg-fg text-surface flex items-center gap-2 text-sm">
+            <span class="flex-1 truncate">Se quitó {{ r.line.name }}</span>
+            <button type="button" class="pos-btn font-semibold underline" (click)="undo()">Deshacer</button>
+          </div>
         }
+
       </div>
 
-      @if (removed(); as r) {
-        <div role="status" class="mx-2 mb-2 px-3 py-1 rounded-lg bg-fg text-surface flex items-center gap-2 text-sm">
-          <span class="flex-1 truncate">Se quitó {{ r.line.name }}</span>
-          <button type="button" class="pos-btn font-semibold underline" (click)="undo()">Deshacer</button>
+      <!-- Total y Cobrar en la baldosa de color, como la baldosa principal del inicio (identidad parte 3). -->
+      <div class="total-tile">
+        <div class="flex flex-col gap-0.5 text-sm">
+          <p class="flex justify-between soft"><span>Artículos</span><span class="tabular-nums">{{ q(totals().items) }}</span></p>
+          @if (totals().discount > 0) {
+            <p class="flex justify-between soft"><span>Descuentos</span><span class="tabular-nums">−{{ cop(totals().discount) }}</span></p>
+          }
+          <p class="flex justify-between soft"><span>{{ pricesIncludeTax() ? 'Impuestos incluidos' : 'Impuestos' }}</span><span class="tabular-nums">{{ cop(totals().tax) }}</span></p>
         </div>
-      }
-
-      <div class="border-t p-3 flex flex-col gap-1 text-sm">
-        <p class="flex justify-between text-muted"><span>Artículos</span><span>{{ q(totals().items) }}</span></p>
-        @if (totals().discount > 0) {
-          <p class="flex justify-between text-success"><span>Descuentos</span><span>−{{ cop(totals().discount) }}</span></p>
-        }
-        <p class="flex justify-between text-muted"><span>{{ pricesIncludeTax() ? 'Impuestos incluidos' : 'Impuestos' }}</span><span>{{ cop(totals().tax) }}</span></p>
-        <p class="flex justify-between items-baseline text-3xl font-semibold mt-1">
-          <span class="text-lg">Total</span><span>{{ cop(totals().total) }}</span>
+        <p class="flex justify-between items-baseline gap-2 mt-1">
+          <span class="text-lg font-semibold">Total</span>
+          <span class="text-4xl font-extrabold tracking-tight tabular-nums">{{ cop(totals().total) }}</span>
         </p>
         <div data-tour="charge" class="mt-2">
-          <p-button styleClass="w-full min-h-14 text-xl font-semibold" size="large" icon="pi pi-wallet"
-                    label="Cobrar (F4)" [disabled]="!canCharge()" (onClick)="charge.emit()" />
+          <button type="button" class="charge-btn" aria-label="Cobrar (F4)" [disabled]="!canCharge()" (click)="charge.emit()">
+            <app-xicon name="cash" [size]="28" />
+            <span>Cobrar</span><span class="key" aria-hidden="true">F4</span>
+          </button>
         </div>
-        <div class="flex flex-wrap items-center justify-between gap-x-2">
-          <button type="button" class="pos-btn text-muted" [disabled]="lines().length === 0" (click)="cancelSale.emit()">
+        <div class="flex flex-wrap items-center justify-between gap-x-2 mt-1">
+          <button type="button" class="pos-btn on-brand" [disabled]="lines().length === 0" (click)="cancelSale.emit()">
             Cancelar venta (Esc)
           </button>
-          <button type="button" class="pos-btn text-brand" [disabled]="lines().length === 0 || disabled()"
+          <button type="button" class="pos-btn on-brand" [disabled]="lines().length === 0 || disabled()"
                   title="Guarda esta venta para atender a otro cliente y retomarla después" (click)="hold.emit()">
             <i class="pi pi-pause" aria-hidden="true"></i>Pausar venta
           </button>
           @if (lastSaleNumber(); as number) {
-            <button type="button" class="pos-btn text-brand" (click)="reprint.emit()">
+            <button type="button" class="pos-btn on-brand" (click)="reprint.emit()">
               <i class="pi pi-print" aria-hidden="true"></i>Reimprimir {{ number }}
             </button>
           }
@@ -208,6 +218,70 @@ const UNDO_MS = 6000;
     .pos-btn:disabled {
       opacity: 0.5;
       cursor: not-allowed;
+    }
+    .total-tile {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      padding: 1.125rem 1.25rem 0.75rem;
+      border-radius: 1.75rem;
+      background: linear-gradient(160deg, var(--brand), var(--brand-hover));
+      color: var(--brand-contrast);
+      box-shadow: var(--elevation-card);
+    }
+    .soft {
+      opacity: 0.85;
+    }
+    /* Cobrar: contraste invertido sobre la baldosa de color (texto de marca sobre el color de contraste). */
+    .charge-btn {
+      --xicon-fill: var(--brand);
+      width: 100%;
+      min-height: 4rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      border-radius: 1.25rem;
+      background: var(--brand-contrast);
+      color: var(--brand);
+      font-size: 1.375rem;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      transition: transform 0.1s, filter 0.15s;
+    }
+    .charge-btn:hover:not(:disabled) {
+      filter: brightness(0.96);
+    }
+    .charge-btn:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+    .charge-btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+    .charge-btn:focus-visible {
+      outline: 3px solid var(--brand-contrast);
+      outline-offset: 3px;
+    }
+    .key {
+      margin-left: 0.375rem;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.8125rem;
+      font-weight: 700;
+      background: var(--brand-soft);
+      color: var(--brand-soft-text);
+      vertical-align: middle;
+    }
+    .pos-btn.on-brand {
+      color: var(--brand-contrast);
+    }
+    .pos-btn.on-brand:hover:not(:disabled) {
+      background: color-mix(in srgb, var(--brand-contrast) 14%, transparent);
+    }
+    .pos-btn.on-brand:focus-visible {
+      outline-color: var(--brand-contrast);
     }
   `,
 })

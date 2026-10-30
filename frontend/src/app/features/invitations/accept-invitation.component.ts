@@ -7,6 +7,7 @@ import { AccessApi } from '../../core/api/access.api';
 import { InvitationPreview } from '../../core/api/api.models';
 import { AuthService } from '../../core/auth/auth.service';
 import { problemMessage } from '../../core/errors/problem';
+import { AuthLayoutComponent } from '../../shared/layout/auth-layout.component';
 
 /**
  * Página pública del enlace de invitación. Si no hay sesión, ofrece iniciar sesión o registrarse
@@ -14,18 +15,18 @@ import { problemMessage } from '../../core/errors/problem';
  */
 @Component({
   selector: 'app-accept-invitation',
-  imports: [RouterLink, DatePipe, ButtonModule],
+  imports: [RouterLink, DatePipe, ButtonModule, AuthLayoutComponent],
   template: `
-    <main class="min-h-screen flex items-center justify-center p-4">
-      <section class="w-full max-w-md card p-6 flex flex-col gap-4">
+    <app-auth-layout width="md">
+      <section class="card p-6 sm:p-8 flex flex-col gap-4">
         @if (error()) {
-          <h1 class="text-xl font-semibold">Invitación no disponible</h1>
+          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Invitación no disponible</h1>
           <p class="text-muted">{{ error() }}</p>
           <a routerLink="/login" class="text-brand hover:underline">Ir a iniciar sesión</a>
         } @else {
           <!-- Angular 19 solo permite "as" en el primer bloque del @if -->
           @if (preview(); as p) {
-            <h1 class="text-xl font-semibold">Te invitaron a {{ p.tenantName }}</h1>
+            <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Te invitaron a {{ p.tenantName }}</h1>
             <p class="text-muted">
               {{ p.invitedByName ?? 'Un administrador' }} te invitó a trabajar en <strong>{{ p.tenantName }}</strong>
               con el correo <strong>{{ p.email }}</strong>.
@@ -57,7 +58,7 @@ import { problemMessage } from '../../core/errors/problem';
           }
         }
       </section>
-    </main>
+    </app-auth-layout>
   `,
 })
 export class AcceptInvitationComponent implements OnInit {

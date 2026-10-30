@@ -96,8 +96,22 @@ const TOAST_LIGHT = {
   error: { color: '{red.700}', detailColor: '{surface.700}' },
 };
 
+/**
+ * Esquinas más redondas que Aura (identidad, decisión 264): campos y botones 10px, menús 14px y diálogos 22px,
+ * en sintonía con las baldosas del inicio y las tarjetas (1.25rem en src/styles.css).
+ */
+const RADIUS = { none: '0', xs: '4px', sm: '6px', md: '10px', lg: '14px', xl: '22px' } as const;
+
 export const AppPreset = definePreset(Aura, {
+  primitive: {
+    borderRadius: RADIUS,
+  },
   semantic: {
+    overlay: {
+      select: { borderRadius: '{border.radius.lg}' },
+      popover: { borderRadius: '{border.radius.lg}' },
+      modal: { padding: '1.5rem' },
+    },
     primary: INDIGO,
     colorScheme: {
       light: {
@@ -148,6 +162,9 @@ export const AppPreset = definePreset(Aura, {
   },
   components: {
     button: {
+      root: {
+        label: { fontWeight: '600' },
+      },
       colorScheme: {
         light: {
           root: solidButtons(),
@@ -155,6 +172,9 @@ export const AppPreset = definePreset(Aura, {
           text: tintedButtons(false),
         },
       },
+    },
+    dialog: {
+      title: { fontSize: '1.375rem', fontWeight: '800' },
     },
     toast: {
       colorScheme: {

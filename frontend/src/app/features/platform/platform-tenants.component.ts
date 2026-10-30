@@ -31,7 +31,7 @@ import { formatDate } from '../../shared/format';
                     (queryChange)="load($event)">
       <label tableToolbar class="flex items-center gap-2 text-sm">
         <span>Estado</span>
-        <select class="border rounded-md px-2 py-2" [(ngModel)]="status" (ngModelChange)="reloadFirstPage()">
+        <select class="border rounded-[10px] px-3 min-h-11" [(ngModel)]="status" (ngModelChange)="reloadFirstPage()">
           <option [ngValue]="null">Todos</option>
           @for (option of statusOptions; track option.value) {
             <option [ngValue]="option.value">{{ option.label }}</option>

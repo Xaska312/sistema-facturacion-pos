@@ -30,7 +30,7 @@ const PREFIXES = ['2', '20', '21', '22', '23', '24', '25', '26', '27', '28'];
 
     @if (format(); as f) {
       <section class="card p-4 md:p-6 flex flex-col gap-4 max-w-3xl">
-        <h2 class="text-base font-semibold">Formato de las etiquetas</h2>
+        <h2 class="text-base font-bold tracking-tight">Formato de las etiquetas</h2>
         <fieldset class="flex flex-col gap-4" [disabled]="!canManage()">
           <label class="flex items-center gap-2 text-sm">
             <input type="checkbox" [(ngModel)]="f.enabled" (ngModelChange)="touch()" />
@@ -97,7 +97,7 @@ const PREFIXES = ['2', '20', '21', '22', '23', '24', '25', '26', '27', '28'];
     <section class="mt-6 max-w-3xl flex flex-col gap-3">
       <div class="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 class="text-base font-semibold">PLU de los productos</h2>
+          <h2 class="text-base font-bold tracking-tight">PLU de los productos</h2>
           <p class="text-sm text-muted">El mismo número que tiene cada producto en la báscula. Solo productos que se venden por peso (KG, LB…).</p>
         </div>
         @if (canManage()) {

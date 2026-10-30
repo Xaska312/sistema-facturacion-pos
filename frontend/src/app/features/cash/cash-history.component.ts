@@ -37,7 +37,7 @@ import { LatestRequest } from '../../shared/latest-request';
                     (queryChange)="load($event)">
       <label tableToolbar class="flex items-center gap-2 text-sm">
         <span>Estado</span>
-        <select class="border rounded-md px-2 py-2" [(ngModel)]="filters.status" (ngModelChange)="reloadFirstPage()">
+        <select class="border rounded-[10px] px-3 min-h-11" [(ngModel)]="filters.status" (ngModelChange)="reloadFirstPage()">
           <option [ngValue]="null">Todas</option>
           <option [ngValue]="'OPEN'">Abiertas</option>
           <option [ngValue]="'CLOSED'">Cerradas</option>
@@ -45,11 +45,11 @@ import { LatestRequest } from '../../shared/latest-request';
       </label>
       <label tableToolbar class="flex items-center gap-2 text-sm">
         <span>Desde</span>
-        <input type="date" class="border rounded-md px-2 py-2" [(ngModel)]="filters.from" (ngModelChange)="reloadFirstPage()" />
+        <input type="date" class="border rounded-[10px] px-3 min-h-11" [(ngModel)]="filters.from" (ngModelChange)="reloadFirstPage()" />
       </label>
       <label tableToolbar class="flex items-center gap-2 text-sm">
         <span>Hasta</span>
-        <input type="date" class="border rounded-md px-2 py-2" [(ngModel)]="filters.to" (ngModelChange)="reloadFirstPage()" />
+        <input type="date" class="border rounded-[10px] px-3 min-h-11" [(ngModel)]="filters.to" (ngModelChange)="reloadFirstPage()" />
       </label>
       <ng-template #actions let-row>
         <p-button label="Informe" icon="pi pi-file" size="small" [text]="true" (onClick)="openReport(row)" />

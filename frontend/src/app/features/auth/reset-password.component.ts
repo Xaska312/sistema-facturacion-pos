@@ -7,6 +7,7 @@ import { PasswordModule } from 'primeng/password';
 import { AuthService } from '../../core/auth/auth.service';
 import { InlineErrorScope } from '../../core/errors/inline-errors';
 import { problemMessage } from '../../core/errors/problem';
+import { AuthLayoutComponent } from '../../shared/layout/auth-layout.component';
 
 /** Las dos contraseñas deben coincidir. */
 export function samePasswords(group: AbstractControl): ValidationErrors | null {
@@ -18,11 +19,11 @@ export function samePasswords(group: AbstractControl): ValidationErrors | null {
 /** Página del enlace "Crear una contraseña nueva" ({@code /restablecer-clave?token=…}). */
 @Component({
   selector: 'app-reset-password',
-  imports: [ReactiveFormsModule, RouterLink, ButtonModule, PasswordModule],
+  imports: [ReactiveFormsModule, RouterLink, ButtonModule, PasswordModule, AuthLayoutComponent],
   template: `
-    <main class="min-h-screen flex items-center justify-center p-4">
-      <form [formGroup]="form" (ngSubmit)="submit()" class="w-full max-w-sm card p-6 flex flex-col gap-4">
-        <h1 class="text-2xl font-semibold text-center">Contraseña nueva</h1>
+    <app-auth-layout>
+      <form [formGroup]="form" (ngSubmit)="submit()" class="card p-6 sm:p-8 flex flex-col gap-4">
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Contraseña nueva</h1>
         @if (!token()) {
           <p class="text-danger" role="alert">El enlace está incompleto. Ábrelo desde el correo o pide uno nuevo.</p>
         } @else {
@@ -49,7 +50,7 @@ export function samePasswords(group: AbstractControl): ValidationErrors | null {
         }
         <a routerLink="/recuperar-clave" class="text-sm text-center text-brand hover:underline">Pedir un enlace nuevo</a>
       </form>
-    </main>
+    </app-auth-layout>
   `,
 })
 export class ResetPasswordComponent {

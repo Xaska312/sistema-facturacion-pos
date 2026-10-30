@@ -41,7 +41,7 @@ const TIMEZONE_LABEL: Record<string, string> = {
 
     @if (sub(); as s) {
       <section class="card p-4 md:p-6 mb-6 flex flex-col gap-4 max-w-2xl">
-        <h2 class="text-base font-semibold">Suscripción</h2>
+        <h2 class="text-base font-bold tracking-tight">Suscripción</h2>
         <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
           <div class="flex flex-col gap-1">
             <dt class="text-muted">Plan</dt>
@@ -195,7 +195,7 @@ const TIMEZONE_LABEL: Record<string, string> = {
 
     @if (isOwner()) {
       <section class="card p-4 md:p-6 mt-6 max-w-2xl border border-danger" aria-labelledby="danger-title">
-        <h2 id="danger-title" class="text-base font-semibold text-danger">Eliminar el negocio</h2>
+        <h2 id="danger-title" class="text-base font-bold tracking-tight text-danger">Eliminar el negocio</h2>
         <p class="text-sm text-muted mt-1">
           El negocio queda suspendido: nadie podrá entrar y se cierran todas las sesiones abiertas. Los datos no se
           borran (ventas, inventario, clientes); para recuperarlo hay que pedirlo a soporte.

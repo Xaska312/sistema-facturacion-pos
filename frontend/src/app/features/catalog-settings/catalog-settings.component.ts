@@ -164,7 +164,7 @@ export function settingRows(tab: Tab, data: { tree: { category: Category; depth:
         @if (tab() === 'categories') {
           <div class="flex flex-col gap-1">
             <label for="setting-parent" class="text-sm font-medium">Dentro de</label>
-            <select id="setting-parent" class="border rounded-md px-2 py-2" [(ngModel)]="parentId">
+            <select id="setting-parent" class="border rounded-[10px] px-3 min-h-11" [(ngModel)]="parentId">
               <option value="">— Categoría principal —</option>
               @for (node of tree(); track node.category.id) {
                 @if (!excludedParents().has(node.category.id) && node.category.active) {
@@ -183,7 +183,7 @@ export function settingRows(tab: Tab, data: { tree: { category: Category; depth:
           @if (!editingId) {
             <div class="flex flex-col gap-1">
               <label for="setting-tax-type" class="text-sm font-medium">Tipo</label>
-              <select id="setting-tax-type" class="border rounded-md px-2 py-2" [(ngModel)]="taxType">
+              <select id="setting-tax-type" class="border rounded-[10px] px-3 min-h-11" [(ngModel)]="taxType">
                 @for (type of taxTypes; track type) {
                   <option [value]="type">{{ taxTypeLabel[type] }}</option>
                 }

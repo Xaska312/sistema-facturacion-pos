@@ -44,15 +44,15 @@ const SALE_STATUS: Record<SaleStatus, StatusKey> = { COMPLETED: 'completed', VOI
                     (queryChange)="load($event)">
       <label tableToolbar class="flex items-center gap-2 text-sm">
         <span>Desde</span>
-        <input type="date" class="border rounded-md px-2 py-2" [(ngModel)]="filters.from" (ngModelChange)="reloadFirstPage()" />
+        <input type="date" class="border rounded-[10px] px-3 min-h-11" [(ngModel)]="filters.from" (ngModelChange)="reloadFirstPage()" />
       </label>
       <label tableToolbar class="flex items-center gap-2 text-sm">
         <span>Hasta</span>
-        <input type="date" class="border rounded-md px-2 py-2" [(ngModel)]="filters.to" (ngModelChange)="reloadFirstPage()" />
+        <input type="date" class="border rounded-[10px] px-3 min-h-11" [(ngModel)]="filters.to" (ngModelChange)="reloadFirstPage()" />
       </label>
       <label tableToolbar class="flex items-center gap-2 text-sm">
         <span>Estado</span>
-        <select class="border rounded-md px-2 py-2" [(ngModel)]="filters.status" (ngModelChange)="reloadFirstPage()">
+        <select class="border rounded-[10px] px-3 min-h-11" [(ngModel)]="filters.status" (ngModelChange)="reloadFirstPage()">
           <option [ngValue]="null">Todas</option>
           <option [ngValue]="'COMPLETED'">Registradas</option>
           <option [ngValue]="'VOIDED'">Anuladas</option>

@@ -116,7 +116,7 @@ const BARCODE = /^[A-Za-z0-9.-]{1,48}$/;
 
         @if (isNew()) {
           <section class="card p-4 flex flex-col gap-4">
-            <h2 class="font-medium">Tallas y colores</h2>
+            <h2 class="font-bold tracking-tight">Tallas y colores</h2>
             <label class="flex flex-col gap-1 max-w-sm">
               <span class="text-sm font-medium">Escala de tallas</span>
               <select formControlName="sizeScaleId" class="border rounded px-2 py-2" (change)="newSizes.set([])">
@@ -165,7 +165,7 @@ const BARCODE = /^[A-Za-z0-9.-]{1,48}$/;
       <section class="card p-4 mt-4 max-w-5xl flex flex-col gap-3">
         <header class="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h2 class="font-medium">Tallas y códigos de barras</h2>
+            <h2 class="font-bold tracking-tight">Tallas y códigos de barras</h2>
             <p class="text-xs text-muted">
               {{ m.variants.length }} {{ m.variants.length === 1 ? 'variante' : 'variantes' }} · {{ m.sizeScaleName }}.
               @if (canEdit()) {
