@@ -24,6 +24,7 @@ import {
   StockRow,
 } from '../../core/api/api.models';
 import { CashApi } from '../../core/api/cash.api';
+import { DiningApi, Tab } from '../../core/api/dining.api';
 import { ModifiersApi, PosModifierCatalog, PosModifierGroup } from '../../core/api/modifiers.api';
 import { CatalogApi } from '../../core/api/catalog.api';
 import { CreditApi } from '../../core/api/credit.api';
@@ -39,6 +40,7 @@ import { formatCop, formatQuantity } from '../../shared/money';
 import { BrandingService } from '../../core/theme/branding.service';
 import { ReceiptComponent } from '../../shared/receipt/receipt.component';
 import { ReceiptWidth, loadReceiptWidth, printReceipt, saveReceiptWidth } from '../../shared/receipt/receipt-prefs';
+import { ActivatedRoute, Router } from '@angular/router';
 import { saleWhatsAppLink } from '../sales/sale-text';
 import { TourService } from '../../shared/tour/tour.service';
 import {
@@ -58,6 +60,7 @@ import {
 } from './held-sales';
 import { ModifierPick, ModifierPickerComponent } from './modifier-picker.component';
 import { groupsFor, repriceModifiers } from './modifier-choice';
+import { tabLines } from './tab-lines';
 import { NewCustomerDialogComponent } from './new-customer-dialog.component';
 import { OpenCashComponent } from './open-cash.component';
 import { POS_SHORTCUTS, methodIcon, methodLabel } from './pos-labels';
@@ -84,6 +87,11 @@ import {
 import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
 import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
 import { documentShortLabel } from '../../shared/document-types';
+
+/** Datos del producto que trae el precio vigente (completan las líneas que vienen de una cuenta de mesa). */
+function productData(price: ProductLookup): Pick<CartLine, 'sku' | 'unitCode' | 'trackInventory' | 'factor'> {
+  return { sku: price.sku, unitCode: price.unitCode, trackInventory: price.trackInventory, factor: Number(price.factor) || 1 };
+}
 
 interface CustomerChoice {
   id: string;
@@ -132,6 +140,17 @@ const STOCK_PAGES = 5;
       } @else if (session() === null) {
         <app-open-cash class="flex-1 overflow-auto" (opened)="cashOpened($event)" />
       } @else {
+        <!-- Cobro de una cuenta de mesa (Fase 12b-2): los productos vienen de la cuenta. -->
+        @if (tab(); as t) {
+          <div class="tab-banner" role="status">
+            <span class="font-bold">Cobrando {{ t.label }}</span>
+            <span class="text-sm">Los productos se cambian en la cuenta.</span>
+            <span class="flex-1"></span>
+            <button type="button" class="tool-btn" (click)="leaveTab()">
+              <i class="pi pi-arrow-left" aria-hidden="true"></i>Volver a la cuenta
+            </button>
+          </div>
+        }
         <div class="flex-1 min-h-0 flex flex-col md:flex-row gap-3">
           <section class="h-[55dvh] md:h-auto md:flex-1 min-w-0 min-h-0 flex flex-col gap-3" aria-label="Productos">
             <!-- Celular: buscar por nombre a la vista (no hay F2). El envoltorio lleva md:hidden porque .phone-search
@@ -187,7 +206,7 @@ const STOCK_PAGES = 5;
                           (noteChange)="setNote($event)"
                           (removeLine)="removeLine($event)" (restoreLine)="restoreLine($event)"
                           (charge)="openPayment()" (cancelSale)="cancelSale()" (customer)="openCustomers()"
-                          (hold)="openHold()" (reprint)="receiptOpen = true" />
+                          (hold)="openHold()" (reprint)="receiptOpen = true" [locked]="tab() !== null" />
         </div>
 
         <!-- Celular: el carrito queda debajo de los productos; el total y Cobrar siempre a la mano. -->
@@ -475,7 +494,7 @@ const STOCK_PAGES = 5;
     <!-- Venta registrada -->
     <p-dialog [header]="lastSale() ? 'Venta ' + lastSale()!.documentNumber : 'Tiquete'" [(visible)]="receiptOpen"
               [modal]="true" [style]="{ width: '30rem' }" [breakpoints]="{ '640px': '100vw' }"
-              (onShow)="focusNewSale()" (onHide)="focusScanner()">
+              (onShow)="focusNewSale()" (onHide)="receiptClosed()">
       @if (lastSale(); as sale) {
         <div class="flex flex-col items-center gap-2 text-center">
           <span class="size-16 rounded-full bg-success-soft text-success-soft-fg inline-flex items-center justify-center">
@@ -547,6 +566,16 @@ const STOCK_PAGES = 5;
       border-radius: 1rem;
     }
     /* Identidad parte 3 (decisión 265): el lector va en su propia baldosa, como las del inicio. */
+    .tab-banner {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem 0.75rem;
+      padding: 0.5rem 0.75rem;
+      border-radius: 1.25rem;
+      background: var(--brand-soft);
+      color: var(--brand-soft-text);
+    }
     .scan-tile {
       display: flex;
       flex-shrink: 0;
@@ -684,6 +713,11 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   private readonly sales = inject(SalesApi);
   private readonly catalog = inject(CatalogApi);
   private readonly modifiersApi = inject(ModifiersApi);
+  private readonly dining = inject(DiningApi);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  /** Cuenta de mesa que se está cobrando (Fase 12b-2, /pos?cuenta=…); null en una venta normal. */
+  protected readonly tab = signal<Tab | null>(null);
   /** Adiciones (Fase 12b-1): grupos por producto; null sin el módulo o mientras carga. */
   protected readonly modifierCatalog = signal<PosModifierCatalog | null>(null);
   /** Producto esperando que se elijan sus adiciones. */
@@ -772,6 +806,8 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   protected customerOpen = false;
   protected payOpen = false;
   protected receiptOpen = false;
+  /** El tiquete abierto es del cobro de una cuenta: al cerrarlo se vuelve a las mesas. */
+  private backToTables = false;
   protected helpOpen = false;
   holdOpen = false;
   heldOpen = false;
@@ -813,6 +849,7 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
         this.session.set(session);
         if (session) {
           this.loadStock(session.branchId);
+          this.loadTabFromUrl();
           this.focusScanner();
           this.offerTour();
         }
@@ -821,9 +858,44 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
     });
   }
 
-  /** Carrito con productos: salir de "Vender" o cerrar la pestaña lo perdería (QA UI-7). */
+  /** Carrito con productos: salir de "Vender" o cerrar la pestaña lo perdería (QA UI-7). Una cuenta no se pierde. */
   hasUnsavedChanges(): boolean {
-    return this.lines().length > 0;
+    return this.lines().length > 0 && this.tab() === null;
+  }
+
+  // ---------------------------------------------------------------- cobro de una cuenta (Fase 12b-2)
+
+  /** /pos?cuenta=… : trae los productos de la cuenta abierta con el precio vigente para cobrarla completa. */
+  private loadTabFromUrl(): void {
+    const id = this.route.snapshot.queryParamMap.get('cuenta');
+    if (!id || this.tab()?.id === id) {
+      return;
+    }
+    if (this.lines().length > 0) {
+      this.messages.add({ severity: 'warn', summary: 'Tienes una venta en curso', detail: 'Cóbrala o páusala antes de cobrar la cuenta.' });
+      return;
+    }
+    this.dining.tab(id).subscribe({
+      next: (t) => {
+        if (t.status !== 'OPEN') {
+          this.messages.add({ severity: 'info', summary: 'Esta cuenta ya no está abierta' });
+          void this.router.navigate(['/pos'], { replaceUrl: true });
+          return;
+        }
+        this.tab.set(t);
+        this.updateLines(() => tabLines(t));
+        this.refreshPrices(this.customer().id || null);
+      },
+      error: (e: unknown) => this.messages.add({ severity: 'error', summary: 'No se pudo abrir la cuenta', detail: problemMessage(e) }),
+    });
+  }
+
+  /** Sale del cobro sin cobrar: la cuenta queda como estaba. */
+  leaveTab(): void {
+    const t = this.tab();
+    this.tab.set(null);
+    this.resetSale();
+    void this.router.navigate(t ? ['/app/mesas/cuenta', t.id] : ['/app/mesas']);
   }
 
   @HostListener('window:beforeunload', ['$event'])
@@ -858,6 +930,7 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   cashOpened(session: CashSession): void {
     this.session.set(session);
     this.loadStock(session.branchId);
+    this.loadTabFromUrl();
     this.focusScanner();
     this.offerTour();
   }
@@ -934,6 +1007,11 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
 
   /** Agrega el producto; uno de precio libre (decisión 253) primero pide el precio. */
   addLine(found: ProductLookup, quantity: number): void {
+    if (this.tab()) {
+      this.messages.add({ severity: 'info', summary: 'Estás cobrando una cuenta', detail: 'Agrega los productos en la cuenta.' });
+      this.focusScanner();
+      return;
+    }
     if (found.openPrice) {
       if (!this.auth.hasPermission(OPEN_PRICE_PERMISSION)) {
         this.messages.add({
@@ -1098,6 +1176,10 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   }
 
   cancelSale(): void {
+    if (this.tab()) {
+      this.leaveTab();
+      return;
+    }
     if (this.lines().length === 0) {
       return;
     }
@@ -1444,10 +1526,10 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
           // Precio libre (según el servidor, por si el producto cambió): se conserva el que escribió el cajero y solo
           // se actualiza el impuesto. Si dejó de ser libre, toma el precio de la lista como cualquier línea.
           if (price.openPrice && l.openPrice) {
-            return { ...l, taxRate: Number(price.taxRate) };
+            return { ...l, taxRate: Number(price.taxRate), ...productData(price) };
           }
           const { openPrice: _wasOpen, ...rest } = l;
-          return { ...rest, unitPrice: Number(price.price), taxRate: Number(price.taxRate) };
+          return { ...rest, unitPrice: Number(price.price), taxRate: Number(price.taxRate), ...productData(price) };
         }));
         this.refreshModifierPrices();
         const failed = current.filter((l, i) => results[i] === null);
@@ -1654,12 +1736,23 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
     };
     this.idempotencyKey ??= newIdempotencyKey('sale');
     this.saving.set(true);
-    this.sales.create(input, this.idempotencyKey).subscribe({
+    const charging = this.tab();
+    const request = charging
+      ? this.dining.charge(charging.id, { customerId: input.customerId, payments: input.payments, expectedTotal: input.expectedTotal },
+        this.idempotencyKey)
+      : this.sales.create(input, this.idempotencyKey);
+    request.subscribe({
       next: (sale) => {
         this.saving.set(false);
         this.payOpen = false;
         this.lastSale.set(sale);
         this.resetSale();
+        if (charging) {
+          // La mesa queda libre; al cerrar el tiquete se vuelve a las mesas.
+          this.tab.set(null);
+          this.backToTables = true;
+          void this.router.navigate(['/pos'], { replaceUrl: true });
+        }
         this.receiptOpen = true;
         const session = this.session();
         if (session) {
@@ -1686,6 +1779,16 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
         // Un error de red conserva la clave: reintentar no duplica la venta.
       },
     });
+  }
+
+  /** Al cerrar el tiquete del cobro de una cuenta, de vuelta a las mesas. */
+  receiptClosed(): void {
+    if (this.backToTables) {
+      this.backToTables = false;
+      void this.router.navigate(['/app/mesas']);
+      return;
+    }
+    this.focusScanner();
   }
 
   focusNewSale(): void {

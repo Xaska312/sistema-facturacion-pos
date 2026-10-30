@@ -25,7 +25,8 @@ class BusinessModuleTest {
         assertThat(BusinessType.RETAIL.defaultModules()).containsExactlyInAnyOrder(CREDIT, ORDERS, QUOTES, VARIANTS,
                 SCALE);
         assertThat(BusinessType.SERVICES.defaultModules()).containsExactlyInAnyOrder(CREDIT, ORDERS, QUOTES);
-        assertThat(BusinessType.RESTAURANT.defaultModules()).containsExactlyInAnyOrder(CREDIT, ORDERS, MODIFIERS);
+        assertThat(BusinessType.RESTAURANT.defaultModules()).containsExactlyInAnyOrder(CREDIT, ORDERS, MODIFIERS,
+                BusinessModule.TABLES);
         assertThat(BusinessType.PHARMACY.defaultModules()).containsExactlyInAnyOrder(CREDIT, ORDERS, QUOTES);
         assertThat(EnumSet.allOf(BusinessType.class).stream().filter(BusinessType::isOpen))
                 .containsExactlyInAnyOrder(BusinessType.RETAIL, BusinessType.SERVICES);
@@ -52,7 +53,8 @@ class BusinessModuleTest {
         List<String> roles = List.of("credit:manage", "orders:manage", "quotes:read", "audit:read");
         assertThat(BusinessModule.effectivePermissions(roles, EnumSet.allOf(BusinessModule.class)))
                 .containsExactly("credit:manage", "orders:manage", "quotes:read", "audit:read", "module:credit",
-                        "module:orders", "module:quotes", "module:variants", "module:scale", "module:modifiers");
+                        "module:orders", "module:quotes", "module:variants", "module:scale", "module:modifiers",
+                        "module:tables");
     }
 
     @Test

@@ -82,7 +82,7 @@ class BusinessProfileServiceTest {
 
         service.assignByPlatform(tenant.getId(), UUID.randomUUID(), BusinessType.RESTAURANT);
         assertThat(tenant.getModules()).containsExactlyInAnyOrder(BusinessModule.CREDIT, BusinessModule.ORDERS,
-                BusinessModule.MODIFIERS);
+                BusinessModule.MODIFIERS, BusinessModule.TABLES);
 
         BusinessProfile kept = service.change(tenant.getId(), owner, BusinessType.RESTAURANT,
                 List.of(BusinessModule.ORDERS));

@@ -8,6 +8,7 @@ import { CashSession, CreditAccount, PageResponse, Party, PaymentMethod, PosConf
 import { CashApi } from '../../core/api/cash.api';
 import { CatalogApi } from '../../core/api/catalog.api';
 import { CreditApi } from '../../core/api/credit.api';
+import { DiningApi } from '../../core/api/dining.api';
 import { InventoryApi } from '../../core/api/inventory.api';
 import { ModifiersApi, PosModifierCatalog } from '../../core/api/modifiers.api';
 import { PartiesApi } from '../../core/api/parties.api';
@@ -87,6 +88,7 @@ describe('PosComponent: celular, pausar venta y cliente nuevo', () => {
         { provide: PartiesApi, useValue: parties },
         { provide: CreditApi, useValue: credit },
         { provide: ModifiersApi, useValue: { pos: () => of(modifierCatalog) } },
+        { provide: DiningApi, useValue: jasmine.createSpyObj<DiningApi>('DiningApi', ['tab', 'charge']) },
         { provide: ConfirmService, useValue: confirm },
         { provide: MessageService, useValue: jasmine.createSpyObj<MessageService>('MessageService', ['add']) },
         { provide: TourService, useValue: jasmine.createSpyObj<TourService>('TourService', ['offer', 'start']) },

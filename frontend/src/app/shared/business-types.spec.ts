@@ -5,7 +5,7 @@ import { canChooseType } from './business-type-picker.component';
 describe('tipos de negocio y módulos (Fase 12a)', () => {
   it('Comercio trae todos los módulos y solo Comercio y Servicios se eligen al crear', () => {
     expect(businessTypeInfo('RETAIL').defaultModules).toEqual(['CREDIT', 'ORDERS', 'QUOTES', 'VARIANTS', 'SCALE']);
-    expect(businessTypeInfo('RESTAURANT').defaultModules).toContain('MODIFIERS');
+    expect(businessTypeInfo('RESTAURANT').defaultModules).toEqual(['CREDIT', 'ORDERS', 'MODIFIERS', 'TABLES']);
     expect(BUSINESS_TYPES.filter((t) => t.open).map((t) => t.label)).toEqual(['Comercio', 'Servicios']);
     expect([...BUSINESS_TYPES, ...BUSINESS_MODULES].every((x) => x.glyph in XICONS)).toBeTrue();
   });

@@ -6,7 +6,7 @@ import { XIconName } from './icons/xicons';
  * propone los módulos y el dueño los prende o apaga en Ajustes. Restaurante y Farmacia salen como "Pronto" (solo los
  * asigna la consola de plataforma a negocios piloto).
  */
-export type BusinessModule = 'CREDIT' | 'ORDERS' | 'QUOTES' | 'VARIANTS' | 'SCALE' | 'MODIFIERS';
+export type BusinessModule = 'CREDIT' | 'ORDERS' | 'QUOTES' | 'VARIANTS' | 'SCALE' | 'MODIFIERS' | 'TABLES';
 
 export interface BusinessTypeInfo {
   code: BusinessType;
@@ -31,7 +31,7 @@ export const BUSINESS_TYPES: readonly BusinessTypeInfo[] = [
   { code: 'SERVICES', label: 'Servicios', description: 'Taller, impresiones, instalaciones, mantenimiento…',
     glyph: 'type-services', open: true, defaultModules: ['CREDIT', 'ORDERS', 'QUOTES'] },
   { code: 'RESTAURANT', label: 'Restaurante', description: 'Mesas, comandas y cocina.', glyph: 'type-restaurant',
-    open: false, defaultModules: ['CREDIT', 'ORDERS', 'MODIFIERS'] },
+    open: false, defaultModules: ['CREDIT', 'ORDERS', 'MODIFIERS', 'TABLES'] },
   { code: 'PHARMACY', label: 'Farmacia', description: 'Lotes, vencimientos y factura electrónica.', glyph: 'type-pharmacy',
     open: false, defaultModules: ['CREDIT', 'ORDERS', 'QUOTES'] },
 ];
@@ -44,6 +44,8 @@ export const BUSINESS_MODULES: readonly BusinessModuleInfo[] = [
   { code: 'SCALE', label: 'Báscula', description: 'Etiquetas de báscula y venta por peso con código.', glyph: 'scale' },
   { code: 'MODIFIERS', label: 'Adiciones', description: 'Tamaños, extras con precio y notas por producto ("sin cebolla").',
     glyph: 'modifiers' },
+  { code: 'TABLES', label: 'Mesas', description: 'Mesas por zona y cuentas abiertas: mesa, para llevar y domicilio.',
+    glyph: 'tables' },
 ];
 
 export function businessTypeInfo(code: BusinessType | null | undefined): BusinessTypeInfo {
@@ -61,6 +63,7 @@ const MODULE_BY_PERMISSION_PREFIX: Readonly<Record<string, BusinessModule>> = {
   orders: 'ORDERS',
   quotes: 'QUOTES',
   modifiers: 'MODIFIERS',
+  tables: 'TABLES',
 };
 
 /** Módulo del que depende un permiso de rol, o null si es de la base. */

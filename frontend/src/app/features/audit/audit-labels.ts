@@ -28,7 +28,10 @@ const ENTITIES: Readonly<Record<string, string>> = {
   role: 'Rol',
   sale: 'Venta',
   session: 'Sesión',
+  dining_table: 'Mesa',
+  dining_zone: 'Zona de mesas',
   modifier_group: 'Adiciones',
+  tab: 'Cuenta de mesa',
   size_scale: 'Escala de tallas',
   supplier: 'Proveedor',
   tax: 'Impuesto',
@@ -46,6 +49,8 @@ const NOUNS: Readonly<Record<string, string>> = {
   product: 'producto',
   product_model: 'modelo con tallas',
   role: 'rol',
+  dining_table: 'mesa',
+  dining_zone: 'zona de mesas',
   modifier_group: 'grupo de adiciones',
   size_scale: 'escala de tallas',
   supplier: 'proveedor',
@@ -58,6 +63,14 @@ const ACTIONS: Readonly<Record<string, string>> = {
   BRANDING_UPDATED: 'Cambió la marca del negocio (color o logo)',
   BUSINESS_CLOSED: 'Eliminó (cerró) el negocio',
   BUSINESS_CREATED: 'Creó el negocio',
+  TAB_CANCELLED: 'Canceló una cuenta de mesa',
+  TAB_CHARGED: 'Cobró una cuenta de mesa',
+  TAB_ITEMS_ADDED: 'Agregó productos a una cuenta',
+  TAB_ITEM_VOIDED: 'Quitó un producto de una cuenta',
+  TAB_MERGED: 'Unió dos cuentas',
+  TAB_MOVED: 'Movió una cuenta de mesa',
+  TAB_OPENED: 'Abrió una cuenta',
+  TAB_UPDATED: 'Cambió los datos de una cuenta',
   BUSINESS_PROFILE_CHANGED: 'Cambió el tipo de negocio o sus módulos',
   BUSINESS_REACTIVATED: 'Reactivó el negocio',
   BUSINESS_SUSPENDED: 'Suspendió el negocio',
@@ -112,6 +125,17 @@ const VERBS: Readonly<Record<string, string>> = {
 /** Nombre de los datos guardados en el detalle; lo que no está aquí se muestra con su nombre técnico. */
 const FIELDS: Readonly<Record<string, string>> = {
   active: 'Activo',
+  customerName: 'Cliente',
+  guests: 'Personas',
+  into: 'Hacia',
+  item: 'Producto',
+  kind: 'Tipo',
+  label: 'Cuenta',
+  notes: 'Notas',
+  position: 'Orden',
+  seats: 'Puestos',
+  sentToKitchen: 'Ya había salido a cocina',
+  zone: 'Zona',
   address: 'Dirección',
   allowNegativeStock: 'Vender sin existencias',
   amount: 'Monto',
@@ -225,6 +249,9 @@ export function displayValue(value: unknown): string {
 export function fieldValue(field: string, value: unknown): string {
   if (field === 'businessType' && typeof value === 'string') {
     return BUSINESS_TYPES.find((t) => t.code === value)?.label ?? value;
+  }
+  if (field === 'kind' && typeof value === 'string') {
+    return ({ TABLE: 'Mesa', TAKEAWAY: 'Para llevar', DELIVERY: 'Domicilio' } as Record<string, string>)[value] ?? value;
   }
   if (field === 'modules' && typeof value === 'string') {
     const codes = value.split(',').filter((c) => c !== '');

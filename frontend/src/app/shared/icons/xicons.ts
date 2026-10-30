@@ -84,6 +84,13 @@ export const XICONS = {
   // Adiciones (Fase 12b-1): un vaso con una ficha "+" al lado.
   modifiers: { stroke: '<path d="M5 6h10l-1.2 14H6.2z"/><path d="M5 10h10"/><path d="M18 4v6M15 7h6"/>',
     fill: '<path d="M5 10h10l-.85 10H5.85z"/>' },
+  // Mesas y cuentas (Fase 12b-2).
+  tables: { stroke: '<path d="M3 9h18"/><path d="M6 9v10M18 9v10"/><path d="M4 9l1.5-4h13L20 9"/><path d="M9 14h6"/>',
+    fill: '<path d="M4 9l1.5-4h13L20 9z"/>' },
+  takeaway: { stroke: '<path d="M6 8h12l-1 12H7z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/><path d="M10 13h4"/>',
+    fill: '<path d="M6 8h12l-.5 6H6.5z"/>' },
+  delivery: { stroke: '<circle cx="6.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/><path d="M9 17.5h6l-2-7H9"/><path d="M15 17.5l2.5-7h-3"/><path d="M3 10h6"/>',
+    fill: '<rect x="3" y="7" width="7" height="5" rx="1"/>' },
 } as const satisfies Record<string, XIconDef>;
 
 export type XIconName = keyof typeof XICONS;

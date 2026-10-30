@@ -68,7 +68,7 @@ const UNDO_MS = 6000;
                 @let short = shortages().get(line.key);
                 <li class="px-2 py-1.5 flex items-center gap-1" [class.bg-warning-soft]="short !== undefined">
                   <button type="button" class="flex-1 min-w-0 min-h-11 text-left px-1 rounded-lg hover:bg-surface-alt"
-                          aria-haspopup="dialog" [attr.aria-label]="(line.openPrice ? 'Editar precio, cantidad y descuento: ' : 'Editar cantidad y descuento: ') + line.name"
+                          aria-haspopup="dialog" [disabled]="locked()" [attr.aria-label]="(line.openPrice ? 'Editar precio, cantidad y descuento: ' : 'Editar cantidad y descuento: ') + line.name"
                           (click)="openEditor($event, line)">
                     <span class="block font-medium leading-tight truncate">{{ line.name }}</span>
                     @if (line.modifiers?.length) {
@@ -91,21 +91,23 @@ const UNDO_MS = 6000;
                     }
                   </button>
                   <span class="w-20 text-right font-semibold whitespace-nowrap">{{ cop(lineTotal(line)) }}</span>
-                  <div class="flex items-center" role="group" [attr.aria-label]="'Cantidad de ' + line.name">
-                    <button type="button" class="qty-btn" [attr.aria-label]="'Uno menos de ' + line.name"
-                            [disabled]="disabled()" (click)="step(line, -1)">
-                      <i class="pi pi-minus" aria-hidden="true"></i>
+                  @if (!locked()) {
+                    <div class="flex items-center" role="group" [attr.aria-label]="'Cantidad de ' + line.name">
+                      <button type="button" class="qty-btn" [attr.aria-label]="'Uno menos de ' + line.name"
+                              [disabled]="disabled()" (click)="step(line, -1)">
+                        <i class="pi pi-minus" aria-hidden="true"></i>
+                      </button>
+                      <span class="min-w-8 text-center font-medium tabular-nums" aria-live="polite">{{ q(line.quantity) }}</span>
+                      <button type="button" class="qty-btn" [attr.aria-label]="'Uno más de ' + line.name"
+                              [disabled]="disabled()" (click)="step(line, 1)">
+                        <i class="pi pi-plus" aria-hidden="true"></i>
+                      </button>
+                    </div>
+                    <button type="button" class="qty-btn text-danger" [attr.aria-label]="'Quitar ' + line.name"
+                            [disabled]="disabled()" (click)="remove(line)">
+                      <i class="pi pi-trash" aria-hidden="true"></i>
                     </button>
-                    <span class="min-w-8 text-center font-medium tabular-nums" aria-live="polite">{{ q(line.quantity) }}</span>
-                    <button type="button" class="qty-btn" [attr.aria-label]="'Uno más de ' + line.name"
-                            [disabled]="disabled()" (click)="step(line, 1)">
-                      <i class="pi pi-plus" aria-hidden="true"></i>
-                    </button>
-                  </div>
-                  <button type="button" class="qty-btn text-danger" [attr.aria-label]="'Quitar ' + line.name"
-                          [disabled]="disabled()" (click)="remove(line)">
-                    <i class="pi pi-trash" aria-hidden="true"></i>
-                  </button>
+                  }
                 </li>
               }
             </ul>
@@ -142,12 +144,14 @@ const UNDO_MS = 6000;
         </div>
         <div class="flex flex-wrap items-center justify-between gap-x-2 mt-1">
           <button type="button" class="pos-btn on-brand" [disabled]="lines().length === 0" (click)="cancelSale.emit()">
-            Cancelar venta (Esc)
+            {{ locked() ? 'Volver a la cuenta (Esc)' : 'Cancelar venta (Esc)' }}
           </button>
-          <button type="button" class="pos-btn on-brand" [disabled]="lines().length === 0 || disabled()"
-                  title="Guarda esta venta para atender a otro cliente y retomarla después" (click)="hold.emit()">
-            <i class="pi pi-pause" aria-hidden="true"></i>Pausar venta
-          </button>
+          @if (!locked()) {
+            <button type="button" class="pos-btn on-brand" [disabled]="lines().length === 0 || disabled()"
+                    title="Guarda esta venta para atender a otro cliente y retomarla después" (click)="hold.emit()">
+              <i class="pi pi-pause" aria-hidden="true"></i>Pausar venta
+            </button>
+          }
           @if (lastSaleNumber(); as number) {
             <button type="button" class="pos-btn on-brand" (click)="reprint.emit()">
               <i class="pi pi-print" aria-hidden="true"></i>Reimprimir {{ number }}
@@ -314,6 +318,11 @@ export class CartPanelComponent {
   readonly customerName = input('');
   readonly canCharge = input(false);
   readonly disabled = input(false);
+  /**
+   * Cobro de una cuenta de mesa (Fase 12b-2): los productos no se cambian aquí (se cambian en la cuenta); "Cancelar"
+   * vuelve a la cuenta.
+   */
+  readonly locked = input(false);
   readonly lastSaleNumber = input<string | null>(null);
 
   /** Ids de las unidades con decimales: solo ahí se ofrece "vender por valor" (fase 8e). */

@@ -8,6 +8,7 @@ import static com.poshibrido.tenancy.domain.BusinessModule.MODIFIERS;
 import static com.poshibrido.tenancy.domain.BusinessModule.ORDERS;
 import static com.poshibrido.tenancy.domain.BusinessModule.QUOTES;
 import static com.poshibrido.tenancy.domain.BusinessModule.SCALE;
+import static com.poshibrido.tenancy.domain.BusinessModule.TABLES;
 import static com.poshibrido.tenancy.domain.BusinessModule.VARIANTS;
 
 /**
@@ -20,7 +21,7 @@ public enum BusinessType {
     /** Farmacia: "Pronto" para el público (Fase 13); el administrador de plataforma la asigna a pilotos. */
     PHARMACY(false, EnumSet.of(CREDIT, ORDERS, QUOTES)),
     /** Restaurante: "Pronto" para el público (Fase 12b); el administrador de plataforma lo asigna a pilotos. */
-    RESTAURANT(false, EnumSet.of(CREDIT, ORDERS, MODIFIERS)),
+    RESTAURANT(false, EnumSet.of(CREDIT, ORDERS, MODIFIERS, TABLES)),
     /** Servicios (taller, impresiones, instalaciones…). */
     SERVICES(true, EnumSet.of(CREDIT, ORDERS, QUOTES));
 

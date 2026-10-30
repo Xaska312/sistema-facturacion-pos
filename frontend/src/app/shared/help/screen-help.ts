@@ -108,6 +108,25 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
       'Una talla que ya usa algún producto no se puede quitar de la escala.',
     ],
   },
+  '/app/mesas': {
+    manual: 'mesas',
+    title: 'Mesas',
+    tips: [
+      'Toca una mesa libre para abrir su cuenta; una ocupada para pedir, mover, unir o cobrar.',
+      'Lo que pides queda "Por agregar" hasta tocar "Agregar a la cuenta".',
+      'Para llevar y domicilios se abren con los botones de arriba.',
+      'Cobrar abre Vender con los productos de la cuenta; al terminar, la mesa queda libre.',
+    ],
+  },
+  '/app/mesas/configurar': {
+    manual: 'configurar-mesas',
+    title: 'Configurar mesas',
+    tips: [
+      'Crea una zona por cada parte del local (Salón, Terraza, Barra).',
+      'Con "Agregar mesas" creas varias numeradas de una vez.',
+      'Toca una mesa para renombrarla, cambiarle los puestos o la zona.',
+    ],
+  },
   '/app/adiciones': {
     manual: 'adiciones',
     title: 'Adiciones',

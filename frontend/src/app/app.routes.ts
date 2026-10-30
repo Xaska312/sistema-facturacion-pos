@@ -227,6 +227,29 @@ export const routes: Routes = [
           import('./features/products/product-editor.component').then((m) => m.ProductEditorComponent),
       },
       {
+        // Mesas y cuentas abiertas (Fase 12b-2): solo con el módulo encendido.
+        path: 'mesas',
+        title: 'Mesas',
+        canActivate: [permissionGuard],
+        data: { permission: 'tables:operate', module: 'module:tables' },
+        loadComponent: () => import('./features/dining/floor.component').then((m) => m.FloorComponent),
+      },
+      {
+        path: 'mesas/configurar',
+        title: 'Configurar mesas',
+        canActivate: [permissionGuard],
+        data: { permission: 'tables:manage', module: 'module:tables' },
+        loadComponent: () => import('./features/dining/dining-setup.component').then((m) => m.DiningSetupComponent),
+      },
+      {
+        path: 'mesas/cuenta/:id',
+        title: 'Cuenta',
+        canActivate: [permissionGuard],
+        canDeactivate: [unsavedChangesGuard],
+        data: { permission: 'tables:operate', module: 'module:tables' },
+        loadComponent: () => import('./features/dining/tab.component').then((m) => m.TabComponent),
+      },
+      {
         // Adiciones (Fase 12b-1): solo con el módulo encendido.
         path: 'adiciones',
         title: 'Adiciones',

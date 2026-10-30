@@ -79,6 +79,23 @@ Módulos en el token: los permisos de un módulo apagado (`credit:*`, `orders:*`
 
 En `POST /sales` cada ítem acepta `modifiers: [{optionId, quantity}]` y `note` (máx. 140). `unitPrice` sigue siendo el precio del producto sin adiciones; el servidor suma las adiciones (nunca baja de 0) y valida grupos obligatorios y topes (422). Con el módulo apagado, enviar adiciones da 422. La venta devuelve en cada ítem `note` y `modifiers: [{groupName, optionName, quantity, unitPrice}]`; `unitPrice` del ítem ya incluye las adiciones.
 
+### Mesas y cuentas abiertas (Fase 12b-2, decisión 269; requieren `module:tables`)
+| Método | Ruta | Permiso | Descripción |
+|---|---|---|---|
+| GET | `/dining/floor?branchId` | `tables:operate` | `{branchId, branches, zones: [{id, name, tables: [{id, name, seats, tab}]}], others}`: zonas y mesas activas con su cuenta abierta (`TabSummary`: `id, number, kind, label, tableId, openedAt, guests, customerName, total, items, openedByName`) y en `others` las de para llevar y domicilio. Sin `branchId`, la primera sucursal que atiende el usuario |
+| GET | `/dining/zones?branchId` | `tables:operate` | Zonas con todas sus mesas (también inactivas) |
+| POST / PUT | `/dining/zones[/{id}]` | `tables:manage` | `{branchId, name}` / `{name, position, active}`. Nombre único en la sucursal (409). No se desactiva con cuentas abiertas (409) |
+| POST / PUT | `/dining/tables[/{id}]` | `tables:manage` | `{zoneId, name, seats?}` / `{zoneId, name, seats, position, active}`. Nombre único en la sucursal |
+| POST | `/tabs` | `tables:operate` | `{kind: TABLE\|TAKEAWAY\|DELIVERY, tableId?, branchId?, guests?, customerName?, phone?, address?, notes?}` → 201 `TabView`. Mesa con cuenta abierta → 409; domicilio sin dirección → 422 |
+| GET / PUT | `/tabs/{id}` | `tables:operate` | `TabView`: `{id, number, kind, status (OPEN, CHARGED, CANCELLED, MERGED), label, branchId, tableId, tableName, zoneName, guests, customerName, phone, address, notes, openedAt, openedByName, closedAt, saleId, total, items}`; cada ítem con `unitPrice` (con adiciones, al pedir), `basePrice`, `openPrice`, `note`, `modifiers`, `addedByName`, `sentAt`, `voided`, `voidReason`. PUT cambia `{guests, customerName, phone, address, notes}` |
+| POST | `/tabs/{id}/items` | `tables:operate` | `{items: [{productId, unitId?, quantity, unitPrice? (solo precio libre), modifiers?, note?}]}` (máx. 50 por vez, 200 por cuenta). Adiciones validadas como en la venta |
+| POST | `/tabs/{id}/items/{itemId}/void` | `tables:operate` | `{reason}`: queda tachado. Lo que ya salió a cocina (`sentAt`, Fase 12b-3) necesita `tables:void` |
+| POST | `/tabs/{id}/move` · `/merge` | `tables:operate` | `{tableId}` (mesa libre de la sucursal) · `{fromTabId}` (sus productos pasan a esta; la otra queda `MERGED`) |
+| POST | `/tabs/{id}/cancel` | `tables:operate` (+ `tables:void` si tiene productos) | `{reason}` |
+| POST | `/tabs/{id}/charge` | `tables:operate` + `sales:create` | `Idempotency-Key` obligatoria. `{customerId?, payments, expectedTotal}` → 201 con la venta (como `POST /sales`; precio vigente, adiciones, nota y `notes` = nombre de la cuenta). Caja abierta de la misma sucursal (422). Ya cobrada → 409; repetir con la misma clave devuelve la misma venta |
+
+Todas las acciones de cuentas, zonas y mesas quedan en la auditoría (`TAB_*`, `DINING_ZONE_*`, `DINING_TABLE_*`).
+
 ### Ajustes del negocio
 | Método | Ruta | Permiso | Descripción |
 |---|---|---|---|

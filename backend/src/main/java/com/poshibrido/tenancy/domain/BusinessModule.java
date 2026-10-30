@@ -30,7 +30,9 @@ public enum BusinessModule {
     /** Báscula (Fase 8e): etiquetas y PLU. */
     SCALE,
     /** Adiciones (Fase 12b-1): tamaños, extras con precio, opciones y notas por producto en el POS. */
-    MODIFIERS("modifiers:manage");
+    MODIFIERS("modifiers:manage"),
+    /** Mesas y cuentas abiertas (Fase 12b-2): mesa, para llevar y domicilio. */
+    TABLES("tables:operate", "tables:manage", "tables:void");
 
     private static final String AUTHORITY_PREFIX = "module:";
 

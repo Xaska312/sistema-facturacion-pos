@@ -186,6 +186,17 @@ public class SaleService {
                 new Options(true, false, names, BigDecimal.ZERO));
     }
 
+    /**
+     * Venta del cobro de una cuenta de mesa (Fase 12b-2, decisión 269): igual que en el POS (precio vigente con la
+     * lista del cliente, adiciones y nota; en precio libre, el que se escribió), dentro de la transacción de la cuenta
+     * (que ya la tiene bloqueada). {@code notes} lleva el nombre de la cuenta ("Mesa 4"). La {@code Idempotency-Key}
+     * es obligatoria.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public UUID createForTab(Create command, String idempotencyKey) {
+        return register(command, requireKey(idempotencyKey), CurrentActor.requireUserId(), Options.POS);
+    }
+
     /** Venta ya registrada con esa clave por el usuario actual (para reintentos de la entrega de un pedido). */
     public Optional<UUID> existingSale(String idempotencyKey) {
         return findByKey(requireKey(idempotencyKey), CurrentActor.requireUserId());

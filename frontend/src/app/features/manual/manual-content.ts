@@ -287,6 +287,66 @@ export const MANUAL: readonly ManualChapter[] = [
     ],
   },
   {
+    id: 'restaurante',
+    title: 'Mesas y cuentas',
+    icon: 'pi pi-table',
+    sections: [
+      {
+        id: 'configurar-mesas',
+        title: 'Configurar las mesas',
+        summary: 'Crea las zonas de tu local (Salón, Terraza, Barra) y sus mesas. Se prende en Ajustes → Tipo de negocio y '
+          + 'módulos ("Mesas"; Restaurante lo trae prendido).',
+        steps: [
+          'Entra a Mesas y toca "Configurar".',
+          'Toca "Nueva zona" y escribe su nombre.',
+          'En la zona toca "Agregar mesas": di desde qué número y cuántas (por ejemplo, 1 a 10) y cuántos puestos tiene cada una.',
+          'Toca una mesa para cambiarle el nombre (Barra 2), los puestos, la zona o desactivarla.',
+        ],
+        tips: [
+          'El nombre de la mesa no se repite en la sucursal, para que el mesero no se confunda.',
+          'Una mesa o zona con una cuenta abierta no se puede desactivar hasta cobrarla o moverla.',
+        ],
+        who: 'Propietario y Administrador.',
+      },
+      {
+        id: 'mesas',
+        title: 'Atender una mesa',
+        summary: 'En Mesas ves el salón: las mesas libres punteadas y las ocupadas de color, con su total y cuánto llevan '
+          + 'abiertas (más de una hora cambian de color).',
+        steps: [
+          'Toca una mesa libre, escribe cuántas personas son (opcional) y toca "Abrir cuenta".',
+          'Toca los productos para pedirlos: si tienen adiciones se abren sus opciones y una nota. Quedan "Por agregar".',
+          'Revisa cantidades y toca "Agregar a la cuenta". Puedes volver a pedir más tarde las veces que quieras.',
+          'Para quitar algo toca la caneca y escribe el motivo: queda tachado en la cuenta.',
+          'Con "Mover" la pasas a otra mesa libre y con "Unir" traes los productos de otra cuenta (esa mesa queda libre).',
+          'Para llevar y domicilios se abren con los botones de arriba; el domicilio pide la dirección.',
+        ],
+        tips: [
+          'Todo el equipo de la sucursal ve todas las mesas y quién pidió cada cosa.',
+          'Cancelar una cuenta con productos lo hace caja o el administrador, con motivo.',
+          'La pantalla se actualiza sola cada pocos segundos.',
+        ],
+        who: 'Quien tenga el permiso "Atender mesas" (Propietario, Administrador, Cajero y Vendedor).',
+      },
+      {
+        id: 'cobrar-mesa',
+        title: 'Cobrar una mesa',
+        summary: 'La cuenta se cobra completa en Vender, con el diálogo de pago de siempre; se vuelve una venta normal.',
+        steps: [
+          'En la cuenta toca "Cobrar": se abre Vender con sus productos (necesitas la caja abierta en esa sucursal).',
+          'Si es un cliente registrado, cámbialo en el carrito; luego toca Cobrar (F4) y registra el pago.',
+          'Al cerrar el tiquete vuelves a las mesas: la mesa ya queda libre.',
+        ],
+        tips: [
+          'Se cobra el precio vigente; si alguno cambió mientras la mesa comía, lo verás en el total antes de cobrar.',
+          'En Vender los productos de la cuenta no se cambian: "Volver a la cuenta" para agregar o quitar.',
+          'Dividir la cuenta, la propina y los pagos por partes llegan pronto.',
+        ],
+        who: 'Quien vende con la caja abierta.',
+      },
+    ],
+  },
+  {
     id: 'caja',
     title: 'Caja',
     icon: 'pi pi-wallet',
