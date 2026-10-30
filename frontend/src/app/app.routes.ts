@@ -258,6 +258,14 @@ export const routes: Routes = [
         loadComponent: () => import('./features/kitchen/tickets.component').then((m) => m.TicketsComponent),
       },
       {
+        // Pantalla de cocina (Fase 12b-4).
+        path: 'cocina',
+        title: 'Cocina',
+        canActivate: [permissionGuard],
+        data: { permission: 'kitchen:view', module: 'module:kitchen' },
+        loadComponent: () => import('./features/kitchen/kitchen-display.component').then((m) => m.KitchenDisplayComponent),
+      },
+      {
         path: 'comandas/estaciones',
         title: 'Estaciones de cocina',
         canActivate: [permissionGuard],

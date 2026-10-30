@@ -69,6 +69,7 @@ public class TabService {
     private final MemberDirectory members;
     private final AuditLogger audit;
     private final KitchenService kitchen;
+    private final DiningNotifier notifier;
 
     @PersistenceContext
     private EntityManager em;
@@ -196,6 +197,7 @@ public class TabService {
         data.put("kind", kind);
         data.put("guests", details.guests());
         audit.log("TAB_OPENED", "tab", id, null, data);
+        notifier.tabChanged(branchId, id);
         return get(id);
     }
 
@@ -213,6 +215,7 @@ public class TabService {
                 .setParameter(4, details.phone()).setParameter(5, details.address()).setParameter(6, details.notes())
                 .executeUpdate();
         audit.log("TAB_UPDATED", "tab", id, Map.of("label", tab.label()), detailsData(details));
+        notifier.tabChanged(tab.branchId(), id);
         return get(id);
     }
 
@@ -303,6 +306,7 @@ public class TabService {
         if (send) {
             kitchen.send(id, tab.label(), tab.branchId(), newItems);
         }
+        notifier.tabChanged(tab.branchId(), id);
         return get(id);
     }
 
@@ -322,6 +326,7 @@ public class TabService {
         }
         kitchen.send(id, tab.label(), tab.branchId(), pending);
         touch(id);
+        notifier.tabChanged(tab.branchId(), id);
         return get(id);
     }
 
@@ -364,6 +369,11 @@ public class TabService {
         data.put("sentToKitchen", item[2] != null);
         data.put("reason", why);
         audit.log("TAB_ITEM_VOIDED", "tab", id, null, data);
+        if (item[2] != null) {
+            // Ya había salido: la cocina se entera en la pantalla y, si imprime, con un aviso de anulación.
+            kitchen.itemVoided(itemId);
+        }
+        notifier.tabChanged(tab.branchId(), id);
         return get(id);
     }
 
@@ -387,6 +397,7 @@ public class TabService {
                 .setParameter(1, id).setParameter(2, tableId).executeUpdate();
         audit.log("TAB_MOVED", "tab", id, Map.of("label", tab.label()),
                 Map.of("label", TabLabels.label("TABLE", tab.number(), (String) table[2], tab.customerName())));
+        notifier.tabChanged(tab.branchId(), id);
         return get(id);
     }
 
@@ -422,6 +433,8 @@ public class TabService {
         data.put("from", from.label());
         data.put("items", moved);
         audit.log("TAB_MERGED", "tab", id, null, data);
+        notifier.tabChanged(target.branchId(), id);
+        notifier.tabChanged(from.branchId(), fromId);
         return get(id);
     }
 
@@ -440,6 +453,7 @@ public class TabService {
                 .setParameter(1, id).setParameter(2, why).setParameter(3, Instant.now())
                 .setParameter(4, CurrentActor.requireUserId()).executeUpdate();
         audit.log("TAB_CANCELLED", "tab", id, null, Map.of("label", tab.label(), "items", active, "reason", why));
+        notifier.tabChanged(tab.branchId(), id);
         return get(id);
     }
 
@@ -498,6 +512,7 @@ public class TabService {
                 .setParameter(1, id).setParameter(2, saleId).setParameter(3, Instant.now())
                 .setParameter(4, CurrentActor.requireUserId()).executeUpdate();
         audit.log("TAB_CHARGED", "tab", id, null, Map.of("label", tab.label(), "saleId", saleId, "items", lines.size()));
+        notifier.tabChanged(tab.branchId(), id);
         return saleId;
     }
 

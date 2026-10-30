@@ -35,7 +35,14 @@ function itemHtml(item: TicketItem): string {
   return `<div style="margin:8px 0">${lines.join('')}</div>`;
 }
 
-/** HTML de una comanda (una página). */
+/** Producto de un aviso de anulación: grande, para que no se prepare. */
+function voidItemHtml(item: TicketItem): string {
+  const extras = item.modifiers.map((m) => m.name).join(', ');
+  return `<div style="margin:8px 0;font-size:20px;font-weight:800;line-height:1.2">NO PREPARAR: ${esc(formatQuantity(item.quantity))} `
+    + `${esc(item.name.toUpperCase())}${extras ? `<div style="font-size:16px;margin-left:18px">${esc(extras)}</div>` : ''}</div>`;
+}
+
+/** HTML de una comanda (una página); un aviso de anulación (Fase 12b-4) sale con su encabezado propio. */
 export function comandaHtml(ticket: KitchenTicket, width: ReceiptWidth = 80): string {
   const copy = ticket.printCount > 1 ? `<div style="text-align:center;font-weight:800">*** COPIA ${ticket.printCount} ***</div>` : '';
   const who = [time(ticket.sentAt), ticket.sentByName].filter(Boolean).join(' · ');
@@ -50,7 +57,11 @@ export function comandaHtml(ticket: KitchenTicket, width: ReceiptWidth = 80): st
     + `<div style="font-size:24px;font-weight:800;line-height:1.15;margin-top:2px">${esc(ticket.tabLabel)}${guests}</div>`
     + `<div style="font-size:14px">${esc(who)}</div>`
     + copy
-    + `<div style="border-top:2px dashed #000;margin-top:6px">${ticket.items.map(itemHtml).join('')}</div>`
+    + (ticket.type === 'VOID'
+      ? `<div style="margin-top:6px;padding:4px 0;background:#000;color:#fff;text-align:center;font-size:22px;font-weight:800">`
+        + `*** ANULACIÓN ***</div><div style="text-align:center;font-size:15px;font-weight:700">de la comanda #${ticket.voidOfNumber ?? ''}</div>`
+        + `<div style="border-top:2px dashed #000;margin-top:6px">${ticket.items.map(voidItemHtml).join('')}</div>`
+      : `<div style="border-top:2px dashed #000;margin-top:6px">${ticket.items.map(itemHtml).join('')}</div>`)
     + notes
     + `</div>`;
 }

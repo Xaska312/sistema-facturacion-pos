@@ -21,6 +21,7 @@ export const MENU: MenuItem[] = [
   { label: 'Inicio', route: '/app', icon: 'pi pi-home', glyph: 'home' },
   { label: 'Vender', route: '/pos', icon: 'pi pi-shopping-cart', glyph: 'sell', permission: 'sales:create', section: 'Ventas' },
   { label: 'Mesas', route: '/app/mesas', icon: 'pi pi-table', glyph: 'tables', permission: 'tables:operate', section: 'Ventas' },
+  { label: 'Cocina', route: '/app/cocina', icon: 'pi pi-desktop', glyph: 'kitchen', permission: 'kitchen:view', section: 'Ventas' },
   { label: 'Comandas', route: '/app/comandas', icon: 'pi pi-print', glyph: 'comanda', permission: 'kitchen:send', section: 'Ventas' },
   { label: 'Mi caja', route: '/app/caja', icon: 'pi pi-wallet', glyph: 'cash', permission: 'cash:operate', section: 'Ventas' },
   { label: 'Ventas', route: '/app/ventas', icon: 'pi pi-receipt', glyph: 'sales', permission: 'sales:read', section: 'Ventas' },
@@ -62,7 +63,7 @@ export const DOCK_ROUTES: readonly string[] = ['/app', '/pos', '/app/caja', '/ap
 export const DOCK_BY_TYPE: Readonly<Record<BusinessType, readonly string[]>> = {
   RETAIL: DOCK_ROUTES,
   SERVICES: ['/app', '/pos', '/app/caja', '/app/ventas', '/app/cotizaciones', '/app/pedidos', '/app/clientes'],
-  RESTAURANT: ['/app', '/pos', '/app/mesas', '/app/comandas', '/app/caja', '/app/ventas', '/app/productos'],
+  RESTAURANT: ['/app', '/pos', '/app/mesas', '/app/cocina', '/app/comandas', '/app/caja', '/app/ventas'],
   PHARMACY: ['/app', '/pos', '/app/caja', '/app/ventas', '/app/productos', '/app/inventario', '/app/clientes'],
 };
 

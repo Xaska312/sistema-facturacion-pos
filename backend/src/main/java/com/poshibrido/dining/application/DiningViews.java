@@ -23,7 +23,8 @@ public final class DiningViews {
 
     /** Resumen de una cuenta abierta para las baldosas. {@code total}: con los precios del momento de agregar. */
     public record TabSummary(UUID id, long number, String kind, String label, UUID tableId, Instant openedAt,
-                             Integer guests, String customerName, BigDecimal total, int items, String openedByName) {
+                             Integer guests, String customerName, BigDecimal total, int items, String openedByName,
+                             int ready) {
     }
 
     public record FloorTable(UUID id, String name, Integer seats, TabSummary tab) {

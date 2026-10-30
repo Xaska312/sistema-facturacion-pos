@@ -34,7 +34,8 @@ describe('comanda impresa (Fase 12b-3)', () => {
   it('lleva la estación, la mesa y el término destacado, y escapa el texto', () => {
     const html = comandaHtml({
       id: 't', number: 12, branchId: 'b', tabId: 'x', tabLabel: 'Mesa 4', kind: 'TABLE', guests: 3, notes: 'cumpleaños',
-      stationId: 's1', stationName: 'Cocina', sentAt: '2026-10-30T17:00:00Z', sentByName: 'Ana', status: 'NEW', printCount: 2,
+      stationId: 's1', stationName: 'Cocina', sentAt: '2026-10-30T17:00:00Z', sentById: 'u', sentByName: 'Ana', status: 'NEW',
+      printCount: 2, type: 'ORDER', voidOfNumber: null, preparingAt: null, readyAt: null,
       items: [
         { id: 'i1', name: 'Hamburguesa', quantity: 2, note: 'sin <cebolla>', voided: false, modifiers: [
           { groupName: 'Término', name: 'Medio', quantity: 1, highlight: true },

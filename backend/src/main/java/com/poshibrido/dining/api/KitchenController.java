@@ -9,6 +9,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -28,7 +29,9 @@ import java.util.UUID;
 
 /**
  * Cocina y comandas (Fase 12b-3, decisión 270), con el módulo {@code module:kitchen} (sus permisos no llegan al token
- * con el módulo apagado). Ver e imprimir comandas: {@code kitchen:send}; configurar estaciones: {@code kitchen:manage}.
+ * con el módulo apagado). Ver e imprimir comandas: {@code kitchen:send} o {@code kitchen:view}; configurar estaciones:
+ * {@code kitchen:manage}; pantalla de cocina y estados (Fase 12b-4): {@code kitchen:view} (quien atiende solo marca
+ * Entregada lo que está Listo).
  */
 @RestController
 @RequiredArgsConstructor
@@ -51,8 +54,25 @@ public class KitchenController {
     public record PrintRequest(Boolean auto) {
     }
 
+    public record StatusRequest(@NotNull @Pattern(regexp = "NEW|PREPARING|READY|DELIVERED") String status) {
+    }
+
+    /** Pantalla de cocina: lo que falta por entregar (Nuevas, Preparando y Listas), la más vieja primero. */
+    @GetMapping("/board")
+    @PreAuthorize("hasAuthority('kitchen:view')")
+    public List<TicketView> board(@RequestParam(required = false) UUID branchId,
+                                  @RequestParam(required = false) List<UUID> stationId) {
+        return service.board(branchId, stationId);
+    }
+
+    @PostMapping("/tickets/{id}/status")
+    @PreAuthorize("hasAnyAuthority('kitchen:view', 'kitchen:send')")
+    public TicketView status(@PathVariable UUID id, @Valid @RequestBody StatusRequest request) {
+        return service.setStatus(id, request.status());
+    }
+
     @GetMapping("/stations")
-    @PreAuthorize("hasAnyAuthority('kitchen:send', 'kitchen:manage')")
+    @PreAuthorize("hasAnyAuthority('kitchen:send', 'kitchen:manage', 'kitchen:view')")
     public List<StationView> stations() {
         return service.stations();
     }
@@ -72,7 +92,7 @@ public class KitchenController {
 
     /** Comandas recientes de la sucursal; {@code pending=true}: las que nadie ha impreso (impresora automática). */
     @GetMapping("/tickets")
-    @PreAuthorize("hasAuthority('kitchen:send')")
+    @PreAuthorize("hasAnyAuthority('kitchen:send', 'kitchen:view')")
     public List<TicketView> tickets(@RequestParam(required = false) UUID branchId,
                                     @RequestParam(required = false) List<UUID> stationId,
                                     @RequestParam(defaultValue = "false") boolean pending) {
@@ -80,14 +100,14 @@ public class KitchenController {
     }
 
     @GetMapping("/tickets/{id}")
-    @PreAuthorize("hasAuthority('kitchen:send')")
+    @PreAuthorize("hasAnyAuthority('kitchen:send', 'kitchen:view')")
     public TicketView ticket(@PathVariable UUID id) {
         return service.ticket(id);
     }
 
     /** Registra una impresión ({@code auto}: la reclama la impresora automática; 409 si otro equipo ya la imprimió). */
     @PostMapping("/tickets/{id}/print")
-    @PreAuthorize("hasAuthority('kitchen:send')")
+    @PreAuthorize("hasAnyAuthority('kitchen:send', 'kitchen:view')")
     public TicketView print(@PathVariable UUID id, @RequestBody(required = false) PrintRequest request) {
         return service.print(id, request != null && Boolean.TRUE.equals(request.auto()));
     }

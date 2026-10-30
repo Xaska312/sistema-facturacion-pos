@@ -48,7 +48,7 @@ export const BUSINESS_MODULES: readonly BusinessModuleInfo[] = [
     glyph: 'modifiers' },
   { code: 'TABLES', label: 'Mesas', description: 'Mesas por zona y cuentas abiertas: mesa, para llevar y domicilio.',
     glyph: 'tables' },
-  { code: 'KITCHEN', label: 'Cocina y comandas', description: 'Enviar lo pedido a cocina y bar, e imprimir comandas.',
+  { code: 'KITCHEN', label: 'Cocina y comandas', description: 'Enviar lo pedido a cocina y bar, pantalla de cocina e imprimir comandas.',
     glyph: 'kitchen', requires: 'TABLES' },
 ];
 

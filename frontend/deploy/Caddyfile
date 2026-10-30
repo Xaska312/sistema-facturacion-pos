@@ -10,7 +10,9 @@
 }
 
 {$DOMAIN} {
-	encode zstd gzip
+	# Sin comprimir los avisos en tiempo real (SSE, Fase 12b-4): comprimidos, Caddy los guardaría hasta llenar un bloque.
+	@compress not path /api/v1/dining/events
+	encode @compress zstd gzip
 
 	header {
 		# Sin "Server: Caddy" (no anunciar el software).

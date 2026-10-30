@@ -7,7 +7,7 @@ import { EMPTY, of } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { Subscription } from '../../core/api/api.models';
 import { SubscriptionApi } from '../../core/api/subscription.api';
-import { KitchenPrinterService } from '../kitchen/kitchen-printer';
+import { RestaurantLiveService } from '../kitchen/restaurant-live.service';
 import { ShellComponent } from './shell.component';
 
 @Component({ template: '<p>contenido</p>' })
@@ -43,8 +43,8 @@ describe('ShellComponent', () => {
         { provide: AuthService, useValue: auth },
         // Por defecto la suscripción no responde: sin aviso (fase 8b).
         { provide: SubscriptionApi, useValue: { current: () => EMPTY } },
-        // La impresora de comandas (Fase 12b-3) no corre en estas pruebas.
-        { provide: KitchenPrinterService, useValue: { start: () => undefined, stop: () => undefined } },
+        // Lo del restaurante en segundo plano (Fases 12b-3 y 12b-4) no corre en estas pruebas.
+        { provide: RestaurantLiveService, useValue: { start: () => undefined, stop: () => undefined } },
         // Sin logo (fase 8c).
         { provide: BrandingService, useValue: { logo: signal(null) } },
       ],

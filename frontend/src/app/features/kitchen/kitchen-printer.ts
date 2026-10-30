@@ -1,8 +1,9 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { MessageService } from 'primeng/api';
-import { Observable, catchError, concatMap, from, map, of, toArray } from 'rxjs';
+import { Observable, Subscription, catchError, concatMap, filter, from, map, of, toArray } from 'rxjs';
 import { KitchenApi, KitchenTicket } from '../../core/api/kitchen.api';
 import { AuthService } from '../../core/auth/auth.service';
+import { DiningEventsService } from '../../core/realtime/dining-events.service';
 import { loadReceiptWidth } from '../../shared/receipt/receipt-prefs';
 import { printComandas } from './comanda-print';
 
@@ -11,7 +12,7 @@ import { printComandas } from './comanda-print';
  * computador de la cocina (o de la caja) marca qué estaciones imprime y, mientras XASKA esté abierto en cualquier
  * pantalla, saca solo las comandas nuevas de esas estaciones. Cada comanda la reclama un solo equipo en el servidor,
  * así dos impresoras de la misma estación no la sacan dos veces. Para que Chrome imprima sin preguntar se abre con
- * --kiosk-printing (manual de uso). En la Fase 12b-4 la consulta cada 5 s pasa a tiempo real.
+ * --kiosk-printing (manual de uso). Desde la Fase 12b-4 imprime al llegar el aviso en tiempo real.
  */
 export interface PrinterConfig {
   branchId: string | null;
@@ -64,15 +65,30 @@ export class KitchenPrinterService {
   /** Última comanda que sacó (para mostrarlo en Comandas). */
   readonly lastPrinted = signal<number | null>(null);
 
+  private readonly events = inject(DiningEventsService);
   private timer: ReturnType<typeof setInterval> | null = null;
+  private subscription: Subscription | null = null;
+  private beats = 0;
   private busy = false;
 
-  /** Lo llama el marco de la aplicación al entrar; no hace nada si el equipo no imprime. */
+  /**
+   * Lo llama el marco de la aplicación al entrar; no hace nada si el equipo no imprime. Con los avisos en tiempo real
+   * (Fase 12b-4) imprime al llegar la comanda; la consulta cada 5 s queda de respaldo (y una vez por minuto, por si
+   * se perdió un aviso).
+   */
   start(): void {
     this.config.set(loadPrinterConfig(this.auth.tenantId()));
     if (this.timer === null) {
-      this.timer = setInterval(() => this.tick(), PRINTER_POLL_MS);
+      this.timer = setInterval(() => {
+        this.beats++;
+        if (!this.events.connected() || this.beats % 12 === 0) {
+          this.tick();
+        }
+      }, PRINTER_POLL_MS);
     }
+    this.subscription ??= this.events.events$
+      .pipe(filter((e) => e.type === 'TICKET_SENT' || e.type === 'ITEM_VOIDED'))
+      .subscribe(() => this.tick());
   }
 
   stop(): void {
@@ -80,6 +96,8 @@ export class KitchenPrinterService {
       clearInterval(this.timer);
       this.timer = null;
     }
+    this.subscription?.unsubscribe();
+    this.subscription = null;
   }
 
   configure(config: PrinterConfig | null): void {
@@ -90,7 +108,8 @@ export class KitchenPrinterService {
   private tick(): void {
     const config = loadPrinterConfig(this.auth.tenantId());
     this.config.set(config);
-    if (this.busy || !config || !this.auth.hasPermission('kitchen:send') || !this.auth.hasPermission('module:kitchen')) {
+    const allowed = this.auth.hasPermission('kitchen:send') || this.auth.hasPermission('kitchen:view');
+    if (this.busy || !config || !allowed || !this.auth.hasPermission('module:kitchen')) {
       return;
     }
     this.busy = true;

@@ -1,4 +1,4 @@
-import { Component, DestroyRef, HostListener, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
@@ -12,9 +12,10 @@ import { FormDialogComponent } from '../../shared/forms/form-dialog.component';
 import { XIconComponent } from '../../shared/icons/xicon.component';
 import { formatCop } from '../../shared/money';
 import { PageHeaderComponent } from '../../shared/page-header.component';
+import { liveRefresh } from '../../core/realtime/live-refresh';
 import { kindGlyph, minutesOpen, openFor } from './dining-labels';
 
-/** Cada cuánto se actualiza el salón (la 12b-4 lo hará al instante). */
+/** Respaldo: cada cuánto se actualiza el salón si no hay conexión en tiempo real (Fase 12b-4). */
 const REFRESH_MS = 15_000;
 
 /**
@@ -73,10 +74,14 @@ const REFRESH_MS = 15_000;
                 @if (t.tab; as tab) {
                   <a [routerLink]="['/app/mesas/cuenta', tab.id]" class="table-tile table-tile--busy"
                      [class.table-tile--late]="late(tab.openedAt)"
-                     [attr.aria-label]="'Mesa ' + t.name + ', ocupada, ' + cop(tab.total) + ', ' + since(tab.openedAt)">
+                     [attr.aria-label]="'Mesa ' + t.name + ', ocupada, ' + cop(tab.total) + ', ' + since(tab.openedAt) + (tab.ready ? ', con platos listos para llevar' : '')">
                     <span class="flex items-start justify-between gap-2">
                       <span class="text-2xl font-extrabold tracking-tight">{{ t.name }}</span>
-                      <span class="pill">{{ since(tab.openedAt) }}</span>
+                      @if (tab.ready > 0) {
+                        <span class="pill pill--ready">{{ tab.ready === 1 ? 'Lista' : tab.ready + ' listas' }}</span>
+                      } @else {
+                        <span class="pill">{{ since(tab.openedAt) }}</span>
+                      }
                     </span>
                     <span>
                       <span class="block text-lg font-extrabold tabular-nums">{{ cop(tab.total) }}</span>
@@ -106,7 +111,7 @@ const REFRESH_MS = 15_000;
                   <app-xicon [name]="glyph(o.kind)" [size]="30" />
                   <span class="min-w-0 flex-1">
                     <span class="block font-bold truncate">{{ o.label }}</span>
-                    <span class="block text-xs text-muted">{{ since(o.openedAt) }} · {{ o.items }} prod.</span>
+                    <span class="block text-xs text-muted">{{ since(o.openedAt) }} · {{ o.items }} prod.{{ o.ready ? ' · Lista' : '' }}</span>
                   </span>
                   <span class="font-extrabold tabular-nums">{{ cop(o.total) }}</span>
                 </a>
@@ -196,12 +201,12 @@ const REFRESH_MS = 15_000;
       background: var(--surface);
       color: var(--text);
     }
+    .pill--ready { background: var(--success-soft); color: var(--success-soft-text); border: 1px solid var(--success); }
   `,
 })
 export class FloorComponent implements OnInit {
   private readonly api = inject(DiningApi);
   protected readonly router = inject(Router);
-  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly canManage = permissionFlag('tables:manage');
   protected readonly floor = signal<Floor | null>(null);
@@ -224,10 +229,14 @@ export class FloorComponent implements OnInit {
   private branchId: string | null = null;
   private now = new Date();
 
+  constructor() {
+    // Al instante con los avisos en tiempo real (Fase 12b-4); sin conexión, cada 15 s.
+    liveRefresh({ when: (e) => e.type === 'TAB_CHANGED' || e.type === 'TICKET_STATUS', load: () => this.load(),
+      fallbackMs: REFRESH_MS });
+  }
+
   ngOnInit(): void {
     this.load();
-    const timer = setInterval(() => this.load(), REFRESH_MS);
-    this.destroyRef.onDestroy(() => clearInterval(timer));
   }
 
   /** Al volver a la pestaña o a la app, el salón se pone al día. */

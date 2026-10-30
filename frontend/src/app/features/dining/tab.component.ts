@@ -26,7 +26,10 @@ import { ProductGridComponent } from '../pos/product-grid.component';
 import { modifierSummary } from '../pos/sale-math';
 import { VariantPickerComponent } from '../pos/variant-picker.component';
 import { activeItems, itemExtras, itemTotal, kindGlyph, openFor } from './dining-labels';
+import { KitchenApi } from '../../core/api/kitchen.api';
+import { liveRefresh } from '../../core/realtime/live-refresh';
 import { KitchenPrinterService } from '../kitchen/kitchen-printer';
+import { ticketStatusLabel } from '../kitchen/ticket-labels';
 import { PendingItem, addPending, pendingPrice, pendingTotal, stepPending, toItemInputs } from './pending-items';
 
 /** Producto esperando su precio libre o sus adiciones antes de entrar al pedido. */
@@ -194,13 +197,19 @@ interface Picking {
                 <h3 class="text-sm font-bold mb-1">Comandas</h3>
                 <ul class="flex flex-col gap-1" aria-label="Comandas de la cuenta">
                   @for (k of t.tickets; track k.id) {
-                    <li class="flex items-center justify-between gap-2 text-sm">
+                    <li class="flex flex-wrap items-center justify-between gap-x-2 text-sm">
                       <span><span class="font-semibold">{{ k.stationName }} #{{ k.number }}</span>
+                        <span class="status" [attr.data-status]="k.status">{{ statusLabel(k.status) }}</span>
                         <span class="text-muted"> · {{ time(k.sentAt) }} · {{ k.items === 1 ? '1 producto' : k.items + ' productos' }}</span></span>
-                      @if (canSend()) {
-                        <p-button [label]="k.printCount === 0 ? 'Imprimir' : 'Reimprimir'" icon="pi pi-print" [text]="true"
-                                  size="small" (onClick)="printTicket(k.id)" />
-                      }
+                      <span class="flex gap-1">
+                        @if (canSend() && k.status === 'READY') {
+                          <p-button label="Entregada" icon="pi pi-check" size="small" (onClick)="deliver(k.id)" />
+                        }
+                        @if (canSend()) {
+                          <p-button [label]="k.printCount === 0 ? 'Imprimir' : 'Reimprimir'" icon="pi pi-print" [text]="true"
+                                    size="small" (onClick)="printTicket(k.id)" />
+                        }
+                      </span>
                     </li>
                   }
                 </ul>
@@ -385,6 +394,17 @@ interface Picking {
       background: var(--surface);
     }
     .pick:hover { border-color: var(--brand); }
+    .status {
+      margin-left: 0.375rem;
+      padding: 0 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      background: var(--surface-alt);
+    }
+    .status[data-status='NEW'] { background: var(--info-soft); color: var(--info-soft-text); }
+    .status[data-status='PREPARING'] { background: var(--warning-soft); color: var(--warning-soft-text); }
+    .status[data-status='READY'] { background: var(--success-soft); color: var(--success-soft-text); }
   `,
 })
 export class TabComponent implements OnInit, HasUnsavedChanges {
@@ -397,6 +417,8 @@ export class TabComponent implements OnInit, HasUnsavedChanges {
   private readonly messages = inject(MessageService);
   private readonly auth = inject(AuthService);
   private readonly printer = inject(KitchenPrinterService);
+  private readonly kitchen = inject(KitchenApi);
+  protected readonly statusLabel = ticketStatusLabel;
 
   protected readonly canCharge = permissionFlag('sales:create');
   private readonly kitchenOn = permissionFlag('module:kitchen');
@@ -462,6 +484,11 @@ export class TabComponent implements OnInit, HasUnsavedChanges {
   @HostListener('window:beforeunload', ['$event'])
   protected beforeUnload(event: BeforeUnloadEvent): void {
     warnIfUnsaved(event, this.hasUnsavedChanges());
+  }
+
+  constructor() {
+    // Lo que cambie en esta cuenta desde otro equipo (otro mesero, la cocina) aparece al instante (Fase 12b-4).
+    liveRefresh({ when: (e) => e.tabId === this.id, load: () => this.reload(), fallbackMs: 20_000 });
   }
 
   ngOnInit(): void {
@@ -607,6 +634,14 @@ export class TabComponent implements OnInit, HasUnsavedChanges {
         this.messages.add({ severity: 'success', summary: 'Enviado a cocina', life: 2000 });
       },
       error: (e: unknown) => this.messages.add({ severity: 'error', summary: 'No se envió', detail: problemMessage(e) }),
+    });
+  }
+
+  /** El plato llegó a la mesa: la comanda sale de la pantalla de cocina (Fase 12b-4). */
+  protected deliver(ticketId: string): void {
+    this.kitchen.setStatus(ticketId, 'DELIVERED').subscribe({
+      next: () => this.reload(),
+      error: (e: unknown) => this.messages.add({ severity: 'error', summary: 'No se marcó', detail: problemMessage(e) }),
     });
   }
 

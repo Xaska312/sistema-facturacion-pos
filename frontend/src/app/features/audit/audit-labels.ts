@@ -68,6 +68,7 @@ const ACTIONS: Readonly<Record<string, string>> = {
   BUSINESS_CREATED: 'Creó el negocio',
   KITCHEN_SENT: 'Envió un pedido a cocina',
   KITCHEN_TICKET_REPRINTED: 'Reimprimió una comanda',
+  KITCHEN_TICKET_STATUS: 'Cambió el estado de una comanda',
   TAB_CANCELLED: 'Canceló una cuenta de mesa',
   TAB_CHARGED: 'Cobró una cuenta de mesa',
   TAB_ITEMS_ADDED: 'Agregó productos a una cuenta',

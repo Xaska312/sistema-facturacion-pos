@@ -137,6 +137,16 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
       'Para que Chrome no pregunte antes de imprimir, ábrelo con --kiosk-printing (ver el manual).',
     ],
   },
+  '/app/cocina': {
+    manual: 'pantalla-cocina',
+    title: 'Pantalla de cocina',
+    tips: [
+      'Las comandas llegan al instante, la más vieja primero; amarilla desde 10 min y roja desde 20.',
+      'Toca "Preparando" al empezar y "Lista" al terminar: quien la envió recibe un aviso con sonido.',
+      'Toca "Activar sonido" una vez al abrir la pantalla; elige arriba qué estaciones ve esta pantalla.',
+      'Si anulan un plato, sale tachado con alarma: no lo prepares.',
+    ],
+  },
   '/app/comandas/estaciones': {
     manual: 'estaciones',
     title: 'Estaciones de cocina',

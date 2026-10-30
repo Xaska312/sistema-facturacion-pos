@@ -113,12 +113,17 @@ public class DiningService {
         return new Floor(branchId, options, zones, others);
     }
 
-    /** Cuentas abiertas de la sucursal con su total (precios del momento de agregar) y cantidad de productos. */
+    /**
+     * Cuentas abiertas de la sucursal con su total (precios del momento de agregar), cantidad de productos y comandas
+     * listas para llevar a la mesa (Fase 12b-4).
+     */
     private List<TabSummary> openTabs(UUID branchId) {
         List<Object[]> data = rows("""
                 SELECT t.id, t.number, t.kind, t.table_id, dt.name, t.opened_at, t.guests, t.customer_name, t.opened_by,
                        coalesce(sum(i.quantity * i.unit_price) FILTER (WHERE i.voided_at IS NULL), 0),
-                       coalesce(sum(i.quantity) FILTER (WHERE i.voided_at IS NULL), 0)
+                       coalesce(sum(i.quantity) FILTER (WHERE i.voided_at IS NULL), 0),
+                       (SELECT count(DISTINCT k.id) FROM kitchen_tickets k JOIN tab_items ki ON ki.ticket_id = k.id
+                        WHERE ki.tab_id = t.id AND k.status = 'READY')
                 FROM tabs t
                 LEFT JOIN dining_tables dt ON dt.id = t.table_id
                 LEFT JOIN tab_items i ON i.tab_id = t.id
@@ -134,7 +139,8 @@ public class DiningService {
             long number = ((Number) r[1]).longValue();
             result.add(new TabSummary((UUID) r[0], number, kind,
                     TabLabels.label(kind, number, (String) r[4], (String) r[7]), (UUID) r[3], Rows.instant(r[5]),
-                    Rows.integer(r[6]), (String) r[7], money(r[9]), ((Number) r[10]).intValue(), names.get((UUID) r[8])));
+                    Rows.integer(r[6]), (String) r[7], money(r[9]), ((Number) r[10]).intValue(), names.get((UUID) r[8]),
+                    ((Number) r[11]).intValue()));
         }
         return result;
     }

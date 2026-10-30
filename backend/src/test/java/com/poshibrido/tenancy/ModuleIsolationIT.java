@@ -46,7 +46,7 @@ class ModuleIsolationIT extends IntegrationTest {
         assertThat(registerCodes).doesNotContain("SECRETA");
         List<String> roleCodes = JsonPath.read(api.getWith(b.tenant(), "/api/v1/roles")
                 .andReturn().getResponse().getContentAsString(), "$[*].code");
-        assertThat(roleCodes).doesNotContain("SOLOA").hasSize(7);
+        assertThat(roleCodes).doesNotContain("SOLOA").hasSize(8);
         api.getWith(b.tenant(), "/api/v1/members").andExpect(jsonPath("$.totalElements").value(1));
         api.getWith(b.tenant(), "/api/v1/members/invitations").andExpect(jsonPath("$.totalElements").value(0));
         api.getWith(b.tenant(), "/api/v1/settings").andExpect(jsonPath("$.receiptFooter").value("Gracias por su compra"));
