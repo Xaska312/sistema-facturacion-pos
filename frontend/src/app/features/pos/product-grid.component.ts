@@ -6,7 +6,7 @@ import { Category, PageResponse, Product, ProductModelRow } from '../../core/api
 import { CatalogApi } from '../../core/api/catalog.api';
 import { formatCop } from '../../shared/money';
 import { stockLabel } from './pos-labels';
-import { GridCard, firstName, gridCards } from './pos-cards';
+import { GridCard, firstName, gridCards, initial } from './pos-cards';
 
 /** Pestaña de la cuadrícula: favoritos, todos o una categoría (por id). */
 export type GridTab = 'favorites' | 'all' | string;
@@ -39,7 +39,7 @@ const EMPTY_MODELS: PageResponse<ProductModelRow> = { content: [], page: 0, size
       @if (loading() && cards().length === 0) {
         <div class="grid gap-2 grid-cols-2 sm:grid-cols-3 xl:grid-cols-4" aria-hidden="true">
           @for (i of placeholders; track i) {
-            <p-skeleton height="6rem" borderRadius="0.75rem" />
+            <p-skeleton height="7.5rem" borderRadius="1.25rem" />
           }
         </div>
       } @else if (cards().length === 0) {
@@ -54,7 +54,7 @@ const EMPTY_MODELS: PageResponse<ProductModelRow> = { content: [], page: 0, size
           }
         </div>
       } @else {
-        <ul class="grid gap-2 grid-cols-2 sm:grid-cols-3 xl:grid-cols-4" aria-label="Lista de productos">
+        <ul class="grid gap-3 grid-cols-2 sm:grid-cols-3 xl:grid-cols-4" aria-label="Lista de productos">
           @for (card of cards(); track card.kind + card.id) {
             @if (card.kind === 'model') {
               @let m = card.model;
@@ -62,10 +62,11 @@ const EMPTY_MODELS: PageResponse<ProductModelRow> = { content: [], page: 0, size
                 <button type="button" class="product-card" [disabled]="disabled()"
                         [attr.aria-label]="'Elegir talla de ' + m.name + ', ' + cop(m.salePrice)"
                         (click)="pickModel.emit(m)">
-                  <span class="font-medium leading-snug line-clamp-2">{{ m.name }}</span>
+                  <span class="mono" aria-hidden="true">{{ initial(m.name) }}</span>
+                  <span class="font-semibold leading-snug line-clamp-2">{{ m.name }}</span>
                   <span class="mt-auto flex items-end justify-between gap-1 w-full">
-                    <span class="font-semibold">{{ cop(m.salePrice) }}</span>
-                    <span class="text-xs rounded px-1.5 py-0.5 bg-brand-soft text-brand-soft-fg inline-flex items-center gap-1">
+                    <span class="price">{{ cop(m.salePrice) }}</span>
+                    <span class="text-xs font-semibold rounded-full px-2 py-0.5 bg-brand-soft text-brand-soft-fg inline-flex items-center gap-1">
                       <i class="pi pi-th-large text-xs" aria-hidden="true"></i>Elegir talla
                     </span>
                   </span>
@@ -78,11 +79,12 @@ const EMPTY_MODELS: PageResponse<ProductModelRow> = { content: [], page: 0, size
                 <button type="button" class="product-card" [disabled]="disabled()" [class.opacity-60]="badge === 'Agotado'"
                         [attr.aria-label]="'Agregar ' + p.name + ', ' + priceText(p) + (badge ? ', ' + badge : '')"
                         (click)="pick.emit(p)">
-                  <span class="font-medium leading-snug line-clamp-2 pr-8">{{ p.name }}</span>
+                  <span class="mono" aria-hidden="true">{{ initial(p.name) }}</span>
+                  <span class="font-semibold leading-snug line-clamp-2">{{ p.name }}</span>
                   <span class="mt-auto flex items-end justify-between gap-1 w-full">
-                    <span class="font-semibold">{{ priceText(p) }}</span>
+                    <span class="price">{{ priceText(p) }}</span>
                     @if (badge) {
-                      <span class="text-xs rounded px-1.5 py-0.5"
+                      <span class="text-xs font-semibold rounded-full px-2 py-0.5"
                             [class.bg-danger-soft]="badge === 'Agotado'" [class.text-danger-soft-fg]="badge === 'Agotado'"
                             [class.bg-surface-alt]="badge !== 'Agotado'" [class.text-muted]="badge !== 'Agotado'">
                         {{ badge }}
@@ -136,16 +138,18 @@ const EMPTY_MODELS: PageResponse<ProductModelRow> = { content: [], page: 0, size
     .chip:disabled {
       opacity: 0.6;
     }
+    /* Baldosa de producto (identidad parte 3): inicial en color de marca, nombre y precio grande. */
     .product-card {
       display: flex;
       flex-direction: column;
       align-items: flex-start;
-      gap: 0.5rem;
+      gap: 0.375rem;
       width: 100%;
-      min-height: 6rem;
-      padding: 0.75rem;
+      height: 100%;
+      min-height: 7.5rem;
+      padding: 0.75rem 0.875rem;
       text-align: left;
-      border-radius: 0.75rem;
+      border-radius: 1.25rem;
       border: 1px solid var(--surface-border);
       background: var(--surface);
       box-shadow: var(--elevation-card);
@@ -160,6 +164,24 @@ const EMPTY_MODELS: PageResponse<ProductModelRow> = { content: [], page: 0, size
     .product-card:disabled {
       cursor: not-allowed;
     }
+    .mono {
+      width: 2rem;
+      height: 2rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 0.75rem;
+      background: var(--brand-soft);
+      color: var(--brand-soft-text);
+      font-weight: 800;
+      font-size: 0.9375rem;
+    }
+    .price {
+      font-size: 1.125rem;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      font-variant-numeric: tabular-nums;
+    }
     .star {
       position: absolute;
       top: 0;
@@ -169,7 +191,7 @@ const EMPTY_MODELS: PageResponse<ProductModelRow> = { content: [], page: 0, size
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      border-radius: 0.75rem;
+      border-radius: 1.25rem;
       color: var(--text-muted);
     }
     .star:hover {
@@ -192,6 +214,7 @@ export class ProductGridComponent implements OnInit {
   readonly favoriteToggle = output<Product>();
 
   protected readonly cop = formatCop;
+  protected readonly initial = initial;
   protected readonly placeholders = [0, 1, 2, 3, 4, 5, 6, 7];
   protected readonly categories = signal<Category[]>([]);
   protected readonly tab = signal<GridTab>('all');

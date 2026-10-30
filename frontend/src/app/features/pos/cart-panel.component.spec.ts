@@ -41,7 +41,7 @@ describe('CartPanelComponent', () => {
     expect(aside?.getAttribute('aria-label')).toBe('Venta actual');
     expect(element().textContent).toContain('Gaseosa');
     expect(element().textContent).toContain('Consumidor final');
-    expect(element().textContent).toContain('Cobrar (F4)');
+    expect(button('Cobrar (F4)')).toBeTruthy();
     expect(button('Uno más de Gaseosa')).toBeTruthy();
     expect(button('Uno menos de Gaseosa')).toBeTruthy();
     expect(button('Quitar Gaseosa')).toBeTruthy();

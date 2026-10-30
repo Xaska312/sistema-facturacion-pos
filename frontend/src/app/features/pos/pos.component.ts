@@ -98,6 +98,8 @@ const STOCK_PAGES = 5;
  * una barra fija con el total y Cobrar. "Pausar venta" guarda el carrito en este equipo (held-sales.ts).
  * El lector actúa como teclado + Enter sobre el campo de código, que recupera el foco solo.
  * Atajos: F2 buscar por nombre, F4 cobrar, Enter registrar / nueva venta, Esc cancelar, ? ver atajos.
+ * Identidad parte 3 (decisión 265): sin dock; encabezado, lector, productos y venta en baldosas, y el total con
+ * Cobrar en la baldosa de color de marca (como la baldosa principal del inicio).
  */
 @Component({
   selector: 'app-pos',
@@ -105,7 +107,7 @@ const STOCK_PAGES = 5;
     ReceiptComponent, PosHeaderComponent, ProductGridComponent, CartPanelComponent, OpenCashComponent,
     VariantPickerComponent, NewCustomerDialogComponent],
   template: `
-    <div class="min-h-dvh md:h-dvh flex flex-col bg-ground">
+    <div class="min-h-dvh md:h-dvh flex flex-col gap-3 p-3 bg-ground">
       <app-pos-header [businessName]="config()?.businessName ?? ''" [session]="session()"
                       [userName]="auth.user()?.fullName ?? ''" [online]="online()" (help)="openHelp()" />
 
@@ -118,13 +120,13 @@ const STOCK_PAGES = 5;
         </div>
       } @else if (session() === undefined) {
         <div class="flex-1 flex items-center justify-center p-6" aria-busy="true">
-          <p-skeleton width="20rem" height="12rem" borderRadius="0.75rem" />
+          <p-skeleton width="20rem" height="12rem" borderRadius="1.75rem" />
         </div>
       } @else if (session() === null) {
         <app-open-cash class="flex-1 overflow-auto" (opened)="cashOpened($event)" />
       } @else {
-        <div class="flex-1 min-h-0 flex flex-col md:flex-row gap-3 p-3">
-          <section class="h-[55dvh] md:h-auto md:flex-1 min-w-0 min-h-0 flex flex-col gap-2" aria-label="Productos">
+        <div class="flex-1 min-h-0 flex flex-col md:flex-row gap-3">
+          <section class="h-[55dvh] md:h-auto md:flex-1 min-w-0 min-h-0 flex flex-col gap-3" aria-label="Productos">
             <!-- Celular: buscar por nombre a la vista (no hay F2). El envoltorio lleva md:hidden porque .phone-search
                  fija su propio display. -->
             <div class="md:hidden shrink-0">
@@ -133,10 +135,11 @@ const STOCK_PAGES = 5;
                 <span>Buscar producto por nombre o código</span>
               </button>
             </div>
-            <div class="flex gap-2 shrink-0">
+            <!-- Baldosa del lector: el campo de código grande y las herramientas de la venta. -->
+            <div class="scan-tile">
               <div class="relative flex-1 min-w-0" data-tour="scanner">
-                <i class="pi pi-barcode absolute left-3 top-1/2 -translate-y-1/2 z-10 pointer-events-none text-muted" aria-hidden="true"></i>
-                <input #scanner pInputText class="scanner-input w-full h-12" [(ngModel)]="code" (keydown.enter)="scan()"
+                <i class="pi pi-barcode absolute left-4 top-1/2 -translate-y-1/2 z-10 pointer-events-none text-brand text-lg" aria-hidden="true"></i>
+                <input #scanner pInputText class="scanner-input w-full h-14" [(ngModel)]="code" (keydown.enter)="scan()"
                        (blur)="keepFocus()" autocomplete="off" aria-label="Código de barras o SKU"
                        [attr.inputmode]="keyboard() ? null : 'none'"
                        placeholder="Escanea o escribe el código / SKU y Enter (3*código = 3 unidades)" />
@@ -181,14 +184,14 @@ const STOCK_PAGES = 5;
 
         <!-- Celular: el carrito queda debajo de los productos; el total y Cobrar siempre a la mano. -->
         @if (lines().length > 0) {
-          <div class="h-24 md:hidden" aria-hidden="true"></div>
+          <div class="h-28 md:hidden" aria-hidden="true"></div>
           <div class="md:hidden">
             <div class="phone-bar" role="region" aria-label="Total de la venta">
               <button type="button" class="phone-bar-summary" (click)="showCart()">
                 <span class="text-xs text-muted">{{ q(totals().items) }} art. · Ver venta</span>
-                <span class="text-xl font-semibold tabular-nums">{{ cop(totals().total) }}</span>
+                <span class="text-xl font-extrabold tracking-tight tabular-nums">{{ cop(totals().total) }}</span>
               </button>
-              <p-button label="Cobrar" icon="pi pi-wallet" styleClass="min-h-12 px-5 font-semibold"
+              <p-button label="Cobrar" icon="pi pi-wallet" styleClass="min-h-12 px-5 font-bold" [rounded]="true"
                         (onClick)="openPayment()" />
             </div>
           </div>
@@ -345,7 +348,7 @@ const STOCK_PAGES = 5;
               [closable]="!saving()" [closeOnEscape]="!saving()"
               [breakpoints]="{ '640px': '100vw' }" (onShow)="focusPayment()" (onHide)="focusScanner()">
       <p class="text-center text-sm text-muted">Total a cobrar</p>
-      <p class="text-5xl font-bold text-center tabular-nums mb-4">{{ cop(totals().total) }}</p>
+      <p class="text-5xl font-extrabold tracking-tight text-center tabular-nums mb-4">{{ cop(totals().total) }}</p>
 
       <div class="flex items-center justify-between gap-2 mb-2">
         <p id="pay-methods" class="text-sm font-medium">{{ mixed ? 'Agregar otro medio' : 'Medio de pago' }}</p>
@@ -412,17 +415,17 @@ const STOCK_PAGES = 5;
 
       @let sum = paymentSummary();
       <div class="grid grid-cols-2 gap-2 mt-2" aria-live="polite">
-        <div class="rounded-xl bg-surface-alt p-3">
+        <div class="rounded-2xl bg-surface-alt p-3">
           <p class="text-sm text-muted">Recibido</p>
           <p class="text-2xl font-semibold tabular-nums">{{ cop(sum.paid) }}</p>
         </div>
         @if (sum.missing > 0) {
-          <div class="rounded-xl bg-danger-soft text-danger-soft-fg p-3 text-right">
+          <div class="rounded-2xl bg-danger-soft text-danger-soft-fg p-3 text-right">
             <p class="text-sm font-medium">Falta</p>
             <p class="text-3xl font-bold tabular-nums">{{ cop(sum.missing) }}</p>
           </div>
         } @else {
-          <div class="rounded-xl bg-success-soft text-success-soft-fg p-3 text-right">
+          <div class="rounded-2xl bg-success-soft text-success-soft-fg p-3 text-right">
             <p class="text-sm font-medium">Cambio</p>
             <p class="text-4xl font-bold tabular-nums">{{ cop(sum.change) }}</p>
           </div>
@@ -522,18 +525,31 @@ const STOCK_PAGES = 5;
   styles: `
     /* Los estilos de PrimeNG (sin capa) ganan a las utilidades de Tailwind: el espacio del icono va aquí. */
     .scanner-input {
-      padding-left: 2.5rem;
+      padding-left: 2.75rem;
       font-size: 1.125rem;
+      border-radius: 1rem;
+    }
+    /* Identidad parte 3 (decisión 265): el lector va en su propia baldosa, como las del inicio. */
+    .scan-tile {
+      display: flex;
+      flex-shrink: 0;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem;
+      border-radius: 1.25rem;
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      box-shadow: var(--elevation-card);
     }
     .tool-btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 0.375rem;
-      min-height: 3rem;
-      min-width: 3rem;
-      padding: 0 0.875rem;
-      border-radius: 0.5rem;
+      min-height: 3.5rem;
+      min-width: 3.5rem;
+      padding: 0 1rem;
+      border-radius: 1rem;
       border: 1px solid var(--surface-border);
       background: var(--surface);
       font-size: 0.875rem;
@@ -554,7 +570,7 @@ const STOCK_PAGES = 5;
       gap: 0.375rem;
       min-height: 5rem;
       padding: 0.5rem;
-      border-radius: 0.75rem;
+      border-radius: 1.25rem;
       border: 2px solid var(--surface-border);
       background: var(--surface);
       font-weight: 600;
@@ -562,7 +578,7 @@ const STOCK_PAGES = 5;
     .bill-btn {
       min-height: 3rem;
       padding: 0 1rem;
-      border-radius: 0.75rem;
+      border-radius: 1rem;
       border: 1px solid var(--surface-border);
       background: var(--surface-alt);
       font-size: 1.125rem;
@@ -588,9 +604,9 @@ const STOCK_PAGES = 5;
       align-items: center;
       gap: 0.625rem;
       width: 100%;
-      min-height: 3.25rem;
+      min-height: 3.5rem;
       padding: 0 1rem;
-      border-radius: 0.75rem;
+      border-radius: 1.25rem;
       border: 2px solid var(--brand);
       background: var(--surface);
       color: var(--text-muted);
@@ -615,18 +631,21 @@ const STOCK_PAGES = 5;
       justify-content: center;
     }
     /* Celular: total y Cobrar fijos abajo (el carrito queda debajo de los productos). */
+    /* Flota en baldosa sobre el borde inferior, como el dock del resto de la app. */
     .phone-bar {
       position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 0;
+      left: 0.75rem;
+      right: 0.75rem;
+      bottom: calc(0.75rem + env(safe-area-inset-bottom));
       z-index: 20;
       display: flex;
       align-items: center;
       gap: 0.75rem;
-      padding: 0.625rem 0.75rem calc(0.625rem + env(safe-area-inset-bottom));
+      padding: 0.5rem 0.5rem 0.5rem 1rem;
+      border-radius: 1.5rem;
       background: var(--surface);
-      border-top: 1px solid var(--surface-border);
+      border: 1px solid var(--surface-border);
+      box-shadow: var(--elevation-overlay);
     }
     .phone-bar-summary {
       flex: 1;

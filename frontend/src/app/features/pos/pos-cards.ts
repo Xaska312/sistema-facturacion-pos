@@ -28,6 +28,12 @@ export function firstName(names: readonly (string | null)[]): string | null {
   return names.filter((n): n is string => n !== null).sort(byName)[0] ?? null;
 }
 
+/** Inicial de la baldosa de un producto (identidad parte 3): primera letra o número del nombre, en mayúscula. */
+export function initial(name: string): string {
+  const match = /[\p{L}\p{N}]/u.exec(name);
+  return match ? match[0].toLocaleUpperCase('es') : '·';
+}
+
 function byName(a: string, b: string): number {
   return a.localeCompare(b, 'es', { sensitivity: 'base' });
 }
