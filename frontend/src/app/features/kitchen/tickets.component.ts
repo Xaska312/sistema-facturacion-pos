@@ -1,4 +1,4 @@
-import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
@@ -12,10 +12,12 @@ import { formatQuantity } from '../../shared/money';
 import { PageHeaderComponent } from '../../shared/page-header.component';
 import { ReceiptWidth, loadReceiptWidth, saveReceiptWidth } from '../../shared/receipt/receipt-prefs';
 import { openFor } from '../dining/dining-labels';
+import { liveRefresh } from '../../core/realtime/live-refresh';
 import { printComandas } from './comanda-print';
+import { ticketStatusLabel } from './ticket-labels';
 import { KitchenPrinterService } from './kitchen-printer';
 
-/** Cada cuánto se actualiza la lista (la 12b-4 lo hará al instante). */
+/** Respaldo: cada cuánto se actualiza la lista sin conexión en tiempo real (Fase 12b-4). */
 const REFRESH_MS = 10_000;
 
 /**
@@ -28,6 +30,10 @@ const REFRESH_MS = 10_000;
   imports: [FormsModule, RouterLink, ButtonModule, SkeletonModule, PageHeaderComponent, EmptyStateComponent, XIconComponent],
   template: `
     <app-page-header title="Comandas" description="Lo que se ha enviado a cocina y bar en las últimas horas.">
+      @if (canDisplay()) {
+        <a pButton routerLink="/app/cocina" label="Pantalla de cocina" icon="pi pi-desktop" severity="secondary"
+           [outlined]="true"></a>
+      }
       @if (canManage()) {
         <a pButton routerLink="/app/comandas/estaciones" label="Estaciones" icon="pi pi-cog" severity="secondary"
            [outlined]="true"></a>
@@ -106,7 +112,9 @@ const REFRESH_MS = 10_000;
             <li class="card p-4 flex flex-col gap-2">
               <div class="flex items-start justify-between gap-2">
                 <div class="min-w-0">
-                  <p class="text-xs font-bold uppercase tracking-wide text-muted">{{ t.stationName }} · #{{ t.number }}</p>
+                  <p class="text-xs font-bold uppercase tracking-wide text-muted">
+                    {{ t.stationName }} · #{{ t.number }} · {{ t.type === 'VOID' ? 'Anulación de #' + t.voidOfNumber : statusLabel(t.status) }}
+                  </p>
                   <h2 class="text-xl font-extrabold tracking-tight leading-tight">{{ t.tabLabel }}</h2>
                   <p class="text-xs text-muted">hace {{ since(t.sentAt) }}{{ t.sentByName ? ' · ' + t.sentByName : '' }}</p>
                 </div>
@@ -183,6 +191,7 @@ export class TicketsComponent implements OnInit {
   protected readonly printer = inject(KitchenPrinterService);
 
   protected readonly canManage = permissionFlag('kitchen:manage');
+  protected readonly canDisplay = permissionFlag('kitchen:view');
   protected readonly stations = signal<KitchenStation[] | null>(null);
   protected readonly tickets = signal<KitchenTicket[] | null>(null);
   protected readonly branches = signal<BranchOption[]>([]);
@@ -190,6 +199,7 @@ export class TicketsComponent implements OnInit {
   protected readonly filter = signal<string | null>(null);
   protected readonly width = signal<ReceiptWidth>(loadReceiptWidth());
   protected readonly q = formatQuantity;
+  protected readonly statusLabel = ticketStatusLabel;
 
   protected readonly shown = computed(() => {
     const f = this.filter();
@@ -197,8 +207,7 @@ export class TicketsComponent implements OnInit {
   });
 
   constructor() {
-    const timer = setInterval(() => this.loadTickets(), REFRESH_MS);
-    inject(DestroyRef).onDestroy(() => clearInterval(timer));
+    liveRefresh({ when: (e) => e.type !== 'TAB_CHANGED', load: () => this.loadTickets(), fallbackMs: REFRESH_MS });
   }
 
   ngOnInit(): void {
@@ -255,8 +264,8 @@ export class TicketsComponent implements OnInit {
   protected test(): void {
     void printComandas([{
       id: 'prueba', number: 0, branchId: '', tabId: '', tabLabel: 'Prueba de impresora', kind: 'TABLE', guests: null,
-      notes: null, stationId: '', stationName: 'Cocina', sentAt: new Date().toISOString(), sentByName: null, status: 'NEW',
-      printCount: 1, items: [{ id: 'i', name: 'Hamburguesa', quantity: 1, note: 'sin cebolla', voided: false,
+      notes: null, stationId: '', stationName: 'Cocina', sentAt: new Date().toISOString(), sentById: null, sentByName: null,
+      status: 'NEW', printCount: 1, type: 'ORDER', voidOfNumber: null, preparingAt: null, readyAt: null, items: [{ id: 'i', name: 'Hamburguesa', quantity: 1, note: 'sin cebolla', voided: false,
         modifiers: [{ groupName: 'Término', name: 'Medio', quantity: 1, highlight: true }] }],
     }], this.width());
   }

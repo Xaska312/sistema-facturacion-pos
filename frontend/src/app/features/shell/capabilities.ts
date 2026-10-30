@@ -11,6 +11,10 @@ interface CapabilityRule {
 
 const RULES: readonly CapabilityRule[] = [
   { permission: 'sales:create', text: 'vender' },
+  { permission: 'tables:operate', text: 'atender mesas, para llevar y domicilios' },
+  { permission: 'kitchen:send', text: 'enviar pedidos a cocina e imprimir comandas' },
+  { permission: 'kitchen:view', text: 'usar la pantalla de cocina y marcar los platos listos' },
+  { permission: 'tables:void', text: 'anular lo que ya salió a cocina y cancelar cuentas' },
   { permission: 'cash:operate', text: 'abrir, mover y cerrar caja' },
   { permission: 'sales:read', text: 'consultar las ventas' },
   { permission: 'sales:void', text: 'anular ventas' },
@@ -27,6 +31,9 @@ const RULES: readonly CapabilityRule[] = [
   { permission: 'audit:read', text: 'consultar la auditoría (quién hizo qué y cuándo)' },
   { permission: 'products:manage', text: 'administrar productos, categorías y precios' },
   { permission: 'products:read', text: 'consultar productos', coveredBy: 'products:manage' },
+  { permission: 'modifiers:manage', text: 'crear adiciones (tamaños, extras, término)' },
+  { permission: 'tables:manage', text: 'configurar zonas y mesas' },
+  { permission: 'kitchen:manage', text: 'configurar las estaciones de cocina' },
   { permission: 'inventory:adjust', text: 'registrar saldos iniciales, ajustes y conteos' },
   { permission: 'inventory:transfer', text: 'trasladar mercancía entre sucursales' },
   { permission: 'inventory:read', text: 'consultar existencias y kardex' },
@@ -86,6 +93,9 @@ const QUICK_ACTIONS: readonly QuickAction[] = [
   { label: 'Ventas', hint: 'Buscar, reimprimir o anular', route: '/app/ventas', icon: 'pi pi-receipt', permission: 'sales:read' },
   { label: 'Reportes', hint: 'Ventas, productos e inventario', route: '/app/reportes', icon: 'pi pi-chart-bar', permission: 'reports:read' },
   { label: 'Clientes', hint: 'Registrar o buscar', route: '/app/clientes', icon: 'pi pi-users', permission: 'parties:read' },
+  // Restaurante (Fase 12b): al final, para quien no vende (la cocina) quedan como acceso principal.
+  { label: 'Mesas', hint: 'Abrir cuentas y pedir', route: '/app/mesas', icon: 'pi pi-table', permission: 'tables:operate' },
+  { label: 'Cocina', hint: 'Comandas pendientes', route: '/app/cocina', icon: 'pi pi-desktop', permission: 'kitchen:view' },
 ];
 
 /** Accesos del inicio según los permisos (máximo 6, en orden de uso). */

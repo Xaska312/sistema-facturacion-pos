@@ -32,14 +32,18 @@ public final class KitchenViews {
 
     /**
      * Comanda: lo que se envió de una cuenta a una estación de una vez. {@code tabLabel}: la cuenta como estaba al
-     * enviar; {@code kind}, {@code guests} y {@code notes}: los de la cuenta ahora.
+     * enviar; {@code kind}, {@code guests} y {@code notes}: los de la cuenta ahora. {@code type} ORDER (lo enviado) o
+     * VOID (aviso de anulación de productos de la comanda {@code voidOfNumber}, Fase 12b-4). {@code status}: NEW,
+     * PREPARING, READY o DELIVERED.
      */
     public record TicketView(UUID id, long number, UUID branchId, UUID tabId, String tabLabel, String kind,
                              Integer guests, String notes, UUID stationId, String stationName, Instant sentAt,
-                             String sentByName, String status, int printCount, List<TicketItem> items) {
+                             UUID sentById, String sentByName, String status, int printCount, String type,
+                             Long voidOfNumber, Instant preparingAt, Instant readyAt, List<TicketItem> items) {
     }
 
     /** Comanda vista desde la cuenta. */
-    public record TicketSummary(UUID id, long number, String stationName, Instant sentAt, int printCount, int items) {
+    public record TicketSummary(UUID id, long number, String stationName, Instant sentAt, int printCount, int items,
+                                String status) {
     }
 }

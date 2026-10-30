@@ -2,6 +2,7 @@ import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { Sale, SalePaymentInput } from './api.models';
+import type { TicketStatus } from './kitchen.api';
 
 /** Mesas y cuentas abiertas (Fase 12b-2, decisión 269). */
 export type TabKind = 'TABLE' | 'TAKEAWAY' | 'DELIVERY';
@@ -25,6 +26,8 @@ export interface TabSummary {
   total: number;
   items: number;
   openedByName: string | null;
+  /** Comandas listas para llevar a la mesa (Fase 12b-4). */
+  ready: number;
 }
 
 export interface FloorTable {
@@ -133,6 +136,7 @@ export interface TicketSummary {
   sentAt: string;
   printCount: number;
   items: number;
+  status: TicketStatus;
 }
 
 export interface OpenTabInput {

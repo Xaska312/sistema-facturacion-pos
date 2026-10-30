@@ -34,7 +34,7 @@ public enum BusinessModule {
     /** Mesas y cuentas abiertas (Fase 12b-2): mesa, para llevar y domicilio. */
     TABLES("tables:operate", "tables:manage", "tables:void"),
     /** Cocina y comandas (Fase 12b-3): estaciones, enviar lo pedido en las cuentas e imprimir comandas. Necesita Mesas. */
-    KITCHEN("kitchen:send", "kitchen:manage");
+    KITCHEN("kitchen:send", "kitchen:manage", "kitchen:view");
 
     private static final String AUTHORITY_PREFIX = "module:";
 

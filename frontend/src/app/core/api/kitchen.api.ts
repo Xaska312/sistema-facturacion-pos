@@ -45,6 +45,9 @@ export interface TicketItem {
   voided: boolean;
 }
 
+/** Nueva → Preparando → Lista → Entregada (Fase 12b-4). */
+export type TicketStatus = 'NEW' | 'PREPARING' | 'READY' | 'DELIVERED';
+
 export interface KitchenTicket {
   id: string;
   number: number;
@@ -58,9 +61,15 @@ export interface KitchenTicket {
   stationId: string;
   stationName: string;
   sentAt: string;
+  sentById: string | null;
   sentByName: string | null;
-  status: string;
+  status: TicketStatus;
   printCount: number;
+  /** ORDER: lo enviado; VOID: aviso de anulación de productos de la comanda {@code voidOfNumber}. */
+  type: 'ORDER' | 'VOID';
+  voidOfNumber: number | null;
+  preparingAt: string | null;
+  readyAt: string | null;
   items: TicketItem[];
 }
 
@@ -93,6 +102,22 @@ export class KitchenApi {
       params = params.set('pending', 'true');
     }
     return this.http.get<KitchenTicket[]>('/api/v1/kitchen/tickets', { params });
+  }
+
+  /** Pantalla de cocina: lo que falta por entregar, la más vieja primero. */
+  board(branchId: string | null, stationIds: readonly string[] = []): Observable<KitchenTicket[]> {
+    let params = new HttpParams();
+    if (branchId) {
+      params = params.set('branchId', branchId);
+    }
+    for (const id of stationIds) {
+      params = params.append('stationId', id);
+    }
+    return this.http.get<KitchenTicket[]>('/api/v1/kitchen/board', { params });
+  }
+
+  setStatus(id: string, status: TicketStatus): Observable<KitchenTicket> {
+    return this.http.post<KitchenTicket>(`/api/v1/kitchen/tickets/${id}/status`, { status });
   }
 
   ticket(id: string): Observable<KitchenTicket> {

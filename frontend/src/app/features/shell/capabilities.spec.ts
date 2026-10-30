@@ -45,4 +45,10 @@ describe('capacidades en lenguaje natural', () => {
     expect(owner.length).toBe(6);
     expect(owner[0].label).toBe('Vender');
   });
+
+  it('la cocina tiene su pantalla como acceso principal y sus capacidades (Fase 12b-4)', () => {
+    const cook = new Set(['branches:read', 'kitchen:view']);
+    expect(describeCapabilities(cook)).toEqual(['usar la pantalla de cocina y marcar los platos listos']);
+    expect(quickActions(cook).map((a) => a.label)).toEqual(['Cocina']);
+  });
 });

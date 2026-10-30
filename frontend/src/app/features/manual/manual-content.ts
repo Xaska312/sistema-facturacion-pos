@@ -350,9 +350,31 @@ export const MANUAL: readonly ManualChapter[] = [
           'Cada comanda la imprime un solo equipo, aunque haya dos marcados para la misma estación.',
           'Reimprimir queda en la auditoría. Si quitas algo que ya salió, avísale a la cocina: la comanda reimpresa lo '
             + 'muestra como ANULADO.',
-          'Comandas se actualiza sola cada pocos segundos; la pantalla de cocina en tiempo real llega pronto.',
+          'Todo llega al instante: la impresora saca la comanda apenas se envía y, si anulan algo que ya salió, imprime un '
+            + 'aviso de ANULACIÓN.',
         ],
         who: 'Enviar e imprimir: permiso "Enviar pedidos a cocina" (Propietario, Administrador, Cajero, Vendedor y Mesero).',
+      },
+      {
+        id: 'pantalla-cocina',
+        title: 'Pantalla de cocina',
+        summary: 'Para una tableta o un televisor en la cocina: las comandas llegan al instante, en letra grande, y la '
+          + 'cocina las marca Preparando y Lista con un toque. Se usa con el rol Cocina o con un administrador.',
+        steps: [
+          'En el equipo de la cocina entra con el usuario de la cocina y abre "Cocina" (en el dock o en Todo).',
+          'Toca "Activar sonido" (el navegador lo pide una vez) y "Pantalla completa".',
+          'Si hay varias estaciones, arriba elige cuáles ve esta pantalla (por ejemplo, solo Cocina; el bar tiene la suya).',
+          'Cuando empieces un plato toca "Preparando"; al terminarlo, "Lista": a quien lo envió le llega un aviso con '
+            + 'sonido y en Mesas la mesa dice "Lista".',
+          'Cuando el mesero lo lleve, él lo marca "Entregada" en la cuenta (o la cocina en la pantalla) y sale de la lista.',
+        ],
+        tips: [
+          'Cada tarjeta muestra los minutos desde que salió: amarilla desde 10 y roja desde 20.',
+          'El término de la carne sale resaltado; lo anulado sale tachado con una alarma y un aviso arriba.',
+          '"Deshacer" devuelve la comanda un paso si se tocó por error.',
+          'Si se cae la conexión dice "Reconectando…" y se sigue actualizando cada 15 segundos.',
+        ],
+        who: 'Permiso "Usar la pantalla de cocina" (Propietario, Administrador y el rol Cocina).',
       },
       {
         id: 'estaciones',
@@ -382,6 +404,17 @@ export const MANUAL: readonly ManualChapter[] = [
         tips: [
           'Lo que ya salió a cocina no lo quita el mesero: lo anula caja o el administrador, con motivo.',
           'Si prefieres que el mesero no cobre, en Roles y permisos quítale "Registrar ventas" y "Abrir, mover y cerrar caja".',
+        ],
+        who: 'Lo asigna el Propietario o el Administrador.',
+      },
+      {
+        id: 'rol-cocina',
+        title: 'El rol Cocina',
+        summary: 'Para el cocinero o el bartender: solo ve la pantalla de cocina y marca los platos. No ve ventas, caja, '
+          + 'clientes ni precios.',
+        steps: [
+          'En Usuarios invita a la persona (o crea un usuario para la tableta de la cocina) con el rol "Cocina" y su sucursal.',
+          'Al entrar, abre "Cocina" desde el dock.',
         ],
         who: 'Lo asigna el Propietario o el Administrador.',
       },

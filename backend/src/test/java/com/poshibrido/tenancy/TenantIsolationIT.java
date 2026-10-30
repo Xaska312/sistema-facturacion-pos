@@ -34,7 +34,7 @@ class TenantIsolationIT extends IntegrationTest {
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM information_schema.schemata WHERE schema_name = ?", Integer.class, "t_" + slug))
                 .isEqualTo(1);
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM t_" + slug + ".roles", Integer.class)).isEqualTo(7);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM t_" + slug + ".roles", Integer.class)).isEqualTo(8);
 
         Session tenantSession = api.selectTenant(owner, tenantId);
         api.getWith(tenantSession, "/api/v1/auth/me")

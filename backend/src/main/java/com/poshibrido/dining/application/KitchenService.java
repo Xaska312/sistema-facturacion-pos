@@ -10,6 +10,7 @@ import com.poshibrido.dining.application.KitchenViews.TicketSummary;
 import com.poshibrido.dining.application.KitchenViews.TicketView;
 import com.poshibrido.shared.error.BusinessRuleException;
 import com.poshibrido.shared.error.ConflictException;
+import com.poshibrido.shared.error.ForbiddenException;
 import com.poshibrido.shared.error.NotFoundException;
 import com.poshibrido.shared.id.Ids;
 import com.poshibrido.shared.security.CurrentActor;
@@ -55,10 +56,14 @@ public class KitchenService {
     static final Duration AUTO_PRINT_WINDOW = Duration.ofHours(2);
     static final Duration RECENT_WINDOW = Duration.ofHours(12);
     static final int MAX_TICKETS = 80;
+    static final int MAX_BOARD = 100;
+    static final String VIEW_PERMISSION = "kitchen:view";
+    static final String SEND_PERMISSION = "kitchen:send";
 
     private final DiningService dining;
     private final MemberDirectory members;
     private final AuditLogger audit;
+    private final DiningNotifier notifier;
 
     @PersistenceContext
     private EntityManager em;
@@ -203,7 +208,8 @@ public class KitchenService {
                     .setParameter("ids", ids).setParameter("at", now).setParameter("k", ticketId).executeUpdate();
             long number = ((Number) em.createNativeQuery("SELECT number FROM kitchen_tickets WHERE id = ?1")
                     .setParameter(1, ticketId).getSingleResult()).longValue();
-            created.add(new TicketSummary(ticketId, number, names.get(e.getKey()), now, 0, ids.size()));
+            created.add(new TicketSummary(ticketId, number, names.get(e.getKey()), now, 0, ids.size(), "NEW"));
+            notifier.ticketSent(branchId, tabId, ticketId, number, e.getKey(), label);
             Map<String, Object> t = new LinkedHashMap<>();
             t.put("number", number);
             t.put("station", names.get(e.getKey()));
@@ -252,12 +258,12 @@ public class KitchenService {
     List<TicketSummary> ticketsOfTab(UUID tabId) {
         List<TicketSummary> result = new ArrayList<>();
         for (Object[] r : dining.rows("""
-                SELECT k.id, k.number, k.station_name, k.sent_at, k.print_count, count(i.id)
+                SELECT k.id, k.number, k.station_name, k.sent_at, k.print_count, count(i.id), k.status
                 FROM kitchen_tickets k JOIN tab_items i ON i.ticket_id = k.id
                 WHERE i.tab_id = :t
                 GROUP BY k.id ORDER BY k.number""", Map.of("t", tabId))) {
             result.add(new TicketSummary((UUID) r[0], ((Number) r[1]).longValue(), (String) r[2], Rows.instant(r[3]),
-                    ((Number) r[4]).intValue(), ((Number) r[5]).intValue()));
+                    ((Number) r[4]).intValue(), ((Number) r[5]).intValue(), (String) r[6]));
         }
         return result;
     }
@@ -334,22 +340,30 @@ public class KitchenService {
         if (ids.isEmpty()) {
             return List.of();
         }
+        // Productos de cada comanda: los suyos (ORDER) o los anulados que avisa (VOID).
+        List<Object[]> itemRows = dining.rows("""
+                SELECT i.ticket_id, i.id, i.name, i.quantity, i.note, i.voided_at, i.position
+                FROM tab_items i WHERE i.ticket_id IN (:ids)
+                UNION ALL
+                SELECT v.ticket_id, i.id, i.name, i.quantity, i.note, i.voided_at, i.position
+                FROM kitchen_ticket_voids v JOIN tab_items i ON i.id = v.tab_item_id WHERE v.ticket_id IN (:ids)
+                ORDER BY 7""", Map.of("ids", ids));
         Map<UUID, List<TicketModifier>> mods = new LinkedHashMap<>();
-        for (Object[] m : dining.rows("""
-                SELECT m.tab_item_id, m.group_name, m.option_name, m.quantity,
-                       coalesce(g.min_select >= 1 AND g.max_select = 1, FALSE)
-                FROM tab_item_modifiers m
-                JOIN tab_items i ON i.id = m.tab_item_id
-                LEFT JOIN modifier_options o ON o.id = m.option_id
-                LEFT JOIN modifier_groups g ON g.id = o.group_id
-                WHERE i.ticket_id IN (:ids) ORDER BY m.tab_item_id, m.position""", Map.of("ids", ids))) {
-            mods.computeIfAbsent((UUID) m[0], k -> new ArrayList<>()).add(new TicketModifier((String) m[1],
-                    (String) m[2], ((Number) m[3]).intValue(), (Boolean) m[4]));
+        List<UUID> itemIds = itemRows.stream().map(i -> (UUID) i[1]).distinct().toList();
+        if (!itemIds.isEmpty()) {
+            for (Object[] m : dining.rows("""
+                    SELECT m.tab_item_id, m.group_name, m.option_name, m.quantity,
+                           coalesce(g.min_select >= 1 AND g.max_select = 1, FALSE)
+                    FROM tab_item_modifiers m
+                    LEFT JOIN modifier_options o ON o.id = m.option_id
+                    LEFT JOIN modifier_groups g ON g.id = o.group_id
+                    WHERE m.tab_item_id IN (:items) ORDER BY m.tab_item_id, m.position""", Map.of("items", itemIds))) {
+                mods.computeIfAbsent((UUID) m[0], k -> new ArrayList<>()).add(new TicketModifier((String) m[1],
+                        (String) m[2], ((Number) m[3]).intValue(), (Boolean) m[4]));
+            }
         }
         Map<UUID, List<TicketItem>> items = new LinkedHashMap<>();
-        for (Object[] i : dining.rows("""
-                SELECT ticket_id, id, name, quantity, note, voided_at FROM tab_items
-                WHERE ticket_id IN (:ids) ORDER BY position""", Map.of("ids", ids))) {
+        for (Object[] i : itemRows) {
             UUID itemId = (UUID) i[1];
             items.computeIfAbsent((UUID) i[0], k -> new ArrayList<>()).add(new TicketItem(itemId, (String) i[2],
                     ((BigDecimal) i[3]).setScale(4, RoundingMode.HALF_UP).stripTrailingZeros(), (String) i[4],
@@ -357,8 +371,10 @@ public class KitchenService {
         }
         List<Object[]> data = dining.rows("""
                 SELECT k.id, k.number, k.branch_id, k.tab_id, k.tab_label, t.kind, t.guests, t.notes, k.station_id,
-                       k.station_name, k.sent_at, k.sent_by, k.status, k.print_count
+                       k.station_name, k.sent_at, k.sent_by, k.status, k.print_count, k.kind, o.number,
+                       k.preparing_at, k.ready_at
                 FROM kitchen_tickets k JOIN tabs t ON t.id = k.tab_id
+                LEFT JOIN kitchen_tickets o ON o.id = k.void_of
                 WHERE k.id IN (:ids)""", Map.of("ids", ids));
         Set<UUID> people = new HashSet<>();
         data.forEach(r -> people.add((UUID) r[11]));
@@ -368,11 +384,133 @@ public class KitchenService {
             UUID id = (UUID) r[0];
             byId.put(id, new TicketView(id, ((Number) r[1]).longValue(), (UUID) r[2], (UUID) r[3], (String) r[4],
                     (String) r[5], Rows.integer(r[6]), (String) r[7], (UUID) r[8], (String) r[9], Rows.instant(r[10]),
-                    names.get((UUID) r[11]), (String) r[12], ((Number) r[13]).intValue(),
+                    (UUID) r[11], names.get((UUID) r[11]), (String) r[12], ((Number) r[13]).intValue(), (String) r[14],
+                    r[15] == null ? null : ((Number) r[15]).longValue(), Rows.instant(r[16]), Rows.instant(r[17]),
                     items.getOrDefault(id, List.of())));
         }
         // Mismo orden en que se pidieron.
         return ids.stream().map(byId::get).filter(v -> v != null).toList();
+    }
+
+    // ------------------------------------------------------------------ pantalla de cocina (Fase 12b-4)
+
+    /**
+     * Lo que la cocina tiene por entregar en la sucursal (Nuevas, Preparando y Listas), la más vieja primero; con
+     * {@code stationIds}, solo esas estaciones.
+     */
+    @Transactional(readOnly = true)
+    public List<TicketView> board(UUID requestedBranch, List<UUID> stationIds) {
+        UUID branchId = dining.resolveBranch(requestedBranch);
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("b", branchId);
+        StringBuilder sql = new StringBuilder("""
+                SELECT id FROM kitchen_tickets WHERE branch_id = :b AND kind = 'ORDER' AND status <> 'DELIVERED'""");
+        if (stationIds != null && !stationIds.isEmpty()) {
+            sql.append(" AND station_id IN (:s)");
+            params.put("s", stationIds);
+        }
+        sql.append(" ORDER BY number LIMIT ").append(MAX_BOARD);
+        var query = em.createNativeQuery(sql.toString());
+        params.forEach(query::setParameter);
+        List<UUID> ids = new ArrayList<>();
+        for (Object id : query.getResultList()) {
+            ids.add((UUID) id);
+        }
+        return views(ids);
+    }
+
+    /**
+     * Cambia el estado de una comanda. La cocina ({@code kitchen:view}) la mueve entre Nueva, Preparando, Lista y
+     * Entregada (también hacia atrás, por si se equivocó); quien atiende ({@code kitchen:send}) solo marca Entregada
+     * lo que está Listo. Al quedar Lista se avisa a quien la envió.
+     */
+    @Transactional
+    public TicketView setStatus(UUID id, String target) {
+        List<Object[]> found = dining.rows("""
+                SELECT branch_id, status, kind, number, station_id, tab_label, tab_id, sent_by FROM kitchen_tickets
+                WHERE id = :k FOR UPDATE""", Map.of("k", id));
+        if (found.isEmpty()) {
+            throw new NotFoundException("Comanda no encontrada.");
+        }
+        Object[] r = found.getFirst();
+        UUID branchId = (UUID) r[0];
+        dining.requireBranch(branchId);
+        if (!"ORDER".equals(r[2])) {
+            throw new ConflictException("Un aviso de anulación no cambia de estado.");
+        }
+        String from = (String) r[1];
+        if (from.equals(target)) {
+            return ticket(id);
+        }
+        if (!TicketStatus.allowed(from, target)) {
+            throw new BusinessRuleException("No se puede pasar de " + TicketStatus.label(from) + " a "
+                    + TicketStatus.label(target) + ".");
+        }
+        Set<String> permissions = CurrentActor.permissions();
+        boolean kitchen = permissions.contains(VIEW_PERMISSION);
+        boolean deliver = "READY".equals(from) && "DELIVERED".equals(target) && permissions.contains(SEND_PERMISSION);
+        if (!kitchen && !deliver) {
+            throw new ForbiddenException("Solo la cocina cambia el estado de la comanda; tú puedes marcarla entregada "
+                    + "cuando esté lista.");
+        }
+        UUID actor = CurrentActor.requireUserId();
+        Instant now = Instant.now();
+        String set = switch (target) {
+            case "NEW" -> "preparing_at = NULL, ready_at = NULL, ready_by = NULL";
+            case "PREPARING" -> "preparing_at = coalesce(preparing_at, :now), ready_at = NULL, ready_by = NULL";
+            case "READY" -> "ready_at = :now, ready_by = :actor, delivered_at = NULL, delivered_by = NULL";
+            default -> "delivered_at = :now, delivered_by = :actor";
+        };
+        var update = em.createNativeQuery("UPDATE kitchen_tickets SET status = :st, " + set + " WHERE id = :k")
+                .setParameter("st", target).setParameter("k", id);
+        if (set.contains(":now")) {
+            update.setParameter("now", now);
+        }
+        if (set.contains(":actor")) {
+            update.setParameter("actor", actor);
+        }
+        update.executeUpdate();
+        long number = ((Number) r[3]).longValue();
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("number", number);
+        data.put("label", r[5]);
+        audit.log("KITCHEN_TICKET_STATUS", "kitchen_ticket", id, Map.of("status", from), withStatus(data, target));
+        notifier.ticketStatus(branchId, (UUID) r[6], id, number, (UUID) r[4], (String) r[5], target,
+                "READY".equals(target) ? (UUID) r[7] : actor);
+        return ticket(id);
+    }
+
+    /**
+     * Un producto que ya había salido a cocina se anuló (en la misma transacción): avisa en tiempo real y, para las
+     * estaciones que imprimen, deja un aviso de anulación por imprimir.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void itemVoided(UUID itemId) {
+        List<Object[]> found = dining.rows("""
+                SELECT k.id, k.branch_id, k.tab_id, k.station_id, k.station_name, k.tab_label, k.number
+                FROM tab_items i JOIN kitchen_tickets k ON k.id = i.ticket_id WHERE i.id = :i""", Map.of("i", itemId));
+        if (found.isEmpty()) {
+            return;
+        }
+        Object[] k = found.getFirst();
+        UUID voidId = Ids.newId();
+        em.createNativeQuery("""
+                INSERT INTO kitchen_tickets (id, branch_id, tab_id, station_id, station_name, tab_label, sent_by, sent_at,
+                                             status, print_count, kind, void_of)
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, 'DELIVERED', 0, 'VOID', ?9)""")
+                .setParameter(1, voidId).setParameter(2, k[1]).setParameter(3, k[2]).setParameter(4, k[3])
+                .setParameter(5, k[4]).setParameter(6, k[5]).setParameter(7, CurrentActor.requireUserId())
+                .setParameter(8, Instant.now()).setParameter(9, k[0]).executeUpdate();
+        em.createNativeQuery("INSERT INTO kitchen_ticket_voids (ticket_id, tab_item_id) VALUES (?1, ?2)")
+                .setParameter(1, voidId).setParameter(2, itemId).executeUpdate();
+        notifier.itemVoided((UUID) k[1], (UUID) k[2], (UUID) k[0], ((Number) k[6]).longValue(), (UUID) k[3],
+                (String) k[5]);
+    }
+
+    private static Map<String, Object> withStatus(Map<String, Object> data, String status) {
+        Map<String, Object> copy = new LinkedHashMap<>(data);
+        copy.put("status", status);
+        return copy;
     }
 
     // ------------------------------------------------------------------ apoyo

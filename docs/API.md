@@ -106,6 +106,12 @@ Todas las acciones de cuentas, zonas y mesas quedan en la auditoría (`TAB_*`, `
 | GET | `/kitchen/tickets/{id}` | `kitchen:send` | Una comanda |
 | POST | `/kitchen/tickets/{id}/print` | `kitchen:send` | `{auto?}`: registra una impresión y devuelve la comanda. `auto: true` la reclama la impresora automática (409 si otro equipo ya la imprimió); a mano siempre, y si ya estaba impresa queda `KITCHEN_TICKET_REPRINTED` en la auditoría |
 
+| GET | `/kitchen/board?branchId&stationId` | `kitchen:view` | Pantalla de cocina (Fase 12b-4): comandas por entregar (Nuevas, Preparando y Listas), la más vieja primero (máx. 100) |
+| POST | `/kitchen/tickets/{id}/status` | `kitchen:view` o `kitchen:send` | `{status: NEW\|PREPARING\|READY\|DELIVERED}`. La cocina mueve un paso adelante (o Nueva → Lista) y uno atrás; con solo `kitchen:send` se marca Entregada lo que está Listo (403 si no). Salto no permitido → 422; aviso de anulación → 409. Queda `KITCHEN_TICKET_STATUS` |
+| GET | `/dining/events` | `tables:operate` o `kitchen:view` (+ `module:tables`) | Avisos en tiempo real (Server-Sent Events, Fase 12b-4). Primero `READY`; luego `TAB_CHANGED`, `TICKET_SENT`, `TICKET_STATUS`, `ITEM_VOIDED` con `{type, branchId, tabId, ticketId, number, stationId, label, status, userId}` (en `TICKET_STATUS` a `READY`, `userId` es quien envió la comanda). Solo del negocio del token y de las sucursales que atiende el usuario; comentario cada 25 s; se cierra a los 10 min (el cliente se reconecta con el token renovado). Se pide con `fetch` y `Authorization: Bearer` |
+
+Desde la 12b-4, `TicketView` trae además `sentById, type (ORDER\|VOID), voidOfNumber, preparingAt, readyAt`; `TicketSummary` trae `status`; y `TabSummary` del salón trae `ready` (comandas listas por llevar). Anular un producto ya enviado crea un aviso `VOID` (sale en `pending=true` para la impresora, no en la pantalla).
+
 Enviar deja `KITCHEN_SENT` (cuenta, comandas y productos); las estaciones, `KITCHEN_STATION_CREATED/UPDATED`. Cada producto va a la estación que tenga él mismo, si no a la de su categoría y si no a la principal ("Cocina", que viene creada).
 
 ### Ajustes del negocio

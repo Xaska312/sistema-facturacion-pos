@@ -23,7 +23,7 @@ describe('visibleMenu', () => {
 
   it('el propietario ve toda la configuración', () => {
     const labels = visibleMenu(() => true).map((m) => m.label);
-    expect(labels).toEqual(['Inicio', 'Vender', 'Mesas', 'Comandas', 'Mi caja', 'Ventas', 'Fiados', 'Pedidos', 'Cotizaciones', 'Historial de caja',
+    expect(labels).toEqual(['Inicio', 'Vender', 'Mesas', 'Cocina', 'Comandas', 'Mi caja', 'Ventas', 'Fiados', 'Pedidos', 'Cotizaciones', 'Historial de caja',
       'Reportes',
       'Auditoría', 'Productos', 'Adiciones', 'Ajustes de catálogo', 'Existencias', 'Movimientos', 'Clientes', 'Proveedores', 'Sucursales', 'Cajas', 'Usuarios',
       'Roles y permisos', 'Ajustes']);
@@ -41,7 +41,7 @@ describe('visibleMenu', () => {
 describe('withHeadings', () => {
   it('pone el título de sección solo en el primer elemento del grupo', () => {
     const headings = withHeadings(MENU).map((e) => e.heading);
-    expect(headings).toEqual([null, 'Ventas', null, null, null, null, null, null, null, null, 'Reportes', null, 'Catálogo', null, null, 'Inventario', null,
+    expect(headings).toEqual([null, 'Ventas', null, null, null, null, null, null, null, null, null, 'Reportes', null, 'Catálogo', null, null, 'Inventario', null,
       'Terceros', null, 'Configuración', null, null, null, null]);
   });
 });
@@ -75,7 +75,10 @@ describe('dockItems (decisión 263)', () => {
     expect(dockItems(visibleMenu((p) => !p.startsWith('quotes:')), 'SERVICES').map((m) => m.label))
       .toEqual(['Inicio', 'Vender', 'Mi caja', 'Ventas', 'Pedidos', 'Clientes']);
     expect(dockItems(visibleMenu(() => true), 'RESTAURANT').map((m) => m.label))
-      .toEqual(['Inicio', 'Vender', 'Mesas', 'Comandas', 'Mi caja', 'Ventas', 'Productos']);
+      .toEqual(['Inicio', 'Vender', 'Mesas', 'Cocina', 'Comandas', 'Mi caja', 'Ventas']);
+    // La cocina en un Comercio con mesas: su pantalla entra al dock (Fase 12b-4).
+    const cook = new Set(['branches:read', 'kitchen:view']);
+    expect(dockItems(visibleMenu((p) => cook.has(p)), 'RETAIL').map((m) => m.label)).toEqual(['Inicio', 'Cocina']);
     expect(dockItems(visibleMenu(() => true), 'PHARMACY').map((m) => m.label))
       .toEqual(['Inicio', 'Vender', 'Mi caja', 'Ventas', 'Productos', 'Existencias', 'Clientes']);
   });
