@@ -3,6 +3,7 @@ package com.poshibrido.tenancy.domain;
 import com.poshibrido.shared.id.Ids;
 import com.poshibrido.shared.persistence.AuditableEntity;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -13,6 +14,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.util.EnumSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Getter
@@ -39,6 +42,11 @@ public class Tenant extends AuditableEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "business_type", nullable = false)
     private BusinessType businessType;
+
+    /** Módulos encendidos (Fase 12a, decisión 267). */
+    @Convert(converter = BusinessModulesConverter.class)
+    @Column(nullable = false)
+    private Set<BusinessModule> modules = EnumSet.noneOf(BusinessModule.class);
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -80,9 +88,21 @@ public class Tenant extends AuditableEntity {
         tenant.legalName = legalName;
         tenant.tradeName = tradeName;
         tenant.businessType = businessType;
+        tenant.modules = businessType.defaultModules();
         tenant.ownerUserId = ownerUserId;
         tenant.status = TenantStatus.PROVISIONING;
         return tenant;
+    }
+
+    /** Copia de los módulos encendidos (el conjunto del negocio no se modifica desde afuera). */
+    public Set<BusinessModule> getModules() {
+        return modules.isEmpty() ? EnumSet.noneOf(BusinessModule.class) : EnumSet.copyOf(modules);
+    }
+
+    /** Cambia el tipo y los módulos encendidos (Fase 12a). Nada se borra: un módulo apagado solo se oculta. */
+    public void changeProfile(BusinessType type, Set<BusinessModule> enabled) {
+        this.businessType = type;
+        this.modules = enabled.isEmpty() ? EnumSet.noneOf(BusinessModule.class) : EnumSet.copyOf(enabled);
     }
 
     public boolean isOwnedBy(UUID userId) {

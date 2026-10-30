@@ -4,7 +4,7 @@ import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { MessageService } from 'primeng/api';
 import { Observable, tap } from 'rxjs';
-import { PageResponse, TenantStatus, TenantSummary } from '../../core/api/api.models';
+import { BusinessType, PageResponse, TenantStatus, TenantSummary } from '../../core/api/api.models';
 import { PlatformApi, PlatformTenant } from '../../core/api/platform.api';
 import { ConfirmService } from '../../shared/confirm';
 import { FormDialogComponent } from '../../shared/forms/form-dialog.component';
@@ -15,12 +15,18 @@ import { ColumnDef, TableQuery, initialQuery } from '../../shared/table/table';
 import { TENANT_STATUS_LABEL, tenantStatusKey } from './platform-labels';
 import { LatestRequest } from '../../shared/latest-request';
 import { formatDate } from '../../shared/format';
+import { businessTypeInfo } from '../../shared/business-types';
+import { BusinessTypePickerComponent } from '../../shared/business-type-picker.component';
+import { XIconComponent } from '../../shared/icons/xicon.component';
 
-/** Negocios de toda la plataforma: buscar, suspender (con motivo), reactivar y eliminar definitivamente (decisión 262). */
+/**
+ * Negocios de toda la plataforma: buscar, cambiar el tipo (también Restaurante y Farmacia para pilotos, decisión 267),
+ * suspender (con motivo), reactivar y eliminar definitivamente (decisión 262).
+ */
 @Component({
   selector: 'app-platform-tenants',
   imports: [FormsModule, ButtonModule, InputTextModule, FormDialogComponent, PageHeaderComponent, DataTableComponent,
-    CellTemplateDirective],
+    CellTemplateDirective, BusinessTypePickerComponent, XIconComponent],
   template: `
     <app-page-header title="Negocios"
                      description="Todos los negocios de la plataforma. Suspender corta el acceso sin borrar datos y se puede reactivar; eliminar borra todos los datos de un negocio suspendido y no se puede deshacer." />
@@ -44,6 +50,10 @@ import { formatDate } from '../../shared/format';
           <span class="text-xs text-muted font-mono">{{ row.slug }}</span>
         </div>
       </ng-template>
+      <ng-template appCell="type" let-row>
+        @let type = typeInfo(row.businessType);
+        <span class="inline-flex items-center gap-2"><app-xicon [name]="type.glyph" [size]="22" />{{ type.label }}</span>
+      </ng-template>
       <ng-template appCell="owner" let-row>
         <div class="flex flex-col">
           <span>{{ row.ownerName }}</span>
@@ -60,6 +70,10 @@ import { formatDate } from '../../shared/format';
         }
       </ng-template>
       <ng-template #actions let-row>
+        @if (row.status !== 'DELETED') {
+          <p-button label="Tipo" icon="pi pi-pencil" size="small" [text]="true"
+                    (onClick)="openType(row)" [ariaLabel]="'Cambiar el tipo de ' + row.tradeName" />
+        }
         @if (row.status === 'ACTIVE') {
           <p-button label="Suspender" icon="pi pi-ban" size="small" severity="danger" [text]="true"
                     (onClick)="openSuspend(row)" [ariaLabel]="'Suspender ' + row.tradeName" />
@@ -86,6 +100,16 @@ import { formatDate } from '../../shared/format';
         <input pInputText id="suspend-reason" maxlength="300" [(ngModel)]="reason" placeholder="Pago pendiente" />
         <small class="text-muted">Lo verán el dueño y los miembros al iniciar sesión.</small>
       </div>
+    </app-form-dialog>
+
+    <app-form-dialog [(visible)]="typeOpen" [header]="'Tipo de ' + (target()?.tradeName ?? '')" width="36rem"
+                     submitLabel="Cambiar tipo" submitIcon="pi pi-check" [dirty]="newType !== target()?.businessType"
+                     [invalidMessage]="newType === target()?.businessType ? 'Elige un tipo distinto al actual.' : null"
+                     [save]="typeRequest" successMessage="Tipo de negocio cambiado" (saved)="load(query)"
+                     description="Aquí puedes asignar Restaurante o Farmacia a negocios piloto. El negocio queda con los módulos de ese tipo; su dueño los ajusta en Ajustes. No se borra ningún dato.">
+      <p id="platform-type-title" class="sr-only">Tipo de negocio</p>
+      <app-business-type-picker [value]="newType" [current]="null" [allowSoon]="true" labelledBy="platform-type-title"
+                                (pick)="newType = $event.code" />
     </app-form-dialog>
 
     <app-form-dialog [(visible)]="deleteOpen" [header]="'Eliminar ' + (target()?.tradeName ?? '')" width="32rem"
@@ -128,6 +152,9 @@ export class PlatformTenantsComponent implements OnInit {
   protected suspendOpen = false;
   protected reason = '';
   protected deleteOpen = false;
+  protected typeOpen = false;
+  protected newType: BusinessType = 'RETAIL';
+  protected readonly typeInfo = businessTypeInfo;
   protected deleteReason = '';
   protected deleteConfirmation = '';
   protected deletePassword = '';
@@ -138,6 +165,7 @@ export class PlatformTenantsComponent implements OnInit {
   protected readonly trackById = (row: PlatformTenant): string => row.id;
   protected readonly columns: ColumnDef<PlatformTenant>[] = [
     { header: 'Negocio', cell: (t) => t.tradeName, template: 'business' },
+    { header: 'Tipo', cell: (t) => businessTypeInfo(t.businessType).label, template: 'type', hideOnMobile: true },
     { header: 'Dueño', cell: (t) => t.ownerEmail, template: 'owner' },
     { header: 'Miembros', cell: (t) => t.activeMembers, kind: 'number', hideOnMobile: true },
     { header: 'Creado', cell: (t) => t.createdAt, kind: 'date', hideOnMobile: true },
@@ -177,6 +205,20 @@ export class PlatformTenantsComponent implements OnInit {
       throw new Error('Sin negocio seleccionado');
     }
     return this.platform.suspend(target.id, this.reason.trim());
+  };
+
+  openType(row: PlatformTenant): void {
+    this.target.set(row);
+    this.newType = row.businessType;
+    this.typeOpen = true;
+  }
+
+  protected readonly typeRequest = (): Observable<TenantSummary> => {
+    const target = this.target();
+    if (!target) {
+      throw new Error('Sin negocio seleccionado');
+    }
+    return this.platform.setBusinessType(target.id, this.newType);
   };
 
   openDelete(row: PlatformTenant): void {

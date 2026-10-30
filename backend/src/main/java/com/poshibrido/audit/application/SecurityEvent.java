@@ -30,6 +30,8 @@ public enum SecurityEvent {
     TENANT_CLOSED,
     /** Intento de cerrar un negocio con la contraseña equivocada (posible sesión robada). */
     TENANT_CLOSE_DENIED,
+    /** Cambió el tipo o los módulos del negocio (Fase 12a): el dueño en Ajustes o el administrador en la consola. */
+    TENANT_PROFILE_CHANGED,
     /** El administrador eliminó definitivamente un negocio (decisión 262). */
     TENANT_DELETED,
     /** Intento de eliminar con la contraseña o el nombre equivocados. */

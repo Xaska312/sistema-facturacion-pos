@@ -1,5 +1,5 @@
 import { XICONS } from '../../shared/icons/xicons';
-import { DOCK_ROUTES, MENU, dockItems, initials, visibleMenu, withHeadings } from './menu';
+import { DOCK_BY_TYPE, DOCK_ROUTES, MENU, dockItems, initials, visibleMenu, withHeadings } from './menu';
 
 describe('visibleMenu', () => {
   it('oculta opciones sin permiso', () => {
@@ -62,6 +62,20 @@ describe('dockItems (decisión 263)', () => {
       .toEqual(['Inicio', 'Vender', 'Mi caja', 'Ventas', 'Productos']);
     expect(dockItems(visibleMenu(() => true)).length).toBe(7);
     expect(dockItems(visibleMenu(() => false)).map((m) => m.label)).toEqual(['Inicio']);
+  });
+
+  it('cada tipo de negocio tiene su dock y un módulo apagado no aparece (Fase 12a)', () => {
+    for (const routes of Object.values(DOCK_BY_TYPE)) {
+      expect(routes.every((route) => MENU.some((m) => m.route === route))).toBeTrue();
+      expect(routes.length).toBe(7);
+    }
+    expect(dockItems(visibleMenu(() => true), 'SERVICES').map((m) => m.label))
+      .toEqual(['Inicio', 'Vender', 'Mi caja', 'Ventas', 'Cotizaciones', 'Pedidos', 'Clientes']);
+    // Servicios sin cotizaciones: la sesión no trae quotes:read.
+    expect(dockItems(visibleMenu((p) => !p.startsWith('quotes:')), 'SERVICES').map((m) => m.label))
+      .toEqual(['Inicio', 'Vender', 'Mi caja', 'Ventas', 'Pedidos', 'Clientes']);
+    expect(dockItems(visibleMenu(() => true), 'PHARMACY').map((m) => m.label))
+      .toEqual(['Inicio', 'Vender', 'Mi caja', 'Ventas', 'Productos', 'Existencias', 'Clientes']);
   });
 });
 

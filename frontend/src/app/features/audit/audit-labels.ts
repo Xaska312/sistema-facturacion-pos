@@ -1,4 +1,5 @@
 import { AuditData } from '../../core/api/audit.api';
+import { BUSINESS_MODULES, BUSINESS_TYPES } from '../../shared/business-types';
 
 /**
  * Nombres en español de la auditoría. El backend tiene la misma lista para el CSV
@@ -55,6 +56,7 @@ const ACTIONS: Readonly<Record<string, string>> = {
   BRANDING_UPDATED: 'Cambió la marca del negocio (color o logo)',
   BUSINESS_CLOSED: 'Eliminó (cerró) el negocio',
   BUSINESS_CREATED: 'Creó el negocio',
+  BUSINESS_PROFILE_CHANGED: 'Cambió el tipo de negocio o sus módulos',
   BUSINESS_REACTIVATED: 'Reactivó el negocio',
   BUSINESS_SUSPENDED: 'Suspendió el negocio',
   CASH_MOVEMENT_CREATED: 'Registró un movimiento de caja',
@@ -167,6 +169,7 @@ const FIELDS: Readonly<Record<string, string>> = {
   total: 'Total',
   totalBefore: 'Total anterior',
   tradeName: 'Nombre comercial',
+  modules: 'Módulos',
   type: 'Tipo',
   validUntil: 'Válida hasta',
   variants: 'Variantes',
@@ -211,6 +214,19 @@ export function displayValue(value: unknown): string {
   return String(value);
 }
 
+/** Tipo de negocio y módulos (Fase 12a) con sus nombres; lo demás, como {@link displayValue}. */
+export function fieldValue(field: string, value: unknown): string {
+  if (field === 'businessType' && typeof value === 'string') {
+    return BUSINESS_TYPES.find((t) => t.code === value)?.label ?? value;
+  }
+  if (field === 'modules' && typeof value === 'string') {
+    const codes = value.split(',').filter((c) => c !== '');
+    return codes.length === 0 ? 'Ninguno'
+      : codes.map((c) => BUSINESS_MODULES.find((m) => m.code === c)?.label ?? c).join(', ');
+  }
+  return displayValue(value);
+}
+
 export interface DataRow {
   field: string;
   label: string;
@@ -228,8 +244,8 @@ export function dataRows(before: AuditData | null, after: AuditData | null): Dat
   const keys = [...Object.keys(after ?? {}), ...Object.keys(before ?? {})].filter((k, i, all) => all.indexOf(k) === i);
   const compare = before !== null && after !== null;
   return keys.map((field) => {
-    const old = displayValue(before?.[field]);
-    const now = displayValue(after?.[field]);
+    const old = fieldValue(field, before?.[field]);
+    const now = fieldValue(field, after?.[field]);
     return { field, label: fieldLabel(field), before: old, after: now, changed: compare && old !== now };
   });
 }

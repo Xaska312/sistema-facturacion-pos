@@ -1,3 +1,4 @@
+import { BusinessType } from '../../core/api/api.models';
 import { XIconName } from '../../shared/icons/xicons';
 
 export type MenuSection = 'Ventas' | 'Reportes' | 'Catálogo' | 'Inventario' | 'Terceros' | 'Configuración';
@@ -49,13 +50,22 @@ export const MENU: MenuItem[] = [
 
 /**
  * Dock de la parte de abajo (identidad, decisión 263): los módulos del día a día, en este orden, si el usuario tiene
- * permiso. Lo demás está en "Todo".
+ * permiso. Lo demás está en "Todo". Cada tipo de negocio tiene su dock (Fase 12a, decisión 267); un módulo apagado no
+ * sale porque sus permisos no están en la sesión.
  */
 export const DOCK_ROUTES: readonly string[] = ['/app', '/pos', '/app/caja', '/app/ventas', '/app/fiados', '/app/pedidos',
   '/app/productos'];
 
-export function dockItems(visible: readonly MenuItem[]): MenuItem[] {
-  return DOCK_ROUTES.map((route) => visible.find((item) => item.route === route))
+export const DOCK_BY_TYPE: Readonly<Record<BusinessType, readonly string[]>> = {
+  RETAIL: DOCK_ROUTES,
+  SERVICES: ['/app', '/pos', '/app/caja', '/app/ventas', '/app/cotizaciones', '/app/pedidos', '/app/clientes'],
+  // La 12b le pondrá Mesas.
+  RESTAURANT: ['/app', '/pos', '/app/caja', '/app/ventas', '/app/productos', '/app/pedidos', '/app/fiados'],
+  PHARMACY: ['/app', '/pos', '/app/caja', '/app/ventas', '/app/productos', '/app/inventario', '/app/clientes'],
+};
+
+export function dockItems(visible: readonly MenuItem[], type: BusinessType = 'RETAIL'): MenuItem[] {
+  return DOCK_BY_TYPE[type].map((route) => visible.find((item) => item.route === route))
     .filter((item): item is MenuItem => item !== undefined);
 }
 

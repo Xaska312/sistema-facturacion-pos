@@ -7,6 +7,8 @@ import { isTenantPage, safeReturnUrl } from '../../core/auth/return-url';
 import { VerifyEmailBannerComponent } from '../auth/verify-email-banner.component';
 import { suspendedMessage } from '../platform/platform-labels';
 import { AuthLayoutComponent } from '../../shared/layout/auth-layout.component';
+import { businessTypeInfo } from '../../shared/business-types';
+import { XIconComponent } from '../../shared/icons/xicon.component';
 
 const STATUS_LABEL: Record<TenantSummary['status'], string> = {
   ACTIVE: 'Activo',
@@ -19,7 +21,7 @@ const STATUS_LABEL: Record<TenantSummary['status'], string> = {
 
 @Component({
   selector: 'app-select-tenant',
-  imports: [RouterLink, ButtonModule, VerifyEmailBannerComponent, AuthLayoutComponent],
+  imports: [RouterLink, ButtonModule, VerifyEmailBannerComponent, AuthLayoutComponent, XIconComponent],
   template: `
     <app-auth-layout width="lg">
       <section class="flex flex-col gap-4">
@@ -36,10 +38,13 @@ const STATUS_LABEL: Record<TenantSummary['status'], string> = {
         <ul class="flex flex-col gap-3">
           @for (tenant of auth.tenants(); track tenant.id) {
             <li class="card p-4 sm:p-5 flex items-center gap-4" [class.business--active]="tenant.status === 'ACTIVE'">
-              <span class="business-mark" aria-hidden="true">{{ initial(tenant) }}</span>
+              @let type = typeInfo(tenant.businessType);
+              <span class="business-mark" aria-hidden="true"><app-xicon [name]="type.glyph" [size]="30" /></span>
               <div class="min-w-0 flex-1">
                 <p class="font-bold text-lg leading-tight truncate">{{ tenant.tradeName }}</p>
-                <p class="text-sm text-muted truncate">{{ tenant.legalName }} · {{ statusLabel[tenant.status] }}</p>
+                <p class="text-sm text-muted truncate">
+                  <span class="font-semibold text-fg">{{ type.label }}</span> · {{ tenant.legalName }} · {{ statusLabel[tenant.status] }}
+                </p>
                 @if (tenant.status === 'SUSPENDED') {
                   <p class="text-xs text-danger mt-1">{{ suspended(tenant) }}</p>
                 }
@@ -80,10 +85,8 @@ const STATUS_LABEL: Record<TenantSummary['status'], string> = {
       width: 3rem;
       height: 3rem;
       border-radius: 1rem;
-      background: var(--brand-soft);
-      color: var(--brand-soft-text);
-      font-size: 1.25rem;
-      font-weight: 800;
+      background: var(--surface-alt);
+      color: var(--text);
     }
     .business--active { transition: border-color 150ms; }
     .business--active:hover { border-color: var(--brand); }
@@ -133,10 +136,8 @@ export class SelectTenantComponent implements OnInit {
     });
   }
 
-  /** Letra del nombre del negocio para su baldosa. */
-  protected initial(tenant: TenantSummary): string {
-    return tenant.tradeName.trim().charAt(0).toUpperCase() || '·';
-  }
+  /** Ícono y nombre del tipo de negocio para su baldosa (Fase 12a). */
+  protected readonly typeInfo = businessTypeInfo;
 
   protected suspended(tenant: TenantSummary): string {
     return suspendedMessage(tenant.suspensionReason, tenant.closedByOwner);

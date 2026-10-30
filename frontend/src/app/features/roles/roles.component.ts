@@ -7,6 +7,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { AccessApi, groupByModule } from '../../core/api/access.api';
 import { Permission, Role } from '../../core/api/api.models';
 import { AuthService } from '../../core/auth/auth.service';
+import { moduleAuthority, permissionModule } from '../../shared/business-types';
 import { toggleIn } from '../members/assignable';
 import { ConfirmService } from '../../shared/confirm';
 import { PageHeaderComponent } from '../../shared/page-header.component';
@@ -86,7 +87,11 @@ const MODULE_LABEL: Record<string, string> = {
                   <input type="checkbox" class="mt-1" [checked]="selected().has(permission.code)"
                          [disabled]="!auth.hasPermission(permission.code)"
                          (change)="selected.set(toggle(selected(), permission.code))" />
-                  <span>{{ permission.description }}</span>
+                  <span>{{ permission.description }}
+                    @if (moduleOff(permission.code)) {
+                      <span class="text-xs text-muted">(módulo apagado en Ajustes)</span>
+                    }
+                  </span>
                 </label>
               }
             </fieldset>
@@ -116,6 +121,12 @@ export class RolesComponent implements OnInit {
   private readonly messages = inject(MessageService);
   private readonly confirm = inject(ConfirmService);
   protected readonly auth = inject(AuthService);
+
+  /** Permiso de un módulo apagado (Fase 12a): no está en la sesión, por eso sale deshabilitado. */
+  protected moduleOff(code: string): boolean {
+    const module = permissionModule(code);
+    return module !== null && !this.auth.hasPermission(moduleAuthority(module));
+  }
 
   protected readonly roles = signal<Role[]>([]);
   protected readonly permissions = signal<Permission[]>([]);

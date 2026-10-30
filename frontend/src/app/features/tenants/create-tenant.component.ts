@@ -5,12 +5,14 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
-import { CreateTenantRequest } from '../../core/api/api.models';
+import { BusinessType, CreateTenantRequest } from '../../core/api/api.models';
 import { AuthService } from '../../core/auth/auth.service';
 import { problemMessage } from '../../core/errors/problem';
 import { VerifyEmailBannerComponent } from '../auth/verify-email-banner.component';
 import { slugify } from './slugify';
 import { AuthLayoutComponent } from '../../shared/layout/auth-layout.component';
+import { businessTypeInfo } from '../../shared/business-types';
+import { BusinessTypePickerComponent } from '../../shared/business-type-picker.component';
 
 /** 403 del backend al crear un negocio sin haber confirmado el correo. */
 export function isEmailNotVerified(error: unknown): boolean {
@@ -28,13 +30,13 @@ export function isActivationCodeRequired(error: unknown): boolean {
 }
 
 /**
- * Asistente de creación de negocio en dos pasos: datos del negocio y confirmación.
- * En esta versión solo está disponible el tipo RETAIL.
+ * Asistente de creación de negocio en dos pasos: datos del negocio y confirmación. El tipo (Fase 12a, decisión 267)
+ * se elige aquí: Comercio o Servicios; Restaurante y Farmacia salen como "Pronto". Se cambia después en Ajustes.
  */
 @Component({
   selector: 'app-create-tenant',
   imports: [ReactiveFormsModule, RouterLink, ButtonModule, InputTextModule, VerifyEmailBannerComponent,
-    AuthLayoutComponent],
+    AuthLayoutComponent, BusinessTypePickerComponent],
   template: `
     <app-auth-layout width="lg">
       <section class="card p-6 sm:p-8 flex flex-col gap-4">
@@ -74,9 +76,10 @@ export function isActivationCodeRequired(error: unknown): boolean {
                 <small class="text-danger font-medium">{{ activationCodeError() }}</small>
               }
             </label>
-            <div class="rounded-xl bg-surface-alt p-3 text-sm mt-1">
-              Tipo de negocio: <strong>Comercio (RETAIL)</strong>
-              <span class="text-muted"> — farmacia, restaurante y servicios llegarán después.</span>
+            <div class="flex flex-col gap-2">
+              <span id="type-label" class="text-sm font-medium">Tipo de negocio</span>
+              <app-business-type-picker [value]="type()" labelledBy="type-label" (pick)="type.set($event.code)" />
+              <small class="text-muted">Decide lo que ves en el dock y en el inicio. Lo cambias después en Ajustes.</small>
             </div>
             <div class="flex justify-between mt-2">
               <a routerLink="/negocios" class="self-center text-sm text-muted hover:underline">Cancelar</a>
@@ -87,6 +90,7 @@ export function isActivationCodeRequired(error: unknown): boolean {
               <dt class="text-muted">Nombre</dt><dd class="col-span-2">{{ form.value.tradeName }}</dd>
               <dt class="text-muted">Razón social</dt><dd class="col-span-2">{{ form.value.legalName }}</dd>
               <dt class="text-muted">Identificador</dt><dd class="col-span-2 font-mono">{{ form.value.slug }}</dd>
+              <dt class="text-muted">Tipo</dt><dd class="col-span-2">{{ typeLabel() }}</dd>
             </dl>
             <p class="text-sm text-muted">
               Se creará tu negocio con una sede principal, una caja y los roles por defecto.
@@ -111,6 +115,8 @@ export class CreateTenantComponent {
   readonly trialDays = signal(14);
 
   readonly step = signal<1 | 2>(1);
+  readonly type = signal<BusinessType>('RETAIL');
+  protected readonly typeLabel = computed(() => businessTypeInfo(this.type()).label);
   readonly saving = signal(false);
   readonly activationCodeError = signal<string | null>(null);
 
@@ -155,7 +161,7 @@ export class CreateTenantComponent {
       tradeName: value.tradeName,
       legalName: value.legalName,
       slug: value.slug,
-      businessType: 'RETAIL',
+      businessType: this.type(),
       ...(code ? { activationCode: code } : {}),
     };
 

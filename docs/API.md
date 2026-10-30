@@ -29,7 +29,7 @@ Respuesta de sesión:
 | Método | Ruta | Descripción |
 |---|---|---|
 | GET | `/tenants` | Negocios donde soy miembro activo o dueño |
-| POST | `/tenants` | `{slug, legalName, tradeName, businessType:"RETAIL"}` → 201. **403 `code: EMAIL_NOT_VERIFIED`** si el dueño no ha confirmado su correo, 409 slug repetido, 422 tipo no disponible, 503 falló el aprovisionamiento |
+| POST | `/tenants` | `{slug, legalName, tradeName, businessType}` → 201. `businessType`: `RETAIL` (Comercio) o `SERVICES` (Servicios); `RESTAURANT` y `PHARMACY` → 422 ("Pronto", solo la consola de plataforma). El negocio nace con los módulos de su tipo (Fase 12a). **403 `code: EMAIL_NOT_VERIFIED`** si el dueño no ha confirmado su correo, 409 slug repetido, 503 falló el aprovisionamiento |
 | POST | `/tenants/{id}/retry-provisioning` | Solo el dueño y solo si está `FAILED` (409 si no; 404 si no es suyo) |
 
 ## Invitaciones (lado del invitado)
@@ -60,6 +60,14 @@ El token viaja en el cuerpo, nunca en la URL de la API.
 | POST | `/cash-registers` | `cash-registers:manage` | `{branchId, code, name}` → 201. 409 código repetido en la sucursal, 422 sucursal inexistente o inactiva |
 | PUT | `/cash-registers/{id}` | `cash-registers:manage` | `{name}` |
 | POST | `/cash-registers/{id}/deactivate` · `/activate` | `cash-registers:manage` | |
+
+### Tipo de negocio y módulos (Fase 12a, decisión 267)
+| Método | Ruta | Permiso | Descripción |
+|---|---|---|---|
+| GET | `/business-profile` | cualquier miembro | `{businessType, modules: ["CREDIT","ORDERS","QUOTES","VARIANTS","SCALE"], canEdit}`; `canEdit` solo para el dueño |
+| PUT | `/business-profile` | solo el dueño (403 si no) | `{businessType, modules}` → mismo cuerpo. Tipo `RETAIL`/`SERVICES` o el que ya tiene (422 si es otro "Pronto"). No borra datos. Auditoría `BUSINESS_PROFILE_CHANGED` y evento `TENANT_PROFILE_CHANGED`. La app renueva la sesión después |
+
+Módulos en el token: los permisos de un módulo apagado (`credit:*`, `orders:*`, `quotes:*`) no van en `perms`, y cada módulo encendido agrega `module:credit`, `module:orders`, `module:quotes`, `module:variants` o `module:scale`. Vender a fiado exige `module:credit` (422 sin él); crear escalas de tallas, modelos o tallas exige `module:variants`; cambiar la báscula (ajustes y PLU) exige `module:scale`.
 
 ### Ajustes del negocio
 | Método | Ruta | Permiso | Descripción |
@@ -238,6 +246,7 @@ Administradores de plataforma: `platform_admin = true` en la base; `PLATFORM_ADM
 | GET | `/platform/tenants?q=&status=&page=&size=` | Página de `{id, slug, legalName, tradeName, businessType, status, ownerId, ownerEmail, ownerName, activeMembers, createdAt, suspendedAt, deletedAt, deletionReason, suspensionReason, closedByOwner}`. `q`: nombre, razón social, identificador o correo del dueño |
 | POST | `/platform/tenants/{id}/suspend` `{reason}` | `TenantSummary`. Motivo obligatorio (máx. 300; lo ven los miembros). 409 si no está activo |
 | POST | `/platform/tenants/{id}/reactivate` | `TenantSummary`. 409 si no está suspendido |
+| PUT | `/platform/tenants/{id}/business-type` `{businessType}` | `TenantSummary` (Fase 12a). Cualquier tipo, también `RESTAURANT`/`PHARMACY` para pilotos; el negocio queda con los módulos de ese tipo. 409 si está eliminado |
 | POST | `/platform/tenants/{id}/delete` `{confirmation, password, reason}` | 204 (decisión 262). Eliminación definitiva de un negocio `SUSPENDED` o `FAILED` (409 si no): `confirmation` es el nombre comercial (sin distinguir mayúsculas), `password` la del administrador; error en cualquiera → 422 (`TENANT_DELETE_DENIED` si es la contraseña). Borra el schema `t_<slug>`, las membresías, las invitaciones y los refresh tokens del negocio; la ficha queda `DELETED` con `deletedAt`, `deletionReason` (también en la lista) y se conservan la suscripción y los pagos. Evento `TENANT_DELETED`. Cuenta como operación pesada en el límite de solicitudes |
 
 Suspender revoca los refresh tokens de todos los miembros del negocio; los access tokens vigentes reciben 403 ("El negocio no está disponible.", `code: TENANT_UNAVAILABLE`). Queda en los eventos (`TENANT_SUSPENDED`, `TENANT_REACTIVATED`) y en la auditoría del negocio (`BUSINESS_SUSPENDED`, `BUSINESS_REACTIVATED`, sin autor).

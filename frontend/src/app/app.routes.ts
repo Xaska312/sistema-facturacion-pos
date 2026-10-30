@@ -170,7 +170,7 @@ export const routes: Routes = [
         path: 'productos/modelos',
         title: 'Productos con tallas',
         canActivate: [permissionGuard],
-        data: { permission: 'products:read' },
+        data: { permission: 'products:read', module: 'module:variants' },
         loadComponent: () =>
           import('./features/products/models/product-models.component').then((m) => m.ProductModelsComponent),
       },
@@ -179,7 +179,7 @@ export const routes: Routes = [
         title: 'Nuevo modelo con tallas',
         canActivate: [permissionGuard],
         canDeactivate: [unsavedChangesGuard],
-        data: { permission: 'products:manage' },
+        data: { permission: 'products:manage', module: 'module:variants' },
         loadComponent: () =>
           import('./features/products/models/product-model-editor.component').then((m) => m.ProductModelEditorComponent),
       },
@@ -188,6 +188,7 @@ export const routes: Routes = [
         title: 'Modelo con tallas',
         canActivate: [permissionGuard],
         canDeactivate: [unsavedChangesGuard],
+        // Abierto aunque Tallas y colores esté apagado: las tallas que ya hay se siguen editando aquí (Fase 12a).
         data: { permission: 'products:read' },
         loadComponent: () =>
           import('./features/products/models/product-model-editor.component').then((m) => m.ProductModelEditorComponent),
@@ -196,7 +197,7 @@ export const routes: Routes = [
         path: 'productos/tallas',
         title: 'Escalas de tallas',
         canActivate: [permissionGuard],
-        data: { permission: 'products:read' },
+        data: { permission: 'products:read', module: 'module:variants' },
         loadComponent: () =>
           import('./features/products/models/size-scales.component').then((m) => m.SizeScalesComponent),
       },
@@ -204,7 +205,7 @@ export const routes: Routes = [
         path: 'bascula',
         title: 'Báscula',
         canActivate: [permissionGuard],
-        data: { permission: 'products:read' },
+        data: { permission: 'products:read', module: 'module:scale' },
         loadComponent: () => import('./features/scale/scale.component').then((m) => m.ScaleComponent),
       },
       {

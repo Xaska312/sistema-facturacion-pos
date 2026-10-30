@@ -58,6 +58,7 @@ export const MANUAL: readonly ManualChapter[] = [
           'En "Elige el negocio con el que vas a trabajar", toca "Crear un negocio".',
           'Escribe el nombre comercial (el que ven tus clientes) y la razón social.',
           'Revisa el identificador que se propone: solo minúsculas, números y "_". No se puede cambiar después.',
+          'Elige el tipo de negocio: Comercio o Servicios (Restaurante y Farmacia llegan pronto).',
           'Toca "Continuar" y luego "Crear negocio". En unos segundos entras al negocio.',
         ],
         tips: [
@@ -65,6 +66,24 @@ export const MANUAL: readonly ManualChapter[] = [
           'Puedes tener varios negocios con la misma cuenta y cambiar entre ellos desde el menú de usuario.',
         ],
         who: 'Cualquier cuenta con el correo confirmado. Quien crea el negocio queda como Propietario.',
+      },
+      {
+        id: 'tipo-y-modulos',
+        title: 'Tipo de negocio y módulos',
+        summary: 'El tipo de negocio decide lo que ves en el dock y en el inicio. Los módulos (fiados, pedidos, '
+          + 'cotizaciones, tallas y colores, báscula) se prenden o apagan según lo que uses.',
+        steps: [
+          'Entra a Ajustes y busca "Tipo de negocio y módulos".',
+          'Toca el tipo de tu negocio: al cambiarlo se proponen sus módulos.',
+          'Marca los módulos que usas y desmarca los que no.',
+          'Toca "Guardar tipo y módulos". Tú lo ves de una vez; tus empleados, en unos minutos.',
+        ],
+        tips: [
+          'Apagar un módulo no borra nada: sale de las pantallas y vuelve con todos sus datos al prenderlo.',
+          'Con Fiados apagado no se fía ni se reciben abonos; préndelo para cobrar lo que te deben.',
+          'Vender, caja, ventas, productos, inventario, clientes, proveedores y reportes están siempre.',
+        ],
+        who: 'Solo el dueño del negocio. Los demás lo ven en Ajustes.',
       },
       {
         id: 'primeros-pasos',

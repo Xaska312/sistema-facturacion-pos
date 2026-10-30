@@ -47,7 +47,7 @@ public class ScaleController {
     }
 
     @PutMapping("/settings")
-    @PreAuthorize("hasAuthority('products:manage')")
+    @PreAuthorize("hasAuthority('products:manage') and hasAuthority('module:scale')")
     public Format updateSettings(@Valid @RequestBody FormatRequest request) {
         return service.updateFormat(new Format(request.enabled(), request.prefix().trim(), request.pluDigits(),
                 request.kind(), request.decimals()));
@@ -60,7 +60,7 @@ public class ScaleController {
     }
 
     @PutMapping("/plus/{plu}")
-    @PreAuthorize("hasAuthority('products:manage')")
+    @PreAuthorize("hasAuthority('products:manage') and hasAuthority('module:scale')")
     public PluView assign(@PathVariable String plu, @Valid @RequestBody PluRequest request) {
         return service.assign(plu, request.productId());
     }

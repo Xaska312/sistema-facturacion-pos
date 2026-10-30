@@ -38,6 +38,7 @@ import com.poshibrido.shared.error.ForbiddenException;
 import com.poshibrido.shared.error.NotFoundException;
 import com.poshibrido.shared.id.Ids;
 import com.poshibrido.shared.security.CurrentActor;
+import com.poshibrido.tenancy.domain.BusinessModule;
 import com.poshibrido.tenancy.application.CurrentTenant;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -293,6 +294,11 @@ public class SaleService {
                 throw new BusinessRuleException("Medio de pago no válido.");
             }
             if (CreditApi.METHOD_CODE.equals(method.code())) {
+                // Con el módulo de fiados apagado (decisión 267) no se fía; las cuentas que ya hay se conservan.
+                if (!CurrentActor.permissions().contains(BusinessModule.CREDIT.authority())) {
+                    throw new BusinessRuleException("El fiado está apagado en este negocio. El dueño lo prende en "
+                            + "Ajustes → Tipo y módulos.");
+                }
                 // Fiado (decisión 255): una sola línea; la cuenta del cliente se carga al final.
                 if (creditIndex >= 0) {
                     throw new BusinessRuleException("Usa un solo pago fiado por venta.");

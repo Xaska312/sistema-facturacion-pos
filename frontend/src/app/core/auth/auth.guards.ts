@@ -22,11 +22,15 @@ export const tenantGuard: CanActivateFn = (_route, state) => {
   return auth.hasTenant() ? true : inject(Router).createUrlTree(['/negocios'], { queryParams: returnQuery(state.url) });
 };
 
-/** Exige el permiso indicado en {@code data.permission} de la ruta; sin él, muestra la página "sin permiso". */
+/**
+ * Exige el permiso indicado en {@code data.permission} de la ruta y, si la pantalla es de un módulo que se puede
+ * apagar (Fase 12a), su autoridad en {@code data.module} (p. ej. "module:variants"). Sin ellos, "sin permiso".
+ */
 export const permissionGuard: CanActivateFn = (route) => {
   const auth = inject(AuthService);
   const permission = route.data['permission'] as string | undefined;
-  if (!permission || auth.hasPermission(permission)) {
+  const module = route.data['module'] as string | undefined;
+  if ((!permission || auth.hasPermission(permission)) && (!module || auth.hasPermission(module))) {
     return true;
   }
   return inject(Router).createUrlTree(['/app/sin-permiso']);

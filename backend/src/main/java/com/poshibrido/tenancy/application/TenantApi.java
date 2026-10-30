@@ -1,7 +1,10 @@
 package com.poshibrido.tenancy.application;
 
+import com.poshibrido.tenancy.domain.BusinessModule;
+
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -14,6 +17,9 @@ public interface TenantApi {
 
     /** Negocios donde el usuario tiene membresía activa o de los que es dueño. */
     List<TenantSummary> listVisibleTo(UUID userId);
+
+    /** Módulos encendidos del negocio (Fase 12a; sin caché: se consulta al emitir el token). Vacío si no existe. */
+    Set<BusinessModule> modulesOf(UUID tenantId);
 
     /** Datos del negocio en cualquier estado (sin caché). */
     Optional<TenantInfo> findInfo(UUID tenantId);

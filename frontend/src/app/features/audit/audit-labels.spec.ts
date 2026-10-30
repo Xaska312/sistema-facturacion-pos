@@ -1,4 +1,4 @@
-import { actionLabel, actionOptions, dataRows, displayValue, entityLabel, entityOptions } from './audit-labels';
+import { actionLabel, actionOptions, dataRows, displayValue, entityLabel, entityOptions, fieldValue } from './audit-labels';
 
 describe('audit-labels', () => {
   it('nombra las acciones conocidas y arma las genéricas con verbo y sustantivo', () => {
@@ -60,5 +60,14 @@ describe('audit-labels', () => {
     expect(entityOptions(options).map((o) => o.label)).toEqual(['Producto', 'Venta']);
     expect(actionOptions(options, 'product').map((o) => o.value)).toEqual(['PRODUCT_CREATED', 'PRODUCT_UPDATED']);
     expect(actionOptions(options, null).length).toBe(3);
+  });
+});
+
+describe('fieldValue (Fase 12a)', () => {
+  it('muestra el tipo de negocio y los módulos con sus nombres', () => {
+    expect(fieldValue('businessType', 'SERVICES')).toBe('Servicios');
+    expect(fieldValue('modules', 'CREDIT,QUOTES')).toBe('Fiados, Cotizaciones');
+    expect(fieldValue('modules', '')).toBe('Ninguno');
+    expect(fieldValue('tradeName', 'Tienda')).toBe('Tienda');
   });
 });
