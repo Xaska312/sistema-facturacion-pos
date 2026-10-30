@@ -287,6 +287,123 @@ export const MANUAL: readonly ManualChapter[] = [
     ],
   },
   {
+    id: 'restaurante',
+    title: 'Mesas, cocina y comandas',
+    icon: 'pi pi-table',
+    sections: [
+      {
+        id: 'configurar-mesas',
+        title: 'Configurar las mesas',
+        summary: 'Crea las zonas de tu local (Salón, Terraza, Barra) y sus mesas. Se prende en Ajustes → Tipo de negocio y '
+          + 'módulos ("Mesas"; Restaurante lo trae prendido).',
+        steps: [
+          'Entra a Mesas y toca "Configurar".',
+          'Toca "Nueva zona" y escribe su nombre.',
+          'En la zona toca "Agregar mesas": di desde qué número y cuántas (por ejemplo, 1 a 10) y cuántos puestos tiene cada una.',
+          'Toca una mesa para cambiarle el nombre (Barra 2), los puestos, la zona o desactivarla.',
+        ],
+        tips: [
+          'El nombre de la mesa no se repite en la sucursal, para que el mesero no se confunda.',
+          'Una mesa o zona con una cuenta abierta no se puede desactivar hasta cobrarla o moverla.',
+        ],
+        who: 'Propietario y Administrador.',
+      },
+      {
+        id: 'mesas',
+        title: 'Atender una mesa',
+        summary: 'En Mesas ves el salón: las mesas libres punteadas y las ocupadas de color, con su total y cuánto llevan '
+          + 'abiertas (más de una hora cambian de color).',
+        steps: [
+          'Toca una mesa libre, escribe cuántas personas son (opcional) y toca "Abrir cuenta".',
+          'Toca los productos para pedirlos: si tienen adiciones se abren sus opciones y una nota. Quedan "Por agregar".',
+          'Revisa cantidades y toca "Agregar a la cuenta" (con Cocina y comandas el botón dice "Enviar a cocina": agrega y '
+            + 'sale la comanda de una vez). Puedes volver a pedir más tarde las veces que quieras.',
+          'Para quitar algo toca la caneca y escribe el motivo: queda tachado en la cuenta.',
+          'Con "Mover" la pasas a otra mesa libre y con "Unir" traes los productos de otra cuenta (esa mesa queda libre).',
+          'Para llevar y domicilios se abren con los botones de arriba; el domicilio pide la dirección.',
+        ],
+        tips: [
+          'Todo el equipo de la sucursal ve todas las mesas y quién pidió cada cosa.',
+          'Cancelar una cuenta con productos, o quitar lo que ya salió a cocina, lo hace caja o el administrador, con motivo.',
+          'La pantalla se actualiza sola cada pocos segundos.',
+        ],
+        who: 'Quien tenga el permiso "Atender mesas" (Propietario, Administrador, Cajero, Vendedor y Mesero).',
+      },
+      {
+        id: 'comandas',
+        title: 'Enviar a cocina e imprimir comandas',
+        summary: 'Con el módulo "Cocina y comandas" (Ajustes → Tipo de negocio y módulos; necesita Mesas) lo pedido en una '
+          + 'cuenta sale en una comanda por estación: la hamburguesa a Cocina, la limonada al Bar.',
+        steps: [
+          'En la cuenta pide los productos y toca "Enviar a cocina": quedan en la cuenta y sale la comanda.',
+          'Cada línea dice en qué comanda salió (Cocina #12). Si algo quedó sin enviar, arriba aparece "Enviar ahora".',
+          'En el computador que tiene la impresora entra a Comandas y marca, en "Impresora de este equipo", las '
+            + 'estaciones que imprime (Cocina, Bar). Mientras XASKA esté abierto ahí, imprime solo cada comanda nueva.',
+          'Para que Chrome imprima sin preguntar, crea un acceso directo a Chrome y agrega al final del destino '
+            + '--kiosk-printing (por ejemplo: "chrome.exe" --kiosk-printing https://app.xaska.co). Elige la impresora '
+            + 'térmica como predeterminada en Windows.',
+          'Para volver a sacar una comanda toca "Reimprimir" en Comandas o en la cuenta.',
+        ],
+        tips: [
+          'El término de la carne (y cualquier opción obligatoria de una sola elección, como el tamaño) sale destacado en '
+            + 'negro para que la cocina no lo pase por alto.',
+          'Cada comanda la imprime un solo equipo, aunque haya dos marcados para la misma estación.',
+          'Reimprimir queda en la auditoría. Si quitas algo que ya salió, avísale a la cocina: la comanda reimpresa lo '
+            + 'muestra como ANULADO.',
+          'Comandas se actualiza sola cada pocos segundos; la pantalla de cocina en tiempo real llega pronto.',
+        ],
+        who: 'Enviar e imprimir: permiso "Enviar pedidos a cocina" (Propietario, Administrador, Cajero, Vendedor y Mesero).',
+      },
+      {
+        id: 'estaciones',
+        title: 'Estaciones de cocina',
+        summary: 'Las estaciones dicen a dónde sale cada producto. Cocina es la principal: recibe todo lo que no tenga otra.',
+        steps: [
+          'En Comandas toca "Estaciones" y luego "Nueva estación" (por ejemplo, Bar).',
+          'En "Recibe" marca las categorías (Bebidas, Licores) o busca productos sueltos.',
+          'Guarda. Desde ese momento lo de esas categorías sale en la comanda del Bar.',
+        ],
+        tips: [
+          'Un producto asignado suelto manda sobre su categoría.',
+          'Una estación inactiva no recibe nada: lo suyo sale por la principal.',
+          'Para que otra sea la principal, edítala y marca "Estación principal".',
+        ],
+        who: 'Propietario y Administrador (permiso "Configurar las estaciones de cocina").',
+      },
+      {
+        id: 'mesero',
+        title: 'El rol Mesero',
+        summary: 'Para quien atiende las mesas desde el celular o una tableta: abre cuentas, pide, envía a cocina, mueve y '
+          + 'une mesas, consulta productos y clientes, cobra con su caja y ve sus ventas del día.',
+        steps: [
+          'En Usuarios invita a la persona y elige el rol "Mesero" y su sucursal.',
+          'Entra desde el celular: en Mesas toca la mesa, pide en "Pedir" y toca "Enviar a cocina".',
+        ],
+        tips: [
+          'Lo que ya salió a cocina no lo quita el mesero: lo anula caja o el administrador, con motivo.',
+          'Si prefieres que el mesero no cobre, en Roles y permisos quítale "Registrar ventas" y "Abrir, mover y cerrar caja".',
+        ],
+        who: 'Lo asigna el Propietario o el Administrador.',
+      },
+      {
+        id: 'cobrar-mesa',
+        title: 'Cobrar una mesa',
+        summary: 'La cuenta se cobra completa en Vender, con el diálogo de pago de siempre; se vuelve una venta normal.',
+        steps: [
+          'En la cuenta toca "Cobrar": se abre Vender con sus productos (necesitas la caja abierta en esa sucursal).',
+          'Si es un cliente registrado, cámbialo en el carrito; luego toca Cobrar (F4) y registra el pago.',
+          'Al cerrar el tiquete vuelves a las mesas: la mesa ya queda libre.',
+        ],
+        tips: [
+          'Se cobra el precio vigente; si alguno cambió mientras la mesa comía, lo verás en el total antes de cobrar.',
+          'En Vender los productos de la cuenta no se cambian: "Volver a la cuenta" para agregar o quitar.',
+          'Dividir la cuenta, la propina y los pagos por partes llegan pronto.',
+        ],
+        who: 'Quien vende con la caja abierta.',
+      },
+    ],
+  },
+  {
     id: 'caja',
     title: 'Caja',
     icon: 'pi pi-wallet',
@@ -410,6 +527,29 @@ export const MANUAL: readonly ManualChapter[] = [
           'Si la etiqueta trae el precio, el total queda igual al de la etiqueta (puede variar unos pocos pesos por redondeo).',
         ],
         who: 'Configurar: Propietario, Administrador y Bodeguero. Vender: quien usa la caja.',
+      },
+      {
+        id: 'adiciones',
+        title: 'Adiciones: tamaños, extras y notas',
+        summary: 'Para lo que se pide "a la medida": un granizado grande con shot extra, una hamburguesa sin cebolla. '
+          + 'Se prende en Ajustes → Tipo de negocio y módulos (Restaurante lo trae prendido).',
+        steps: [
+          'Entra a Adiciones (en Todo) y toca "Nuevo grupo". Puedes empezar con una plantilla: Término de la carne (azul, '
+            + 'medio, tres cuartos, bien asado), Tamaño, Salsas o Sin… y ajustarla.',
+          'Ponle nombre (Tamaño, Licor, Extras) y di si se elige una sola opción o varias, y si es obligatorio.',
+          'Escribe las opciones con lo que suman al precio: Mediano 0, Grande 4000; Sin licor −2000. En las de varias, '
+            + 'di hasta cuántas veces se repite cada una (Shot extra hasta ×3).',
+          'En "Se aplica a" marca las categorías (sirve también para los productos que crees después) o busca productos sueltos.',
+          'En Vender, al tocar o escanear el producto se abren sus opciones: elige, escribe una nota si hace falta y toca "Agregar".',
+        ],
+        tips: [
+          'El mismo producto con otras adiciones o con otra nota va en otra línea del carrito.',
+          'En un producto sin adiciones también puedes poner una nota: toca la línea del carrito y escribe en "Nota".',
+          'Las adiciones y la nota salen en el tiquete, en el detalle de la venta y en el mensaje de WhatsApp.',
+          'Abajo de Adiciones ves lo más pedido de los últimos 30 días (con permiso de reportes).',
+          'Por ahora las adiciones no descuentan inventario; llegará con las recetas.',
+        ],
+        who: 'Configurar: Propietario y Administrador (permiso "Crear y editar adiciones"). Vender: quien usa la caja.',
       },
       {
         id: 'catalogo',

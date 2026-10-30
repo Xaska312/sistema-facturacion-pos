@@ -90,11 +90,26 @@ public class SaleItem {
     @Column(name = "track_inventory", nullable = false)
     private boolean trackInventory;
 
+    /** Nota de la línea ("sin cebolla"), Fase 12b-1. */
+    @Column
+    private String note;
+
     public record Data(UUID saleId, int lineNo, UUID productId, String sku, String name, UUID unitId, String unitCode,
                        BigDecimal quantity, BigDecimal factor, BigDecimal baseQuantity, BigDecimal unitPrice,
                        BigDecimal grossAmount, BigDecimal discountPercent, BigDecimal discountAmount, UUID taxId,
                        String taxType, BigDecimal taxRate, BigDecimal taxableBase, BigDecimal taxAmount,
-                       BigDecimal total, BigDecimal unitCost, boolean trackInventory) {
+                       BigDecimal total, BigDecimal unitCost, boolean trackInventory, String note) {
+
+        /** Sin nota (pedidos, cotizaciones y ventas anteriores a la Fase 12b-1). */
+        public Data(UUID saleId, int lineNo, UUID productId, String sku, String name, UUID unitId, String unitCode,
+                    BigDecimal quantity, BigDecimal factor, BigDecimal baseQuantity, BigDecimal unitPrice,
+                    BigDecimal grossAmount, BigDecimal discountPercent, BigDecimal discountAmount, UUID taxId,
+                    String taxType, BigDecimal taxRate, BigDecimal taxableBase, BigDecimal taxAmount,
+                    BigDecimal total, BigDecimal unitCost, boolean trackInventory) {
+            this(saleId, lineNo, productId, sku, name, unitId, unitCode, quantity, factor, baseQuantity, unitPrice,
+                    grossAmount, discountPercent, discountAmount, taxId, taxType, taxRate, taxableBase, taxAmount,
+                    total, unitCost, trackInventory, null);
+        }
     }
 
     public static SaleItem of(Data d) {
@@ -122,6 +137,7 @@ public class SaleItem {
         i.total = d.total();
         i.unitCost = d.unitCost();
         i.trackInventory = d.trackInventory();
+        i.note = d.note();
         return i;
     }
 }

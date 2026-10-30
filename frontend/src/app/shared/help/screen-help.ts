@@ -108,6 +108,54 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
       'Una talla que ya usa algún producto no se puede quitar de la escala.',
     ],
   },
+  '/app/mesas': {
+    manual: 'mesas',
+    title: 'Mesas',
+    tips: [
+      'Toca una mesa libre para abrir su cuenta; una ocupada para pedir, mover, unir o cobrar.',
+      'Lo que pides queda pendiente hasta tocar "Agregar a la cuenta" (o "Enviar a cocina" si tienes cocina).',
+      'Para llevar y domicilios se abren con los botones de arriba.',
+      'Cobrar abre Vender con los productos de la cuenta; al terminar, la mesa queda libre.',
+    ],
+  },
+  '/app/mesas/configurar': {
+    manual: 'configurar-mesas',
+    title: 'Configurar mesas',
+    tips: [
+      'Crea una zona por cada parte del local (Salón, Terraza, Barra).',
+      'Con "Agregar mesas" creas varias numeradas de una vez.',
+      'Toca una mesa para renombrarla, cambiarle los puestos o la zona.',
+    ],
+  },
+  '/app/comandas': {
+    manual: 'comandas',
+    title: 'Comandas',
+    tips: [
+      'Al tocar "Enviar a cocina" en una cuenta, sale una comanda por estación (Cocina, Bar…).',
+      'Marca arriba las estaciones que imprime este equipo: con XASKA abierto, las imprime solas.',
+      'Reimprimir queda en la auditoría; el término de la carne sale destacado.',
+      'Para que Chrome no pregunte antes de imprimir, ábrelo con --kiosk-printing (ver el manual).',
+    ],
+  },
+  '/app/comandas/estaciones': {
+    manual: 'estaciones',
+    title: 'Estaciones de cocina',
+    tips: [
+      'Cocina es la principal: recibe todo lo que no tenga otra estación.',
+      'Crea el Bar y asígnale la categoría Bebidas: las bebidas salen en su propia comanda.',
+      'Un producto asignado suelto manda sobre su categoría.',
+    ],
+  },
+  '/app/adiciones': {
+    manual: 'adiciones',
+    title: 'Adiciones',
+    tips: [
+      'Crea un grupo una vez (o con una plantilla: Término, Tamaño, Salsas, Sin…) y aplícalo a una categoría o a productos.',
+      'Obligatorio: al vender no deja agregar el producto sin elegir; opcional: se puede saltar.',
+      'El precio de cada opción se suma al producto; puede ser 0 o negativo (Sin licor).',
+      'Al vender, cada producto con adiciones abre sus opciones y una nota (por ejemplo, sin cebolla).',
+    ],
+  },
   '/app/bascula': {
     manual: 'bascula',
     title: 'Báscula',

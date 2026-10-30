@@ -13,6 +13,7 @@ import {
   BusinessTypeInfo,
   businessTypeInfo,
   sortModules,
+  withRequirements,
 } from '../../shared/business-types';
 import { BusinessTypePickerComponent } from '../../shared/business-type-picker.component';
 import { XIconComponent } from '../../shared/icons/xicon.component';
@@ -60,7 +61,7 @@ import { XIconComponent } from '../../shared/icons/xicon.component';
                     <app-xicon [name]="m.glyph" [size]="26" />
                     <span class="min-w-0">
                       <span class="block font-semibold">{{ m.label }}</span>
-                      <span class="block text-xs text-muted">{{ m.description }}</span>
+                      <span class="block text-xs text-muted">{{ m.description }}@if (m.requires) { Necesita {{ label(m.requires) }}.}</span>
                     </span>
                   </label>
                 </li>
@@ -161,8 +162,17 @@ export class BusinessProfileSectionComponent {
       next.delete(module);
     } else {
       next.add(module);
+      // Prender Cocina prende Mesas; apagar Mesas apaga Cocina (withRequirements).
+      const needs = this.modules.find((m) => m.code === module)?.requires;
+      if (needs) {
+        next.add(needs);
+      }
     }
-    this.enabled.set(next);
+    this.enabled.set(new Set(withRequirements(next)));
+  }
+
+  protected label(module: BusinessModule): string {
+    return this.modules.find((m) => m.code === module)?.label ?? module;
   }
 
   protected save(): void {

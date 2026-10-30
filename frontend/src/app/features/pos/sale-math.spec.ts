@@ -3,6 +3,8 @@ import {
   cartTotals,
   cashSuggestions,
   lineAmounts,
+  lineKey,
+  linePrice,
   money,
   parseScan,
   paymentsMissingReference,
@@ -118,5 +120,27 @@ describe('quantityForAmount (fase 8e: vender por valor)', () => {
     expect(quantityForAmount(4500, 20000, 10, 19, true)).toBe(0.25);
     expect(quantityForAmount(0, 20000, 0, 19, true)).toBeNull();
     expect(quantityForAmount(5000, 0, 0, 19, true)).toBeNull();
+  });
+
+  it('suma las adiciones al precio de la línea sin bajar de cero (Fase 12b-1)', () => {
+    const granizado = line({
+      unitPrice: 12000, quantity: 2, taxRate: 0,
+      modifiers: [
+        { optionId: 'g', groupName: 'Tamaño', name: 'Grande', quantity: 1, price: 4000 },
+        { optionId: 's', groupName: 'Extras', name: 'Shot extra', quantity: 2, price: 3000 },
+      ],
+    });
+    expect(linePrice(granizado)).toBe(22000);
+    expect(cartTotals([granizado], true).total).toBe(44000);
+    expect(linePrice(line({ unitPrice: 1000, modifiers: [{ optionId: 'n', groupName: 'Licor', name: 'Sin licor', quantity: 1, price: -2000 }] })))
+      .toBe(0);
+  });
+
+  it('separa en líneas el mismo producto con otras adiciones o nota', () => {
+    const big = [{ optionId: 'g', groupName: 'Tamaño', name: 'Grande', quantity: 1, price: 4000 }];
+    expect(lineKey('p', 'u')).toBe('p|u');
+    expect(lineKey('p', 'u', big)).not.toBe(lineKey('p', 'u'));
+    expect(lineKey('p', 'u', big, 'Sin hielo ')).toBe(lineKey('p', 'u', big, 'sin hielo'));
+    expect(lineKey('p', 'u', big, 'sin hielo')).not.toBe(lineKey('p', 'u', big));
   });
 });

@@ -34,12 +34,12 @@ describe('BusinessProfileSectionComponent (Fase 12a)', () => {
 
   it('al cambiar de tipo propone sus módulos y guarda renovando la sesión', () => {
     const fixture = render({ businessType: 'RETAIL', modules: ['CREDIT', 'ORDERS', 'QUOTES', 'VARIANTS', 'SCALE'], canEdit: true });
-    expect(checked(fixture)).toEqual([true, true, true, true, true]);
+    expect(checked(fixture)).toEqual([true, true, true, true, true, false, false, false]);
     expect(typeButton(fixture, 'Restaurante').disabled).toBeTrue();
 
     typeButton(fixture, 'Servicios').click();
     fixture.detectChanges();
-    expect(checked(fixture)).toEqual([true, true, true, false, false]);
+    expect(checked(fixture)).toEqual([true, true, true, false, false, false, false, false]);
     expect(el(fixture).textContent).toContain('Te propusimos los módulos de Servicios');
 
     api.change.and.returnValue(of({ businessType: 'SERVICES', modules: ['CREDIT', 'ORDERS', 'QUOTES'], canEdit: true }));
@@ -55,5 +55,17 @@ describe('BusinessProfileSectionComponent (Fase 12a)', () => {
     expect(el(fixture).textContent).toContain('Solo el dueño del negocio cambia el tipo y los módulos');
     expect(typeButton(fixture, 'Restaurante').getAttribute('aria-checked')).toBe('true');
     expect(el(fixture).querySelector('fieldset')?.disabled).toBeTrue();
+  });
+
+  it('prender Cocina prende Mesas y apagar Mesas apaga Cocina (Fase 12b-3)', () => {
+    const fixture = render({ businessType: 'RETAIL', modules: ['CREDIT'], canEdit: true });
+    const boxes = () => Array.from(el(fixture).querySelectorAll<HTMLInputElement>('input[type="checkbox"]'));
+    boxes()[7].click(); // Cocina y comandas
+    fixture.detectChanges();
+    expect(checked(fixture)).toEqual([true, false, false, false, false, false, true, true]);
+    boxes()[6].click(); // Mesas
+    fixture.detectChanges();
+    expect(checked(fixture)).toEqual([true, false, false, false, false, false, false, false]);
+    expect(el(fixture).textContent).toContain('Necesita Mesas');
   });
 });

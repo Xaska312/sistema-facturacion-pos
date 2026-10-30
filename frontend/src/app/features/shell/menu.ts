@@ -20,6 +20,8 @@ export interface MenuItem {
 export const MENU: MenuItem[] = [
   { label: 'Inicio', route: '/app', icon: 'pi pi-home', glyph: 'home' },
   { label: 'Vender', route: '/pos', icon: 'pi pi-shopping-cart', glyph: 'sell', permission: 'sales:create', section: 'Ventas' },
+  { label: 'Mesas', route: '/app/mesas', icon: 'pi pi-table', glyph: 'tables', permission: 'tables:operate', section: 'Ventas' },
+  { label: 'Comandas', route: '/app/comandas', icon: 'pi pi-print', glyph: 'comanda', permission: 'kitchen:send', section: 'Ventas' },
   { label: 'Mi caja', route: '/app/caja', icon: 'pi pi-wallet', glyph: 'cash', permission: 'cash:operate', section: 'Ventas' },
   { label: 'Ventas', route: '/app/ventas', icon: 'pi pi-receipt', glyph: 'sales', permission: 'sales:read', section: 'Ventas' },
   { label: 'Fiados', route: '/app/fiados', icon: 'pi pi-book', glyph: 'credit', permission: 'credit:read', section: 'Ventas' },
@@ -29,6 +31,7 @@ export const MENU: MenuItem[] = [
   { label: 'Reportes', route: '/app/reportes', icon: 'pi pi-chart-bar', glyph: 'reports', permission: 'reports:read', section: 'Reportes' },
   { label: 'Auditoría', route: '/app/auditoria', icon: 'pi pi-eye', glyph: 'audit', permission: 'audit:read', section: 'Reportes' },
   { label: 'Productos', route: '/app/productos', icon: 'pi pi-box', glyph: 'products', permission: 'products:read', section: 'Catálogo' },
+  { label: 'Adiciones', route: '/app/adiciones', icon: 'pi pi-plus-circle', glyph: 'modifiers', permission: 'modifiers:manage', section: 'Catálogo' },
   { label: 'Ajustes de catálogo', route: '/app/catalogo', icon: 'pi pi-tags', glyph: 'catalog', permission: 'products:manage', section: 'Catálogo' },
   { label: 'Existencias', route: '/app/inventario', icon: 'pi pi-warehouse', glyph: 'stock', permission: 'inventory:read', section: 'Inventario' },
   {
@@ -59,8 +62,7 @@ export const DOCK_ROUTES: readonly string[] = ['/app', '/pos', '/app/caja', '/ap
 export const DOCK_BY_TYPE: Readonly<Record<BusinessType, readonly string[]>> = {
   RETAIL: DOCK_ROUTES,
   SERVICES: ['/app', '/pos', '/app/caja', '/app/ventas', '/app/cotizaciones', '/app/pedidos', '/app/clientes'],
-  // La 12b le pondrá Mesas.
-  RESTAURANT: ['/app', '/pos', '/app/caja', '/app/ventas', '/app/productos', '/app/pedidos', '/app/fiados'],
+  RESTAURANT: ['/app', '/pos', '/app/mesas', '/app/comandas', '/app/caja', '/app/ventas', '/app/productos'],
   PHARMACY: ['/app', '/pos', '/app/caja', '/app/ventas', '/app/productos', '/app/inventario', '/app/clientes'],
 };
 

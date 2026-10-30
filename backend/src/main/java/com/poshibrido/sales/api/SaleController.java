@@ -3,6 +3,7 @@ package com.poshibrido.sales.api;
 import com.poshibrido.catalog.application.PricingApi.ResolvedPrice;
 import com.poshibrido.sales.application.SaleCommands;
 import com.poshibrido.sales.application.SaleQueryService;
+import com.poshibrido.sales.application.ModifierChoices;
 import com.poshibrido.sales.application.SaleService;
 import com.poshibrido.sales.application.SaleViews.PosConfig;
 import com.poshibrido.sales.application.SaleViews.SaleRow;
@@ -14,6 +15,8 @@ import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import com.poshibrido.shared.validation.WholePesos;
 import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -54,7 +57,13 @@ public class SaleController {
                               @Digits(integer = 10, fraction = 4) BigDecimal quantity,
                               @DecimalMin("0") @DecimalMax("100") @Digits(integer = 3, fraction = 2)
                               BigDecimal discountPercent,
-                              @DecimalMin("0") @Digits(integer = 12, fraction = 2) BigDecimal unitPrice) {
+                              @DecimalMin("0") @Digits(integer = 12, fraction = 2) BigDecimal unitPrice,
+                              @Size(max = 30) List<@Valid @NotNull ModifierRequest> modifiers,
+                              @Size(max = 140) String note) {
+    }
+
+    /** Adición elegida (Fase 12b-1): la opción y cuántas veces. El precio lo pone el servidor. */
+    public record ModifierRequest(@NotNull UUID optionId, @Min(1) @Max(10) Integer quantity) {
     }
 
     public record PaymentRequest(@NotNull UUID paymentMethodId,
@@ -72,7 +81,12 @@ public class SaleController {
         SaleCommands.Create toCommand() {
             return new SaleCommands.Create(customerId,
                     items.stream().map(i -> new SaleCommands.ItemLine(i.productId(), i.unitId(), i.quantity(),
-                            i.discountPercent(), i.unitPrice())).toList(),
+                            i.discountPercent(), i.unitPrice(),
+                            i.modifiers() == null ? List.of() : i.modifiers().stream()
+                                    .map(m -> new ModifierChoices.Choice(m.optionId(),
+                                            m.quantity() == null ? 1 : m.quantity()))
+                                    .toList(),
+                            i.note())).toList(),
                     payments == null ? List.of() : payments.stream()
                             .map(p -> new SaleCommands.PaymentLine(p.paymentMethodId(), p.amount(), p.reference()))
                             .toList(),

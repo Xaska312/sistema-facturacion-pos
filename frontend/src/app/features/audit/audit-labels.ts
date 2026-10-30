@@ -28,6 +28,12 @@ const ENTITIES: Readonly<Record<string, string>> = {
   role: 'Rol',
   sale: 'Venta',
   session: 'Sesión',
+  dining_table: 'Mesa',
+  dining_zone: 'Zona de mesas',
+  kitchen_station: 'Estación de cocina',
+  kitchen_ticket: 'Comanda',
+  modifier_group: 'Adiciones',
+  tab: 'Cuenta de mesa',
   size_scale: 'Escala de tallas',
   supplier: 'Proveedor',
   tax: 'Impuesto',
@@ -45,6 +51,10 @@ const NOUNS: Readonly<Record<string, string>> = {
   product: 'producto',
   product_model: 'modelo con tallas',
   role: 'rol',
+  dining_table: 'mesa',
+  dining_zone: 'zona de mesas',
+  kitchen_station: 'estación de cocina',
+  modifier_group: 'grupo de adiciones',
   size_scale: 'escala de tallas',
   supplier: 'proveedor',
   tax: 'impuesto',
@@ -56,6 +66,16 @@ const ACTIONS: Readonly<Record<string, string>> = {
   BRANDING_UPDATED: 'Cambió la marca del negocio (color o logo)',
   BUSINESS_CLOSED: 'Eliminó (cerró) el negocio',
   BUSINESS_CREATED: 'Creó el negocio',
+  KITCHEN_SENT: 'Envió un pedido a cocina',
+  KITCHEN_TICKET_REPRINTED: 'Reimprimió una comanda',
+  TAB_CANCELLED: 'Canceló una cuenta de mesa',
+  TAB_CHARGED: 'Cobró una cuenta de mesa',
+  TAB_ITEMS_ADDED: 'Agregó productos a una cuenta',
+  TAB_ITEM_VOIDED: 'Quitó un producto de una cuenta',
+  TAB_MERGED: 'Unió dos cuentas',
+  TAB_MOVED: 'Movió una cuenta de mesa',
+  TAB_OPENED: 'Abrió una cuenta',
+  TAB_UPDATED: 'Cambió los datos de una cuenta',
   BUSINESS_PROFILE_CHANGED: 'Cambió el tipo de negocio o sus módulos',
   BUSINESS_REACTIVATED: 'Reactivó el negocio',
   BUSINESS_SUSPENDED: 'Suspendió el negocio',
@@ -110,6 +130,21 @@ const VERBS: Readonly<Record<string, string>> = {
 /** Nombre de los datos guardados en el detalle; lo que no está aquí se muestra con su nombre técnico. */
 const FIELDS: Readonly<Record<string, string>> = {
   active: 'Activo',
+  customerName: 'Cliente',
+  guests: 'Personas',
+  into: 'Hacia',
+  item: 'Producto',
+  kind: 'Tipo',
+  label: 'Cuenta',
+  notes: 'Notas',
+  position: 'Orden',
+  seats: 'Puestos',
+  sentToKitchen: 'Ya había salido a cocina',
+  station: 'Estación',
+  tickets: 'Comandas',
+  copy: 'Copia',
+  main: 'Principal',
+  zone: 'Zona',
   address: 'Dirección',
   allowNegativeStock: 'Vender sin existencias',
   amount: 'Monto',
@@ -168,7 +203,12 @@ const FIELDS: Readonly<Record<string, string>> = {
   to: 'Hasta',
   total: 'Total',
   totalBefore: 'Total anterior',
+  options: 'Opciones',
+  products: 'Productos',
   tradeName: 'Nombre comercial',
+  categories: 'Categorías',
+  maxSelect: 'Máximo a elegir',
+  minSelect: 'Mínimo a elegir',
   modules: 'Módulos',
   type: 'Tipo',
   validUntil: 'Válida hasta',
@@ -218,6 +258,9 @@ export function displayValue(value: unknown): string {
 export function fieldValue(field: string, value: unknown): string {
   if (field === 'businessType' && typeof value === 'string') {
     return BUSINESS_TYPES.find((t) => t.code === value)?.label ?? value;
+  }
+  if (field === 'kind' && typeof value === 'string') {
+    return ({ TABLE: 'Mesa', TAKEAWAY: 'Para llevar', DELIVERY: 'Domicilio' } as Record<string, string>)[value] ?? value;
   }
   if (field === 'modules' && typeof value === 'string') {
     const codes = value.split(',').filter((c) => c !== '');

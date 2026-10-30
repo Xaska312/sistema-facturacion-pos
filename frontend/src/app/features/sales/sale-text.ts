@@ -9,7 +9,13 @@ import { methodLabel } from '../pos/pos-labels';
  */
 export function saleMessage(sale: Sale): string {
   const business = sale.receipt.businessName || 'nuestra tienda';
-  const lines = sale.items.map((i) => `• ${i.name} (${formatQuantity(i.quantity)} ${i.unitCode}): ${formatCop(i.total)}`);
+  const lines = sale.items.map((i) => {
+    // Adiciones y nota (Fase 12b-1): "Granizado (Grande, Shot extra x2)".
+    const extras = (i.modifiers ?? []).map((m) => (m.quantity > 1 ? `${m.optionName} x${m.quantity}` : m.optionName));
+    const detail = [...extras, ...(i.note ? [i.note] : [])];
+    const name = detail.length > 0 ? `${i.name} (${detail.join(', ')})` : i.name;
+    return `• ${name} (${formatQuantity(i.quantity)} ${i.unitCode}): ${formatCop(i.total)}`;
+  });
   const payments = sale.payments.map((p) => `${methodLabel(p.methodCode, p.methodName)} ${formatCop(p.amount)}`);
   return [
     ...(sale.status === 'VOIDED' ? ['*** VENTA ANULADA ***'] : []),

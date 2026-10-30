@@ -227,6 +227,52 @@ export const routes: Routes = [
           import('./features/products/product-editor.component').then((m) => m.ProductEditorComponent),
       },
       {
+        // Mesas y cuentas abiertas (Fase 12b-2): solo con el módulo encendido.
+        path: 'mesas',
+        title: 'Mesas',
+        canActivate: [permissionGuard],
+        data: { permission: 'tables:operate', module: 'module:tables' },
+        loadComponent: () => import('./features/dining/floor.component').then((m) => m.FloorComponent),
+      },
+      {
+        path: 'mesas/configurar',
+        title: 'Configurar mesas',
+        canActivate: [permissionGuard],
+        data: { permission: 'tables:manage', module: 'module:tables' },
+        loadComponent: () => import('./features/dining/dining-setup.component').then((m) => m.DiningSetupComponent),
+      },
+      {
+        path: 'mesas/cuenta/:id',
+        title: 'Cuenta',
+        canActivate: [permissionGuard],
+        canDeactivate: [unsavedChangesGuard],
+        data: { permission: 'tables:operate', module: 'module:tables' },
+        loadComponent: () => import('./features/dining/tab.component').then((m) => m.TabComponent),
+      },
+      {
+        // Cocina y comandas (Fase 12b-3): solo con el módulo encendido.
+        path: 'comandas',
+        title: 'Comandas',
+        canActivate: [permissionGuard],
+        data: { permission: 'kitchen:send', module: 'module:kitchen' },
+        loadComponent: () => import('./features/kitchen/tickets.component').then((m) => m.TicketsComponent),
+      },
+      {
+        path: 'comandas/estaciones',
+        title: 'Estaciones de cocina',
+        canActivate: [permissionGuard],
+        data: { permission: 'kitchen:manage', module: 'module:kitchen' },
+        loadComponent: () => import('./features/kitchen/stations.component').then((m) => m.StationsComponent),
+      },
+      {
+        // Adiciones (Fase 12b-1): solo con el módulo encendido.
+        path: 'adiciones',
+        title: 'Adiciones',
+        canActivate: [permissionGuard],
+        data: { permission: 'products:read', module: 'module:modifiers' },
+        loadComponent: () => import('./features/modifiers/modifiers.component').then((m) => m.ModifiersComponent),
+      },
+      {
         path: 'catalogo',
         title: 'Ajustes de catálogo',
         canActivate: [permissionGuard],

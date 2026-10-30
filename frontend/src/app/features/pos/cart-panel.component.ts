@@ -4,7 +4,7 @@ import { ButtonModule } from 'primeng/button';
 import { Popover, PopoverModule } from 'primeng/popover';
 import { XIconComponent } from '../../shared/icons/xicon.component';
 import { formatCop, formatQuantity } from '../../shared/money';
-import { CartLine, CartTotals, lineAmounts, quantityForAmount, stepQuantity } from './sale-math';
+import { CartLine, CartTotals, lineAmounts, linePrice, modifierSummary, quantityForAmount, stepQuantity } from './sale-math';
 
 export interface LineQuantityChange {
   key: string;
@@ -15,6 +15,12 @@ export interface LineQuantityChange {
 export interface LinePriceChange {
   key: string;
   unitPrice: number;
+}
+
+/** Nota de la línea (Fase 12b-1); vacía = sin nota. */
+export interface LineNoteChange {
+  key: string;
+  note: string;
 }
 
 export interface LineDiscountChange {
@@ -62,11 +68,17 @@ const UNDO_MS = 6000;
                 @let short = shortages().get(line.key);
                 <li class="px-2 py-1.5 flex items-center gap-1" [class.bg-warning-soft]="short !== undefined">
                   <button type="button" class="flex-1 min-w-0 min-h-11 text-left px-1 rounded-lg hover:bg-surface-alt"
-                          aria-haspopup="dialog" [attr.aria-label]="(line.openPrice ? 'Editar precio, cantidad y descuento: ' : 'Editar cantidad y descuento: ') + line.name"
+                          aria-haspopup="dialog" [disabled]="locked()" [attr.aria-label]="(line.openPrice ? 'Editar precio, cantidad y descuento: ' : 'Editar cantidad y descuento: ') + line.name"
                           (click)="openEditor($event, line)">
                     <span class="block font-medium leading-tight truncate">{{ line.name }}</span>
+                    @if (line.modifiers?.length) {
+                      <span class="block text-xs text-brand leading-tight">{{ extras(line) }}</span>
+                    }
+                    @if (line.note) {
+                      <span class="block text-xs italic text-muted leading-tight truncate">“{{ line.note }}”</span>
+                    }
                     <span class="block text-xs text-muted">
-                      {{ q(line.quantity) }} {{ line.unitCode }} × {{ cop(line.unitPrice) }}
+                      {{ q(line.quantity) }} {{ line.unitCode }} × {{ cop(price(line)) }}
                       @if (line.discountPercent > 0) {
                         <span class="text-success"> · −{{ q(line.discountPercent) }} %</span>
                       }
@@ -79,21 +91,23 @@ const UNDO_MS = 6000;
                     }
                   </button>
                   <span class="w-20 text-right font-semibold whitespace-nowrap">{{ cop(lineTotal(line)) }}</span>
-                  <div class="flex items-center" role="group" [attr.aria-label]="'Cantidad de ' + line.name">
-                    <button type="button" class="qty-btn" [attr.aria-label]="'Uno menos de ' + line.name"
-                            [disabled]="disabled()" (click)="step(line, -1)">
-                      <i class="pi pi-minus" aria-hidden="true"></i>
+                  @if (!locked()) {
+                    <div class="flex items-center" role="group" [attr.aria-label]="'Cantidad de ' + line.name">
+                      <button type="button" class="qty-btn" [attr.aria-label]="'Uno menos de ' + line.name"
+                              [disabled]="disabled()" (click)="step(line, -1)">
+                        <i class="pi pi-minus" aria-hidden="true"></i>
+                      </button>
+                      <span class="min-w-8 text-center font-medium tabular-nums" aria-live="polite">{{ q(line.quantity) }}</span>
+                      <button type="button" class="qty-btn" [attr.aria-label]="'Uno más de ' + line.name"
+                              [disabled]="disabled()" (click)="step(line, 1)">
+                        <i class="pi pi-plus" aria-hidden="true"></i>
+                      </button>
+                    </div>
+                    <button type="button" class="qty-btn text-danger" [attr.aria-label]="'Quitar ' + line.name"
+                            [disabled]="disabled()" (click)="remove(line)">
+                      <i class="pi pi-trash" aria-hidden="true"></i>
                     </button>
-                    <span class="min-w-8 text-center font-medium tabular-nums" aria-live="polite">{{ q(line.quantity) }}</span>
-                    <button type="button" class="qty-btn" [attr.aria-label]="'Uno más de ' + line.name"
-                            [disabled]="disabled()" (click)="step(line, 1)">
-                      <i class="pi pi-plus" aria-hidden="true"></i>
-                    </button>
-                  </div>
-                  <button type="button" class="qty-btn text-danger" [attr.aria-label]="'Quitar ' + line.name"
-                          [disabled]="disabled()" (click)="remove(line)">
-                    <i class="pi pi-trash" aria-hidden="true"></i>
-                  </button>
+                  }
                 </li>
               }
             </ul>
@@ -130,12 +144,14 @@ const UNDO_MS = 6000;
         </div>
         <div class="flex flex-wrap items-center justify-between gap-x-2 mt-1">
           <button type="button" class="pos-btn on-brand" [disabled]="lines().length === 0" (click)="cancelSale.emit()">
-            Cancelar venta (Esc)
+            {{ locked() ? 'Volver a la cuenta (Esc)' : 'Cancelar venta (Esc)' }}
           </button>
-          <button type="button" class="pos-btn on-brand" [disabled]="lines().length === 0 || disabled()"
-                  title="Guarda esta venta para atender a otro cliente y retomarla después" (click)="hold.emit()">
-            <i class="pi pi-pause" aria-hidden="true"></i>Pausar venta
-          </button>
+          @if (!locked()) {
+            <button type="button" class="pos-btn on-brand" [disabled]="lines().length === 0 || disabled()"
+                    title="Guarda esta venta para atender a otro cliente y retomarla después" (click)="hold.emit()">
+              <i class="pi pi-pause" aria-hidden="true"></i>Pausar venta
+            </button>
+          }
           @if (lastSaleNumber(); as number) {
             <button type="button" class="pos-btn on-brand" (click)="reprint.emit()">
               <i class="pi pi-print" aria-hidden="true"></i>Reimprimir {{ number }}
@@ -168,6 +184,13 @@ const UNDO_MS = 6000;
                      class="h-12 border rounded-lg px-3 text-lg text-right" placeholder="Ej.: 5000"
                      [ngModel]="draftAmount" (ngModelChange)="setAmount(line, $event)" aria-describedby="amount-hint" />
               <span id="amount-hint" class="text-xs text-muted">Calcula la cantidad: $5.000 de queso → kg.</span>
+            </label>
+          }
+          @if (notes()) {
+            <label class="flex flex-col gap-1">
+              <span class="text-sm font-medium">Nota</span>
+              <input id="edit-note" name="note" class="h-12 border rounded-lg px-3" maxlength="140" autocomplete="off"
+                     placeholder="Ej.: sin cebolla" [(ngModel)]="draftNote" />
             </label>
           }
           <div class="flex flex-col gap-1">
@@ -295,10 +318,18 @@ export class CartPanelComponent {
   readonly customerName = input('');
   readonly canCharge = input(false);
   readonly disabled = input(false);
+  /**
+   * Cobro de una cuenta de mesa (Fase 12b-2): los productos no se cambian aquí (se cambian en la cuenta); "Cancelar"
+   * vuelve a la cuenta.
+   */
+  readonly locked = input(false);
   readonly lastSaleNumber = input<string | null>(null);
 
   /** Ids de las unidades con decimales: solo ahí se ofrece "vender por valor" (fase 8e). */
   readonly decimalUnits = input<ReadonlySet<string>>(new Set());
+  /** Con Adiciones encendido (Fase 12b-1) cada línea puede llevar una nota ("sin cebolla"). */
+  readonly notes = input(false);
+  readonly noteChange = output<LineNoteChange>();
   readonly quantityChange = output<LineQuantityChange>();
   readonly discountChange = output<LineDiscountChange>();
   /** Precio libre: nuevo precio unitario de la línea. */
@@ -320,6 +351,7 @@ export class CartPanelComponent {
   protected draftQuantity: number | null = null;
   protected draftDiscount: number | null = null;
   protected draftPrice: number | null = null;
+  protected draftNote = '';
   /** "Vender por valor" (fase 8e): pesos escritos; la cantidad se calcula al vuelo. */
   protected draftAmount: number | null = null;
   private undoTimer: ReturnType<typeof setTimeout> | null = null;
@@ -328,8 +360,11 @@ export class CartPanelComponent {
     inject(DestroyRef).onDestroy(() => this.clearUndo());
   }
 
+  protected readonly price = linePrice;
+  protected readonly extras = modifierSummary;
+
   lineTotal(line: CartLine): number {
-    return lineAmounts(line.unitPrice, line.quantity, line.discountPercent, line.taxRate, this.pricesIncludeTax()).total;
+    return lineAmounts(linePrice(line), line.quantity, line.discountPercent, line.taxRate, this.pricesIncludeTax()).total;
   }
 
   step(line: CartLine, delta: number): void {
@@ -375,6 +410,7 @@ export class CartPanelComponent {
     this.draftAmount = null;
     this.draftDiscount = line.discountPercent;
     this.draftPrice = line.openPrice ? line.unitPrice : null;
+    this.draftNote = line.note ?? '';
     this.editor().show(event);
   }
 
@@ -383,7 +419,7 @@ export class CartPanelComponent {
     this.draftAmount = value;
     const discount = Math.min(Math.max(Number(this.draftDiscount ?? 0) || 0, 0), this.maxDiscount());
     const quantity = value === null ? null
-      : quantityForAmount(Number(value), line.unitPrice, discount, line.taxRate, this.pricesIncludeTax());
+      : quantityForAmount(Number(value), linePrice(line), discount, line.taxRate, this.pricesIncludeTax());
     if (quantity !== null) {
       this.draftQuantity = quantity;
     }
@@ -422,6 +458,11 @@ export class CartPanelComponent {
     const discountPercent = Math.min(Math.max(Number.isFinite(rawDiscount) ? rawDiscount : 0, 0), this.maxDiscount());
     if (discountPercent !== line.discountPercent) {
       this.discountChange.emit({ key: line.key, discountPercent });
+    }
+    // Al final: la nota cambia la clave de la línea (puede unirse con otra igual).
+    const note = this.draftNote.trim().slice(0, 140);
+    if (this.notes() && note !== (line.note ?? '')) {
+      this.noteChange.emit({ key: line.key, note });
     }
     this.closeEditor();
   }

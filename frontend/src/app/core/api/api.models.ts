@@ -648,6 +648,16 @@ export interface SaleItem {
   taxableBase: number;
   taxAmount: number;
   total: number;
+  /** Fase 12b-1: nota de la línea y adiciones (su precio ya va en el precio unitario). */
+  note?: string | null;
+  modifiers?: SaleItemModifier[];
+}
+
+export interface SaleItemModifier {
+  groupName: string;
+  optionName: string;
+  quantity: number;
+  unitPrice: number;
 }
 
 export interface SalePayment {
@@ -730,8 +740,12 @@ export interface SaleItemInput {
   unitId: string | null;
   quantity: number;
   discountPercent: number | null;
-  /** Precio que muestra la pantalla: si el vigente es otro, el backend responde 409. */
+  /** Precio del producto (sin adiciones) que muestra la pantalla: si el vigente es otro, el backend responde 409. */
   unitPrice: number | null;
+  /** Adiciones (Fase 12b-1): la opción y cuántas veces; el precio lo pone el servidor. */
+  modifiers?: { optionId: string; quantity: number }[];
+  /** Nota de la línea ("sin cebolla"). */
+  note?: string | null;
 }
 
 export interface SalePaymentInput {

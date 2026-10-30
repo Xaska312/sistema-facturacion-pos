@@ -28,7 +28,13 @@ public enum BusinessModule {
     /** Tallas y colores (Fase 8d): crear modelos y agregarles variantes. */
     VARIANTS,
     /** Báscula (Fase 8e): etiquetas y PLU. */
-    SCALE;
+    SCALE,
+    /** Adiciones (Fase 12b-1): tamaños, extras con precio, opciones y notas por producto en el POS. */
+    MODIFIERS("modifiers:manage"),
+    /** Mesas y cuentas abiertas (Fase 12b-2): mesa, para llevar y domicilio. */
+    TABLES("tables:operate", "tables:manage", "tables:void"),
+    /** Cocina y comandas (Fase 12b-3): estaciones, enviar lo pedido en las cuentas e imprimir comandas. Necesita Mesas. */
+    KITCHEN("kitchen:send", "kitchen:manage");
 
     private static final String AUTHORITY_PREFIX = "module:";
 
@@ -46,6 +52,18 @@ public enum BusinessModule {
     /** Autoridad del token cuando el módulo está encendido, p. ej. {@code module:credit}. */
     public String authority() {
         return AUTHORITY_PREFIX + name().toLowerCase(Locale.ROOT);
+    }
+
+    /** Módulo que este necesita encendido, si necesita alguno (Cocina se alimenta de las cuentas de Mesas). */
+    public Optional<BusinessModule> requires() {
+        return this == KITCHEN ? Optional.of(TABLES) : Optional.empty();
+    }
+
+    /** Primer módulo encendido al que le falta el que necesita, si hay alguno. */
+    public static Optional<BusinessModule> missingRequirement(Set<BusinessModule> enabled) {
+        return enabled.stream().sorted()
+                .filter(m -> m.requires().map(r -> !enabled.contains(r)).orElse(false))
+                .findFirst();
     }
 
     /** Módulo del que depende un permiso de rol, si depende de alguno. */

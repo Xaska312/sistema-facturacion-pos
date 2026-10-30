@@ -4,9 +4,12 @@ import java.util.EnumSet;
 import java.util.Set;
 
 import static com.poshibrido.tenancy.domain.BusinessModule.CREDIT;
+import static com.poshibrido.tenancy.domain.BusinessModule.KITCHEN;
+import static com.poshibrido.tenancy.domain.BusinessModule.MODIFIERS;
 import static com.poshibrido.tenancy.domain.BusinessModule.ORDERS;
 import static com.poshibrido.tenancy.domain.BusinessModule.QUOTES;
 import static com.poshibrido.tenancy.domain.BusinessModule.SCALE;
+import static com.poshibrido.tenancy.domain.BusinessModule.TABLES;
 import static com.poshibrido.tenancy.domain.BusinessModule.VARIANTS;
 
 /**
@@ -14,12 +17,12 @@ import static com.poshibrido.tenancy.domain.BusinessModule.VARIANTS;
  * módulos que trae por defecto; el dueño puede prender o apagar cada módulo aparte.
  */
 public enum BusinessType {
-    /** Comercio (tienda, papelería, ropa…): todos los módulos, como hasta ahora. */
+    /** Comercio (tienda, papelería, ropa…): los módulos de siempre; Adiciones se prende en Ajustes (granizados). */
     RETAIL(true, EnumSet.of(CREDIT, ORDERS, QUOTES, VARIANTS, SCALE)),
     /** Farmacia: "Pronto" para el público (Fase 13); el administrador de plataforma la asigna a pilotos. */
     PHARMACY(false, EnumSet.of(CREDIT, ORDERS, QUOTES)),
     /** Restaurante: "Pronto" para el público (Fase 12b); el administrador de plataforma lo asigna a pilotos. */
-    RESTAURANT(false, EnumSet.of(CREDIT, ORDERS)),
+    RESTAURANT(false, EnumSet.of(CREDIT, ORDERS, MODIFIERS, TABLES, KITCHEN)),
     /** Servicios (taller, impresiones, instalaciones…). */
     SERVICES(true, EnumSet.of(CREDIT, ORDERS, QUOTES));
 

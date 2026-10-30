@@ -16,7 +16,16 @@ public final class SaleCommands {
      * @param expectedUnitPrice precio que mostró la pantalla; si difiere del vigente, la venta se rechaza (409)
      */
     public record ItemLine(UUID productId, UUID unitId, BigDecimal quantity, BigDecimal discountPercent,
-                           BigDecimal expectedUnitPrice) {
+                           BigDecimal expectedUnitPrice, List<ModifierChoices.Choice> modifiers, String note) {
+
+        /**
+         * Sin adiciones ni nota (pedidos y cotizaciones). {@code expectedUnitPrice} es el precio del producto sin
+         * adiciones: el valor de las adiciones lo pone el servidor (un cambio se detecta con el total esperado).
+         */
+        public ItemLine(UUID productId, UUID unitId, BigDecimal quantity, BigDecimal discountPercent,
+                        BigDecimal expectedUnitPrice) {
+            this(productId, unitId, quantity, discountPercent, expectedUnitPrice, List.of(), null);
+        }
     }
 
     /** {@code amount} es lo entregado con ese medio (en efectivo puede superar lo que falta: hay cambio). */

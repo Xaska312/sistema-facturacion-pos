@@ -8,6 +8,7 @@ import com.poshibrido.reporting.application.ReportViews.CategoryRow;
 import com.poshibrido.reporting.application.ReportViews.Dashboard;
 import com.poshibrido.reporting.application.ReportViews.InventoryRow;
 import com.poshibrido.reporting.application.ReportViews.InventoryValuation;
+import com.poshibrido.reporting.application.ReportViews.ModifierRow;
 import com.poshibrido.reporting.application.ReportViews.MyDay;
 import com.poshibrido.reporting.application.ReportViews.PaymentRow;
 import com.poshibrido.reporting.application.ReportViews.ProductRow;
@@ -131,6 +132,16 @@ public class ReportController {
                                         @RequestParam(required = false) UUID branchId,
                                         @RequestParam(required = false) UUID sellerId) {
         return reports.byCategory(filter(from, to, branchId, sellerId));
+    }
+
+    /** Adiciones más vendidas (Fase 12b-1). */
+    @GetMapping("/modifiers")
+    @PreAuthorize("hasAuthority('reports:read') and hasAuthority('module:modifiers')")
+    public List<ModifierRow> modifiers(@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+                                       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+                                       @RequestParam(required = false) UUID branchId,
+                                       @RequestParam(required = false) UUID sellerId) {
+        return reports.modifiers(filter(from, to, branchId, sellerId));
     }
 
     @GetMapping("/taxes")

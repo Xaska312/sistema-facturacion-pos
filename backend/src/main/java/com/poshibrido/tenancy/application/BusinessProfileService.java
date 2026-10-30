@@ -59,7 +59,13 @@ public class BusinessProfileService {
             throw new ForbiddenException("Solo el dueño del negocio puede cambiar el tipo y los módulos.");
         }
         requireOwnerCanChoose(tenant.getBusinessType(), type);
-        apply(tenant, actorId, type, modules == null ? Set.of() : Set.copyOf(modules), "dueño");
+        Set<BusinessModule> requested = modules == null ? Set.of() : Set.copyOf(modules);
+        BusinessModule.missingRequirement(requested).ifPresent(m -> {
+            throw new BusinessRuleException(m == BusinessModule.KITCHEN
+                    ? "Cocina y comandas necesita Mesas encendido."
+                    : "Ese módulo necesita otro que está apagado.");
+        });
+        apply(tenant, actorId, type, requested, "dueño");
         return view(tenant, actorId);
     }
 
