@@ -31,7 +31,7 @@ import { LatestRequest } from '../../shared/latest-request';
                     (queryChange)="load($event)">
       <label tableToolbar class="flex items-center gap-2 text-sm">
         <span>Sucursal</span>
-        <select class="border rounded-md px-2 py-2" [(ngModel)]="branch" (ngModelChange)="reloadFirstPage()">
+        <select class="border rounded-[10px] px-3 min-h-11" [(ngModel)]="branch" (ngModelChange)="reloadFirstPage()">
           <option value="">Todas</option>
           @for (b of branches(); track b.id) {
             <option [value]="b.id">{{ b.name }}</option>
@@ -40,11 +40,11 @@ import { LatestRequest } from '../../shared/latest-request';
       </label>
       <label tableToolbar class="flex items-center gap-2 text-sm">
         <span>Desde</span>
-        <input type="date" class="border rounded-md px-2 py-2" [(ngModel)]="from" (ngModelChange)="reloadFirstPage()" />
+        <input type="date" class="border rounded-[10px] px-3 min-h-11" [(ngModel)]="from" (ngModelChange)="reloadFirstPage()" />
       </label>
       <label tableToolbar class="flex items-center gap-2 text-sm">
         <span>Hasta</span>
-        <input type="date" class="border rounded-md px-2 py-2" [(ngModel)]="to" (ngModelChange)="reloadFirstPage()" />
+        <input type="date" class="border rounded-[10px] px-3 min-h-11" [(ngModel)]="to" (ngModelChange)="reloadFirstPage()" />
       </label>
       <ng-template appCell="quantity" let-row>
         <span class="font-mono" [class.text-danger]="row.quantity < 0" [class.text-success]="row.quantity > 0">

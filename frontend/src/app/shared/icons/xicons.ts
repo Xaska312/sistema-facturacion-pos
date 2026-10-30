@@ -57,6 +57,17 @@ export const XICONS = {
     fill: '<rect x="4" y="4" width="6" height="6" rx="2"/>' },
   platform: { stroke: '<rect x="3" y="4" width="18" height="6" rx="2"/><rect x="3" y="14" width="18" height="6" rx="2"/><path d="M7 7h.5M7 17h.5"/>',
     fill: '<rect x="3" y="4" width="18" height="6" rx="2"/>' },
+  // Consola de plataforma (identidad parte 4).
+  tenants: { stroke: '<path d="M4 10v10h16V10"/><path d="M3 10l2-6h14l2 6"/><path d="M3 10a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/><path d="M10 20v-5h4v5"/>',
+    fill: '<path d="M4 12h16v8H4z"/>' },
+  subscriptions: { stroke: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M15 15.5a3 3 0 1 1-1-2.2M15 12.5v1.5h-1.5"/>',
+    fill: '<rect x="3" y="5" width="18" height="5" rx="2"/>' },
+  codes: { stroke: '<path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4z"/><path d="M14 7v2M14 11v2M14 15v2"/>',
+    fill: '<path d="M3 8a2 2 0 0 0 2-2h9v12H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4z"/>' },
+  plans: { stroke: '<path d="M12 3 3 8l9 5 9-5z"/><path d="M3 12.5l9 5 9-5M3 17l9 5 9-5"/>',
+    fill: '<path d="M12 3 3 8l9 5 9-5z"/>' },
+  security: { stroke: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><rect x="9" y="11" width="6" height="5" rx="1"/><path d="M10.5 11V9.5a1.5 1.5 0 0 1 3 0V11"/>',
+    fill: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>' },
 } as const satisfies Record<string, XIconDef>;
 
 export type XIconName = keyof typeof XICONS;

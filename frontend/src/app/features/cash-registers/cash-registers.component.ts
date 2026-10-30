@@ -34,7 +34,7 @@ import { LatestRequest } from '../../shared/latest-request';
                     (queryChange)="load($event)">
       <label tableToolbar class="flex items-center gap-2 text-sm">
         <span class="sr-only">Sucursal</span>
-        <select class="border rounded-md px-2 py-2" [value]="branchFilter() ?? ''" (change)="filterBy($event)">
+        <select class="border rounded-[10px] px-3 min-h-11" [value]="branchFilter() ?? ''" (change)="filterBy($event)">
           <option value="">Todas las sucursales</option>
           @for (b of branches(); track b.id) {
             <option [value]="b.id">{{ b.name }}</option>
@@ -57,7 +57,7 @@ import { LatestRequest } from '../../shared/latest-request';
         @if (!editing()) {
           <div class="flex flex-col gap-1">
             <label for="register-branch" class="text-sm font-medium">Sucursal</label>
-            <select id="register-branch" formControlName="branchId" class="border rounded-md px-2 py-2">
+            <select id="register-branch" formControlName="branchId" class="border rounded-[10px] px-3 min-h-11">
               @for (b of activeBranches(); track b.id) {
                 <option [value]="b.id">{{ b.name }}</option>
               }

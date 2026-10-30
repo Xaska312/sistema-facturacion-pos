@@ -68,7 +68,7 @@ import { LatestRequest } from '../../shared/latest-request';
       <div class="grid gap-3 md:grid-cols-2">
         <div class="flex flex-col gap-1">
           <label for="party-person" class="text-sm font-medium">Tipo de persona</label>
-          <select id="party-person" class="border rounded-md px-2 py-2" [ngModel]="draft.personType"
+          <select id="party-person" class="border rounded-[10px] px-3 min-h-11" [ngModel]="draft.personType"
                   (ngModelChange)="setPersonType($event)">
             <option value="NATURAL">Persona natural</option>
             <option value="LEGAL">Persona jurídica (empresa)</option>
@@ -76,7 +76,7 @@ import { LatestRequest } from '../../shared/latest-request';
         </div>
         <div class="flex flex-col gap-1">
           <label for="party-doctype" class="text-sm font-medium">Tipo de documento</label>
-          <select id="party-doctype" class="border rounded-md px-2 py-2" [(ngModel)]="draft.documentType">
+          <select id="party-doctype" class="border rounded-[10px] px-3 min-h-11" [(ngModel)]="draft.documentType">
             @for (t of documentTypesFor(draft.personType); track t.value) {
               <option [value]="t.value">{{ t.label }}</option>
             }
@@ -123,7 +123,7 @@ import { LatestRequest } from '../../shared/latest-request';
         </div>
         <div class="flex flex-col gap-1">
           <label for="party-department" class="text-sm font-medium">Departamento</label>
-          <select id="party-department" class="border rounded-md px-2 py-2" [ngModel]="draft.departmentCode"
+          <select id="party-department" class="border rounded-[10px] px-3 min-h-11" [ngModel]="draft.departmentCode"
                   (ngModelChange)="draft.departmentCode = $event; loadCities('')">
             <option value="">—</option>
             @for (d of departments(); track d.code) {
@@ -133,7 +133,7 @@ import { LatestRequest } from '../../shared/latest-request';
         </div>
         <div class="flex flex-col gap-1">
           <label for="party-city" class="text-sm font-medium">Municipio</label>
-          <select id="party-city" class="border rounded-md px-2 py-2" [(ngModel)]="draft.cityCode">
+          <select id="party-city" class="border rounded-[10px] px-3 min-h-11" [(ngModel)]="draft.cityCode">
             <option value="">—</option>
             @for (c of cities(); track c.code) {
               <option [value]="c.code">{{ c.name }}</option>
@@ -146,7 +146,7 @@ import { LatestRequest } from '../../shared/latest-request';
               <label for="party-list" class="text-sm font-medium">Lista de precios</label>
               <app-term term="lista-precios" />
             </span>
-            <select id="party-list" class="border rounded-md px-2 py-2" [(ngModel)]="draft.priceListId">
+            <select id="party-list" class="border rounded-[10px] px-3 min-h-11" [(ngModel)]="draft.priceListId">
               <option value="">General</option>
               @for (l of extraLists(); track l.id) {
                 <option [value]="l.id">{{ l.name }}</option>

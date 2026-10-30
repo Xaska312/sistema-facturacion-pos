@@ -58,7 +58,7 @@ interface CodeDraft {
       <div class="flex flex-col gap-3">
         <div class="flex flex-col gap-1">
           <label for="code-plan" class="text-sm font-medium">Plan</label>
-          <select id="code-plan" class="border rounded-md px-2 py-2" [(ngModel)]="draft.planCode">
+          <select id="code-plan" class="border rounded-[10px] px-3 min-h-11" [(ngModel)]="draft.planCode">
             @for (plan of plans(); track plan.code) {
               <option [value]="plan.code">{{ plan.name }}</option>
             }
@@ -92,7 +92,7 @@ interface CodeDraft {
       <ul class="flex flex-col gap-2">
         @for (code of generated(); track code) {
           <li class="flex items-center gap-2">
-            <code class="flex-1 rounded-md bg-surface-alt px-3 py-2 text-center font-mono text-lg font-semibold tracking-widest">{{ code }}</code>
+            <code class="flex-1 rounded-xl bg-surface-alt px-3 py-2 text-center font-mono text-lg font-semibold tracking-widest">{{ code }}</code>
             <p-button icon="pi pi-copy" [text]="true" [ariaLabel]="'Copiar ' + code" (onClick)="copy(code)" />
           </li>
         }

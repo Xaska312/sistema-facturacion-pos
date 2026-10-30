@@ -24,15 +24,15 @@ import { LatestRequest } from '../../shared/latest-request';
                     (queryChange)="load($event)">
       <label tableToolbar class="flex items-center gap-2 text-sm">
         <span>Desde</span>
-        <input type="date" class="border rounded-md px-2 py-2" [(ngModel)]="filters.from" (ngModelChange)="reloadFirstPage()" />
+        <input type="date" class="border rounded-[10px] px-3 min-h-11" [(ngModel)]="filters.from" (ngModelChange)="reloadFirstPage()" />
       </label>
       <label tableToolbar class="flex items-center gap-2 text-sm">
         <span>Hasta</span>
-        <input type="date" class="border rounded-md px-2 py-2" [(ngModel)]="filters.to" (ngModelChange)="reloadFirstPage()" />
+        <input type="date" class="border rounded-[10px] px-3 min-h-11" [(ngModel)]="filters.to" (ngModelChange)="reloadFirstPage()" />
       </label>
       <label tableToolbar class="flex items-center gap-2 text-sm">
         <span>Evento</span>
-        <select class="border rounded-md px-2 py-2 max-w-56" [(ngModel)]="filters.event" (ngModelChange)="reloadFirstPage()">
+        <select class="border rounded-[10px] px-3 min-h-11 max-w-56" [(ngModel)]="filters.event" (ngModelChange)="reloadFirstPage()">
           <option [ngValue]="null">Todos</option>
           @for (option of eventOptions; track option.value) {
             <option [ngValue]="option.value">{{ option.label }}</option>

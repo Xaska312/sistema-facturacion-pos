@@ -53,7 +53,7 @@ export const PAYMENT_METHODS: readonly string[] = ['Transferencia', 'Nequi', 'Da
                     (queryChange)="load($event)">
       <label tableToolbar class="flex items-center gap-2 text-sm">
         <span>Estado</span>
-        <select class="border rounded-md px-2 py-2" [(ngModel)]="status" (ngModelChange)="reloadFirstPage()">
+        <select class="border rounded-[10px] px-3 min-h-11" [(ngModel)]="status" (ngModelChange)="reloadFirstPage()">
           <option [ngValue]="null">Todos</option>
           @for (option of statusOptions; track option.value) {
             <option [ngValue]="option.value">{{ option.label }}</option>
@@ -103,7 +103,7 @@ export const PAYMENT_METHODS: readonly string[] = ['Transferencia', 'Nequi', 'Da
           <p-button label="Registrar pago" icon="pi pi-dollar" (onClick)="openPayment(s)" />
           <span class="flex items-center gap-2 text-sm">
             <label for="sub-plan" class="sr-only">Cambiar plan</label>
-            <select id="sub-plan" class="border rounded-md px-2 py-2" [(ngModel)]="newPlan">
+            <select id="sub-plan" class="border rounded-[10px] px-3 min-h-11" [(ngModel)]="newPlan">
               @for (plan of plans(); track plan.code) {
                 <option [value]="plan.code">{{ plan.name }}</option>
               }
@@ -155,7 +155,7 @@ export const PAYMENT_METHODS: readonly string[] = ['Transferencia', 'Nequi', 'Da
         <div class="grid grid-cols-2 gap-3">
           <div class="flex flex-col gap-1">
             <label for="pay-plan" class="text-sm font-medium">Plan</label>
-            <select id="pay-plan" class="border rounded-md px-2 py-2" [(ngModel)]="payment.planCode">
+            <select id="pay-plan" class="border rounded-[10px] px-3 min-h-11" [(ngModel)]="payment.planCode">
               @for (plan of plans(); track plan.code) {
                 <option [value]="plan.code">{{ plan.name }}</option>
               }
@@ -163,7 +163,7 @@ export const PAYMENT_METHODS: readonly string[] = ['Transferencia', 'Nequi', 'Da
           </div>
           <div class="flex flex-col gap-1">
             <label for="pay-cycle" class="text-sm font-medium">Ciclo</label>
-            <select id="pay-cycle" class="border rounded-md px-2 py-2" [(ngModel)]="payment.billingCycle">
+            <select id="pay-cycle" class="border rounded-[10px] px-3 min-h-11" [(ngModel)]="payment.billingCycle">
               <option value="MONTHLY">Mensual</option>
               <option value="ANNUAL">Anual</option>
             </select>
@@ -183,7 +183,7 @@ export const PAYMENT_METHODS: readonly string[] = ['Transferencia', 'Nequi', 'Da
         <div class="grid grid-cols-2 gap-3">
           <div class="flex flex-col gap-1">
             <label for="pay-method" class="text-sm font-medium">Medio</label>
-            <select id="pay-method" class="border rounded-md px-2 py-2" [(ngModel)]="payment.method">
+            <select id="pay-method" class="border rounded-[10px] px-3 min-h-11" [(ngModel)]="payment.method">
               @for (method of methods; track method) {
                 <option [value]="method">{{ method }}</option>
               }

@@ -52,7 +52,7 @@ const STOCK_STATUS: Record<StockStatus, StatusKey> = { LOW: 'stock-low', OK: 'st
                     (queryChange)="load($event)">
       <label tableToolbar class="flex items-center gap-2 text-sm">
         <span class="sr-only">Sucursal</span>
-        <select class="border rounded-md px-2 py-2" [ngModel]="branchId" (ngModelChange)="branchId = $event; reload()">
+        <select class="border rounded-[10px] px-3 min-h-11" [ngModel]="branchId" (ngModelChange)="branchId = $event; reload()">
           @for (b of branches(); track b.id) {
             <option [value]="b.id">{{ b.name }}</option>
           }

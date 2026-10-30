@@ -46,7 +46,12 @@ describe('glyphForUrl', () => {
   it('el inicio solo cuenta exacto y lo de fuera del menú no lleva ícono', () => {
     expect(glyphForUrl('/app')).toBe('home');
     expect(glyphForUrl('/app/manual')).toBeNull();
-    expect(glyphForUrl('/plataforma/negocios')).toBeNull();
     expect(glyphForUrl('/app/cajas-x')).toBeNull();
+  });
+
+  it('la consola de plataforma usa los íconos de su dock', () => {
+    expect(glyphForUrl('/plataforma/negocios')).toBe('tenants');
+    expect(glyphForUrl('/plataforma/seguridad?tipo=x')).toBe('security');
+    expect(glyphForUrl('/plataforma')).toBeNull();
   });
 });

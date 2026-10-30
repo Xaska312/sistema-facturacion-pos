@@ -36,7 +36,7 @@ import { LatestRequest } from '../../shared/latest-request';
                     (queryChange)="load($event)">
       <label tableToolbar class="flex items-center gap-2 text-sm">
         <span class="sr-only">Categoría</span>
-        <select class="border rounded-md px-2 py-2" [ngModel]="categoryId" (ngModelChange)="categoryId = $event; reloadFirstPage()">
+        <select class="border rounded-[10px] px-3 min-h-11" [ngModel]="categoryId" (ngModelChange)="categoryId = $event; reloadFirstPage()">
           <option value="">Todas las categorías</option>
           @for (c of categories(); track c.id) {
             <option [value]="c.id">{{ c.name }}</option>

@@ -1,17 +1,18 @@
 import { Component, computed, inject, input } from '@angular/core';
 import { Router } from '@angular/router';
+import { PLATFORM_MENU } from '../features/platform/platform-menu';
 import { MENU } from '../features/shell/menu';
 import { XIconComponent } from './icons/xicon.component';
 import { XIconName } from './icons/xicons';
 
 /**
- * Ícono propio del módulo de una dirección: el de la opción del menú más larga que la contiene
- * ("/app/productos/nuevo" → productos). El inicio ("/app") solo cuenta si es exacto.
+ * Ícono propio del módulo de una dirección: el de la opción del menú (o de la consola de plataforma) más larga que
+ * la contiene ("/app/productos/nuevo" → productos). El inicio ("/app") solo cuenta si es exacto.
  */
 export function glyphForUrl(url: string): XIconName | null {
   const path = url.split(/[?#]/)[0];
   let best: { route: string; glyph: XIconName } | null = null;
-  for (const item of MENU) {
+  for (const item of [...MENU, ...PLATFORM_MENU]) {
     const matches = path === item.route || (item.route !== '/app' && path.startsWith(item.route + '/'));
     if (matches && (!best || item.route.length > best.route.length)) {
       best = item;
