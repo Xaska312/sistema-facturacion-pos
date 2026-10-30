@@ -35,7 +35,8 @@ describe('BusinessProfileSectionComponent (Fase 12a)', () => {
   it('al cambiar de tipo propone sus módulos y guarda renovando la sesión', () => {
     const fixture = render({ businessType: 'RETAIL', modules: ['CREDIT', 'ORDERS', 'QUOTES', 'VARIANTS', 'SCALE'], canEdit: true });
     expect(checked(fixture)).toEqual([true, true, true, true, true, false, false, false]);
-    expect(typeButton(fixture, 'Restaurante').disabled).toBeTrue();
+    expect(typeButton(fixture, 'Farmacia').disabled).toBeTrue();
+    expect(typeButton(fixture, 'Restaurante').disabled).toBeFalse();
 
     typeButton(fixture, 'Servicios').click();
     fixture.detectChanges();

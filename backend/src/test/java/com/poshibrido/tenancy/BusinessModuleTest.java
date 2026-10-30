@@ -21,15 +21,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 class BusinessModuleTest {
 
     @Test
-    void comercioKeepsEverythingAndOnlyComercioAndServiciosAreOpen() {
+    void comercioKeepsEverythingAndComercioServiciosAndRestauranteAreOpen() {
         assertThat(BusinessType.RETAIL.defaultModules()).containsExactlyInAnyOrder(CREDIT, ORDERS, QUOTES, VARIANTS,
                 SCALE);
         assertThat(BusinessType.SERVICES.defaultModules()).containsExactlyInAnyOrder(CREDIT, ORDERS, QUOTES);
-        assertThat(BusinessType.RESTAURANT.defaultModules()).containsExactlyInAnyOrder(CREDIT, ORDERS, MODIFIERS,
+        assertThat(BusinessType.RESTAURANT.defaultModules()).containsExactlyInAnyOrder(ORDERS, MODIFIERS,
                 BusinessModule.TABLES, BusinessModule.KITCHEN);
         assertThat(BusinessType.PHARMACY.defaultModules()).containsExactlyInAnyOrder(CREDIT, ORDERS, QUOTES);
         assertThat(EnumSet.allOf(BusinessType.class).stream().filter(BusinessType::isOpen))
-                .containsExactlyInAnyOrder(BusinessType.RETAIL, BusinessType.SERVICES);
+                .containsExactlyInAnyOrder(BusinessType.RETAIL, BusinessType.SERVICES, BusinessType.RESTAURANT);
     }
 
     @Test

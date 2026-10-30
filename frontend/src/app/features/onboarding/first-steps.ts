@@ -13,7 +13,18 @@ export interface FirstStepCounts {
   sales: number | null;
 }
 
-export type FirstStepId = 'branch' | 'categories' | 'products' | 'stock' | 'team' | 'cash' | 'sale';
+export type FirstStepId = 'branch' | 'categories' | 'products' | 'stock' | 'team' | 'cash' | 'sale' | 'tables'
+  | 'modifiers' | 'stations' | 'tips';
+
+/** Conteos de un restaurante (Fase 12b, apertura al público): mesas, adiciones, estaciones e INC. */
+export interface RestaurantStepCounts extends FirstStepCounts {
+  tables: number | null;
+  modifierGroups: number | null;
+  /** Estaciones de cocina (la principal viene creada). */
+  stations: number | null;
+  /** 1 si el impuesto al consumo ya está activo. */
+  consumptionTax: number | null;
+}
 
 export interface FirstStep {
   id: FirstStepId;
@@ -84,6 +95,64 @@ export function buildFirstSteps(counts: FirstStepCounts): FirstStep[] {
       done: atLeast(counts.sales, 1), optional: false,
     },
   ];
+}
+
+/**
+ * Primeros pasos de un restaurante: mesas en vez de existencias (lo que se prepara no se cuenta en inventario),
+ * adiciones con la plantilla del término, cocina y bar, propina e INC, el equipo (meseros y cocina) y la primera mesa.
+ * {@code modules}: autoridades de módulos de la sesión (sin Adiciones o sin Cocina, esos pasos no salen).
+ */
+export function buildRestaurantSteps(counts: RestaurantStepCounts, modules: ReadonlySet<string>): FirstStep[] {
+  const base = buildFirstSteps(counts);
+  const step = (id: FirstStepId) => base.find((s) => s.id === id)!;
+  const steps: FirstStep[] = [
+    {
+      id: 'tables', permission: 'tables:manage', route: '/app/mesas/configurar', actionLabel: 'Configurar mesas',
+      title: 'Crea tus zonas y mesas',
+      description: 'Salón, terraza, barra… y sus mesas numeradas de una vez.',
+      done: atLeast(counts.tables, 1), optional: false,
+    },
+    {
+      ...step('categories'),
+      description: 'Entradas, platos fuertes, bebidas, postres… así asignas la cocina, el bar y el impuesto por categoría.',
+    },
+    { ...step('products'), title: 'Carga tu menú', description: 'Tus platos y bebidas con su precio, uno a uno o desde Excel.' },
+  ];
+  if (modules.has('module:modifiers')) {
+    steps.push({
+      id: 'modifiers', permission: 'modifiers:manage', route: '/app/adiciones', actionLabel: 'Crear adiciones',
+      title: 'Crea las adiciones',
+      description: 'Término de la carne, tamaños, salsas, "sin cebolla"… con las plantillas listas.',
+      done: atLeast(counts.modifierGroups, 1), optional: true,
+    });
+  }
+  if (modules.has('module:kitchen')) {
+    steps.push({
+      id: 'stations', permission: 'kitchen:manage', route: '/app/comandas/estaciones', actionLabel: 'Ver estaciones',
+      title: 'Separa la cocina y el bar',
+      description: 'La Cocina ya viene creada. Si tienes bar, créalo y asígnale las bebidas para que salgan en su comanda.',
+      done: atLeast(counts.stations, 2), optional: true,
+    });
+  }
+  steps.push(
+    {
+      id: 'tips', permission: 'settings:manage', route: '/app/ajustes', actionLabel: 'Ir a Ajustes',
+      title: 'Propina e impuesto al consumo',
+      description: 'Revisa la propina sugerida (10 %) y, si eres responsable de INC, aplícalo a tus categorías.',
+      done: atLeast(counts.consumptionTax, 1), optional: true,
+    },
+    {
+      ...step('team'),
+      description: 'Invita a tus meseros (rol Mesero) y a la cocina (rol Cocina). Si trabajas solo, salta este paso.',
+    },
+    step('cash'),
+    {
+      ...step('sale'), permission: 'tables:operate', route: '/app/mesas', actionLabel: 'Ir a las mesas',
+      title: 'Atiende tu primera mesa',
+      description: 'Abre una mesa, pide, envía a cocina y cobra.',
+    },
+  );
+  return steps;
 }
 
 /** Los pasos opcionales cuentan como hechos para terminar, pero no se resaltan como siguientes. */

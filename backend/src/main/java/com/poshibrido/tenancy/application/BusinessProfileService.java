@@ -27,8 +27,8 @@ import java.util.UUID;
 /**
  * Tipo de negocio y módulos encendidos (Fase 12a, decisión 267).
  * <ul>
- *   <li>Solo el dueño los cambia, en Ajustes. Puede elegir un tipo abierto (Comercio, Servicios) o dejar el que tiene;
- *       los tipos "Pronto" (Restaurante, Farmacia) solo los asigna el administrador de plataforma a negocios piloto.</li>
+ *   <li>Solo el dueño los cambia, en Ajustes. Puede elegir un tipo abierto (Comercio, Servicios, Restaurante) o dejar
+ *       el que tiene; los tipos "Pronto" (Farmacia) solo los asigna el administrador de plataforma a negocios piloto.</li>
  *   <li>Nada se borra: un módulo apagado sale del token (y de las pantallas) en la siguiente renovación, y vuelve con
  *       todos sus datos al prenderlo.</li>
  * </ul>
@@ -92,8 +92,8 @@ public class BusinessProfileService {
             throw new BusinessRuleException("Elige el tipo de negocio.");
         }
         if (!requested.isOpen() && requested != current) {
-            throw new BusinessRuleException("Ese tipo de negocio estará disponible pronto. Por ahora elige Comercio "
-                    + "o Servicios.");
+            throw new BusinessRuleException("Ese tipo de negocio estará disponible pronto. Por ahora elige Comercio, "
+                    + "Servicios o Restaurante.");
         }
     }
 

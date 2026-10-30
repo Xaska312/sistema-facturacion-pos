@@ -77,22 +77,29 @@ class BusinessProfileServiceTest {
 
     @Test
     void ownerCannotPickAComingSoonTypeButKeepsAPilotOne() {
-        assertThatThrownBy(() -> service.change(tenant.getId(), owner, BusinessType.RESTAURANT, List.of()))
+        assertThatThrownBy(() -> service.change(tenant.getId(), owner, BusinessType.PHARMACY, List.of()))
                 .isInstanceOf(BusinessRuleException.class);
 
-        service.assignByPlatform(tenant.getId(), UUID.randomUUID(), BusinessType.RESTAURANT);
+        service.assignByPlatform(tenant.getId(), UUID.randomUUID(), BusinessType.PHARMACY);
         assertThat(tenant.getModules()).containsExactlyInAnyOrder(BusinessModule.CREDIT, BusinessModule.ORDERS,
-                BusinessModule.MODIFIERS, BusinessModule.TABLES, BusinessModule.KITCHEN);
+                BusinessModule.QUOTES);
 
+        BusinessProfile kept = service.change(tenant.getId(), owner, BusinessType.PHARMACY,
+                List.of(BusinessModule.ORDERS));
+        assertThat(kept.businessType()).isEqualTo(BusinessType.PHARMACY);
+        assertThat(kept.modules()).containsExactly(BusinessModule.ORDERS);
+    }
+
+    @Test
+    void restaurantIsOpenAndKitchenNeedsTables() {
+        BusinessProfile restaurant = service.change(tenant.getId(), owner, BusinessType.RESTAURANT,
+                BusinessType.RESTAURANT.defaultModules());
+        assertThat(restaurant.modules()).containsExactly(BusinessModule.ORDERS, BusinessModule.MODIFIERS,
+                BusinessModule.TABLES, BusinessModule.KITCHEN);
         assertThatThrownBy(() -> service.change(tenant.getId(), owner, BusinessType.RESTAURANT,
                 List.of(BusinessModule.KITCHEN)))
                 .isInstanceOf(BusinessRuleException.class)
                 .hasMessageContaining("necesita Mesas");
-
-        BusinessProfile kept = service.change(tenant.getId(), owner, BusinessType.RESTAURANT,
-                List.of(BusinessModule.ORDERS));
-        assertThat(kept.businessType()).isEqualTo(BusinessType.RESTAURANT);
-        assertThat(kept.modules()).containsExactly(BusinessModule.ORDERS);
     }
 
     @Test
