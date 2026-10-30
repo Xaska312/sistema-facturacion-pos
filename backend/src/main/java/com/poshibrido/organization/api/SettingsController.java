@@ -39,7 +39,9 @@ public class SettingsController {
             Boolean cashCloseEmail,
             /** Vigencia y condiciones por defecto de las cotizaciones (decisión 260). Sin dato se conserva. */
             @Min(1) @Max(365) Integer quoteValidityDays,
-            @Size(max = 1000) String quoteTerms) {
+            @Size(max = 1000) String quoteTerms,
+            /** Propina sugerida al cobrar una mesa (Fase 12b-5), 0 a 20 %. Sin dato se conserva. */
+            @Min(0) @Max(20) Integer tipPercent) {
     }
 
     @GetMapping
@@ -57,8 +59,9 @@ public class SettingsController {
         int quoteValidityDays = request.quoteValidityDays() == null
                 ? current.quoteValidityDays() : request.quoteValidityDays();
         String quoteTerms = request.quoteTerms() == null ? current.quoteTerms() : request.quoteTerms();
+        int tipPercent = request.tipPercent() == null ? current.tipPercent() : request.tipPercent();
         return service.update(new BusinessSettings(request.allowNegativeStock(), request.pricesIncludeTax(),
                 request.timezone().trim(), request.currency().trim(), request.receiptFooter(),
-                request.maxDiscountPercent(), cashCloseEmail, quoteValidityDays, quoteTerms));
+                request.maxDiscountPercent(), cashCloseEmail, quoteValidityDays, quoteTerms, tipPercent));
     }
 }

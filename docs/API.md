@@ -93,7 +93,18 @@ En `POST /sales` cada ítem acepta `modifiers: [{optionId, quantity}]` y `note` 
 | POST | `/tabs/{id}/items/{itemId}/void` | `tables:operate` | `{reason}`: queda tachado. Lo que ya salió a cocina (`sentAt`, Fase 12b-3) necesita `tables:void` |
 | POST | `/tabs/{id}/move` · `/merge` | `tables:operate` | `{tableId}` (mesa libre de la sucursal) · `{fromTabId}` (sus productos pasan a esta; la otra queda `MERGED`) |
 | POST | `/tabs/{id}/cancel` | `tables:operate` (+ `tables:void` si tiene productos) | `{reason}` |
-| POST | `/tabs/{id}/charge` | `tables:operate` + `sales:create` | `Idempotency-Key` obligatoria. `{customerId?, payments, expectedTotal}` → 201 con la venta (como `POST /sales`; precio vigente, adiciones, nota y `notes` = nombre de la cuenta). Caja abierta de la misma sucursal (422). Ya cobrada → 409; repetir con la misma clave devuelve la misma venta |
+| POST | `/tabs/{id}/charge` | `tables:operate` + `sales:create` | `Idempotency-Key` obligatoria. `{customerId?, payments, expectedTotal, items?, tip?}` → 201 con la venta (como `POST /sales`; precio vigente, adiciones, nota y `notes` = nombre de la cuenta). Sin `items` cobra todo lo pendiente; con `items: [{itemId, quantity}]` solo esa parte (Fase 12b-5; una cantidad menor parte la línea) y la cuenta sigue abierta hasta cobrar todo. `tip: {amount, paymentMethodId, suggestedPercent?}`: propina voluntaria aparte de la venta (sin impuestos), pagada con uno de los medios de los pagos, que cubren total + propina (422 si ningún pago de ese medio la alcanza; no se paga con fiado). Caja abierta de la misma sucursal (422). Ya cobrada → 409; repetir con la misma clave devuelve la misma venta |
+
+Lo ya cobrado (`saleId` en la línea) no se quita (409) y una cuenta con partes cobradas no se cancela (409); `TabView` trae `chargedTotal` y `saleIds`, y `total` es lo que falta por cobrar. La venta trae `tip: {amount, methodName, voided}`; anularla devuelve la propina en efectivo (`TIP_VOID`).
+
+### Propinas e impuesto al consumo (Fase 12b-5, decisión 272)
+| Método | Ruta | Permiso | Descripción |
+|---|---|---|---|
+| GET | `/tips?branchId&from&to` | `tips:manage` | `{branchId, branches, from, to, collected, count, byMethod: [{methodName, amount, count}], pending, people: [{memberId, name}], payouts}`. Periodo máx. 31 días (por defecto, el mes en curso). `pending` = todo lo recogido en la sucursal menos lo repartido |
+| POST | `/tips/payouts` | `tips:manage` | `{branchId?, from, to, amount, memberIds, fromCash, notes?}` → 201. Partes iguales en pesos enteros (los que sobran, a los primeros). Más de lo pendiente → 422. `fromCash` sale de la caja abierta de quien reparte (`TIP_PAYOUT`). Inmutable; queda `TIP_PAYOUT_CREATED` |
+| POST | `/taxes/consumption` | `settings:manage` + `products:manage` | `{categoryIds}` → `{taxId, taxName, categories, products}`: deja "INC 8 %" activo (lo crea si falta) y lo asigna a los productos de esas categorías y sus subcategorías. Queda `CONSUMPTION_TAX_APPLIED` |
+
+Ajustes: `tipPercent` (0 a 20, por defecto 10) en `GET/PUT /settings` y en `GET /sales/config`. Caja: tipos `TIP`, `TIP_VOID`, `TIP_PAYOUT`; el informe trae `cash.tips` y `cash.tipPayouts`.
 
 Todas las acciones de cuentas, zonas y mesas quedan en la auditoría (`TAB_*`, `DINING_ZONE_*`, `DINING_TABLE_*`).
 

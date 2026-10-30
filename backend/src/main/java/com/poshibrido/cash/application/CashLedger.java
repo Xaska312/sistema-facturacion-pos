@@ -29,6 +29,7 @@ public class CashLedger implements CashApi {
     private static final String SALE_REFERENCE = "SALE";
     private static final String CREDIT_PAYMENT_REFERENCE = "CREDIT_PAYMENT";
     private static final String ORDER_PAYMENT_REFERENCE = "ORDER_PAYMENT";
+    private static final String TIP_PAYOUT_REFERENCE = "TIP_PAYOUT";
 
     private final CashSessionRepository sessions;
     private final PaymentMethodRepository paymentMethods;
@@ -99,6 +100,27 @@ public class CashLedger implements CashApi {
     public void recordOrderRefundCash(UUID sessionId, BigDecimal amount, UUID paymentId, String label) {
         em.persist(CashMovement.record(sessionId, CashMovementType.ORDER_REFUND, amount, label,
                 ORDER_PAYMENT_REFERENCE, paymentId, null, CurrentActor.userId().orElse(null)));
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void recordTipCash(UUID sessionId, BigDecimal amount, UUID saleId, String label) {
+        em.persist(CashMovement.record(sessionId, CashMovementType.TIP, amount, label, SALE_REFERENCE, saleId, null,
+                CurrentActor.userId().orElse(null)));
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void recordTipVoidCash(UUID sessionId, BigDecimal amount, UUID saleId, String label) {
+        em.persist(CashMovement.record(sessionId, CashMovementType.TIP_VOID, amount, label, SALE_REFERENCE, saleId,
+                null, CurrentActor.userId().orElse(null)));
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void recordTipPayoutCash(UUID sessionId, BigDecimal amount, UUID payoutId, String label) {
+        em.persist(CashMovement.record(sessionId, CashMovementType.TIP_PAYOUT, amount, label, TIP_PAYOUT_REFERENCE,
+                payoutId, null, CurrentActor.userId().orElse(null)));
     }
 
     /** La fila ya está bloqueada: se carga (o relee) la entidad para devolver sus datos actuales. */

@@ -192,6 +192,8 @@ export interface BusinessSettings {
   /** Días de vigencia y condiciones por defecto de una cotización nueva (decisión 260). */
   quoteValidityDays: number;
   quoteTerms: string;
+  /** Propina que se sugiere al cobrar una mesa (Fase 12b-5), 0 a 20 %; 0 = no se sugiere. */
+  tipPercent: number;
 }
 
 export interface Department {
@@ -506,7 +508,10 @@ export type CashMovementType =
   | 'CREDIT_PAYMENT'
   | 'CREDIT_PAYMENT_VOID'
   | 'ORDER_PAYMENT'
-  | 'ORDER_REFUND';
+  | 'ORDER_REFUND'
+  | 'TIP'
+  | 'TIP_VOID'
+  | 'TIP_PAYOUT';
 export type ManualCashMovementType = 'INCOME' | 'EXPENSE' | 'WITHDRAWAL';
 
 export interface PaymentMethod {
@@ -591,6 +596,9 @@ export interface CashSection {
   expected: number | null;
   counted: number | null;
   difference: number | null;
+  /** Propinas en efectivo (menos las de ventas anuladas) y entregadas al equipo (Fase 12b-5). */
+  tips?: number | null;
+  tipPayouts?: number | null;
 }
 
 export interface CashReport {
@@ -723,6 +731,14 @@ export interface Sale {
   payments: SalePayment[];
   taxes: SaleTax[];
   receipt: ReceiptHeader;
+  /** Propina voluntaria (Fase 12b-5): aparte del total, sin impuestos. */
+  tip?: SaleTip | null;
+}
+
+export interface SaleTip {
+  amount: number;
+  methodName: string;
+  voided: boolean;
 }
 
 export interface PosConfig {
@@ -733,6 +749,8 @@ export interface PosConfig {
   receiptFooter: string | null;
   businessName: string;
   finalConsumerId: string;
+  /** Propina sugerida al cobrar una mesa (Fase 12b-5); 0 = no se sugiere. */
+  tipPercent?: number;
 }
 
 export interface SaleItemInput {

@@ -24,7 +24,7 @@ import {
   StockRow,
 } from '../../core/api/api.models';
 import { CashApi } from '../../core/api/cash.api';
-import { DiningApi, Tab } from '../../core/api/dining.api';
+import { ChargePart, DiningApi, Tab } from '../../core/api/dining.api';
 import { ModifiersApi, PosModifierCatalog, PosModifierGroup } from '../../core/api/modifiers.api';
 import { CatalogApi } from '../../core/api/catalog.api';
 import { CreditApi } from '../../core/api/credit.api';
@@ -60,7 +60,8 @@ import {
 } from './held-sales';
 import { ModifierPick, ModifierPickerComponent } from './modifier-picker.component';
 import { groupsFor, repriceModifiers } from './modifier-choice';
-import { tabLines } from './tab-lines';
+import { decodeParts, tabLines } from './tab-lines';
+import { TipChoice, equalParts, suggestedTip, tipAmount } from './tip';
 import { NewCustomerDialogComponent } from './new-customer-dialog.component';
 import { OpenCashComponent } from './open-cash.component';
 import { POS_SHORTCUTS, methodIcon, methodLabel } from './pos-labels';
@@ -143,8 +144,8 @@ const STOCK_PAGES = 5;
         <!-- Cobro de una cuenta de mesa (Fase 12b-2): los productos vienen de la cuenta. -->
         @if (tab(); as t) {
           <div class="tab-banner" role="status">
-            <span class="font-bold">Cobrando {{ t.label }}</span>
-            <span class="text-sm">Los productos se cambian en la cuenta.</span>
+            <span class="font-bold">Cobrando {{ t.label }}{{ tabParts() ? ' · una parte' : '' }}</span>
+            <span class="text-sm">{{ tabParts() ? 'Solo los productos que eligió esta persona.' : 'Los productos se cambian en la cuenta.' }}</span>
             <span class="flex-1"></span>
             <button type="button" class="tool-btn" (click)="leaveTab()">
               <i class="pi pi-arrow-left" aria-hidden="true"></i>Volver a la cuenta
@@ -384,7 +385,54 @@ const STOCK_PAGES = 5;
               [closable]="!saving()" [closeOnEscape]="!saving()"
               [breakpoints]="{ '640px': '100vw' }" (onShow)="focusPayment()" (onHide)="focusScanner()">
       <p class="text-center text-sm text-muted">Total a cobrar</p>
-      <p class="text-5xl font-extrabold tracking-tight text-center tabular-nums mb-4">{{ cop(totals().total) }}</p>
+      <p class="text-5xl font-extrabold tracking-tight text-center tabular-nums" [class.mb-4]="!tip()">{{ cop(due()) }}</p>
+      @if (tip() > 0) {
+        <p class="text-center text-sm text-muted mb-4">Cuenta {{ cop(totals().total) }} + propina {{ cop(tip()) }}</p>
+      }
+
+      <!-- Cobro de una mesa (Fase 12b-5): propina voluntaria y partes iguales. -->
+      @if (tab()) {
+        <fieldset class="rounded-2xl border border-line p-3 mb-4">
+          <legend class="px-1 text-sm font-semibold">Propina voluntaria</legend>
+          <div class="flex flex-wrap gap-2" role="radiogroup" aria-label="Propina">
+            @if (tipPercent() > 0) {
+              <button type="button" class="tool-btn" role="radio" [attr.aria-checked]="tipChoice() === 'suggested'"
+                      (click)="setTip('suggested')">Sí, {{ tipPercent() }} % ({{ cop(suggested()) }})</button>
+            }
+            <button type="button" class="tool-btn" role="radio" [attr.aria-checked]="tipChoice() === 'custom'"
+                    (click)="setTip('custom')">Otro valor</button>
+            <button type="button" class="tool-btn" role="radio" [attr.aria-checked]="tipChoice() === 'none'"
+                    (click)="setTip('none')">Sin propina</button>
+          </div>
+          @if (tipChoice() === 'custom') {
+            <label class="flex items-center gap-2 mt-2 text-sm">
+              <span>Valor</span>
+              <input appPesos class="h-11 w-36 border rounded-lg px-3 text-lg text-right tabular-nums" [ngModel]="customTip()"
+                     (ngModelChange)="customTip.set($event); refreshDue()" aria-label="Valor de la propina" />
+            </label>
+          }
+          @if (tip() > 0 && tipMethods().length > 1) {
+            <div class="flex flex-wrap items-center gap-2 mt-2 text-sm" role="radiogroup" aria-label="Con qué se paga la propina">
+              <span>Se paga con</span>
+              @for (m of tipMethods(); track m.id) {
+                <button type="button" class="tool-btn" role="radio" [attr.aria-checked]="tipMethodId() === m.id"
+                        (click)="tipMethod.set(m.id)">{{ methodLabel(m.code, m.name) }}</button>
+              }
+            </div>
+          }
+          <p class="text-xs text-muted mt-2">Es del equipo: va aparte de la venta y no lleva impuestos. Pregúntale al cliente.</p>
+        </fieldset>
+        <div class="flex flex-wrap items-center gap-2 mb-4 text-sm">
+          <label class="flex items-center gap-2">
+            <span class="font-semibold">Dividir en partes iguales</span>
+            <input type="number" min="1" max="20" class="h-11 w-20 border rounded-lg px-2 text-center" [ngModel]="splitParts()"
+                   (ngModelChange)="splitParts.set(clampParts($event))" aria-label="Entre cuántas personas" />
+          </label>
+          @if (splitParts() > 1) {
+            <span>Cada persona paga <strong class="tabular-nums">{{ cop(parts()[0]) }}</strong>{{ parts()[0] !== parts()[parts().length - 1] ? ' (la última ' + cop(parts()[parts().length - 1]) + ')' : '' }}</span>
+          }
+        </div>
+      }
 
       <div class="flex items-center justify-between gap-2 mb-2">
         <p id="pay-methods" class="text-sm font-medium">{{ mixed ? 'Agregar otro medio' : 'Medio de pago' }}</p>
@@ -718,6 +766,33 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   private readonly router = inject(Router);
   /** Cuenta de mesa que se está cobrando (Fase 12b-2, /pos?cuenta=…); null en una venta normal. */
   protected readonly tab = signal<Tab | null>(null);
+  /** Cobro por productos (Fase 12b-5): las líneas y cantidades de esta parte; null = todo lo pendiente. */
+  protected readonly tabParts = signal<ChargePart[] | null>(null);
+  protected readonly tipChoice = signal<TipChoice>('none');
+  protected readonly customTip = signal<number | null>(null);
+  protected readonly tipMethod = signal<string | null>(null);
+  protected readonly splitParts = signal(1);
+  protected readonly tipPercent = computed(() => this.config()?.tipPercent ?? 0);
+  protected readonly suggested = computed(() => suggestedTip(this.totals().base, this.tipPercent()));
+  /** Propina de este cobro (solo al cobrar una mesa). */
+  protected readonly tip = computed(() => (this.tab()
+    ? tipAmount(this.tipChoice(), this.totals().base, this.tipPercent(), this.customTip()) : 0));
+  /** Lo que se recibe: la cuenta más la propina. */
+  protected readonly due = computed(() => this.totals().total + this.tip());
+  protected readonly parts = computed(() => equalParts(this.due(), this.splitParts()));
+  /** Cambia cuando cambian los pagos (no son una señal) para recalcular con qué se paga la propina. */
+  private readonly paymentsRevision = signal(0);
+  protected readonly tipMethods = computed(() => {
+    this.paymentsRevision();
+    const used = new Set(this.payments.map((p) => p.methodId));
+    return this.payMethods().filter((m) => used.has(m.id) && m.code !== CREDIT_METHOD_CODE);
+  });
+  /** El medio elegido si se está usando; si no, el primero de los pagos. */
+  protected readonly tipMethodId = computed(() => {
+    const options = this.tipMethods();
+    const chosen = this.tipMethod();
+    return options.find((m) => m.id === chosen)?.id ?? options[0]?.id ?? null;
+  });
   /** Adiciones (Fase 12b-1): grupos por producto; null sin el módulo o mientras carga. */
   protected readonly modifierCatalog = signal<PosModifierCatalog | null>(null);
   /** Producto esperando que se elijan sus adiciones. */
@@ -795,7 +870,7 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   protected readonly maxDiscount = computed(() =>
     this.auth.hasPermission('sales:discount') ? 100 : Number(this.config()?.maxDiscountPercent ?? 0),
   );
-  protected readonly suggestions = computed(() => cashSuggestions(this.totals().total));
+  protected readonly suggestions = computed(() => cashSuggestions(this.due()));
   private readonly methodsById = computed(() => new Map(this.methods().map((m) => [m.id, m])));
 
   protected code = '';
@@ -808,6 +883,7 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   protected receiptOpen = false;
   /** El tiquete abierto es del cobro de una cuenta: al cerrarlo se vuelve a las mesas. */
   private backToTables = false;
+  private returnTabId: string | null = null;
   protected helpOpen = false;
   holdOpen = false;
   heldOpen = false;
@@ -883,7 +959,10 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
           return;
         }
         this.tab.set(t);
-        this.updateLines(() => tabLines(t));
+        const parts = decodeParts(this.route.snapshot.queryParamMap.get('partes'));
+        this.tabParts.set(parts);
+        this.splitParts.set(this.clampParts(Number(this.route.snapshot.queryParamMap.get('dividir') ?? 1)));
+        this.updateLines(() => tabLines(t, parts));
         this.refreshPrices(this.customer().id || null);
       },
       error: (e: unknown) => this.messages.add({ severity: 'error', summary: 'No se pudo abrir la cuenta', detail: problemMessage(e) }),
@@ -894,6 +973,7 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   leaveTab(): void {
     const t = this.tab();
     this.tab.set(null);
+    this.tabParts.set(null);
     this.resetSale();
     void this.router.navigate(t ? ['/app/mesas/cuenta', t.id] : ['/app/mesas']);
   }
@@ -1558,7 +1638,12 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
     this.cart()?.closeEditor();
     const cash = this.payMethods().find((m) => m.affectsCash) ?? this.payMethods()[0];
     this.mixed = false;
-    this.payments = cash ? [this.draft(cash, this.totals().total)] : [];
+    // Mesa (Fase 12b-5): se propone la propina sugerida, si el negocio la tiene; el cliente decide.
+    this.tipChoice.set(this.tab() && this.tipPercent() > 0 ? 'suggested' : 'none');
+    this.customTip.set(null);
+    this.tipMethod.set(null);
+    this.payments = cash ? [this.draft(cash, this.due())] : [];
+    this.paymentsRevision.update((n) => n + 1);
     this.idempotencyKey ??= newIdempotencyKey('sale');
     this.payOpen = true;
   }
@@ -1620,14 +1705,16 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
       this.addPayment(method);
       return;
     }
-    this.payments = [this.draft(method, this.totals().total)];
+    this.payments = [this.draft(method, this.due())];
+    this.paymentsRevision.update((n) => n + 1);
     this.focusPayment();
   }
 
   setMixed(on: boolean): void {
     this.mixed = on;
     if (!on && this.payments.length > 0) {
-      this.payments = [{ ...this.payments[0], amount: this.totals().total }];
+      this.payments = [{ ...this.payments[0], amount: this.due() }];
+      this.paymentsRevision.update((n) => n + 1);
     }
   }
 
@@ -1638,15 +1725,34 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   addPayment(method: PaymentMethod): void {
     const missing = this.paymentSummary().missing;
     this.payments = [...this.payments, this.draft(method, missing > 0 ? missing : null)];
+    this.paymentsRevision.update((n) => n + 1);
     const index = this.payments.length - 1;
     setTimeout(() => document.getElementById(`pay-${index}`)?.focus(), 0);
   }
 
   removePayment(index: number): void {
     this.payments = this.payments.filter((_, i) => i !== index);
+    this.paymentsRevision.update((n) => n + 1);
     if (this.payments.length <= 1) {
       this.mixed = false;
     }
+  }
+
+  /** Propina elegida (Fase 12b-5): con un solo pago, su valor sigue a lo que se recibe. */
+  setTip(choice: TipChoice): void {
+    this.tipChoice.set(choice);
+    this.refreshDue();
+  }
+
+  refreshDue(): void {
+    if (!this.mixed && this.payments.length === 1) {
+      this.payments = [{ ...this.payments[0], amount: this.due() }];
+    }
+  }
+
+  clampParts(value: unknown): number {
+    const n = Math.floor(Number(value));
+    return Number.isFinite(n) ? Math.min(20, Math.max(1, n)) : 1;
   }
 
   cashIndex(): number {
@@ -1681,7 +1787,7 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   }
 
   paymentSummary(): PaymentSummary {
-    return summarizePayments(this.totals().total, this.payments);
+    return summarizePayments(this.due(), this.payments);
   }
 
   canConfirm(): boolean {
@@ -1738,8 +1844,14 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
     this.saving.set(true);
     const charging = this.tab();
     const request = charging
-      ? this.dining.charge(charging.id, { customerId: input.customerId, payments: input.payments, expectedTotal: input.expectedTotal },
-        this.idempotencyKey)
+      ? this.dining.charge(charging.id, {
+        customerId: input.customerId, payments: input.payments, expectedTotal: input.expectedTotal,
+        ...(this.tabParts() ? { items: this.tabParts()! } : {}),
+        tip: this.tip() > 0 && this.tipMethodId()
+          ? { amount: this.tip(), paymentMethodId: this.tipMethodId()!,
+            suggestedPercent: this.tipChoice() === 'suggested' ? this.tipPercent() : null }
+          : null,
+      }, this.idempotencyKey)
       : this.sales.create(input, this.idempotencyKey);
     request.subscribe({
       next: (sale) => {
@@ -1748,9 +1860,11 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
         this.lastSale.set(sale);
         this.resetSale();
         if (charging) {
-          // La mesa queda libre; al cerrar el tiquete se vuelve a las mesas.
+          // Al cerrar el tiquete se vuelve a la cuenta si le falta algo por cobrar, o a las mesas (Fase 12b-5).
           this.tab.set(null);
+          this.tabParts.set(null);
           this.backToTables = true;
+          this.returnTabId = charging.id;
           void this.router.navigate(['/pos'], { replaceUrl: true });
         }
         this.receiptOpen = true;
@@ -1785,7 +1899,16 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   receiptClosed(): void {
     if (this.backToTables) {
       this.backToTables = false;
-      void this.router.navigate(['/app/mesas']);
+      const id = this.returnTabId;
+      this.returnTabId = null;
+      if (!id) {
+        void this.router.navigate(['/app/mesas']);
+        return;
+      }
+      this.dining.tab(id).subscribe({
+        next: (t) => void this.router.navigate(t.status === 'OPEN' ? ['/app/mesas/cuenta', id] : ['/app/mesas']),
+        error: () => void this.router.navigate(['/app/mesas']),
+      });
       return;
     }
     this.focusScanner();

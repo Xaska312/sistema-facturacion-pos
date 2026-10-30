@@ -122,7 +122,7 @@ public class TabService {
         List<Object[]> itemRows = dining.rows("""
                 SELECT i.id, i.position, i.product_id, i.unit_id, i.name, i.quantity, i.unit_price, i.base_price,
                        i.open_price, i.note, i.added_at, i.added_by, i.sent_at, i.voided_at, i.voided_by, i.void_reason,
-                       k.number, k.station_name
+                       k.number, k.station_name, i.sale_id
                 FROM tab_items i LEFT JOIN kitchen_tickets k ON k.id = i.ticket_id
                 WHERE i.tab_id = :t ORDER BY i.position""", Map.of("t", id));
         Set<UUID> people = new HashSet<>();
@@ -136,25 +136,33 @@ public class TabService {
         Map<UUID, String> names = members.displayNames(people);
         List<TabItemView> items = new ArrayList<>();
         BigDecimal total = BigDecimal.ZERO.setScale(2);
+        BigDecimal charged = BigDecimal.ZERO.setScale(2);
+        Set<UUID> saleIds = new LinkedHashSet<>();
         for (Object[] i : itemRows) {
             UUID itemId = (UUID) i[0];
             BigDecimal quantity = ((BigDecimal) i[5]).setScale(4, RoundingMode.HALF_UP);
             BigDecimal unitPrice = DiningService.money(i[6]);
             boolean voided = i[13] != null;
-            if (!voided) {
+            UUID lineSale = (UUID) i[18];
+            if (!voided && lineSale == null) {
                 total = total.add(unitPrice.multiply(quantity)).setScale(2, RoundingMode.HALF_UP);
+            } else if (!voided) {
+                // Ya cobrado en una parte (Fase 12b-5): con el precio de cuando se pidió, para mostrar.
+                charged = charged.add(unitPrice.multiply(quantity)).setScale(2, RoundingMode.HALF_UP);
+                saleIds.add(lineSale);
             }
             items.add(new TabItemView(itemId, ((Number) i[1]).intValue(), (UUID) i[2], (UUID) i[3], (String) i[4],
                     quantity, unitPrice, DiningService.money(i[7]), (Boolean) i[8], (String) i[9],
                     mods.getOrDefault(itemId, List.of()), Rows.instant(i[10]), names.get((UUID) i[11]), Rows.instant(i[12]),
-                    i[16] == null ? null : ((Number) i[16]).longValue(), (String) i[17], voided, Rows.instant(i[13]), i[14] == null ? null : names.get((UUID) i[14]), (String) i[15]));
+                    i[16] == null ? null : ((Number) i[16]).longValue(), (String) i[17], voided, Rows.instant(i[13]),
+                    i[14] == null ? null : names.get((UUID) i[14]), (String) i[15], lineSale));
         }
         long number = ((Number) r[1]).longValue();
         String kind = (String) r[2];
         return new TabView((UUID) r[0], number, kind, (String) r[3], TabLabels.label(kind, number, (String) r[6],
                 (String) r[9]), (UUID) r[4], (UUID) r[5], (String) r[6], (String) r[7], Rows.integer(r[8]), (String) r[9],
                 (String) r[10], (String) r[11], (String) r[12], Rows.instant(r[13]), names.get((UUID) r[14]),
-                Rows.instant(r[15]), (UUID) r[16], total, items, kitchen.ticketsOfTab(id));
+                Rows.instant(r[15]), (UUID) r[16], total, items, kitchen.ticketsOfTab(id), charged, List.copyOf(saleIds));
     }
 
     // ------------------------------------------------------------------ abrir y datos
@@ -346,7 +354,8 @@ public class TabService {
         Tab tab = lockOpen(id);
         String why = requireReason(reason);
         List<Object[]> found = dining.rows("""
-                SELECT name, quantity, sent_at, voided_at FROM tab_items WHERE id = :i AND tab_id = :t FOR UPDATE""",
+                SELECT name, quantity, sent_at, voided_at, sale_id FROM tab_items WHERE id = :i AND tab_id = :t
+                FOR UPDATE""",
                 Map.of("i", itemId, "t", id));
         if (found.isEmpty()) {
             throw new NotFoundException("Producto no encontrado en la cuenta.");
@@ -354,6 +363,9 @@ public class TabService {
         Object[] item = found.getFirst();
         if (item[3] != null) {
             throw new ConflictException("Ese producto ya se había quitado.");
+        }
+        if (item[4] != null) {
+            throw new ConflictException("Ese producto ya se cobró: para devolverlo, anula su venta.");
         }
         if (item[2] != null && !CurrentActor.permissions().contains(VOID_PERMISSION)) {
             throw new ForbiddenException("Ya salió a cocina: pídele a caja o al administrador que lo anule.");
@@ -373,6 +385,8 @@ public class TabService {
             // Ya había salido: la cocina se entera en la pantalla y, si imprime, con un aviso de anulación.
             kitchen.itemVoided(itemId);
         }
+        // Si ya se cobró una parte y no queda nada pendiente, la cuenta se cierra como cobrada (Fase 12b-5).
+        closeIfFullyCharged(id, null);
         notifier.tabChanged(tab.branchId(), id);
         return get(id);
     }
@@ -443,6 +457,9 @@ public class TabService {
     public TabView cancel(UUID id, String reason) {
         Tab tab = lockOpen(id);
         String why = requireReason(reason);
+        if (count("SELECT count(*) FROM tab_items WHERE tab_id = :t AND sale_id IS NOT NULL", Map.of("t", id)) > 0) {
+            throw new ConflictException("Esta cuenta ya tiene partes cobradas: cobra lo que falta o quita lo pendiente.");
+        }
         long active = count("SELECT count(*) FROM tab_items WHERE tab_id = :t AND voided_at IS NULL", Map.of("t", id));
         if (active > 0 && !CurrentActor.permissions().contains(VOID_PERMISSION)) {
             throw new ForbiddenException("La cuenta tiene productos: pídele a caja o al administrador que la cancele.");
@@ -459,14 +476,20 @@ public class TabService {
 
     // ------------------------------------------------------------------ cobro
 
+    /** Una parte de lo pedido para cobrar por separado: la línea y cuántas unidades. */
+    public record ChargePart(UUID itemId, BigDecimal quantity) {
+    }
+
     /**
-     * Cobra la cuenta completa: en la misma transacción la vuelve una venta (precio vigente, adiciones, nota; caja e
-     * inventario como cualquier venta) y la cierra. Con la misma {@code Idempotency-Key} devuelve la venta ya hecha.
-     * Se cobra desde una caja abierta de la sucursal de la cuenta.
+     * Cobra la cuenta (Fase 12b-2) o una parte (Fase 12b-5, "por productos"): en la misma transacción lo vuelve una
+     * venta (precio vigente, adiciones, nota; caja e inventario como cualquier venta) con la propina aparte, si la hay.
+     * Sin {@code parts} se cobra todo lo pendiente; con {@code parts}, solo esas líneas (una cantidad menor parte la
+     * línea en dos). La cuenta queda abierta mientras falte algo por cobrar. Con la misma {@code Idempotency-Key}
+     * devuelve la venta ya hecha. Se cobra desde una caja abierta de la sucursal de la cuenta.
      */
     @Transactional
     public UUID charge(UUID id, UUID customerId, List<PaymentLine> payments, BigDecimal expectedTotal,
-                       String idempotencyKey) {
+                       String idempotencyKey, List<ChargePart> parts, SaleCommands.Tip tip) {
         Optional<UUID> done = sales.existingSale(idempotencyKey);
         if (done.isPresent()) {
             return done.get();
@@ -484,36 +507,134 @@ public class TabService {
         if (!session.branchId().equals(tab.branchId())) {
             throw new BusinessRuleException("Esta cuenta es de otra sucursal: cóbrala desde una caja de esa sucursal.");
         }
+        List<UUID> selected = parts == null || parts.isEmpty() ? pendingItems(id) : splitParts(id, parts);
+        if (selected.isEmpty()) {
+            throw new BusinessRuleException("La cuenta no tiene productos para cobrar.");
+        }
         Map<UUID, List<ModifierChoices.Choice>> choices = new LinkedHashMap<>();
         for (Object[] m : dining.rows("""
                 SELECT m.tab_item_id, m.option_id, m.quantity FROM tab_item_modifiers m
-                JOIN tab_items i ON i.id = m.tab_item_id
-                WHERE i.tab_id = :t AND i.voided_at IS NULL ORDER BY m.tab_item_id, m.position""", Map.of("t", id))) {
+                WHERE m.tab_item_id IN (:ids) ORDER BY m.tab_item_id, m.position""", Map.of("ids", selected))) {
             choices.computeIfAbsent((UUID) m[0], k -> new ArrayList<>())
                     .add(new ModifierChoices.Choice((UUID) m[1], ((Number) m[2]).intValue()));
         }
         List<ItemLine> lines = new ArrayList<>();
         for (Object[] i : dining.rows("""
                 SELECT id, product_id, unit_id, quantity, base_price, open_price, note FROM tab_items
-                WHERE tab_id = :t AND voided_at IS NULL ORDER BY position""", Map.of("t", id))) {
+                WHERE id IN (:ids) ORDER BY position, added_at""", Map.of("ids", selected))) {
             boolean openPrice = (Boolean) i[5];
             // El precio que manda es el vigente (decisión del usuario); en precio libre, el que se escribió.
             lines.add(new ItemLine((UUID) i[1], (UUID) i[2], (BigDecimal) i[3], null,
                     openPrice ? (BigDecimal) i[4] : null, choices.getOrDefault((UUID) i[0], List.of()), (String) i[6]));
         }
-        if (lines.isEmpty()) {
-            throw new BusinessRuleException("La cuenta no tiene productos para cobrar.");
-        }
         UUID saleId = sales.createForTab(new SaleCommands.Create(customerId, lines, payments, expectedTotal,
-                tab.label()), idempotencyKey);
+                tab.label(), tip), idempotencyKey);
+        em.createNativeQuery("UPDATE tab_items SET sale_id = :s WHERE id IN (:ids)")
+                .setParameter("s", saleId).setParameter("ids", selected).executeUpdate();
+        boolean closed = closeIfFullyCharged(id, saleId);
+        if (!closed) {
+            touch(id);
+        }
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("label", tab.label());
+        data.put("saleId", saleId);
+        data.put("items", lines.size());
+        data.put("partial", !closed);
+        if (tip != null && tip.amount() != null && tip.amount().signum() > 0) {
+            data.put("tip", tip.amount());
+        }
+        audit.log("TAB_CHARGED", "tab", id, null, data);
+        notifier.tabChanged(tab.branchId(), id);
+        return saleId;
+    }
+
+    /** Líneas por cobrar: ni quitadas ni cobradas. */
+    private List<UUID> pendingItems(UUID tabId) {
+        List<UUID> ids = new ArrayList<>();
+        for (Object[] r : dining.rows("""
+                SELECT id, position FROM tab_items WHERE tab_id = :t AND voided_at IS NULL AND sale_id IS NULL
+                ORDER BY position""", Map.of("t", tabId))) {
+            ids.add((UUID) r[0]);
+        }
+        return ids;
+    }
+
+    /**
+     * Las líneas que se cobran en esta parte. Si de una línea se cobra menos que su cantidad ("una de las dos
+     * hamburguesas"), se parte: la línea queda con lo que falta y una copia (con sus adiciones, nota y comanda) lleva lo
+     * que se cobra.
+     */
+    private List<UUID> splitParts(UUID tabId, List<ChargePart> parts) {
+        Map<UUID, BigDecimal> wanted = new LinkedHashMap<>();
+        for (ChargePart p : parts) {
+            if (p == null || p.itemId() == null || p.quantity() == null || p.quantity().signum() <= 0) {
+                throw new BusinessRuleException("Cada producto a cobrar necesita su cantidad.");
+            }
+            wanted.merge(p.itemId(), p.quantity().setScale(4, RoundingMode.HALF_UP), BigDecimal::add);
+        }
+        Map<UUID, BigDecimal> pending = new LinkedHashMap<>();
+        for (Object[] r : dining.rows("""
+                SELECT id, quantity FROM tab_items WHERE tab_id = :t AND voided_at IS NULL AND sale_id IS NULL
+                AND id IN (:ids) FOR UPDATE""", Map.of("t", tabId, "ids", List.copyOf(wanted.keySet())))) {
+            pending.put((UUID) r[0], ((BigDecimal) r[1]).setScale(4, RoundingMode.HALF_UP));
+        }
+        List<UUID> selected = new ArrayList<>();
+        for (Map.Entry<UUID, BigDecimal> e : wanted.entrySet()) {
+            BigDecimal has = pending.get(e.getKey());
+            if (has == null) {
+                throw new ConflictException("Uno de los productos ya se cobró o se quitó. Vuelve a abrir la cuenta.");
+            }
+            int cmp = e.getValue().compareTo(has);
+            if (cmp > 0) {
+                throw new BusinessRuleException("Se quiere cobrar más de lo pedido de un producto.");
+            }
+            if (cmp == 0) {
+                selected.add(e.getKey());
+                continue;
+            }
+            UUID copy = Ids.newId();
+            em.createNativeQuery("""
+                    INSERT INTO tab_items (id, tab_id, position, product_id, unit_id, name, quantity, unit_price, base_price,
+                                           open_price, note, added_by, added_at, sent_at, ticket_id)
+                    SELECT ?1, tab_id, position, product_id, unit_id, name, ?2, unit_price, base_price, open_price, note,
+                           added_by, added_at, sent_at, ticket_id
+                    FROM tab_items WHERE id = ?3""")
+                    .setParameter(1, copy).setParameter(2, e.getValue()).setParameter(3, e.getKey()).executeUpdate();
+            em.createNativeQuery("""
+                    INSERT INTO tab_item_modifiers (id, tab_item_id, position, group_name, option_id, option_name, quantity,
+                                                    price)
+                    SELECT gen_random_uuid(), ?1, position, group_name, option_id, option_name, quantity, price
+                    FROM tab_item_modifiers WHERE tab_item_id = ?2""")
+                    .setParameter(1, copy).setParameter(2, e.getKey()).executeUpdate();
+            em.createNativeQuery("UPDATE tab_items SET quantity = quantity - ?2 WHERE id = ?1")
+                    .setParameter(1, e.getKey()).setParameter(2, e.getValue()).executeUpdate();
+            selected.add(copy);
+        }
+        return selected;
+    }
+
+    /**
+     * Si ya no queda nada por cobrar y algo se cobró, la cuenta pasa a cobrada (con la última venta) y la mesa queda
+     * libre. Devuelve si la cerró.
+     */
+    private boolean closeIfFullyCharged(UUID tabId, UUID lastSale) {
+        if (count("SELECT count(*) FROM tab_items WHERE tab_id = :t AND voided_at IS NULL AND sale_id IS NULL",
+                Map.of("t", tabId)) > 0) {
+            return false;
+        }
+        List<Object[]> lastCharged = dining.rows("""
+                SELECT sale_id, added_at FROM tab_items WHERE tab_id = :t AND sale_id IS NOT NULL
+                ORDER BY added_at DESC LIMIT 1""", Map.of("t", tabId));
+        UUID saleId = lastSale != null ? lastSale : lastCharged.isEmpty() ? null : (UUID) lastCharged.getFirst()[0];
+        if (saleId == null) {
+            return false;
+        }
         em.createNativeQuery("""
                 UPDATE tabs SET status = 'CHARGED', sale_id = ?2, closed_at = ?3, closed_by = ?4, version = version + 1
                 WHERE id = ?1""")
-                .setParameter(1, id).setParameter(2, saleId).setParameter(3, Instant.now())
+                .setParameter(1, tabId).setParameter(2, saleId).setParameter(3, Instant.now())
                 .setParameter(4, CurrentActor.requireUserId()).executeUpdate();
-        audit.log("TAB_CHARGED", "tab", id, null, Map.of("label", tab.label(), "saleId", saleId, "items", lines.size()));
-        notifier.tabChanged(tab.branchId(), id);
-        return saleId;
+        return true;
     }
 
     // ------------------------------------------------------------------ apoyo

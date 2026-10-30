@@ -32,7 +32,7 @@ public enum BusinessModule {
     /** Adiciones (Fase 12b-1): tamaños, extras con precio, opciones y notas por producto en el POS. */
     MODIFIERS("modifiers:manage"),
     /** Mesas y cuentas abiertas (Fase 12b-2): mesa, para llevar y domicilio. */
-    TABLES("tables:operate", "tables:manage", "tables:void"),
+    TABLES("tables:operate", "tables:manage", "tables:void", "tips:manage"),
     /** Cocina y comandas (Fase 12b-3): estaciones, enviar lo pedido en las cuentas e imprimir comandas. Necesita Mesas. */
     KITCHEN("kitchen:send", "kitchen:manage", "kitchen:view");
 

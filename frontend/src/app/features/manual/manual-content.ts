@@ -421,18 +421,62 @@ export const MANUAL: readonly ManualChapter[] = [
       {
         id: 'cobrar-mesa',
         title: 'Cobrar una mesa',
-        summary: 'La cuenta se cobra completa en Vender, con el diálogo de pago de siempre; se vuelve una venta normal.',
+        summary: 'La cuenta se cobra en Vender, con el diálogo de pago de siempre: toda junta, por productos (cada quien lo '
+          + 'suyo) o en partes iguales. Cada cobro es una venta normal, con su tiquete.',
         steps: [
-          'En la cuenta toca "Cobrar": se abre Vender con sus productos (necesitas la caja abierta en esa sucursal).',
-          'Si es un cliente registrado, cámbialo en el carrito; luego toca Cobrar (F4) y registra el pago.',
-          'Al cerrar el tiquete vuelves a las mesas: la mesa ya queda libre.',
+          'En la cuenta toca "Cobrar" y elige cómo: "Toda la cuenta", "Por productos" o "Partes iguales" (necesitas la caja '
+            + 'abierta en esa sucursal).',
+          'Por productos: marca lo que paga esta persona (por ejemplo, una de las dos hamburguesas) y toca "Cobrar esta '
+            + 'parte". Lo demás queda en la cuenta para la siguiente persona.',
+          'Partes iguales: di entre cuántas personas; al cobrar ves cuánto paga cada una y registras los pagos de todos '
+            + '(con "Pago mixto" si unos pagan en efectivo y otros con tarjeta).',
+          'En el cobro pregúntale al cliente por la propina: "Sí, 10 %", "Otro valor" o "Sin propina", y con qué la paga.',
+          'Al cerrar el tiquete vuelves a la cuenta si falta algo por cobrar, o a las mesas si ya quedó libre.',
         ],
         tips: [
+          'La propina es voluntaria y va aparte: no suma a la venta ni lleva IVA ni INC, y sale en el tiquete como '
+            + '"Propina voluntaria". La sugerida se cambia en Ajustes → Mesas.',
+          'Si la propina es en efectivo entra a la caja; en el arqueo sale aparte como "Propinas en efectivo".',
+          'Lo ya cobrado sale como "Cobrado" en la cuenta y no se puede quitar: para devolverlo, anula su venta (también '
+            + 'devuelve su propina).',
           'Se cobra el precio vigente; si alguno cambió mientras la mesa comía, lo verás en el total antes de cobrar.',
-          'En Vender los productos de la cuenta no se cambian: "Volver a la cuenta" para agregar o quitar.',
-          'Dividir la cuenta, la propina y los pagos por partes llegan pronto.',
         ],
         who: 'Quien vende con la caja abierta.',
+      },
+      {
+        id: 'propinas',
+        title: 'Propinas y su reparto',
+        summary: 'Las propinas son del equipo de trabajo (ley 1935 de 2018). En Propinas ves lo recogido en un periodo y '
+          + 'registras el reparto en partes iguales.',
+        steps: [
+          'Entra a Propinas (en Todo → Reportes) y elige el periodo (máximo un mes).',
+          'Revisa lo recogido, por medio de pago, y lo pendiente por repartir.',
+          'Toca "Repartir": escribe el valor, marca entre quiénes se reparte (meseros, cocina…) y mira cuánto le toca a cada uno.',
+          'Si lo entregas en efectivo, deja marcado "Lo entrego en efectivo desde mi caja" (sale de tu caja abierta). Si '
+            + 'no, queda registrado como entregado por fuera.',
+        ],
+        tips: [
+          'El reparto queda con quién recibió cuánto y no se puede cambiar.',
+          'Las propinas de ventas anuladas no cuentan.',
+          'Lo recomendable es repartir al menos una vez al mes.',
+        ],
+        who: 'Propietario y Administrador (permiso "Ver las propinas recogidas y registrar su reparto").',
+      },
+      {
+        id: 'impuesto-consumo',
+        title: 'Impuesto al consumo (INC 8 %)',
+        summary: 'Los restaurantes, cafeterías y bares responsables del impuesto al consumo cobran el 8 % en lo que '
+          + 'preparan, en lugar del IVA. El asistente lo deja listo en tus productos.',
+        steps: [
+          'En Ajustes, en "Impuesto al consumo (INC 8 %)", responde si tu negocio es responsable (si dudas, pregúntale a tu contador).',
+          'Si sí, marca las categorías de comidas y bebidas que preparas y toca "Aplicar INC 8 %".',
+        ],
+        tips: [
+          'Con precios con impuesto incluido el precio de venta no cambia: cambia cuánto es base y cuánto impuesto.',
+          'Las ventas anteriores no cambian. A los productos nuevos de esas categorías elígeles "INC 8 %" o vuelve a aplicarlo.',
+          'Lo que no preparas (gaseosas y paquetes para revender) puede seguir con IVA: déjalo en otra categoría.',
+        ],
+        who: 'Propietario y Administrador (ajustes y productos).',
       },
     ],
   },

@@ -137,6 +137,16 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
       'Para que Chrome no pregunte antes de imprimir, ábrelo con --kiosk-printing (ver el manual).',
     ],
   },
+  '/app/propinas': {
+    manual: 'propinas',
+    title: 'Propinas',
+    tips: [
+      'Las propinas son del equipo: no son ingreso del negocio ni llevan impuestos (ley 1935 de 2018).',
+      'Elige el periodo (máximo un mes) para ver lo recogido; arriba a la derecha, lo pendiente por repartir.',
+      '"Repartir" divide en partes iguales entre quienes marques; si lo das en efectivo, sale de tu caja.',
+      'Cada reparto queda registrado con quién recibió cuánto y no se puede cambiar.',
+    ],
+  },
   '/app/cocina': {
     manual: 'pantalla-cocina',
     title: 'Pantalla de cocina',

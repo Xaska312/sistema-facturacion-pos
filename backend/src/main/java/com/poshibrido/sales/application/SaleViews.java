@@ -30,6 +30,10 @@ public final class SaleViews {
     public record ModifierView(String groupName, String optionName, int quantity, BigDecimal unitPrice) {
     }
 
+    /** Propina voluntaria de la venta (Fase 12b-5): aparte del total. */
+    public record TipView(BigDecimal amount, String methodName, boolean voided) {
+    }
+
     public record PaymentView(int lineNo, UUID paymentMethodId, String methodCode, String methodName,
                               BigDecimal amount, BigDecimal tendered, String reference) {
     }
@@ -51,11 +55,12 @@ public final class SaleViews {
                            BigDecimal total, BigDecimal paidTotal, BigDecimal changeAmount, String notes,
                            UUID createdBy, String createdByName, Instant voidedAt, UUID voidedBy,
                            String voidedByName, String voidReason, List<ItemView> items, List<PaymentView> payments,
-                           List<TaxView> taxes, ReceiptHeader receipt) {
+                           List<TaxView> taxes, ReceiptHeader receipt, TipView tip) {
     }
 
     /** Lo que la pantalla de venta necesita del negocio (sin requerir permisos de configuración). */
     public record PosConfig(boolean pricesIncludeTax, BigDecimal maxDiscountPercent, boolean allowNegativeStock,
-                            String currency, String receiptFooter, String businessName, UUID finalConsumerId) {
+                            String currency, String receiptFooter, String businessName, UUID finalConsumerId,
+                            int tipPercent) {
     }
 }

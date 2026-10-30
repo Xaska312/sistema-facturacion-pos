@@ -64,6 +64,11 @@ import { documentShortLabel } from '../document-types';
         }
       }
       <p class="row bold big"><span>TOTAL</span><span>{{ cop(s.total) }}</span></p>
+      <!-- Propina voluntaria (Fase 12b-5; ley 1935 de 2018): aparte de la venta y sin impuestos. -->
+      @if (s.tip; as tip) {
+        <p class="row mt"><span>Propina voluntaria ({{ tip.methodName }}){{ tip.voided ? ' ANULADA' : '' }}</span><span>{{ cop(tip.amount) }}</span></p>
+        <p class="row bold"><span>Total con propina</span><span>{{ cop(s.total + (tip.voided ? 0 : tip.amount)) }}</span></p>
+      }
       <hr />
       @for (p of s.payments; track p.lineNo) {
         <p class="row"><span>{{ p.methodName }}</span><span>{{ cop(p.tendered) }}</span></p>

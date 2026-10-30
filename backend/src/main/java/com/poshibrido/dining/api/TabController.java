@@ -6,6 +6,7 @@ import com.poshibrido.dining.application.TabService.Details;
 import com.poshibrido.dining.application.TabService.ItemInput;
 import com.poshibrido.dining.application.TabService.OpenCommand;
 import com.poshibrido.sales.application.ModifierChoices;
+import com.poshibrido.sales.application.SaleCommands;
 import com.poshibrido.sales.application.SaleCommands.PaymentLine;
 import com.poshibrido.sales.application.SaleQueryService;
 import com.poshibrido.sales.application.SaleViews.SaleView;
@@ -92,8 +93,22 @@ public class TabController {
                                  @Size(max = 60) String reference) {
     }
 
+    /** Una parte de lo pedido (Fase 12b-5): la línea y cuántas unidades se cobran. */
+    public record PartRequest(@NotNull UUID itemId,
+                              @NotNull @DecimalMin(value = "0", inclusive = false)
+                              @Digits(integer = 10, fraction = 4) BigDecimal quantity) {
+    }
+
+    /** Propina voluntaria (Fase 12b-5): aparte de la venta, con uno de los medios de pago de la cuenta. */
+    public record TipRequest(@NotNull @DecimalMin(value = "0", inclusive = false)
+                             @Digits(integer = 12, fraction = 2) @WholePesos BigDecimal amount,
+                             @NotNull UUID paymentMethodId, @Min(0) @Max(100) Integer suggestedPercent) {
+    }
+
+    /** Sin {@code items} se cobra todo lo pendiente; con {@code items}, solo esa parte (Fase 12b-5). */
     public record ChargeRequest(UUID customerId, @NotEmpty @Size(max = 10) List<@Valid @NotNull PaymentRequest> payments,
-                                @DecimalMin("0") @Digits(integer = 12, fraction = 2) BigDecimal expectedTotal) {
+                                @DecimalMin("0") @Digits(integer = 12, fraction = 2) BigDecimal expectedTotal,
+                                @Size(max = 200) List<@Valid @NotNull PartRequest> items, @Valid TipRequest tip) {
     }
 
     @PostMapping
@@ -160,7 +175,11 @@ public class TabController {
                            @RequestHeader(name = "Idempotency-Key", required = false) String idempotencyKey) {
         UUID saleId = service.charge(id, r.customerId(), r.payments().stream()
                 .map(p -> new PaymentLine(p.paymentMethodId(), p.amount(), p.reference())).toList(),
-                r.expectedTotal(), idempotencyKey);
+                r.expectedTotal(), idempotencyKey,
+                r.items() == null ? null : r.items().stream()
+                        .map(p -> new TabService.ChargePart(p.itemId(), p.quantity())).toList(),
+                r.tip() == null ? null : new SaleCommands.Tip(r.tip().amount(), r.tip().paymentMethodId(),
+                        r.tip().suggestedPercent()));
         return sales.sale(saleId);
     }
 }

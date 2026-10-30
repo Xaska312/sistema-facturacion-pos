@@ -258,6 +258,14 @@ export const routes: Routes = [
         loadComponent: () => import('./features/kitchen/tickets.component').then((m) => m.TicketsComponent),
       },
       {
+        // Propinas (Fase 12b-5).
+        path: 'propinas',
+        title: 'Propinas',
+        canActivate: [permissionGuard],
+        data: { permission: 'tips:manage', module: 'module:tables' },
+        loadComponent: () => import('./features/tips/tips.component').then((m) => m.TipsComponent),
+      },
+      {
         // Pantalla de cocina (Fase 12b-4).
         path: 'cocina',
         title: 'Cocina',
