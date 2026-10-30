@@ -10,6 +10,9 @@ export const CASH_MOVEMENT_LABEL: Record<CashMovementType, string> = {
   CREDIT_PAYMENT_VOID: 'Abono anulado',
   ORDER_PAYMENT: 'Anticipo de pedido',
   ORDER_REFUND: 'Devolución de anticipo',
+  TIP: 'Propina',
+  TIP_VOID: 'Propina devuelta',
+  TIP_PAYOUT: 'Reparto de propinas',
 };
 
 export const SESSION_STATUS_LABEL: Record<CashSessionStatus, string> = {

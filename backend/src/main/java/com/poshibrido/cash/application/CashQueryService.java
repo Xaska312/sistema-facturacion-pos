@@ -137,6 +137,10 @@ public class CashQueryService {
                 .add(totals.getOrDefault(CashMovementType.CREDIT_PAYMENT_VOID, BigDecimal.ZERO));
         BigDecimal orderPayments = totals.getOrDefault(CashMovementType.ORDER_PAYMENT, BigDecimal.ZERO)
                 .add(totals.getOrDefault(CashMovementType.ORDER_REFUND, BigDecimal.ZERO));
+        // Propinas en efectivo (Fase 12b-5): recibidas (menos las de ventas anuladas) y entregadas al equipo.
+        BigDecimal tips = totals.getOrDefault(CashMovementType.TIP, BigDecimal.ZERO)
+                .add(totals.getOrDefault(CashMovementType.TIP_VOID, BigDecimal.ZERO));
+        BigDecimal tipPayouts = totals.getOrDefault(CashMovementType.TIP_PAYOUT, BigDecimal.ZERO);
         BigDecimal expected = session.isOpen()
                 ? CashCount.expected(session.getOpeningAmount(), totals.values())
                 : session.getExpectedAmount();
@@ -144,9 +148,9 @@ public class CashQueryService {
         CashSection cash = audit
                 ? new CashSection(session.getOpeningAmount(), sales, voids, incomes, expenses, withdrawals,
                         creditPayments, orderPayments, expected, session.getCountedAmount(),
-                        session.getDifference())
+                        session.getDifference(), tips, tipPayouts)
                 : new CashSection(session.getOpeningAmount(), null, null, null, null, null, null, null, null,
-                        session.getCountedAmount(), null);
+                        session.getCountedAmount(), null, null, null);
         Summary summary = salesSummary.summarize(session.getId(), session.getClosedAt());
         SessionView view = toView(session, registerMap(), names(List.of(session)));
         return new SessionReport(view, summary.salesCount(), summary.salesTotal(), summary.voidedCount(),

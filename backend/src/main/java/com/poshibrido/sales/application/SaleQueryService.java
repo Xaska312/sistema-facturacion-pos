@@ -21,6 +21,7 @@ import com.poshibrido.sales.application.SaleViews.ReceiptHeader;
 import com.poshibrido.sales.application.SaleViews.SaleRow;
 import com.poshibrido.sales.application.SaleViews.SaleView;
 import com.poshibrido.sales.application.SaleViews.TaxView;
+import com.poshibrido.sales.application.SaleViews.TipView;
 import com.poshibrido.sales.domain.Sale;
 import com.poshibrido.sales.domain.SaleItem;
 import com.poshibrido.sales.domain.SaleStatus;
@@ -77,11 +78,14 @@ public class SaleQueryService {
     private final PricingApi pricing;
     private final CustomerApi customers;
 
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager em;
+
     @Transactional(readOnly = true)
     public PosConfig posConfig() {
         BusinessSettings cfg = settings.current();
         return new PosConfig(cfg.pricesIncludeTax(), cfg.maxDiscountPercent(), cfg.allowNegativeStock(),
-                cfg.currency(), cfg.receiptFooter(), businessName(), CustomerApi.FINAL_CONSUMER_ID);
+                cfg.currency(), cfg.receiptFooter(), businessName(), CustomerApi.FINAL_CONSUMER_ID, cfg.tipPercent());
     }
 
     /** Precio vigente de un producto en una unidad para el cliente indicado (consumidor final si es nulo). */
@@ -176,7 +180,22 @@ public class SaleQueryService {
                 s.getTaxTotal(), s.getTotal(), s.getPaidTotal(), s.getChangeAmount(), s.getNotes(), s.getCreatedBy(),
                 names.get(s.getCreatedBy()), s.getVoidedAt(), s.getVoidedBy(),
                 s.getVoidedBy() == null ? null : names.get(s.getVoidedBy()), s.getVoidReason(), itemViews,
-                paymentViews, taxViews, receipt);
+                paymentViews, taxViews, receipt, tip(id, methods));
+    }
+
+    /** Propina de la venta (Fase 12b-5), si tiene. */
+    private TipView tip(UUID saleId, Map<UUID, PaymentMethodRef> methods) {
+        @SuppressWarnings("unchecked")
+        List<Object[]> rows = em.createNativeQuery(
+                        "SELECT amount, payment_method_id, method_code, voided_at FROM sale_tips WHERE sale_id = ?1")
+                .setParameter(1, saleId).getResultList();
+        if (rows.isEmpty()) {
+            return null;
+        }
+        Object[] r = rows.getFirst();
+        PaymentMethodRef m = methods.get((UUID) r[1]);
+        return new TipView(((java.math.BigDecimal) r[0]).setScale(2, java.math.RoundingMode.HALF_UP),
+                m == null ? (String) r[2] : m.name(), r[3] != null);
     }
 
     private String businessName() {

@@ -43,4 +43,13 @@ public interface CashApi {
 
     /** Devolución en efectivo del anticipo de un pedido ({@code amount} positivo; sale de la caja). */
     void recordOrderRefundCash(UUID sessionId, BigDecimal amount, UUID paymentId, String label);
+
+    /** Propina en efectivo de una venta (Fase 12b-5; {@code amount} positivo; entra a la caja). */
+    void recordTipCash(UUID sessionId, BigDecimal amount, UUID saleId, String label);
+
+    /** Propina en efectivo devuelta al anular la venta ({@code amount} positivo; sale de la caja). */
+    void recordTipVoidCash(UUID sessionId, BigDecimal amount, UUID saleId, String label);
+
+    /** Entrega de propinas al equipo desde la caja ({@code amount} positivo; sale de la caja). */
+    void recordTipPayoutCash(UUID sessionId, BigDecimal amount, UUID payoutId, String label);
 }

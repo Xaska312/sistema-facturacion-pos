@@ -194,7 +194,7 @@ public class SaleService {
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public UUID createForTab(Create command, String idempotencyKey) {
-        return register(command, requireKey(idempotencyKey), CurrentActor.requireUserId(), Options.POS);
+        return register(command, requireKey(idempotencyKey), CurrentActor.requireUserId(), Options.TAB);
     }
 
     /** Venta ya registrada con esa clave por el usuario actual (para reintentos de la entrega de un pedido). */
@@ -207,8 +207,15 @@ public class SaleService {
      * {@code fromOrder}: entrega de un pedido (permite "Anticipo"); {@code names}: nombre de cada línea (o nulo = el
      * del producto); {@code depositApplied}: lo que se paga con "Anticipo" (solo en la entrega de un pedido).
      */
-    private record Options(boolean agreedPrices, boolean fromOrder, List<String> names, BigDecimal depositApplied) {
-        static final Options POS = new Options(false, false, null, BigDecimal.ZERO);
+    private record Options(boolean agreedPrices, boolean fromOrder, List<String> names, BigDecimal depositApplied,
+                           boolean allowTip) {
+        static final Options POS = new Options(false, false, null, BigDecimal.ZERO, false);
+        /** Cobro de una cuenta de mesa: como el POS, y admite propina (Fase 12b-5). */
+        static final Options TAB = new Options(false, false, null, BigDecimal.ZERO, true);
+
+        Options(boolean agreedPrices, boolean fromOrder, List<String> names, BigDecimal depositApplied) {
+            this(agreedPrices, fromOrder, names, depositApplied, false);
+        }
     }
 
     private UUID register(Create c, String key, UUID actor, Options options) {
@@ -361,11 +368,39 @@ public class SaleService {
         if (options.depositApplied().signum() > 0 && !depositSeen) {
             throw new BusinessRuleException("Falta aplicar el anticipo del pedido.");
         }
+        // Propina (Fase 12b-5): los pagos cubren el total más la propina; luego se saca del pago de su medio.
+        BigDecimal tipAmount = BigDecimal.ZERO;
+        PaymentMethodRef tipMethod = null;
+        if (c.tip() != null && c.tip().amount() != null && c.tip().amount().signum() > 0) {
+            if (!options.allowTip()) {
+                throw new BusinessRuleException("La propina solo se registra al cobrar una cuenta de mesa.");
+            }
+            tipAmount = SaleCalculator.money(c.tip().amount());
+            if (tipAmount.compareTo(totals.total()) > 0) {
+                throw new BusinessRuleException("La propina no puede ser mayor que la cuenta.");
+            }
+            tipMethod = c.tip().paymentMethodId() == null ? null : methods.get(c.tip().paymentMethodId());
+            if (tipMethod == null || !tipMethod.active() || CreditApi.METHOD_CODE.equals(tipMethod.code())
+                    || DEPOSIT_METHOD.equals(tipMethod.code())) {
+                throw new BusinessRuleException("Elige con qué se paga la propina (efectivo, tarjeta o transferencia).");
+            }
+        }
         Settlement settlement;
         try {
-            settlement = SaleCalculator.settle(totals.total(), inputs);
+            settlement = SaleCalculator.settle(totals.total().add(tipAmount), inputs);
         } catch (IllegalArgumentException ex) {
             throw new BusinessRuleException(ex.getMessage());
+        }
+        List<BigDecimal> applied = settlement.applied();
+        BigDecimal saleCash = settlement.cashNet();
+        if (tipMethod != null) {
+            UUID tipMethodId = tipMethod.id();
+            applied = SaleCalculator.carveTip(applied, usedMethods.stream().map(m -> m.id().equals(tipMethodId)).toList(),
+                    tipAmount).orElseThrow(() -> new BusinessRuleException("La propina se paga con uno de los medios de "
+                    + "pago de la cuenta y no puede superar lo pagado con ese medio."));
+            if (tipMethod.affectsCash()) {
+                saleCash = saleCash.subtract(tipAmount);
+            }
         }
 
         // 3. Inventario (bloqueo de saldos en orden) y consecutivo (bloqueo de fila).
@@ -413,7 +448,7 @@ public class SaleService {
             PaymentLine p = paymentLines.get(i);
             PaymentMethodRef method = usedMethods.get(i);
             em.persist(SalePayment.of(saleId, i + 1, method.id(), method.code(), method.affectsCash(),
-                    settlement.applied().get(i), SaleCalculator.money(p.amount()), blankToNull(p.reference())));
+                    applied.get(i), SaleCalculator.money(p.amount()), blankToNull(p.reference())));
         }
 
         if (stock != null) {
@@ -424,13 +459,26 @@ public class SaleService {
                 }
             }
         }
-        if (settlement.cashNet().signum() > 0) {
-            cash.recordSaleCash(session.id(), settlement.cashNet(), saleId, label);
+        if (saleCash.signum() > 0) {
+            cash.recordSaleCash(session.id(), saleCash, saleId, label);
+        }
+        if (tipMethod != null) {
+            em.createNativeQuery("""
+                    INSERT INTO sale_tips (sale_id, branch_id, cash_session_id, amount, payment_method_id, method_code,
+                                           affects_cash, suggested_percent, created_by, created_at)
+                    VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)""")
+                    .setParameter(1, saleId).setParameter(2, session.branchId()).setParameter(3, session.id())
+                    .setParameter(4, tipAmount).setParameter(5, tipMethod.id()).setParameter(6, tipMethod.code())
+                    .setParameter(7, tipMethod.affectsCash()).setParameter(8, c.tip().suggestedPercent())
+                    .setParameter(9, actor).setParameter(10, Instant.now()).executeUpdate();
+            if (tipMethod.affectsCash()) {
+                cash.recordTipCash(session.id(), tipAmount, saleId, "Propina " + label.substring("Venta ".length()));
+            }
         }
         if (creditIndex >= 0) {
             // Último bloqueo de la venta: la cuenta de fiado del cliente (valida el cupo).
             credit.chargeSale(new CreditApi.Debtor(customer.id(), customer.name(), customer.creditLimit()),
-                    settlement.applied().get(creditIndex), saleId, session.id(), usedMethods.get(creditIndex).id());
+                    applied.get(creditIndex), saleId, session.id(), usedMethods.get(creditIndex).id());
         }
 
         Map<String, Object> after = new LinkedHashMap<>();
@@ -439,6 +487,10 @@ public class SaleService {
         after.put("items", priced.size());
         after.put("customerId", customer.id());
         after.put("cashSessionId", session.id());
+        if (tipMethod != null) {
+            after.put("tip", tipAmount);
+            after.put("tipMethod", tipMethod.code());
+        }
         audit.log("SALE_CREATED", "sale", saleId, null, after);
         events.publishEvent(new SaleCompleted(CurrentTenant.require().id(), saleId, next.prefix(), next.number(),
                 customer.id(), sale.getTotal(), Instant.now()));
@@ -470,8 +522,15 @@ public class SaleService {
                 .filter(SalePayment::isAffectsCash)
                 .map(SalePayment::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+        // Propina en efectivo (Fase 12b-5): también se devuelve.
+        @SuppressWarnings("unchecked")
+        List<Object[]> tipRows = em.createNativeQuery("""
+                SELECT amount, affects_cash FROM sale_tips WHERE sale_id = ?1 AND voided_at IS NULL FOR UPDATE""")
+                .setParameter(1, saleId).getResultList();
+        BigDecimal tipCash = tipRows.isEmpty() || !Boolean.TRUE.equals(tipRows.getFirst()[1]) ? BigDecimal.ZERO
+                : (BigDecimal) tipRows.getFirst()[0];
         UUID refundSession = null;
-        if (cashNet.signum() > 0) {
+        if (cashNet.signum() > 0 || tipCash.signum() > 0) {
             refundSession = cash.lockIfOpen(sale.getCashSessionId())
                     .or(() -> cash.lockOpenSessionOf(actor))
                     .map(OpenSession::id)
@@ -496,8 +555,15 @@ public class SaleService {
                 }
             }
         }
-        if (refundSession != null) {
+        if (refundSession != null && cashNet.signum() > 0) {
             cash.recordVoidCash(refundSession, cashNet, saleId, label);
+        }
+        if (!tipRows.isEmpty()) {
+            em.createNativeQuery("UPDATE sale_tips SET voided_at = ?2, voided_by = ?3 WHERE sale_id = ?1")
+                    .setParameter(1, saleId).setParameter(2, Instant.now()).setParameter(3, actor).executeUpdate();
+            if (tipCash.signum() > 0) {
+                cash.recordTipVoidCash(refundSession, tipCash, saleId, "Propina devuelta " + sale.documentNumber());
+            }
         }
         // Lo fiado de la venta se le descuenta al cliente (decisión 255).
         credit.reverseSale(saleId);

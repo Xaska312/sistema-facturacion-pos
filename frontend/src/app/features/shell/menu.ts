@@ -30,6 +30,7 @@ export const MENU: MenuItem[] = [
   { label: 'Cotizaciones', route: '/app/cotizaciones', icon: 'pi pi-file-edit', glyph: 'quotes', permission: 'quotes:read', section: 'Ventas' },
   { label: 'Historial de caja', route: '/app/caja/historial', icon: 'pi pi-history', glyph: 'cash-history', permission: 'cash:read', section: 'Ventas' },
   { label: 'Reportes', route: '/app/reportes', icon: 'pi pi-chart-bar', glyph: 'reports', permission: 'reports:read', section: 'Reportes' },
+  { label: 'Propinas', route: '/app/propinas', icon: 'pi pi-heart', glyph: 'tips', permission: 'tips:manage', section: 'Reportes' },
   { label: 'Auditoría', route: '/app/auditoria', icon: 'pi pi-eye', glyph: 'audit', permission: 'audit:read', section: 'Reportes' },
   { label: 'Productos', route: '/app/productos', icon: 'pi pi-box', glyph: 'products', permission: 'products:read', section: 'Catálogo' },
   { label: 'Adiciones', route: '/app/adiciones', icon: 'pi pi-plus-circle', glyph: 'modifiers', permission: 'modifiers:manage', section: 'Catálogo' },

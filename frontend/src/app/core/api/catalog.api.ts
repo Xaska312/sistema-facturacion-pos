@@ -160,6 +160,14 @@ export class CatalogApi {
     return this.http.get<Tax[]>('/api/v1/taxes');
   }
 
+  /**
+   * Asistente del impuesto al consumo (Fase 12b-5): deja "INC 8 %" activo y lo asigna a los productos de esas
+   * categorías (y sus subcategorías).
+   */
+  applyConsumptionTax(categoryIds: string[]): Observable<ConsumptionTaxResult> {
+    return this.http.post<ConsumptionTaxResult>('/api/v1/taxes/consumption', { categoryIds });
+  }
+
   createTax(code: string, name: string, type: TaxType, rate: number): Observable<Tax> {
     return this.http.post<Tax>('/api/v1/taxes', { code, name, type, rate });
   }
@@ -184,4 +192,11 @@ export class CatalogApi {
   setActive(resource: 'categories' | 'units' | 'taxes' | 'price-lists', id: string, active: boolean): Observable<unknown> {
     return this.http.post(`/api/v1/${resource}/${id}/${active ? 'activate' : 'deactivate'}`, null);
   }
+}
+
+export interface ConsumptionTaxResult {
+  taxId: string;
+  taxName: string;
+  categories: number;
+  products: number;
 }

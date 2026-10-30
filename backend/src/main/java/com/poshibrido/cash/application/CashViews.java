@@ -49,7 +49,7 @@ public final class CashViews {
     public record CashSection(BigDecimal opening, BigDecimal sales, BigDecimal voidRefunds, BigDecimal incomes,
                               BigDecimal expenses, BigDecimal withdrawals, BigDecimal creditPayments,
                               BigDecimal orderPayments, BigDecimal expected, BigDecimal counted,
-                              BigDecimal difference) {
+                              BigDecimal difference, BigDecimal tips, BigDecimal tipPayouts) {
     }
 
     /** Informe de cierre (Z) o parcial (X) si la sesión sigue abierta. */

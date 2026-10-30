@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Reglas de cálculo de una venta (sin estado; las mismas en el frontend para mostrar el total antes de cobrar).
@@ -103,6 +104,23 @@ public final class SaleCalculator {
             }
         }
         return new Settlement(List.copyOf(applied), paid, change, cashNet);
+    }
+
+    /**
+     * Saca la propina (Fase 12b-5) de los pagos ya liquidados por {@code total + propina}: se descuenta del último pago
+     * con el medio de la propina ({@code sameMethod}) que la alcance. Devuelve los valores aplicados a la venta, o vacío
+     * si ningún pago de ese medio alcanza.
+     */
+    public static Optional<List<BigDecimal>> carveTip(List<BigDecimal> applied, List<Boolean> sameMethod,
+                                                      BigDecimal tip) {
+        List<BigDecimal> result = new ArrayList<>(applied);
+        for (int i = result.size() - 1; i >= 0; i--) {
+            if (sameMethod.get(i) && result.get(i).compareTo(tip) >= 0) {
+                result.set(i, result.get(i).subtract(tip));
+                return Optional.of(List.copyOf(result));
+            }
+        }
+        return Optional.empty();
     }
 
     public static BigDecimal money(BigDecimal value) {

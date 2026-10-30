@@ -1,3 +1,4 @@
+import { ConsumptionTaxSectionComponent } from './consumption-tax-section.component';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -35,7 +36,7 @@ const TIMEZONE_LABEL: Record<string, string> = {
 
 @Component({
   selector: 'app-settings',
-  imports: [ReactiveFormsModule, FormsModule, ButtonModule, InputTextModule, PageHeaderComponent, FormDialogComponent,
+  imports: [ConsumptionTaxSectionComponent, ReactiveFormsModule, FormsModule, ButtonModule, InputTextModule, PageHeaderComponent, FormDialogComponent,
     BrandingSectionComponent, BusinessProfileSectionComponent],
   template: `
     <app-page-header title="Ajustes del negocio" description="Cómo funciona tu negocio: tipo y módulos, inventario, impuestos, zona horaria, moneda, tiquete y marca." />
@@ -188,6 +189,19 @@ const TIMEZONE_LABEL: Record<string, string> = {
           </label>
         </fieldset>
       }
+      <!-- Restaurante (Fase 12b-5): con Mesas apagado el valor se conserva pero no se muestra. -->
+      @if (hasTables()) {
+        <fieldset class="flex flex-col gap-4" [disabled]="!canEdit()">
+          <legend class="text-base font-semibold mb-2">Mesas</legend>
+          <label class="flex flex-col gap-1 max-w-xs">
+            <span class="text-sm font-medium">Propina sugerida (%)</span>
+            <input pInputText type="number" min="0" max="20" step="1" formControlName="tipPercent"
+                   aria-describedby="tip-help" />
+            <span id="tip-help" class="text-xs text-muted">Al cobrar una mesa se le pregunta al cliente si la incluye
+              (es voluntaria y va aparte de la venta, sin impuestos). Lo usual es 10; 0 para no sugerirla.</span>
+          </label>
+        </fieldset>
+      }
       @if (canEdit()) {
         <div class="flex justify-end">
           <p-button type="submit" label="Guardar" [loading]="saving()" [disabled]="form.invalid || form.pristine" />
@@ -196,6 +210,10 @@ const TIMEZONE_LABEL: Record<string, string> = {
         <p class="text-sm text-muted">Solo lectura: no tienes permiso para modificar los ajustes.</p>
       }
     </form>
+
+    @if (hasTables() && canEdit()) {
+      <app-consumption-tax-section />
+    }
 
     <app-branding-section />
 
@@ -247,6 +265,7 @@ export class SettingsComponent implements OnInit {
 
   protected readonly canEdit = computed(() => this.auth.hasPermission('settings:manage'));
   protected readonly hasQuotes = computed(() => this.auth.hasPermission('module:quotes'));
+  protected readonly hasTables = computed(() => this.auth.hasPermission('module:tables'));
   /** Solo el dueño puede eliminar (cerrar) el negocio; el backend lo vuelve a comprobar. */
   protected readonly isOwner = computed(() => this.auth.currentTenant()?.owner === true);
   protected readonly tradeName = computed(() => this.auth.currentTenant()?.tradeName ?? null);
@@ -271,6 +290,7 @@ export class SettingsComponent implements OnInit {
     cashCloseEmail: [true],
     quoteValidityDays: [15, [Validators.required, Validators.min(1), Validators.max(365)]],
     quoteTerms: ['', Validators.maxLength(1000)],
+    tipPercent: [10, [Validators.required, Validators.min(0), Validators.max(20)]],
   });
 
   ngOnInit(): void {

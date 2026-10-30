@@ -120,8 +120,8 @@ public class DiningService {
     private List<TabSummary> openTabs(UUID branchId) {
         List<Object[]> data = rows("""
                 SELECT t.id, t.number, t.kind, t.table_id, dt.name, t.opened_at, t.guests, t.customer_name, t.opened_by,
-                       coalesce(sum(i.quantity * i.unit_price) FILTER (WHERE i.voided_at IS NULL), 0),
-                       coalesce(sum(i.quantity) FILTER (WHERE i.voided_at IS NULL), 0),
+                       coalesce(sum(i.quantity * i.unit_price) FILTER (WHERE i.voided_at IS NULL AND i.sale_id IS NULL), 0),
+                       coalesce(sum(i.quantity) FILTER (WHERE i.voided_at IS NULL AND i.sale_id IS NULL), 0),
                        (SELECT count(DISTINCT k.id) FROM kitchen_tickets k JOIN tab_items ki ON ki.ticket_id = k.id
                         WHERE ki.tab_id = t.id AND k.status = 'READY')
                 FROM tabs t

@@ -33,10 +33,23 @@ public final class SaleCommands {
     }
 
     /**
+     * Propina voluntaria (Fase 12b-5): aparte de la venta (no suma al total ni lleva impuestos). Se paga con uno de los
+     * medios de la venta: los pagos cubren el total más la propina. {@code suggestedPercent}: el sugerido si se aceptó.
+     */
+    public record Tip(BigDecimal amount, UUID paymentMethodId, Integer suggestedPercent) {
+    }
+
+    /**
      * @param customerId    nulo = consumidor final
      * @param expectedTotal total que mostró la pantalla (opcional)
+     * @param tip           propina (solo al cobrar una cuenta de mesa) o nula
      */
     public record Create(UUID customerId, List<ItemLine> items, List<PaymentLine> payments, BigDecimal expectedTotal,
-                         String notes) {
+                         String notes, Tip tip) {
+
+        public Create(UUID customerId, List<ItemLine> items, List<PaymentLine> payments, BigDecimal expectedTotal,
+                      String notes) {
+            this(customerId, items, payments, expectedTotal, notes, null);
+        }
     }
 }

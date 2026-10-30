@@ -46,6 +46,12 @@ export function cashRows(report: CashReport): [string, number][] {
   if (c.orderPayments) {
     rows.push(['Anticipos de pedidos', c.orderPayments]);
   }
+  if (c.tips) {
+    rows.push(['Propinas en efectivo', c.tips]);
+  }
+  if (c.tipPayouts) {
+    rows.push(['Propinas repartidas', c.tipPayouts]);
+  }
   return rows;
 }
 

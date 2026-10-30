@@ -52,13 +52,13 @@ public final class DiningViews {
                               List<ItemModifier> modifiers,
                               Instant addedAt, String addedByName, Instant sentAt, Long ticketNumber,
                               String stationName, boolean voided, Instant voidedAt, String voidedByName,
-                              String voidReason) {
+                              String voidReason, UUID saleId) {
     }
 
     public record TabView(UUID id, long number, String kind, String status, String label, UUID branchId,
                           UUID tableId, String tableName, String zoneName, Integer guests, String customerName,
                           String phone, String address, String notes, Instant openedAt, String openedByName,
                           Instant closedAt, UUID saleId, BigDecimal total, List<TabItemView> items,
-                          List<KitchenViews.TicketSummary> tickets) {
+                          List<KitchenViews.TicketSummary> tickets, BigDecimal chargedTotal, List<UUID> saleIds) {
     }
 }

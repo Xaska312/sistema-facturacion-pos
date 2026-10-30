@@ -101,6 +101,8 @@ export interface TabItem {
   voidedAt: string | null;
   voidedByName: string | null;
   voidReason: string | null;
+  /** Venta en que se cobró esta línea (cobro por partes, Fase 12b-5). */
+  saleId: string | null;
 }
 
 export interface Tab {
@@ -126,6 +128,9 @@ export interface Tab {
   items: TabItem[];
   /** Comandas de la cuenta (Fase 12b-3). */
   tickets: TicketSummary[];
+  /** Lo ya cobrado por partes (con los precios de cuando se pidió) y sus ventas (Fase 12b-5). */
+  chargedTotal: number;
+  saleIds: string[];
 }
 
 /** Comanda vista desde la cuenta. */
@@ -168,10 +173,25 @@ export interface TabItemInput {
   note?: string | null;
 }
 
+/** Una parte de lo pedido para cobrar por separado (Fase 12b-5). */
+export interface ChargePart {
+  itemId: string;
+  quantity: number;
+}
+
+export interface TipInput {
+  amount: number;
+  paymentMethodId: string;
+  suggestedPercent: number | null;
+}
+
 export interface ChargeTabInput {
   customerId: string | null;
   payments: SalePaymentInput[];
   expectedTotal: number | null;
+  /** Sin partes se cobra todo lo pendiente. */
+  items?: ChargePart[];
+  tip?: TipInput | null;
 }
 
 @Injectable({ providedIn: 'root' })

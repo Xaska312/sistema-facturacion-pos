@@ -98,6 +98,9 @@ export const XICONS = {
     fill: '<path d="M7 11h10v10l-2.5-1.5L12 21l-2.5-1.5L7 21z"/>' },
   waiter: { stroke: '<path d="M4 16a8 8 0 0 1 16 0"/><path d="M2.5 16h19"/><path d="M12 8V6.5M10.5 6.5h3"/><path d="M5 19.5h14"/>',
     fill: '<path d="M4 16a8 8 0 0 1 16 0z"/>' },
+  // Propinas (Fase 12b-5): un frasco con una moneda.
+  tips: { stroke: '<path d="M7 7h10"/><path d="M8 7v1.5a3 3 0 0 1-1.5 2.6V19a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2v-7.9A3 3 0 0 1 16 8.5V7"/><path d="M8 3.5h8V7H8z"/><circle cx="12" cy="15" r="2.5"/>',
+    fill: '<path d="M6.5 13h11v6a2 2 0 0 1-2 2h-7a2 2 0 0 1-2-2z"/>' },
 } as const satisfies Record<string, XIconDef>;
 
 export type XIconName = keyof typeof XICONS;

@@ -14,7 +14,13 @@ public enum CashMovementType {
     /** Anticipo en efectivo de un pedido por encargo (decisión 258). */
     ORDER_PAYMENT(true),
     /** Devolución en efectivo del anticipo de un pedido cancelado. */
-    ORDER_REFUND(false);
+    ORDER_REFUND(false),
+    /** Propina en efectivo de una venta (Fase 12b-5): es del equipo, no del negocio. */
+    TIP(true),
+    /** Propina en efectivo de una venta anulada: sale de la caja. */
+    TIP_VOID(false),
+    /** Entrega de propinas al equipo desde la caja. */
+    TIP_PAYOUT(false);
 
     private final boolean entry;
 
