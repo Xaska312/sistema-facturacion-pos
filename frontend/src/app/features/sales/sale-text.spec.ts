@@ -25,6 +25,15 @@ const sale = (overrides: Partial<Sale> = {}): Sale => ({
 } as Sale);
 
 describe('sale-text (decisión 261)', () => {
+  it('pone las adiciones y la nota junto al producto (Fase 12b-1)', () => {
+    const base = sale();
+    const granizado = { ...base.items[1], name: 'Granizado', note: 'sin azúcar',
+      modifiers: [{ groupName: 'Tamaño', optionName: 'Grande', quantity: 1, unitPrice: 4000 },
+        { groupName: 'Extras', optionName: 'Shot extra', quantity: 2, unitPrice: 3000 }] };
+    const text = saleMessage(sale({ items: [granizado] }));
+    expect(text).toContain('• Granizado (Grande, Shot extra x2, sin azúcar) (2 UND): $ 5.600');
+  });
+
   it('arma el recibo de la venta para WhatsApp', () => {
     const text = saleMessage(sale());
     expect(text).toContain('Gracias por tu compra en Dinael Helados.');

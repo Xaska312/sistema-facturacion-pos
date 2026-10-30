@@ -82,6 +82,22 @@ describe('ventas en espera del POS', () => {
     expect(loadHeld('t1', 'u1', NOW, storage)).toEqual([]);
   });
 
+  it('guarda las adiciones y la nota, y descarta adiciones dañadas (Fase 12b-1)', () => {
+    const storage = new MemoryStorage();
+    const withExtras = line('g', {
+      note: 'sin azúcar',
+      modifiers: [{ optionId: 'o1', groupName: 'Tamaño', name: 'Grande', quantity: 1, price: 4000 }],
+    });
+    const good = newHeldSale('granizado', finalConsumer, [withExtras], NOW);
+    const bad = { ...newHeldSale('mala', finalConsumer, [line('h')], NOW),
+      lines: [{ ...line('h'), modifiers: [{ optionId: 'o1', name: 'Grande', quantity: 0, price: 4000 }] }] };
+    storage.setItem(heldKey('t1', 'u1'), JSON.stringify([good, bad]));
+    const loaded = loadHeld('t1', 'u1', NOW, storage);
+    expect(loaded.map((h) => h.label)).toEqual(['granizado']);
+    expect(loaded[0].lines[0].modifiers?.[0].name).toBe('Grande');
+    expect(loaded[0].lines[0].note).toBe('sin azúcar');
+  });
+
   it('no guarda más del máximo', () => {
     const storage = new MemoryStorage();
     const many = Array.from({ length: MAX_HELD + 3 }, (_, i) => newHeldSale(`v${i}`, finalConsumer, [line('a')], NOW));

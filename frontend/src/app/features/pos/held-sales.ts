@@ -140,7 +140,16 @@ function isCartLine(value: unknown): value is CartLine {
     && ['unitPrice', 'discountPercent', 'taxRate'].every((k) => typeof value[k] === 'number' && Number.isFinite(value[k]))
     && typeof value['trackInventory'] === 'boolean'
     && (factor === undefined || (typeof factor === 'number' && factor > 0))
-    && (value['openPrice'] === undefined || typeof value['openPrice'] === 'boolean');
+    && (value['openPrice'] === undefined || typeof value['openPrice'] === 'boolean')
+    && (value['note'] === undefined || (typeof value['note'] === 'string' && value['note'].length <= 140))
+    && (value['modifiers'] === undefined || (Array.isArray(value['modifiers']) && value['modifiers'].every(isCartModifier)));
+}
+
+/** Adición guardada con la venta en espera (Fase 12b-1). */
+function isCartModifier(value: unknown): boolean {
+  return isRecord(value) && ['optionId', 'groupName', 'name'].every((k) => typeof value[k] === 'string')
+    && typeof value['quantity'] === 'number' && Number.isInteger(value['quantity']) && value['quantity'] >= 1
+    && typeof value['price'] === 'number' && Number.isFinite(value['price']);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

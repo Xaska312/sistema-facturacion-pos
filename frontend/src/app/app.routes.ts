@@ -227,6 +227,14 @@ export const routes: Routes = [
           import('./features/products/product-editor.component').then((m) => m.ProductEditorComponent),
       },
       {
+        // Adiciones (Fase 12b-1): solo con el módulo encendido.
+        path: 'adiciones',
+        title: 'Adiciones',
+        canActivate: [permissionGuard],
+        data: { permission: 'products:read', module: 'module:modifiers' },
+        loadComponent: () => import('./features/modifiers/modifiers.component').then((m) => m.ModifiersComponent),
+      },
+      {
         path: 'catalogo',
         title: 'Ajustes de catálogo',
         canActivate: [permissionGuard],

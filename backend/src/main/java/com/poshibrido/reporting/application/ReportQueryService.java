@@ -7,6 +7,7 @@ import com.poshibrido.reporting.application.ReportViews.DayRow;
 import com.poshibrido.reporting.application.ReportViews.HourRow;
 import com.poshibrido.reporting.application.ReportViews.InventoryRow;
 import com.poshibrido.reporting.application.ReportViews.InventoryValuation;
+import com.poshibrido.reporting.application.ReportViews.ModifierRow;
 import com.poshibrido.reporting.application.ReportViews.MyDay;
 import com.poshibrido.reporting.application.ReportViews.PaymentRow;
 import com.poshibrido.reporting.application.ReportViews.ProductRow;
@@ -209,6 +210,26 @@ public class ReportQueryService {
             BigDecimal profit = subtotal.subtract(cost);
             result.add(new CategoryRow(Rows.uuid(r[0]), Rows.str(r[1]), subtotal, Rows.decimal(r[3]), cost, profit,
                     margin(profit, subtotal)));
+        }
+        return result;
+    }
+
+    /** Adiciones más vendidas (Fase 12b-1), por grupo y opción con el nombre que tenían al vender. */
+    public List<ModifierRow> modifiers(ReportFilter filter) {
+        List<ModifierRow> result = new ArrayList<>();
+        for (Object row : sales("WITH " + FILTERED + """
+                SELECT sim.group_name AS group_name, sim.option_name AS option_name,
+                       sum(sim.quantity * si.quantity) AS units,
+                       round(sum(sim.unit_price * sim.quantity * si.quantity), 2) AS amount
+                FROM sale_item_modifiers sim
+                JOIN sale_items si ON si.id = sim.sale_item_id
+                JOIN filtered f ON f.id = si.sale_id
+                GROUP BY sim.group_name, sim.option_name
+                ORDER BY 3 DESC, 1, 2
+                LIMIT 200
+                """, filter).getResultList()) {
+            Object[] r = (Object[]) row;
+            result.add(new ModifierRow(Rows.str(r[0]), Rows.str(r[1]), Rows.decimal(r[2]), Rows.decimal(r[3])));
         }
         return result;
     }

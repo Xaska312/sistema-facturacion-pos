@@ -79,6 +79,45 @@ export interface CartLine {
   factor?: number;
   /** Precio libre (decisión 253): el precio lo escribió el cajero; no se reemplaza al cambiar de cliente. */
   openPrice?: boolean;
+  /** Adiciones elegidas (Fase 12b-1). {@code unitPrice} sigue siendo el del producto: se suman aparte. */
+  modifiers?: CartModifier[];
+  /** Nota de la línea ("sin cebolla"). */
+  note?: string;
+}
+
+/** Adición de una línea del carrito: la opción, su grupo, cuántas veces y su precio por vez. */
+export interface CartModifier {
+  optionId: string;
+  groupName: string;
+  name: string;
+  quantity: number;
+  price: number;
+}
+
+/** Adiciones en una línea corta: "Grande · Shot extra ×2". */
+export function modifierSummary(line: Pick<CartLine, 'modifiers'>): string {
+  return (line.modifiers ?? []).map((m) => (m.quantity > 1 ? `${m.name} ×${m.quantity}` : m.name)).join(' · ');
+}
+
+/** Lo que suman las adiciones a cada unidad del producto (puede ser negativo: "Sin licor"). */
+export function modifiersPerUnit(line: Pick<CartLine, 'modifiers'>): number {
+  return money((line.modifiers ?? []).reduce((sum, m) => sum + m.price * m.quantity, 0));
+}
+
+/** Precio por unidad que se cobra: el del producto más sus adiciones, nunca menos de cero (como el servidor). */
+export function linePrice(line: Pick<CartLine, 'unitPrice' | 'modifiers'>): number {
+  return Math.max(0, money(line.unitPrice + modifiersPerUnit(line)));
+}
+
+/**
+ * Clave de la línea: el mismo producto en la misma unidad suma cantidad solo si lleva las mismas adiciones y la misma
+ * nota (un granizado grande y uno mediano van en líneas separadas).
+ */
+export function lineKey(productId: string, unitId: string, modifiers: readonly CartModifier[] = [], note = ''): string {
+  const extras = [...modifiers].sort((a, b) => a.optionId.localeCompare(b.optionId))
+    .map((m) => `${m.optionId}*${m.quantity}`).join(',');
+  const cleanNote = note.trim().toLocaleLowerCase('es');
+  return extras || cleanNote ? `${productId}|${unitId}|${extras}|${cleanNote}` : `${productId}|${unitId}`;
 }
 
 export interface CartTotals extends LineAmounts {
@@ -88,7 +127,7 @@ export interface CartTotals extends LineAmounts {
 export function cartTotals(lines: CartLine[], pricesIncludeTax: boolean): CartTotals {
   const totals: CartTotals = { gross: 0, discount: 0, base: 0, tax: 0, total: 0, items: 0 };
   for (const line of lines) {
-    const a = lineAmounts(line.unitPrice, line.quantity, line.discountPercent, line.taxRate, pricesIncludeTax);
+    const a = lineAmounts(linePrice(line), line.quantity, line.discountPercent, line.taxRate, pricesIncludeTax);
     totals.gross = money(totals.gross + a.gross);
     totals.discount = money(totals.discount + a.discount);
     totals.base = money(totals.base + a.base);

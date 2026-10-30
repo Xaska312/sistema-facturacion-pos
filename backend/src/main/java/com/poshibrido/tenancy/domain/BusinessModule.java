@@ -28,7 +28,9 @@ public enum BusinessModule {
     /** Tallas y colores (Fase 8d): crear modelos y agregarles variantes. */
     VARIANTS,
     /** Báscula (Fase 8e): etiquetas y PLU. */
-    SCALE;
+    SCALE,
+    /** Adiciones (Fase 12b-1): tamaños, extras con precio, opciones y notas por producto en el POS. */
+    MODIFIERS("modifiers:manage");
 
     private static final String AUTHORITY_PREFIX = "module:";
 

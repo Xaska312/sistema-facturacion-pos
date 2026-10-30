@@ -69,6 +69,16 @@ El token viaja en el cuerpo, nunca en la URL de la API.
 
 Módulos en el token: los permisos de un módulo apagado (`credit:*`, `orders:*`, `quotes:*`) no van en `perms`, y cada módulo encendido agrega `module:credit`, `module:orders`, `module:quotes`, `module:variants` o `module:scale`. Vender a fiado exige `module:credit` (422 sin él); crear escalas de tallas, modelos o tallas exige `module:variants`; cambiar la báscula (ajustes y PLU) exige `module:scale`.
 
+### Adiciones (Fase 12b-1, decisión 268; requieren `module:modifiers`)
+| Método | Ruta | Permiso | Descripción |
+|---|---|---|---|
+| GET | `/modifier-groups` | `products:read` | Grupos con opciones (`id, name, priceDelta, maxQuantity, active`) y a qué `products` y `categories` se aplican |
+| GET | `/modifier-groups/pos` | `products:read` | `{groups: [activos con opciones activas], products: {productId: [groupId…]}}` (por producto, los suyos y los de su categoría; obligatorios primero) |
+| POST / PUT | `/modifier-groups[/{id}]` | `modifiers:manage` | `{name, minSelect, maxSelect, active, options: [{id?, name, priceDelta, maxQuantity, active}], productIds, categoryIds}`. `minSelect` > 0 = obligatorio; `maxSelect` (1–20) cuenta unidades; `priceDelta` en pesos enteros (puede ser 0 o negativo); `maxQuantity` 1–10. Las opciones sin `id` se crean y las que no vienen se borran. 409 nombre repetido. Auditoría `MODIFIER_GROUP_CREATED/UPDATED` |
+| GET | `/reports/modifiers?from&to&branchId&sellerId` | `reports:read` | Adiciones más vendidas: `{groupName, optionName, units, amount}` |
+
+En `POST /sales` cada ítem acepta `modifiers: [{optionId, quantity}]` y `note` (máx. 140). `unitPrice` sigue siendo el precio del producto sin adiciones; el servidor suma las adiciones (nunca baja de 0) y valida grupos obligatorios y topes (422). Con el módulo apagado, enviar adiciones da 422. La venta devuelve en cada ítem `note` y `modifiers: [{groupName, optionName, quantity, unitPrice}]`; `unitPrice` del ítem ya incluye las adiciones.
+
 ### Ajustes del negocio
 | Método | Ruta | Permiso | Descripción |
 |---|---|---|---|

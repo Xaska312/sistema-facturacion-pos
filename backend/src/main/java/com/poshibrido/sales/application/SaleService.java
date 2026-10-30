@@ -17,6 +17,7 @@ import com.poshibrido.organization.application.BusinessSettingsApi;
 import com.poshibrido.parties.application.CustomerApi;
 import com.poshibrido.parties.application.CustomerApi.CustomerRef;
 import com.poshibrido.sales.application.SaleCommands.Create;
+import com.poshibrido.catalog.application.ModifierApi;
 import com.poshibrido.sales.application.SaleCommands.ItemLine;
 import com.poshibrido.sales.application.SaleCommands.PaymentLine;
 import com.poshibrido.sales.application.SaleViews.SaleView;
@@ -26,6 +27,7 @@ import com.poshibrido.sales.domain.SaleCalculator.LineAmounts;
 import com.poshibrido.sales.domain.SaleCalculator.PaymentInput;
 import com.poshibrido.sales.domain.SaleCalculator.Settlement;
 import com.poshibrido.sales.domain.SaleItem;
+import com.poshibrido.sales.domain.SaleItemModifier;
 import com.poshibrido.sales.domain.SalePayment;
 import com.poshibrido.sales.domain.SaleTaxTotal;
 import com.poshibrido.sales.infrastructure.DocumentSequences;
@@ -83,6 +85,8 @@ public class SaleService {
     /** Medio de pago "Anticipo" de los pedidos (decisión 258). */
     static final String DEPOSIT_METHOD = "DEPOSIT";
     static final int MAX_PAYMENTS = 10;
+    /** Nota por línea ("sin cebolla"), Fase 12b-1. */
+    static final int MAX_NOTE = 140;
     private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
     private static final Pattern IDEMPOTENCY_KEY = Pattern.compile("^[A-Za-z0-9_\\-]{8,100}$");
 
@@ -92,6 +96,7 @@ public class SaleService {
     private final StockLedger ledger;
     private final PricingApi pricing;
     private final InventoryCatalogApi catalog;
+    private final ModifierApi modifiers;
     private final CustomerApi customers;
     private final BusinessSettingsApi settings;
     private final DocumentSequences sequences;
@@ -107,7 +112,8 @@ public class SaleService {
     private EntityManager em;
 
     public SaleService(CashApi cash, CreditApi credit, OrderApi orders, StockLedger ledger, PricingApi pricing,
-                       InventoryCatalogApi catalog, CustomerApi customers, BusinessSettingsApi settings, DocumentSequences sequences,
+                       InventoryCatalogApi catalog, ModifierApi modifiers, CustomerApi customers,
+                       BusinessSettingsApi settings, DocumentSequences sequences,
                        SaleRepository sales, SaleItemRepository saleItems, SalePaymentRepository salePayments,
                        SaleQueryService queries, AuditLogger audit, ApplicationEventPublisher events,
                        PlatformTransactionManager transactionManager) {
@@ -117,6 +123,7 @@ public class SaleService {
         this.ledger = ledger;
         this.pricing = pricing;
         this.catalog = catalog;
+        this.modifiers = modifiers;
         this.customers = customers;
         this.settings = settings;
         this.sequences = sequences;
@@ -208,6 +215,14 @@ public class SaleService {
         Set<UUID> productIds = new LinkedHashSet<>();
         lines.forEach(l -> productIds.add(l.productId()));
         Map<UUID, StockProduct> products = catalog.stockProducts(productIds);
+        // Adiciones (Fase 12b-1): solo en el POS (no en pedidos ni cotizaciones) y con el módulo encendido.
+        boolean modifiersOn = !options.agreedPrices()
+                && CurrentActor.permissions().contains(BusinessModule.MODIFIERS.authority());
+        if (!modifiersOn && lines.stream().anyMatch(l -> l.modifiers() != null && !l.modifiers().isEmpty())) {
+            throw new BusinessRuleException("Las adiciones están apagadas en este negocio. El dueño las prende en "
+                    + "Ajustes → Tipo y módulos.");
+        }
+        Map<UUID, List<ModifierApi.Group>> groups = modifiersOn ? modifiers.activeGroupsFor(productIds) : Map.of();
         List<PricedLine> priced = new ArrayList<>();
         List<PriceChangedException.Change> changes = new ArrayList<>();
         BigDecimal maxDiscount = BigDecimal.ZERO;
@@ -258,14 +273,25 @@ public class SaleService {
                 throw new BusinessRuleException("El descuento debe estar entre 0 % y 100 %.");
             }
             maxDiscount = maxDiscount.max(discount);
-            LineAmounts amounts = SaleCalculator.line(price.price(), quantity, discount, price.taxRate(),
+            ModifierChoices.Result chosen = modifiersOn
+                    ? ModifierChoices.resolve(product.name(), groups.get(line.productId()), line.modifiers(), true)
+                    : ModifierChoices.Result.NONE;
+            // El precio de la línea incluye las adiciones; nunca baja de cero ("Sin licor" en un producto barato).
+            BigDecimal unitPrice = price.price().add(chosen.perUnit()).max(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP);
+            String note = blankToNull(line.note());
+            if (note != null && note.length() > MAX_NOTE) {
+                throw new BusinessRuleException("La nota de " + product.name() + " admite hasta " + MAX_NOTE
+                        + " caracteres.");
+            }
+            LineAmounts amounts = SaleCalculator.line(unitPrice, quantity, discount, price.taxRate(),
                     cfg.pricesIncludeTax());
             if (!options.agreedPrices() && !price.openPrice() && line.expectedUnitPrice() != null
                     && line.expectedUnitPrice().compareTo(price.price()) != 0) {
                 changes.add(new PriceChangedException.Change(lineNo, price.sku(), price.name(),
                         line.expectedUnitPrice(), price.price()));
             }
-            priced.add(new PricedLine(lineNo, line, product, price, quantity, baseQuantity, discount, amounts));
+            priced.add(new PricedLine(lineNo, line, product, price, quantity, baseQuantity, discount, amounts, unitPrice,
+                    chosen, note));
         }
         if (maxDiscount.compareTo(cfg.maxDiscountPercent()) > 0
                 && !CurrentActor.permissions().contains(DISCOUNT_PERMISSION)) {
@@ -351,11 +377,17 @@ public class SaleService {
         for (PricedLine l : priced) {
             boolean isTracked = l.price().trackInventory();
             BigDecimal unitCost = isTracked ? stock.averageCost(l.line().productId()) : l.product().cost();
-            em.persist(SaleItem.of(new SaleItem.Data(saleId, l.lineNo(), l.line().productId(), l.price().sku(),
+            SaleItem item = SaleItem.of(new SaleItem.Data(saleId, l.lineNo(), l.line().productId(), l.price().sku(),
                     itemName(options, l), l.price().unitId(), l.price().unitCode(), l.quantity(), l.price().factor(),
-                    l.baseQuantity(), l.price().price(), l.amounts().gross(), l.discount(), l.amounts().discount(),
+                    l.baseQuantity(), l.unitPrice(), l.amounts().gross(), l.discount(), l.amounts().discount(),
                     l.price().taxId(), l.price().taxType().name(), l.price().taxRate(), l.amounts().taxableBase(),
-                    l.amounts().tax(), l.amounts().total(), unitCost == null ? BigDecimal.ZERO : unitCost, isTracked)));
+                    l.amounts().tax(), l.amounts().total(), unitCost == null ? BigDecimal.ZERO : unitCost, isTracked,
+                    l.note()));
+            em.persist(item);
+            for (ModifierChoices.Chosen m : l.modifiers().chosen()) {
+                em.persist(SaleItemModifier.of(item.getId(), m.position(), m.groupName(), m.optionId(), m.optionName(),
+                        m.quantity(), m.unitPrice()));
+            }
             BigDecimal[] acc = byTax.computeIfAbsent(l.price().taxId(), k -> new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO});
             acc[0] = acc[0].add(l.amounts().taxableBase());
             acc[1] = acc[1].add(l.amounts().tax());
@@ -479,9 +511,11 @@ public class SaleService {
         return name.length() > 200 ? name.substring(0, 200) : name;
     }
 
+    /** {@code unitPrice}: precio del producto más sus adiciones (lo que se cobra por unidad). */
     private record PricedLine(int lineNo, ItemLine line, StockProduct product, ResolvedPrice price,
                               BigDecimal quantity, BigDecimal baseQuantity, BigDecimal discount,
-                              LineAmounts amounts) {
+                              LineAmounts amounts, BigDecimal unitPrice, ModifierChoices.Result modifiers,
+                              String note) {
     }
 
     private record Totals(BigDecimal gross, BigDecimal discount, BigDecimal base, BigDecimal tax, BigDecimal total) {

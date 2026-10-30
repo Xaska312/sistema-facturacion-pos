@@ -22,7 +22,12 @@ public final class SaleViews {
     public record ItemView(int lineNo, UUID productId, String sku, String name, UUID unitId, String unitCode,
                            BigDecimal quantity, BigDecimal unitPrice, BigDecimal grossAmount,
                            BigDecimal discountPercent, BigDecimal discountAmount, String taxType, BigDecimal taxRate,
-                           BigDecimal taxableBase, BigDecimal taxAmount, BigDecimal total) {
+                           BigDecimal taxableBase, BigDecimal taxAmount, BigDecimal total, String note,
+                           List<ModifierView> modifiers) {
+    }
+
+    /** Adición de la línea (Fase 12b-1): su precio ya va dentro del precio unitario de la línea. */
+    public record ModifierView(String groupName, String optionName, int quantity, BigDecimal unitPrice) {
     }
 
     public record PaymentView(int lineNo, UUID paymentMethodId, String methodCode, String methodName,

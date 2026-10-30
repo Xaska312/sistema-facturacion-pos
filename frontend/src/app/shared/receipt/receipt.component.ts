@@ -38,6 +38,13 @@ import { documentShortLabel } from '../document-types';
       <hr />
       @for (item of s.items; track item.lineNo) {
         <p>{{ item.name }}</p>
+        <!-- Adiciones y nota (Fase 12b-1): su precio ya va en el precio unitario de la línea. -->
+        @for (m of item.modifiers ?? []; track $index) {
+          <p class="sub">+ {{ m.optionName }}{{ m.quantity > 1 ? ' x' + m.quantity : '' }}</p>
+        }
+        @if (item.note) {
+          <p class="sub">* {{ item.note }}</p>
+        }
         <p class="row">
           <span>{{ q(item.quantity) }} {{ item.unitCode }} × {{ cop(item.unitPrice) }}</span>
           <span>{{ cop(item.grossAmount) }}</span>
@@ -78,6 +85,7 @@ import { documentShortLabel } from '../document-types';
     p { margin: 0; overflow-wrap: anywhere; }
     .row { display: flex; justify-content: space-between; gap: 6px; }
     .row span:last-child { white-space: nowrap; }
+    .sub { padding-left: 0.75em; }
     .center { text-align: center; }
     /* Logo del negocio (fase 8c): en gris, porque la impresora térmica imprime solo negro. */
     .logo { display: block; margin: 0 auto 4px; max-width: 70%; max-height: 18mm; object-fit: contain; filter: grayscale(1); }

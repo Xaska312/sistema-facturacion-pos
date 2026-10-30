@@ -36,6 +36,13 @@ public final class ReportViews {
                              BigDecimal profit, BigDecimal marginPercent) {
     }
 
+    /**
+     * Adición vendida (Fase 12b-1): veces que salió (opción × cantidad de la línea) y lo que sumó al precio, antes de
+     * descuentos.
+     */
+    public record ModifierRow(String groupName, String optionName, BigDecimal units, BigDecimal amount) {
+    }
+
     public record CategoryRow(UUID categoryId, String categoryName, BigDecimal subtotal, BigDecimal total,
                               BigDecimal cost, BigDecimal profit, BigDecimal marginPercent) {
     }

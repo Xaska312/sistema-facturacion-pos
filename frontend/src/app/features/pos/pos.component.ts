@@ -24,6 +24,7 @@ import {
   StockRow,
 } from '../../core/api/api.models';
 import { CashApi } from '../../core/api/cash.api';
+import { ModifiersApi, PosModifierCatalog, PosModifierGroup } from '../../core/api/modifiers.api';
 import { CatalogApi } from '../../core/api/catalog.api';
 import { CreditApi } from '../../core/api/credit.api';
 import { InventoryApi } from '../../core/api/inventory.api';
@@ -40,7 +41,9 @@ import { ReceiptComponent } from '../../shared/receipt/receipt.component';
 import { ReceiptWidth, loadReceiptWidth, printReceipt, saveReceiptWidth } from '../../shared/receipt/receipt-prefs';
 import { saleWhatsAppLink } from '../sales/sale-text';
 import { TourService } from '../../shared/tour/tour.service';
-import { CartPanelComponent, LineDiscountChange, LinePriceChange, LineQuantityChange, RemovedLine } from './cart-panel.component';
+import {
+  CartPanelComponent, LineDiscountChange, LineNoteChange, LinePriceChange, LineQuantityChange, RemovedLine,
+} from './cart-panel.component';
 import { loadFavorites, saveFavorites, toggleFavorite } from './favorites';
 import {
   HELD_TTL_DAYS,
@@ -53,6 +56,8 @@ import {
   newHeldSale,
   saveHeld,
 } from './held-sales';
+import { ModifierPick, ModifierPickerComponent } from './modifier-picker.component';
+import { groupsFor, repriceModifiers } from './modifier-choice';
 import { NewCustomerDialogComponent } from './new-customer-dialog.component';
 import { OpenCashComponent } from './open-cash.component';
 import { POS_SHORTCUTS, methodIcon, methodLabel } from './pos-labels';
@@ -63,10 +68,12 @@ import { SearchRow, groupSearchResults, searchRows } from './pos-cards';
 import { VariantPickerComponent } from './variant-picker.component';
 import {
   CartLine,
+  CartModifier,
   PaymentDraft,
   PaymentSummary,
   cartTotals,
   cashSuggestions,
+  lineKey,
   parseScan,
   paymentsMissingReference,
   quantity4,
@@ -105,7 +112,7 @@ const STOCK_PAGES = 5;
   selector: 'app-pos',
   imports: [FormsModule, PesosInputDirective, ButtonModule, DialogModule, InputTextModule, SkeletonModule, HasPermissionDirective,
     ReceiptComponent, PosHeaderComponent, ProductGridComponent, CartPanelComponent, OpenCashComponent,
-    VariantPickerComponent, NewCustomerDialogComponent],
+    VariantPickerComponent, NewCustomerDialogComponent, ModifierPickerComponent],
   template: `
     <div class="min-h-dvh md:h-dvh flex flex-col gap-3 p-3 bg-ground">
       <app-pos-header [businessName]="config()?.businessName ?? ''" [session]="session()"
@@ -176,7 +183,8 @@ const STOCK_PAGES = 5;
                           [maxDiscount]="maxDiscount()" [decimalUnits]="decimalUnits()" [customerName]="customer().name"
                           [canCharge]="lines().length > 0" [lastSaleNumber]="lastSale()?.documentNumber ?? null"
                           (quantityChange)="setQuantity($event)" (discountChange)="setDiscount($event)"
-                          (priceChange)="setPrice($event)"
+                          (priceChange)="setPrice($event)" [notes]="modifierCatalog() !== null"
+                          (noteChange)="setNote($event)"
                           (removeLine)="removeLine($event)" (restoreLine)="restoreLine($event)"
                           (charge)="openPayment()" (cancelSale)="cancelSale()" (customer)="openCustomers()"
                           (hold)="openHold()" (reprint)="receiptOpen = true" />
@@ -260,6 +268,15 @@ const STOCK_PAGES = 5;
               [style]="{ width: '40rem' }" [breakpoints]="{ '640px': '100vw' }" (onHide)="focusScanner()">
       @if (variantModel(); as m) {
         <app-variant-picker [model]="m" [stockMap]="stock()" (pick)="pickVariant($event)" />
+      }
+    </p-dialog>
+
+    <!-- Adiciones (Fase 12b-1) -->
+    <p-dialog [header]="modifierPending()?.found?.name ?? 'Adiciones'" [(visible)]="modifierOpen" [modal]="true"
+              [style]="{ width: '40rem' }" [breakpoints]="{ '640px': '100vw' }" (onHide)="modifiersCancelled()">
+      @if (modifierPending(); as pending) {
+        <app-modifier-picker [groups]="pending.groups" [basePrice]="pending.unitPrice"
+                             (picked)="modifiersPicked($event)" (cancelled)="modifiersCancelled()" />
       }
     </p-dialog>
 
@@ -666,6 +683,13 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   private readonly cash = inject(CashApi);
   private readonly sales = inject(SalesApi);
   private readonly catalog = inject(CatalogApi);
+  private readonly modifiersApi = inject(ModifiersApi);
+  /** Adiciones (Fase 12b-1): grupos por producto; null sin el módulo o mientras carga. */
+  protected readonly modifierCatalog = signal<PosModifierCatalog | null>(null);
+  /** Producto esperando que se elijan sus adiciones. */
+  protected readonly modifierPending = signal<{ found: ProductLookup; quantity: number; unitPrice: number;
+    groups: PosModifierGroup[] } | null>(null);
+  protected modifierOpen = false;
   private readonly inventory = inject(InventoryApi);
   private readonly parties = inject(PartiesApi);
   private readonly credit = inject(CreditApi);
@@ -772,6 +796,9 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
     this.cash.paymentMethods().subscribe((methods) => this.methods.set(methods));
     this.catalog.units().subscribe((units) =>
       this.decimalUnits.set(new Set(units.filter((u) => u.allowsDecimals).map((u) => u.id))));
+    if (this.auth.hasPermission('module:modifiers')) {
+      this.modifiersApi.pos().subscribe({ next: (c) => this.modifierCatalog.set(c), error: () => undefined });
+    }
   }
 
   /**
@@ -920,14 +947,42 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
       this.askOpenPrice(found, quantity);
       return;
     }
-    this.pushLine(found, quantity, Number(found.price));
+    this.withModifiers(found, quantity, Number(found.price));
   }
 
-  private pushLine(found: ProductLookup, quantity: number, unitPrice: number): void {
-    // Cada línea de precio libre va aparte: dos impresiones pueden tener precios distintos.
+  /** Si el producto tiene adiciones (Fase 12b-1), primero se eligen; si no, va directo al carrito. */
+  private withModifiers(found: ProductLookup, quantity: number, unitPrice: number): void {
+    const groups = groupsFor(this.modifierCatalog(), found.productId);
+    if (groups.length === 0) {
+      this.pushLine(found, quantity, unitPrice);
+      return;
+    }
+    this.modifierPending.set({ found, quantity, unitPrice, groups });
+    this.modifierOpen = true;
+  }
+
+  modifiersPicked(pick: ModifierPick): void {
+    const pending = this.modifierPending();
+    this.modifierOpen = false;
+    this.modifierPending.set(null);
+    if (pending) {
+      this.pushLine(pending.found, pending.quantity, pending.unitPrice, pick.modifiers, pick.note);
+    }
+  }
+
+  modifiersCancelled(): void {
+    this.modifierOpen = false;
+    this.modifierPending.set(null);
+    this.focusScanner();
+  }
+
+  private pushLine(found: ProductLookup, quantity: number, unitPrice: number, modifiers: CartModifier[] = [],
+                   note = ''): void {
+    // Cada línea de precio libre va aparte: dos impresiones pueden tener precios distintos. Con adiciones o nota, el
+    // mismo producto suma cantidad solo si lleva lo mismo (un granizado grande y uno mediano van aparte).
     const key = found.openPrice
       ? `${found.productId}|${found.unitId}|${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
-      : `${found.productId}|${found.unitId}`;
+      : lineKey(found.productId, found.unitId, modifiers, note);
     this.updateLines((list) => {
       const existing = list.findIndex((l) => l.key === key);
       if (existing >= 0) {
@@ -938,6 +993,8 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
         unitCode: found.unitCode, quantity: quantity4(quantity), unitPrice, discountPercent: 0,
         taxRate: Number(found.taxRate), trackInventory: found.trackInventory, factor: Number(found.factor) || 1,
         ...(found.openPrice ? { openPrice: true } : {}),
+        ...(modifiers.length > 0 ? { modifiers } : {}),
+        ...(note ? { note } : {}),
       }];
     });
     this.focusScanner();
@@ -959,7 +1016,7 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
     }
     this.openPriceItem.set(null);
     this.openPriceOpen = false;
-    this.pushLine(item.found, item.quantity, Math.round(price * 100) / 100);
+    this.withModifiers(item.found, item.quantity, Math.round(price * 100) / 100);
   }
 
   openPriceClosed(): void {
@@ -990,6 +1047,29 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
       return;
     }
     this.updateLines((list) => list.map((l) => (l.key === change.key ? { ...l, quantity } : l)));
+    this.focusScanner();
+  }
+
+  /**
+   * Nota de una línea (Fase 12b-1). La nota es parte de la clave: si ya hay otra línea igual con esa nota, se unen
+   * (sumando la cantidad).
+   */
+  setNote(change: LineNoteChange): void {
+    this.updateLines((list) => {
+      const line = list.find((l) => l.key === change.key);
+      if (!line) {
+        return list;
+      }
+      const note = change.note.trim();
+      const key = line.openPrice ? line.key : lineKey(line.productId, line.unitId, line.modifiers ?? [], note);
+      const { note: _old, ...rest } = line;
+      const updated: CartLine = { ...rest, key, ...(note ? { note } : {}) };
+      const twin = list.find((l) => l.key === key && l !== line);
+      if (twin) {
+        return list.filter((l) => l !== line).map((l) => (l === twin ? { ...l, quantity: quantity4(l.quantity + line.quantity) } : l));
+      }
+      return list.map((l) => (l === line ? updated : l));
+    });
     this.focusScanner();
   }
 
@@ -1318,6 +1398,33 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
     });
   }
 
+  /**
+   * Adiciones de una venta retomada con su precio vigente (Fase 12b-1). Si alguna ya no existe, la línea queda igual y
+   * se avisa: el servidor la rechazaría al cobrar.
+   */
+  private refreshModifierPrices(): void {
+    const catalog = this.modifierCatalog();
+    if (!catalog || !this.lines().some((l) => l.modifiers?.length)) {
+      return;
+    }
+    const stale: string[] = [];
+    this.updateLines((list) => list.map((l) => {
+      const updated = repriceModifiers(l, catalog);
+      if (updated === null) {
+        stale.push(l.name);
+        return l;
+      }
+      return updated;
+    }));
+    if (stale.length > 0) {
+      this.messages.add({
+        severity: 'warn',
+        summary: 'Adiciones que ya no existen',
+        detail: `${stale.join(', ')}: quítalo y vuelve a agregarlo con sus adiciones.`,
+      });
+    }
+  }
+
   /** Vuelve a pedir el precio vigente de cada línea para el cliente. */
   private refreshPrices(customerId: string | null): void {
     const current = this.lines();
@@ -1342,6 +1449,7 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
           const { openPrice: _wasOpen, ...rest } = l;
           return { ...rest, unitPrice: Number(price.price), taxRate: Number(price.taxRate) };
         }));
+        this.refreshModifierPrices();
         const failed = current.filter((l, i) => results[i] === null);
         if (failed.length > 0) {
           this.messages.add({
@@ -1533,6 +1641,8 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
         quantity: l.quantity,
         discountPercent: l.discountPercent > 0 ? l.discountPercent : null,
         unitPrice: l.unitPrice,
+        ...(l.modifiers?.length ? { modifiers: l.modifiers.map((m) => ({ optionId: m.optionId, quantity: m.quantity })) } : {}),
+        ...(l.note ? { note: l.note } : {}),
       })),
       payments: this.payments.map((p) => ({
         paymentMethodId: p.methodId,

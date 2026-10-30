@@ -108,6 +108,16 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
       'Una talla que ya usa algún producto no se puede quitar de la escala.',
     ],
   },
+  '/app/adiciones': {
+    manual: 'adiciones',
+    title: 'Adiciones',
+    tips: [
+      'Crea un grupo una vez (Tamaño, Licor, Extras) y aplícalo a una categoría completa o a productos sueltos.',
+      'Obligatorio: al vender no deja agregar el producto sin elegir; opcional: se puede saltar.',
+      'El precio de cada opción se suma al producto; puede ser 0 o negativo (Sin licor).',
+      'Al vender, cada producto con adiciones abre sus opciones y una nota (por ejemplo, sin cebolla).',
+    ],
+  },
   '/app/bascula': {
     manual: 'bascula',
     title: 'Báscula',

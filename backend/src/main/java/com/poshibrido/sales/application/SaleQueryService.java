@@ -14,6 +14,7 @@ import com.poshibrido.organization.application.CashRegisterApi.RegisterRef;
 import com.poshibrido.parties.application.CustomerApi;
 import com.poshibrido.parties.application.CustomerApi.CustomerRef;
 import com.poshibrido.sales.application.SaleViews.ItemView;
+import com.poshibrido.sales.application.SaleViews.ModifierView;
 import com.poshibrido.sales.application.SaleViews.PaymentView;
 import com.poshibrido.sales.application.SaleViews.PosConfig;
 import com.poshibrido.sales.application.SaleViews.ReceiptHeader;
@@ -21,7 +22,9 @@ import com.poshibrido.sales.application.SaleViews.SaleRow;
 import com.poshibrido.sales.application.SaleViews.SaleView;
 import com.poshibrido.sales.application.SaleViews.TaxView;
 import com.poshibrido.sales.domain.Sale;
+import com.poshibrido.sales.domain.SaleItem;
 import com.poshibrido.sales.domain.SaleStatus;
+import com.poshibrido.sales.infrastructure.SaleItemModifierRepository;
 import com.poshibrido.sales.infrastructure.SaleItemRepository;
 import com.poshibrido.sales.infrastructure.SalePaymentRepository;
 import com.poshibrido.sales.infrastructure.SaleRepository;
@@ -40,6 +43,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -60,6 +65,7 @@ public class SaleQueryService {
 
     private final SaleRepository sales;
     private final SaleItemRepository items;
+    private final SaleItemModifierRepository itemModifiers;
     private final SalePaymentRepository payments;
     private final SaleTaxTotalRepository taxTotals;
     private final CashApi cash;
@@ -131,11 +137,19 @@ public class SaleQueryService {
             people.add(s.getVoidedBy());
         }
         Map<UUID, String> names = memberDirectory.displayNames(people);
-        List<ItemView> itemViews = items.findBySaleIdOrderByLineNoAsc(id).stream()
+        List<SaleItem> saleItems = items.findBySaleIdOrderByLineNoAsc(id);
+        Map<UUID, List<ModifierView>> modifiersByItem = new HashMap<>();
+        if (!saleItems.isEmpty()) {
+            itemModifiers.findBySaleItemIdInOrderByPositionAsc(saleItems.stream().map(SaleItem::getId).toList())
+                    .forEach(m -> modifiersByItem.computeIfAbsent(m.getSaleItemId(), k -> new ArrayList<>())
+                            .add(new ModifierView(m.getGroupName(), m.getOptionName(), m.getQuantity(),
+                                    m.getUnitPrice())));
+        }
+        List<ItemView> itemViews = saleItems.stream()
                 .map(i -> new ItemView(i.getLineNo(), i.getProductId(), i.getSku(), i.getName(), i.getUnitId(),
                         i.getUnitCode(), i.getQuantity(), i.getUnitPrice(), i.getGrossAmount(), i.getDiscountPercent(),
                         i.getDiscountAmount(), i.getTaxType(), i.getTaxRate(), i.getTaxableBase(), i.getTaxAmount(),
-                        i.getTotal()))
+                        i.getTotal(), i.getNote(), modifiersByItem.getOrDefault(i.getId(), List.of())))
                 .toList();
         List<PaymentView> paymentViews = payments.findBySaleIdOrderByLineNoAsc(id).stream()
                 .map(p -> {

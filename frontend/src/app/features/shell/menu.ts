@@ -29,6 +29,7 @@ export const MENU: MenuItem[] = [
   { label: 'Reportes', route: '/app/reportes', icon: 'pi pi-chart-bar', glyph: 'reports', permission: 'reports:read', section: 'Reportes' },
   { label: 'Auditoría', route: '/app/auditoria', icon: 'pi pi-eye', glyph: 'audit', permission: 'audit:read', section: 'Reportes' },
   { label: 'Productos', route: '/app/productos', icon: 'pi pi-box', glyph: 'products', permission: 'products:read', section: 'Catálogo' },
+  { label: 'Adiciones', route: '/app/adiciones', icon: 'pi pi-plus-circle', glyph: 'modifiers', permission: 'modifiers:manage', section: 'Catálogo' },
   { label: 'Ajustes de catálogo', route: '/app/catalogo', icon: 'pi pi-tags', glyph: 'catalog', permission: 'products:manage', section: 'Catálogo' },
   { label: 'Existencias', route: '/app/inventario', icon: 'pi pi-warehouse', glyph: 'stock', permission: 'inventory:read', section: 'Inventario' },
   {

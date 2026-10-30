@@ -9,6 +9,7 @@ import { CashApi } from '../../core/api/cash.api';
 import { CatalogApi } from '../../core/api/catalog.api';
 import { CreditApi } from '../../core/api/credit.api';
 import { InventoryApi } from '../../core/api/inventory.api';
+import { ModifiersApi, PosModifierCatalog } from '../../core/api/modifiers.api';
 import { PartiesApi } from '../../core/api/parties.api';
 import { SalesApi } from '../../core/api/sales.api';
 import { AuthService } from '../../core/auth/auth.service';
@@ -33,6 +34,13 @@ const lookup = (productId: string, price = 2500): ProductLookup => ({
   productId, sku: productId.toUpperCase(), name: `Producto ${productId}`, unitId: 'u', unitCode: 'UND', factor: 1,
   price, priceListId: null, fromList: false, taxId: 't', taxType: 'IVA', taxRate: 19, trackInventory: true,
 });
+
+/** Adiciones del granizado "g" (Fase 12b-1): tamaño obligatorio. */
+const modifierCatalog: PosModifierCatalog = {
+  groups: [{ id: 'size', name: 'Tamaño', minSelect: 1, maxSelect: 1,
+    options: [{ id: 'm', name: 'Mediano', priceDelta: 0, maxQuantity: 1 }, { id: 'l', name: 'Grande', priceDelta: 4000, maxQuantity: 1 }] }],
+  products: { g: ['size'] },
+};
 
 const page = <T>(content: T[]): PageResponse<T> => ({ content, page: 0, size: 20, totalElements: content.length, totalPages: 1 });
 
@@ -78,6 +86,7 @@ describe('PosComponent: celular, pausar venta y cliente nuevo', () => {
         { provide: InventoryApi, useValue: inventory },
         { provide: PartiesApi, useValue: parties },
         { provide: CreditApi, useValue: credit },
+        { provide: ModifiersApi, useValue: { pos: () => of(modifierCatalog) } },
         { provide: ConfirmService, useValue: confirm },
         { provide: MessageService, useValue: jasmine.createSpyObj<MessageService>('MessageService', ['add']) },
         { provide: TourService, useValue: jasmine.createSpyObj<TourService>('TourService', ['offer', 'start']) },
@@ -103,6 +112,7 @@ describe('PosComponent: celular, pausar venta y cliente nuevo', () => {
     component.heldOpen = false;
     component.newCustomerOpen = false;
     component.openPriceOpen = false;
+    component['modifierOpen'] = false;
     component['searchOpen'] = false;
     component['customerOpen'] = false;
     fixture.detectChanges();
@@ -111,6 +121,37 @@ describe('PosComponent: celular, pausar venta y cliente nuevo', () => {
 
   const element = (): HTMLElement => fixture.nativeElement as HTMLElement;
   const lines = () => component['lines']();
+
+  it('un producto con adiciones las pide antes de entrar al carrito y cada combinación va en su línea (Fase 12b-1)', () => {
+    component.addLine(lookup('g', 12000), 1);
+    expect(component['modifierOpen']).toBeTrue();
+    expect(lines().length).toBe(0);
+    const large = { optionId: 'l', groupName: 'Tamaño', name: 'Grande', quantity: 1, price: 4000 };
+    component.modifiersPicked({ modifiers: [large], note: 'sin azúcar' });
+    component.addLine(lookup('g', 12000), 1);
+    component.modifiersPicked({ modifiers: [large], note: 'sin azúcar' });
+    component.addLine(lookup('g', 12000), 1);
+    component.modifiersPicked({ modifiers: [{ ...large, optionId: 'm', name: 'Mediano', price: 0 }], note: '' });
+
+    expect(lines().map((l) => [l.quantity, l.modifiers?.[0].name, l.note ?? null])).toEqual([
+      [2, 'Grande', 'sin azúcar'],
+      [1, 'Mediano', null],
+    ]);
+    expect(component['totals']().total).toBe(44000);
+  });
+
+  it('la nota de una línea sin adiciones la separa o la une con otra igual', () => {
+    component.addLine(lookup('a'), 1);
+    component.addLine(lookup('b'), 1);
+    const [a] = lines();
+    component.setNote({ key: a.key, note: 'sin cebolla' });
+    expect(lines()[0].note).toBe('sin cebolla');
+    component.addLine(lookup('a'), 2);
+    expect(lines().filter((l) => l.productId === 'a').length).toBe(2);
+    const plain = lines().find((l) => l.productId === 'a' && !l.note)!;
+    component.setNote({ key: plain.key, note: 'Sin cebolla' });
+    expect(lines().filter((l) => l.productId === 'a').map((l) => l.quantity)).toEqual([3]);
+  });
 
   it('en el celular hay un campo grande para buscar por nombre (no hace falta F2)', () => {
     const search = Array.from(element().querySelectorAll('button'))

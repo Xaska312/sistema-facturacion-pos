@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Set;
 
 import static com.poshibrido.tenancy.domain.BusinessModule.CREDIT;
+import static com.poshibrido.tenancy.domain.BusinessModule.MODIFIERS;
 import static com.poshibrido.tenancy.domain.BusinessModule.ORDERS;
 import static com.poshibrido.tenancy.domain.BusinessModule.QUOTES;
 import static com.poshibrido.tenancy.domain.BusinessModule.SCALE;
@@ -21,9 +22,10 @@ class BusinessModuleTest {
 
     @Test
     void comercioKeepsEverythingAndOnlyComercioAndServiciosAreOpen() {
-        assertThat(BusinessType.RETAIL.defaultModules()).containsExactlyInAnyOrder(BusinessModule.values());
+        assertThat(BusinessType.RETAIL.defaultModules()).containsExactlyInAnyOrder(CREDIT, ORDERS, QUOTES, VARIANTS,
+                SCALE);
         assertThat(BusinessType.SERVICES.defaultModules()).containsExactlyInAnyOrder(CREDIT, ORDERS, QUOTES);
-        assertThat(BusinessType.RESTAURANT.defaultModules()).containsExactlyInAnyOrder(CREDIT, ORDERS);
+        assertThat(BusinessType.RESTAURANT.defaultModules()).containsExactlyInAnyOrder(CREDIT, ORDERS, MODIFIERS);
         assertThat(BusinessType.PHARMACY.defaultModules()).containsExactlyInAnyOrder(CREDIT, ORDERS, QUOTES);
         assertThat(EnumSet.allOf(BusinessType.class).stream().filter(BusinessType::isOpen))
                 .containsExactlyInAnyOrder(BusinessType.RETAIL, BusinessType.SERVICES);
@@ -33,7 +35,7 @@ class BusinessModuleTest {
     void defaultModulesAreACopy() {
         Set<BusinessModule> modules = BusinessType.RETAIL.defaultModules();
         modules.clear();
-        assertThat(BusinessType.RETAIL.defaultModules()).hasSize(BusinessModule.values().length);
+        assertThat(BusinessType.RETAIL.defaultModules()).hasSize(5);
     }
 
     @Test
@@ -50,7 +52,7 @@ class BusinessModuleTest {
         List<String> roles = List.of("credit:manage", "orders:manage", "quotes:read", "audit:read");
         assertThat(BusinessModule.effectivePermissions(roles, EnumSet.allOf(BusinessModule.class)))
                 .containsExactly("credit:manage", "orders:manage", "quotes:read", "audit:read", "module:credit",
-                        "module:orders", "module:quotes", "module:variants", "module:scale");
+                        "module:orders", "module:quotes", "module:variants", "module:scale", "module:modifiers");
     }
 
     @Test

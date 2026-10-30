@@ -81,7 +81,8 @@ class BusinessProfileServiceTest {
                 .isInstanceOf(BusinessRuleException.class);
 
         service.assignByPlatform(tenant.getId(), UUID.randomUUID(), BusinessType.RESTAURANT);
-        assertThat(tenant.getModules()).containsExactlyInAnyOrder(BusinessModule.CREDIT, BusinessModule.ORDERS);
+        assertThat(tenant.getModules()).containsExactlyInAnyOrder(BusinessModule.CREDIT, BusinessModule.ORDERS,
+                BusinessModule.MODIFIERS);
 
         BusinessProfile kept = service.change(tenant.getId(), owner, BusinessType.RESTAURANT,
                 List.of(BusinessModule.ORDERS));

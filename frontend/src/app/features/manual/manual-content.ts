@@ -412,6 +412,28 @@ export const MANUAL: readonly ManualChapter[] = [
         who: 'Configurar: Propietario, Administrador y Bodeguero. Vender: quien usa la caja.',
       },
       {
+        id: 'adiciones',
+        title: 'Adiciones: tamaños, extras y notas',
+        summary: 'Para lo que se pide "a la medida": un granizado grande con shot extra, una hamburguesa sin cebolla. '
+          + 'Se prende en Ajustes → Tipo de negocio y módulos (Restaurante lo trae prendido).',
+        steps: [
+          'Entra a Adiciones (en Todo) y toca "Nuevo grupo".',
+          'Ponle nombre (Tamaño, Licor, Extras) y di si se elige una sola opción o varias, y si es obligatorio.',
+          'Escribe las opciones con lo que suman al precio: Mediano 0, Grande 4000; Sin licor −2000. En las de varias, '
+            + 'di hasta cuántas veces se repite cada una (Shot extra hasta ×3).',
+          'En "Se aplica a" marca las categorías (sirve también para los productos que crees después) o busca productos sueltos.',
+          'En Vender, al tocar o escanear el producto se abren sus opciones: elige, escribe una nota si hace falta y toca "Agregar".',
+        ],
+        tips: [
+          'El mismo producto con otras adiciones o con otra nota va en otra línea del carrito.',
+          'En un producto sin adiciones también puedes poner una nota: toca la línea del carrito y escribe en "Nota".',
+          'Las adiciones y la nota salen en el tiquete, en el detalle de la venta y en el mensaje de WhatsApp.',
+          'Abajo de Adiciones ves lo más pedido de los últimos 30 días (con permiso de reportes).',
+          'Por ahora las adiciones no descuentan inventario; llegará con las recetas.',
+        ],
+        who: 'Configurar: Propietario y Administrador (permiso "Crear y editar adiciones"). Vender: quien usa la caja.',
+      },
+      {
         id: 'catalogo',
         title: 'Categorías, impuestos y listas de precios',
         summary: 'En Ajustes de catálogo organizas tus productos y defines precios especiales.',
