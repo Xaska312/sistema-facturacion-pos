@@ -5,8 +5,8 @@
  * 2. Si cambias el fondo de un texto, sube su versión aquí Y en LegalConsentService.java (backend): la app vuelve a
  *    pedir la aceptación a todos.
  */
-export const TERMS_VERSION = '1.0';
-export const PRIVACY_VERSION = '1.0';
+export const TERMS_VERSION = '1.1';
+export const PRIVACY_VERSION = '1.1';
 
 /** Datos del responsable (persona natural con la marca XASKA). */
 export const LEGAL_OWNER = {
@@ -192,7 +192,10 @@ export const PRIVACY_POLICY: LegalDocument = {
           + 'POS: debe tener su propia autorización y atender a esos titulares. XASKA los trata solo para prestar el '
           + 'servicio y según las instrucciones del negocio, los mantiene seguros y confidenciales, no los usa para '
           + 'nada más y los borra o entrega cuando el contrato termina. Estas reglas son el contrato de transmisión '
-          + 'entre el negocio y XASKA y hacen parte de los Términos.',
+          + 'entre el negocio y XASKA y hacen parte de los Términos. El negocio cliente se obliga a mantener indemne a '
+          + 'XASKA frente a cualquier investigación, queja o sanción impuesta por la Superintendencia de Industria y '
+          + 'Comercio (SIC) originada por la recolección indebida o falta de autorización previa, expresa e informada '
+          + 'de los datos personales de sus propios clientes finales.',
       }],
     },
     {
@@ -254,7 +257,8 @@ export const TERMS: LegalDocument = {
           'La prueba gratis se activa con un código que entrega XASKA y dura lo que diga el código.',
           'El pago se hace por adelantado, con las instrucciones que muestra la app. [ACLARAR SI LOS PRECIOS INCLUYEN IVA.]',
           'Si el plan vence, hay 3 días de gracia. Después la cuenta queda en solo consulta: puedes ver y exportar tus '
-            + 'datos y cerrar la caja, pero no registrar ventas nuevas hasta pagar.',
+            + 'datos y cerrar la caja, pero no registrar ventas nuevas hasta pagar. Esta restricción no limita tu acceso '
+            + 'a la información de tu negocio: la puedes consultar y exportar mientras la cuenta exista.',
           'Lo pagado por un periodo no se devuelve si cancelas antes de que termine, salvo lo que diga la ley.',
         ],
       }],
@@ -283,20 +287,37 @@ export const TERMS: LegalDocument = {
     },
     {
       id: 'facturacion',
-      title: '6. Facturación e impuestos',
-      blocks: [{
-        p: 'XASKA POS no es un proveedor tecnológico de facturación electrónica autorizado por la DIAN ni emite '
-          + 'factura electrónica ni documento equivalente electrónico. El tiquete que imprime es un comprobante interno '
-          + 'de venta. Cumplir tus obligaciones de facturación e impuestos es tu responsabilidad.',
-      }],
+      title: '6. Facturación, impuestos y alcance del software',
+      blocks: [
+        {
+          p: 'XASKA POS provee el software para el registro interno de ventas e inventario. XASKA no es un Proveedor '
+            + 'Tecnológico autorizado por la Unidad Administrativa Especial Dirección de Impuestos y Aduanas Nacionales '
+            + '(DIAN) para la validación previa de Factura Electrónica.',
+        },
+        {
+          p: 'Límites del tiquete POS: el tiquete generado por el sistema es un comprobante de control interno. En '
+            + 'cumplimiento de la normativa colombiana (Resolución 000165 de 2023 y normas concordantes), es exclusiva '
+            + 'responsabilidad del titular del negocio determinar si está obligado a facturar electrónicamente, respetar '
+            + 'los topes de expedición de documentos equivalentes (5 UVT) y gestionar la transición hacia el documento '
+            + 'equivalente electrónico mediante los canales que la DIAN disponga.',
+        },
+        {
+          p: 'Exoneración de responsabilidad tributaria: XASKA queda expresamente exonerada de toda responsabilidad '
+            + 'civil, comercial, tributaria, sancionatoria o solidaria frente al cliente o frente a terceros (incluida la '
+            + 'DIAN o la UGPP) por errores, omisiones, extemporaneidad en la declaración de impuestos, multas, o cierres '
+            + 'de establecimiento derivados del uso inadecuado del sistema POS por parte del cliente, siendo este el único '
+            + 'responsable de su cumplimiento fiscal.',
+        },
+      ],
     },
     {
       id: 'disponibilidad',
       title: '7. Disponibilidad, soporte y respaldos',
       blocks: [{
         list: [
-          'Buscamos que el servicio esté disponible siempre, pero puede haber pausas por mantenimiento (las avisamos '
-            + 'cuando se puede) o fallas de proveedores o de internet.',
+          'Hacemos lo razonable para que el servicio esté disponible, pero no garantizamos que funcione sin '
+            + 'interrupciones: puede haber pausas por mantenimiento (las avisamos cuando se puede) o fallas de '
+            + 'proveedores o de internet.',
           'Hacemos copias de seguridad cifradas todos los días. Aun así, te recomendamos exportar tus reportes con '
             + 'regularidad.',
           `Soporte por ${O.email}, en días hábiles. [DEFINIR HORARIO Y TIEMPO DE RESPUESTA.]`,
@@ -306,12 +327,22 @@ export const TERMS: LegalDocument = {
     {
       id: 'responsabilidad',
       title: '8. Responsabilidad',
-      blocks: [{
-        p: 'El servicio se entrega tal como está y lo mejoramos de forma continua. No respondemos por pérdidas '
-          + 'indirectas, como ventas o ganancias dejadas de recibir, ni por fallas causadas por internet, equipos del '
-          + 'cliente o terceros. En todo caso, nuestra responsabilidad total no supera lo que pagaste por el servicio en '
-          + 'los últimos 3 meses. Esto no limita los derechos que la ley no permite renunciar.',
-      }],
+      blocks: [
+        {
+          p: 'El servicio se entrega tal como está y lo mejoramos de forma continua. No respondemos por pérdidas '
+            + 'indirectas, como ventas o ganancias dejadas de recibir, ni por fallas causadas por internet, equipos del '
+            + 'cliente o terceros. En todo caso, nuestra responsabilidad total no supera lo que pagaste por el servicio '
+            + 'en los últimos 3 meses. Esto no limita los derechos que la ley no permite renunciar.',
+        },
+        {
+          p: 'La provisión del servicio XASKA POS se realiza bajo la modalidad de obligación de medio y no de resultado. '
+            + 'XASKA no asume responsabilidad alguna por lucro cesante, daño emergente, pérdida de información comercial '
+            + 'o afectación a la imagen del negocio derivados de intermitencias del servidor, mantenimientos '
+            + 'programados, fallas eléctricas, hackeos de terceros o interrupciones en la conectividad a internet. El '
+            + 'usuario se obliga a mantener indemne a XASKA ante cualquier reclamación judicial o extrajudicial derivada '
+            + 'del uso del sistema.',
+        },
+      ],
     },
     {
       id: 'cierre',
@@ -335,6 +366,19 @@ export const TERMS: LegalDocument = {
           `Cualquier diferencia se intentará resolver primero escribiendo a ${O.email}; si no hay acuerdo, ante los `
             + `jueces de ${O.city}.`,
         ],
+      }],
+    },
+    {
+      id: 'propiedad-intelectual',
+      title: '11. Propiedad intelectual y licenciamiento SaaS',
+      blocks: [{
+        p: 'El uso de XASKA POS no transfiere ningún derecho de propiedad. XASKA es el titular exclusivo de los derechos '
+          + 'patrimoniales sobre el código fuente, la estructura de la base de datos, el diseño de la interfaz y la marca '
+          + 'comercial (Ley 23 de 1982 y Decisión Andina 351). El pago del plan otorga al cliente una licencia de uso '
+          + 'temporal, no exclusiva, revocable e intransferible (Software as a Service). Queda estrictamente prohibido '
+          + 'intentar acceder al código fuente, realizar ingeniería inversa, descompilar, modificar o crear obras '
+          + 'derivadas del sistema. El incumplimiento de esta cláusula causará la terminación inmediata del servicio sin '
+          + 'derecho a reembolso y la iniciación de acciones legales.',
       }],
     },
   ],
