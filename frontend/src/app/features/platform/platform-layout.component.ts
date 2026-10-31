@@ -16,20 +16,23 @@ import { PLATFORM_MENU } from './platform-menu';
   selector: 'app-platform-layout',
   imports: [RouterOutlet, RouterLink, RouterLinkActive, TooltipModule, XaskaLogoComponent, XIconComponent],
   template: `
-    <div class="min-h-screen flex flex-col bg-ground">
-      <header class="sticky top-0 z-30 h-16 shrink-0 flex items-center gap-3 px-3 md:px-6 bg-surface/85 backdrop-blur border-b border-line">
+    <!-- overflow-x-clip y min-w-0: nada ensancha la página en el celular (se veía con zoom y la barra se rompía). -->
+    <div class="min-h-screen flex flex-col bg-ground overflow-x-clip">
+      <header class="sticky top-0 z-30 h-16 shrink-0 flex items-center gap-2 sm:gap-3 px-3 md:px-6 bg-surface/85 backdrop-blur border-b border-line">
         <a routerLink="/plataforma" class="shrink-0 rounded-lg" aria-label="Consola de plataforma: inicio">
-          <app-xaska-logo [wordmark]="true" />
+          <!-- En el celular solo el símbolo; el nombre completo desde tableta. -->
+          <app-xaska-logo class="hidden sm:inline-flex" [wordmark]="true" />
+          <app-xaska-logo class="sm:hidden" />
         </a>
         <span class="platform-tag">Plataforma</span>
-        <span class="flex-1"></span>
-        <span class="text-sm text-muted hidden sm:inline truncate">{{ auth.user()?.email }}</span>
-        <button type="button" class="back-button" (click)="back()">
-          <i class="pi pi-arrow-left text-xs" aria-hidden="true"></i>Mis negocios
+        <span class="flex-1 min-w-0"></span>
+        <span class="text-sm text-muted hidden md:inline truncate min-w-0">{{ auth.user()?.email }}</span>
+        <button type="button" class="back-button" (click)="back()" aria-label="Volver a mis negocios">
+          <i class="pi pi-arrow-left text-xs" aria-hidden="true"></i><span class="hidden sm:inline">Mis negocios</span><span class="sm:hidden">Negocios</span>
         </button>
       </header>
 
-      <main class="flex-1 w-full max-w-6xl mx-auto px-4 md:px-6 pt-6 pb-32">
+      <main class="flex-1 min-w-0 w-full max-w-6xl mx-auto px-4 md:px-6 pt-6 pb-32">
         <router-outlet />
       </main>
     </div>

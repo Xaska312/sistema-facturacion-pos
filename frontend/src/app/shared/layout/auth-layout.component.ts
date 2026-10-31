@@ -56,10 +56,14 @@ const BRAND_TILES: readonly BrandTile[] = [
     </div>
   `,
   styles: `
+    /* Una columna que nunca pasa del ancho de la pantalla: un nombre largo (que se corta con "…") ya no ensancha la
+       página en el celular, que se veía con zoom y desbordada. */
     .auth {
       min-height: 100vh;
       display: grid;
       grid-template-rows: auto 1fr;
+      grid-template-columns: minmax(0, 1fr);
+      overflow-x: clip;
     }
     .auth-brand {
       --xaska-ink: var(--xaska-panel-fg);
@@ -79,6 +83,7 @@ const BRAND_TILES: readonly BrandTile[] = [
     }
     .auth-muted { color: var(--xaska-panel-muted); }
     .auth-main {
+      min-width: 0;
       display: flex;
       align-items: center;
       justify-content: center;
