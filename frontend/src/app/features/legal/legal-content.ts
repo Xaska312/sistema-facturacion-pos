@@ -1,9 +1,8 @@
 /**
  * Términos y Condiciones y Política de Tratamiento de Datos Personales de XASKA POS (fase 9a, decisión 250).
- * Mismo texto que el documento de revisión legal. Antes de abrir a clientes:
- * 1. Llena LEGAL_OWNER (cédula, dirección, ciudad, teléfono, fecha) y los [PENDIENTES] del texto.
- * 2. Si cambias el fondo de un texto, sube su versión aquí Y en LegalConsentService.java (backend): la app vuelve a
- *    pedir la aceptación a todos.
+ * Versión 1.1 (decisión 274) con los datos del responsable completos (31 de octubre de 2026). Si cambias el fondo de un
+ * texto, sube su versión aquí Y en LegalConsentService.java (backend): la app vuelve a pedir la aceptación a todos.
+ * Al constituir la S.A.S., la persona natural y la cédula se cambian por la razón social y el NIT.
  */
 export const TERMS_VERSION = '1.1';
 export const PRIVACY_VERSION = '1.1';
@@ -11,13 +10,13 @@ export const PRIVACY_VERSION = '1.1';
 /** Datos del responsable (persona natural con la marca XASKA). */
 export const LEGAL_OWNER = {
   name: 'Daniel Mejía',
-  idNumber: '[CÉDULA]',
-  city: '[CIUDAD]',
-  address: '[DIRECCIÓN]',
-  phone: '[TELÉFONO]',
+  idNumber: '1.005.820.986',
+  city: 'Ibagué (Tolima)',
+  address: 'Carrera 10 # 122-33',
+  phone: '+57 316 778 4193 (también WhatsApp)',
   email: 'soporte@xaska.co',
-  publishedOn: '[FECHA DE PUBLICACIÓN]',
-  hosting: '[PROVEEDOR: Contabo (Estados Unidos) o Hetzner (Alemania)]',
+  publishedOn: '31 de octubre de 2026',
+  hosting: 'Contabo, con servidores en Estados Unidos',
 } as const;
 
 export interface LegalBlock {
@@ -155,12 +154,12 @@ export const PRIVACY_POLICY: LegalDocument = {
         {
           list: [
             `Alojamiento del servidor: ${O.hosting}.`,
-            'Envío de correos: Google (Gmail) durante el piloto y después Resend.',
+            'Envío de correos: Resend.',
             'Copias de seguridad cifradas: Google Drive.',
           ],
         },
         {
-          p: 'Esos servidores están fuera de Colombia. Estados Unidos y Alemania están en la lista de países con nivel '
+          p: 'Esos servidores están fuera de Colombia, en Estados Unidos, que está en la lista de países con nivel '
             + 'adecuado de protección de la SIC (Circular Externa 005 de 2017). Al aceptar esta política autorizas esa '
             + 'transmisión internacional.',
         },
@@ -252,10 +251,13 @@ export const TERMS: LegalDocument = {
       title: '3. Planes, prueba y pagos',
       blocks: [{
         list: [
-          'Hay planes Básico y Pro, mensuales o anuales. Precios vigentes: [PRECIOS]. Los cambios de precio se avisan '
+          'Hay planes Básico y Pro, mensuales o anuales. Precios vigentes: Básico $49.900 al mes o $499.000 al año; '
+            + 'Pro $99.900 al mes o $999.000 al año (pesos colombianos). Los cambios de precio se avisan '
             + 'con al menos 30 días y aplican desde el siguiente periodo.',
-          'La prueba gratis se activa con un código que entrega XASKA y dura lo que diga el código.',
-          'El pago se hace por adelantado, con las instrucciones que muestra la app. [ACLARAR SI LOS PRECIOS INCLUYEN IVA.]',
+          'Todo negocio nuevo tiene una prueba gratis de 14 días. Con un código promocional que entrega XASKA (cupos '
+            + 'limitados) la prueba dura lo que diga el código.',
+          'El pago se hace por adelantado, con las instrucciones que muestra la app. El prestador no es responsable de '
+            + 'IVA, por lo que los precios no incluyen IVA ni se cobra IVA sobre ellos.',
           'Si el plan vence, hay 3 días de gracia. Después la cuenta queda en solo consulta: puedes ver y exportar tus '
             + 'datos y cerrar la caja, pero no registrar ventas nuevas hasta pagar. Esta restricción no limita tu acceso '
             + 'a la información de tu negocio: la puedes consultar y exportar mientras la cuenta exista.',
@@ -320,7 +322,8 @@ export const TERMS: LegalDocument = {
             + 'proveedores o de internet.',
           'Hacemos copias de seguridad cifradas todos los días. Aun así, te recomendamos exportar tus reportes con '
             + 'regularidad.',
-          `Soporte por ${O.email}, en días hábiles. [DEFINIR HORARIO Y TIEMPO DE RESPUESTA.]`,
+          `Soporte por ${O.email} y por WhatsApp al ${O.phone.split(' (')[0]}, en días hábiles de 8:00 a. m. a 6:00 p. m. `
+            + '(hora de Colombia). Respondemos en máximo un día hábil.',
         ],
       }],
     },
