@@ -96,7 +96,8 @@ services:
       # Suscripciones (fase 8b): cómo pagar (sale en la app y en los correos) y días de prueba gratis.
       SUBSCRIPTION_PAYMENT_INSTRUCTIONS: ${SUBSCRIPTION_PAYMENT_INSTRUCTIONS:-Comunícate con soporte para renovar.}
       SUBSCRIPTION_TRIAL_DAYS: ${SUBSCRIPTION_TRIAL_DAYS:-14}
-      SUBSCRIPTION_TRIAL_WITHOUT_CODE: ${SUBSCRIPTION_TRIAL_WITHOUT_CODE:-false}
+      # Prueba de 14 días para todo negocio nuevo; los códigos dan pruebas más largas (Términos 1.1, decisión 275).
+      SUBSCRIPTION_TRIAL_WITHOUT_CODE: ${SUBSCRIPTION_TRIAL_WITHOUT_CODE:-true}
       SUBSCRIPTION_REMINDERS_ENABLED: ${SUBSCRIPTION_REMINDERS_ENABLED:-true}
     depends_on:
       postgres-db:

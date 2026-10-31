@@ -29,6 +29,13 @@ describe('legal-content', () => {
     expect(JSON.stringify(PRIVACY_POLICY)).toContain('mantener indemne a XASKA');
   });
 
+  it('no quedan datos por llenar entre corchetes', () => {
+    for (const doc of [TERMS, PRIVACY_POLICY]) {
+      expect(JSON.stringify(doc)).not.toMatch(/\[[A-ZÁÉÍÓÚÑ ]{3,}/);
+    }
+    expect(Object.values(LEGAL_OWNER).some((v) => v.startsWith('['))).toBeFalse();
+  });
+
   it('elige el documento por ruta', () => {
     expect(legalDocument('terminos')).toBe(TERMS);
     expect(legalDocument('privacidad')).toBe(PRIVACY_POLICY);
