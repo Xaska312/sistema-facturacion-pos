@@ -100,7 +100,7 @@ Lo ya cobrado (`saleId` en la línea) no se quita (409) y una cuenta con partes 
 ### Propinas e impuesto al consumo (Fase 12b-5, decisión 272)
 | Método | Ruta | Permiso | Descripción |
 |---|---|---|---|
-| GET | `/tips?branchId&from&to` | `tips:manage` | `{branchId, branches, from, to, collected, count, byMethod: [{methodName, amount, count}], pending, people: [{memberId, name}], payouts}`. Periodo máx. 31 días (por defecto, el mes en curso). `pending` = todo lo recogido en la sucursal menos lo repartido |
+| GET | `/tips?branchId&from&to` | `tips:manage` | `{branchId, branches, from, to, collected, count, byMethod: [{methodName, amount, count}], pending, people: [{memberId, name}], payouts}`. Periodo máx. 31 días (por defecto, el mes en curso). `pending` = todo lo recogido en la sucursal menos lo repartido (mínimo 0); `overpaid` = lo repartido de más porque después se anuló una venta con propina ya repartida (decisión 277) |
 | POST | `/tips/payouts` | `tips:manage` | `{branchId?, from, to, amount, memberIds, fromCash, notes?}` → 201. Partes iguales en pesos enteros (los que sobran, a los primeros). Más de lo pendiente → 422. `fromCash` sale de la caja abierta de quien reparte (`TIP_PAYOUT`). Inmutable; queda `TIP_PAYOUT_CREATED` |
 | POST | `/taxes/consumption` | `settings:manage` + `products:manage` | `{categoryIds}` → `{taxId, taxName, categories, products}`: deja "INC 8 %" activo (lo crea si falta) y lo asigna a los productos de esas categorías y sus subcategorías. Queda `CONSUMPTION_TAX_APPLIED` |
 
@@ -119,7 +119,7 @@ Todas las acciones de cuentas, zonas y mesas quedan en la auditoría (`TAB_*`, `
 
 | GET | `/kitchen/board?branchId&stationId` | `kitchen:view` | Pantalla de cocina (Fase 12b-4): comandas por entregar (Nuevas, Preparando y Listas), la más vieja primero (máx. 100) |
 | POST | `/kitchen/tickets/{id}/status` | `kitchen:view` o `kitchen:send` | `{status: NEW\|PREPARING\|READY\|DELIVERED}`. La cocina mueve un paso adelante (o Nueva → Lista) y uno atrás; con solo `kitchen:send` se marca Entregada lo que está Listo (403 si no). Salto no permitido → 422; aviso de anulación → 409. Queda `KITCHEN_TICKET_STATUS` |
-| GET | `/dining/events` | `tables:operate` o `kitchen:view` (+ `module:tables`) | Avisos en tiempo real (Server-Sent Events, Fase 12b-4). Primero `READY`; luego `TAB_CHANGED`, `TICKET_SENT`, `TICKET_STATUS`, `ITEM_VOIDED` con `{type, branchId, tabId, ticketId, number, stationId, label, status, userId}` (en `TICKET_STATUS` a `READY`, `userId` es quien envió la comanda). Solo del negocio del token y de las sucursales que atiende el usuario; comentario cada 25 s; se cierra a los 10 min (el cliente se reconecta con el token renovado). Se pide con `fetch` y `Authorization: Bearer` |
+| GET | `/dining/events` | `tables:operate` o `kitchen:view` (+ `module:tables`) | Avisos en tiempo real (Server-Sent Events, Fase 12b-4). Primero `READY`; luego `TAB_CHANGED`, `TICKET_SENT`, `TICKET_STATUS`, `ITEM_VOIDED` con `{type, branchId, tabId, ticketId, number, stationId, label, status, userId}` (en `TICKET_STATUS` a `READY`, `userId` es quien envió la comanda). Solo del negocio del token y de las sucursales que atiende el usuario; comentario cada 25 s; se cierra a los 10 min (el cliente se reconecta con el token renovado). Se pide con `fetch` y `Authorization: Bearer`. Máximo 5 conexiones abiertas por persona y negocio: la sexta cierra la más vieja (decisión 277) |
 
 Desde la 12b-4, `TicketView` trae además `sentById, type (ORDER\|VOID), voidOfNumber, preparingAt, readyAt`; `TicketSummary` trae `status`; y `TabSummary` del salón trae `ready` (comandas listas por llevar). Anular un producto ya enviado crea un aviso `VOID` (sale en `pending=true` para la impresora, no en la pantalla).
 
@@ -142,7 +142,7 @@ Enviar deja `KITCHEN_SENT` (cuenta, comandas y productos); las estaciones, `KITC
 | GET | `/members?search=&page=&size=` | `members:read` | Miembros con correo, roles, sucursales y marca `owner` |
 | GET | `/members/{id}` | `members:read` | Detalle |
 | PUT | `/members/{id}` | `members:manage` | `{roleIds[], branchIds[], defaultBranchId?}` |
-| POST | `/members/{id}/deactivate` · `/activate` | `members:manage` | Desactivar revoca sus sesiones en el negocio |
+| POST | `/members/{id}/deactivate` · `/activate` | `members:manage` | Desactivar revoca sus sesiones en el negocio, y su token de acceso deja de servir de inmediato: toda petición responde 401 "Tu acceso a este negocio fue desactivado" (decisión 277); también se cierran sus avisos en tiempo real |
 | GET | `/members/invitations?pending=true` | `members:read` | Invitaciones (pendientes por defecto) |
 | POST | `/members/invitations` | `members:manage` | `{email, roleIds[], branchIds[]}` → 201 `{invitation, token}`. Envía el correo de invitación; el token también se entrega **una sola vez** para compartir el enlace `<origen>/invitacion/<token>`. 409 si ya hay una pendiente o ya es miembro activo |
 | POST | `/members/invitations/{id}/resend` | `members:manage` | → 200 `{invitation, token}`: revoca la invitación y crea otra igual (mismos roles y sucursales, 7 días más) con enlace nuevo, y la envía por correo. 409 si no está pendiente, **429** si se envió hace menos de un minuto. Auditoría `INVITATION_RESENT` |

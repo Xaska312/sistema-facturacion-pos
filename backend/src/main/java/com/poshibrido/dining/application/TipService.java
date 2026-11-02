@@ -64,11 +64,12 @@ public class TipService {
 
     /**
      * {@code collected}: propinas del periodo (sin las de ventas anuladas); {@code pending}: todo lo recogido en la
-     * sucursal menos todo lo ya entregado.
+     * sucursal menos todo lo ya entregado. {@code overpaid} (decisión 277): lo entregado de más porque después se anuló
+     * una venta cuya propina ya se había repartido (la propina se le devolvió al cliente); 0 si no pasa.
      */
     public record Summary(UUID branchId, List<DiningViews.BranchOption> branches, LocalDate from, LocalDate to,
                           BigDecimal collected, long count, List<MethodTotal> byMethod, BigDecimal pending,
-                          List<Person> people, List<PayoutView> payouts) {
+                          BigDecimal overpaid, List<Person> people, List<PayoutView> payouts) {
     }
 
     public record PayoutInput(UUID branchId, LocalDate from, LocalDate to, BigDecimal amount, List<UUID> memberIds,
@@ -100,8 +101,9 @@ public class TipService {
             collected = collected.add(amount);
             count += n;
         }
-        return new Summary(branchId, dining.branches(), start, end, collected, count, byMethod, pending(branchId),
-                people(branchId), payouts(branchId));
+        BigDecimal balance = balance(branchId);
+        return new Summary(branchId, dining.branches(), start, end, collected, count, byMethod,
+                balance.max(BigDecimal.ZERO), balance.negate().max(BigDecimal.ZERO), people(branchId), payouts(branchId));
     }
 
     @Transactional
@@ -179,11 +181,16 @@ public class TipService {
     }
 
     private BigDecimal pending(UUID branchId) {
+        return balance(branchId).max(BigDecimal.ZERO);
+    }
+
+    /** Recogido (sin anuladas) menos entregado en la sucursal; negativo si se entregó de más. */
+    private BigDecimal balance(UUID branchId) {
         BigDecimal collected = DiningService.money(single("""
                 SELECT coalesce(sum(amount), 0) FROM sale_tips WHERE branch_id = :b AND voided_at IS NULL""", branchId));
         BigDecimal paid = DiningService.money(single("""
                 SELECT coalesce(sum(amount), 0) FROM tip_payouts WHERE branch_id = :b""", branchId));
-        return collected.subtract(paid).max(BigDecimal.ZERO);
+        return collected.subtract(paid);
     }
 
     /** Quienes trabajan en la sucursal (activos), para elegir entre quiénes se reparte. */

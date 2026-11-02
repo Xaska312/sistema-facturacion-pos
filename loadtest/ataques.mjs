@@ -444,18 +444,34 @@ async function races(d) {
 async function realtime(d) {
   group = 'Avisos en tiempo real';
   console.log(`\n== ${group}`);
+  // Abre 40 conexiones y cuenta cuántas siguen abiertas: el servidor puede aceptarlas y cerrar las más viejas.
   const controllers = [];
-  let accepted = 0;
+  const alive = [];
   for (let i = 0; i < 40; i++) {
     const ac = new AbortController();
     controllers.push(ac);
     const res = await fetch(`${API}/dining/events`, { headers: { Authorization: `Bearer ${d.waiter.token}` }, signal: ac.signal })
       .catch(() => null);
-    if (res && res.status === 200) accepted++;
+    if (res && res.status === 200 && res.body) {
+      const state = { open: true };
+      alive.push(state);
+      const reader = res.body.getReader();
+      (async () => {
+        try {
+          for (;;) {
+            const { done } = await reader.read();
+            if (done) break;
+          }
+        } catch { /* cortada por nosotros */ }
+        state.open = false;
+      })();
+    }
   }
+  await sleep(1500);
+  const open = alive.filter((a) => a.open).length;
   controllers.forEach((c) => c.abort());
-  record('Un mismo usuario no puede abrir conexiones de avisos sin tope', accepted <= 10,
-    `abrió ${accepted} de 40 conexiones a la vez (cada una ocupa memoria y una conexión del servidor)`, 'Media');
+  record('Un mismo usuario no puede abrir conexiones de avisos sin tope', open <= 10,
+    `quedaron ${open} de 40 conexiones abiertas a la vez (cada una ocupa memoria y una conexión del servidor)`, 'Media');
   const other = await call('GET', '/dining/events', { token: d.ownerB.token, raw: true });
   record('Una tienda sin mesas no recibe avisos de mesas', other.status === 403, `HTTP ${other.status}`, 'Media');
 }

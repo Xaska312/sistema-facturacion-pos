@@ -45,6 +45,8 @@ export interface TipSummary {
   byMethod: TipMethodTotal[];
   /** Todo lo recogido en la sucursal menos todo lo ya repartido. */
   pending: number;
+  /** Repartido de más porque después se anuló una venta con propina ya repartida (decisión 277); 0 si no pasa. */
+  overpaid: number;
   people: TipPerson[];
   payouts: TipPayout[];
 }

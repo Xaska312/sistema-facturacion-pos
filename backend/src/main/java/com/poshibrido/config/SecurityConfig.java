@@ -1,5 +1,6 @@
 package com.poshibrido.config;
 
+import com.poshibrido.access.application.ActiveMembers;
 import com.poshibrido.audit.application.SecurityEventLogger;
 import com.poshibrido.identity.application.TokenService;
 import com.poshibrido.tenancy.application.TenantApi;
@@ -55,7 +56,7 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain apiSecurity(HttpSecurity http, JwtDecoder jwtDecoder, TenantApi tenantApi,
-                                           SubscriptionApi subscriptions,
+                                           SubscriptionApi subscriptions, ActiveMembers activeMembers,
                                            RateLimitProperties rateLimits, SecurityEventLogger securityEvents,
                                            @Qualifier("corsConfigurationSource") CorsConfigurationSource corsSource,
                                            @Qualifier("handlerExceptionResolver") HandlerExceptionResolver resolver)
@@ -101,8 +102,10 @@ public class SecurityConfig {
                 .addFilterAfter(new ApiRateLimitFilter(rateLimits, resolver, securityEvents),
                         BearerTokenAuthenticationFilter.class)
                 .addFilterAfter(new TenantContextFilter(tenantApi, resolver), AuthorizationFilter.class)
+                // Quien fue desactivado en el negocio queda por fuera aunque su token no haya vencido (decisión 277).
+                .addFilterAfter(new ActiveMemberFilter(activeMembers, resolver), TenantContextFilter.class)
                 // Suscripción vencida: solo consulta (necesita el negocio ya resuelto).
-                .addFilterAfter(new SubscriptionGuardFilter(subscriptions, resolver), TenantContextFilter.class);
+                .addFilterAfter(new SubscriptionGuardFilter(subscriptions, resolver), ActiveMemberFilter.class);
         return http.build();
     }
 

@@ -20,6 +20,7 @@ import com.poshibrido.tenancy.application.TenantApi;
 import com.poshibrido.tenancy.application.TenantInfo;
 import com.poshibrido.tenancy.application.TenantRef;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -50,6 +51,7 @@ import java.util.stream.Collectors;
 public class MemberService {
 
     private final MemberRepository members;
+    private final ApplicationEventPublisher events;
     private final RoleRepository roles;
     private final RoleService roleService;
     private final BranchApi branches;
@@ -104,6 +106,8 @@ public class MemberService {
                 sessions.revokeTenantSessions(id, CurrentTenant.require().id());
             }
             audit.log(active ? "MEMBER_ACTIVATED" : "MEMBER_DEACTIVATED", "member", id, null, null);
+            // Después del commit: su sesión abierta deja de servir y se cierran sus avisos en tiempo real.
+            events.publishEvent(new MemberStatusChanged(CurrentTenant.require().id(), id, active));
         }
         return toViews(List.of(member)).getFirst();
     }
