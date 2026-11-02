@@ -20,6 +20,7 @@ import { ReceiptWidth, loadReceiptWidth, printReceipt } from '../../shared/recei
 import { saleWhatsAppLink } from './sale-text';
 import { permissionFlag } from '../../core/auth/permission-flag';
 import { LatestRequest } from '../../shared/latest-request';
+import { formatCop } from '../../shared/money';
 
 export const SALE_STATUS_LABEL: Record<SaleStatus, string> = {
   COMPLETED: 'Registrada',
@@ -101,6 +102,14 @@ const SALE_STATUS: Record<SaleStatus, StatusKey> = { COMPLETED: 'completed', VOI
         <label for="void-reason" class="text-sm font-medium">Motivo</label>
         <input pInputText id="void-reason" maxlength="200" [(ngModel)]="voidReason" placeholder="Cliente devolvió el producto" />
       </div>
+      @if (detail()?.tip; as tip) {
+        @if (!tip.voided) {
+          <p class="rounded-lg border border-warning bg-warning-soft text-warning-soft-fg p-3 text-sm" role="note">
+            La propina de {{ cop(tip.amount) }} también se anula y se le devuelve al cliente. Si ya la repartiste, el
+            equipo quedará con propina de más: lo verás en Propinas.
+          </p>
+        }
+      }
     </app-form-dialog>
 
     @if (detail(); as sale) {
@@ -127,6 +136,7 @@ export class SalesComponent implements OnInit {
   protected detailOpen = false;
   protected voidOpen = false;
   protected voidReason = '';
+  protected readonly cop = formatCop;
 
   protected readonly trackById = (row: SaleRow): string => row.id;
   protected readonly columns: ColumnDef<SaleRow>[] = [

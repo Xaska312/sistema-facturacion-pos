@@ -1,5 +1,6 @@
 package com.poshibrido.dining.api;
 
+import com.poshibrido.access.application.MemberStatusChanged;
 import com.poshibrido.dining.application.DiningEvents;
 import com.poshibrido.dining.application.DiningEvents.Event;
 import com.poshibrido.dining.application.DiningService;
@@ -7,9 +8,12 @@ import com.poshibrido.dining.application.DiningViews.BranchOption;
 import com.poshibrido.tenancy.application.TenantRef;
 import com.poshibrido.tenancy.infrastructure.TenantContext;
 import com.poshibrido.shared.error.ForbiddenException;
+import com.poshibrido.shared.security.CurrentActor;
 import jakarta.annotation.PreDestroy;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -17,7 +21,9 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -34,6 +40,10 @@ import java.util.stream.Collectors;
  *
  * <p>El flujo dura como mucho {@link #TIMEOUT} (menos que el token de acceso): el navegador se vuelve a conectar con
  * el token renovado. Cada 25 s va un comentario para que los proxies no corten la conexión.
+ *
+ * <p>Cada persona tiene como máximo {@link #MAX_PER_USER} conexiones abiertas por negocio (decisión 277): una pestaña
+ * nueva cierra la más vieja, así una cuenta no puede acaparar conexiones del servidor. Al desactivar a alguien se
+ * cierran todas las suyas.
  */
 @RestController
 @RequestMapping("/api/v1/dining")
@@ -41,6 +51,8 @@ public class DiningEventsController {
 
     static final Duration TIMEOUT = Duration.ofMinutes(10);
     static final Duration HEARTBEAT = Duration.ofSeconds(25);
+    /** Pantalla de cocina, Mesas en el celular y un par de pestañas sobran; más ya no es uso normal. */
+    static final int MAX_PER_USER = 5;
 
     private final DiningEvents events;
     private final DiningService dining;
@@ -62,9 +74,10 @@ public class DiningEventsController {
     public SseEmitter stream() {
         UUID tenantId = TenantContext.current().map(TenantRef::id)
                 .orElseThrow(() -> new ForbiddenException("Entra a un negocio para recibir avisos."));
+        UUID userId = CurrentActor.requireUserId();
         Set<UUID> branches = dining.branches().stream().map(BranchOption::id).collect(Collectors.toUnmodifiableSet());
         SseEmitter emitter = new SseEmitter(TIMEOUT.toMillis());
-        Subscription subscription = new Subscription(tenantId, branches, emitter);
+        Subscription subscription = new Subscription(tenantId, userId, branches, emitter, System.nanoTime());
         Runnable close = () -> {
             open.remove(subscription);
             events.unsubscribe(subscription);
@@ -80,9 +93,44 @@ public class DiningEventsController {
             emitter.completeWithError(ex);
             return emitter;
         }
-        open.add(subscription);
+        List<Subscription> extra;
+        synchronized (open) {
+            open.add(subscription);
+            List<Subscription> mine = open.stream()
+                    .filter(o -> o.tenantId().equals(tenantId) && o.userId().equals(userId))
+                    .sorted(Comparator.comparingLong(Subscription::openedAt))
+                    .toList();
+            extra = mine.subList(0, Math.max(0, mine.size() - MAX_PER_USER));
+            extra.forEach(open::remove);
+        }
         events.subscribe(subscription);
+        extra.forEach(this::close);
         return emitter;
+    }
+
+    /** Conexiones abiertas de una persona en un negocio (para pruebas). */
+    long openFor(UUID tenantId, UUID userId) {
+        return open.stream().filter(o -> o.tenantId().equals(tenantId) && o.userId().equals(userId)).count();
+    }
+
+    /** A quien desactivan se le cierran los avisos (su sesión ya no sirve: ActiveMemberFilter). */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    void onMemberStatusChanged(MemberStatusChanged event) {
+        if (event.active()) {
+            return;
+        }
+        open.stream().filter(o -> o.tenantId().equals(event.tenantId()) && o.userId().equals(event.memberId()))
+                .toList().forEach(this::close);
+    }
+
+    private void close(Subscription subscription) {
+        open.remove(subscription);
+        events.unsubscribe(subscription);
+        try {
+            subscription.emitter().complete();
+        } catch (IllegalStateException ex) {
+            // Ya estaba cerrada.
+        }
     }
 
     private void beat() {
@@ -101,7 +149,8 @@ public class DiningEventsController {
     }
 
     /** Un navegador conectado. */
-    record Subscription(UUID tenantId, Set<UUID> branchIds, SseEmitter emitter) implements DiningEvents.Listener {
+    record Subscription(UUID tenantId, UUID userId, Set<UUID> branchIds, SseEmitter emitter, long openedAt)
+            implements DiningEvents.Listener {
 
         @Override
         public boolean deliver(Event event) {

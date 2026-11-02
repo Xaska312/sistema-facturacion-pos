@@ -473,6 +473,8 @@ export const MANUAL: readonly ManualChapter[] = [
         tips: [
           'El reparto queda con quién recibió cuánto y no se puede cambiar.',
           'Las propinas de ventas anuladas no cuentan.',
+          'Si anulas una venta cuya propina ya repartiste, la propina se le devuelve al cliente y arriba sale '
+            + '"Repartido de más": se descuenta de las próximas propinas antes de que haya algo por repartir.',
           'Lo recomendable es repartir al menos una vez al mes.',
         ],
         who: 'Propietario y Administrador (permiso "Ver las propinas recogidas y registrar su reparto").',

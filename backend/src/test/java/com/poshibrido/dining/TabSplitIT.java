@@ -128,6 +128,9 @@ class TabSplitIT extends IntegrationTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.tip.voided").value(true));
         String afterVoid = body(api.getWith(s, "/api/v1/cash/sessions/" + cashSession + "/report"));
         assertThat(number(afterVoid, "$.cash.tips")).isEqualByComparingTo("0");
+        // Ya se habían repartido 3.001 y ahora solo quedan 2.000 recogidos: 1.001 repartidos de más (decisión 277).
+        api.getWith(s, "/api/v1/tips").andExpect(jsonPath("$.pending").value(0))
+                .andExpect(jsonPath("$.overpaid").value(1001));
 
         // El mesero no ve las propinas del negocio.
         Session waiter = api.joinAs(s, owner.tenantId(), "WAITER").session();

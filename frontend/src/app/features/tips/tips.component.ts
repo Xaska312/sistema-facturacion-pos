@@ -56,6 +56,13 @@ import { shareTips } from './tip-shares';
     }
 
     @if (summary(); as s) {
+      @if (s.overpaid > 0) {
+        <p class="rounded-lg border border-warning bg-warning-soft text-warning-soft-fg p-3 text-sm mb-4" role="status">
+          <span class="font-semibold">Repartido de más: {{ cop(s.overpaid) }}.</span> Se anularon ventas cuya propina ya se
+          había repartido (la propina se le devolvió al cliente). Se descuenta de las próximas propinas antes de que haya
+          algo por repartir.
+        </p>
+      }
       <div class="grid gap-4 md:grid-cols-3 mb-6">
         <div class="card p-5">
           <app-xicon name="tips" [size]="32" />

@@ -135,7 +135,7 @@ Si sale **NO APROBADA**, el resumen dice qué umbral falló. Lo más común:
 
 - **Ventas lentas pero sin errores**: el equipo está al límite. Prueba con `TIENDAS=25`: si con la mitad aprueba, el
   límite está entre las dos.
-- **503 "El sistema está ocupado"**: el pool de conexiones (10 por defecto, `DB_POOL_SIZE`) se llenó.
+- **503 "El sistema está ocupado"**: el pool de conexiones (20 por defecto, `DB_POOL_SIZE`) se llenó.
 - **Errores en la preparación**: revisa `docker compose -p poscarga logs backend`.
 
 ## Importante
