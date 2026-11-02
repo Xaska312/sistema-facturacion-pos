@@ -77,6 +77,9 @@
   --xaska-panel-muted: #c7d2fe;
   --xaska-panel-tile: rgb(255 255 255 / 0.08);
   --xaska-panel-line: rgb(255 255 255 / 0.14);
+  /* "POS" gigante del panel (como en xaska.co): degradado índigo a lavanda. */
+  --xaska-pos-from: #6366f1;
+  --xaska-pos-to: #c7d2fe;
 }
 
 .app-dark {
