@@ -7,6 +7,14 @@
 //   - administracion: 1 de cada 5 dueños mirando el tablero, la lista de ventas y las existencias.
 //   - exportaciones: 2 descargas por minuto del CSV de ventas (consulta pesada, comparte cupo con la auditoría).
 //
+//   - restaurantes (RESTAURANTES, 0 por defecto; decisión 276): 2 meseros por restaurante abren una mesa, piden por
+//     rondas, envían a cocina y la cuenta se cobra con propina; una pantalla de cocina por restaurante avanza las
+//     comandas (Nueva → Preparando → Lista → Entregada) mirando el tablero cada ~3 s.
+//
+// MODO=limite (decisión 276): en vez de una carga fija, los cajeros y meseros suben poco a poco desde cero hasta el
+// total durante DURACION y la prueba se detiene sola cuando la venta pasa de 2 s (p95) o fallan más del 5 %: dice
+// hasta dónde aguanta el equipo.
+//
 // Prepara los negocios en setup() (registro, negocio, 20 productos con existencia, caja abierta), así que cada
 // ejecución crea negocios nuevos: correr contra una base de pruebas, nunca contra producción.
 // Cómo correrla: loadtest/README.md.
@@ -22,6 +30,8 @@ const STORES = Number(__ENV.TIENDAS || 50);
 const PRODUCTS = Number(__ENV.PRODUCTOS || 20);
 const DURATION = __ENV.DURACION || '10m';
 const PACE = Number(__ENV.PAUSA_VENTA || 6);
+const RESTAURANTS = Number(__ENV.RESTAURANTES || 0);
+const LIMIT_MODE = (__ENV.MODO || 'normal') === 'limite';
 const RUN = Date.now().toString(36);
 const PASSWORD = 'ClaveCarga-2026';
 
@@ -30,30 +40,52 @@ const UND = '01920000-0000-7000-8000-000000000301';
 const IVA19 = '01920000-0000-7000-8000-000000000401';
 const CAJA_1 = '01920000-0000-7000-8000-000000000201';
 
-export const options = {
-  setupTimeout: '30m',
-  scenarios: {
-    cajeros: { executor: 'constant-vus', exec: 'cajero', vus: STORES * 2, duration: DURATION, gracefulStop: '30s' },
-    administracion: {
-      executor: 'constant-vus', exec: 'administracion', vus: Math.max(1, Math.round(STORES / 5)), duration: DURATION,
-    },
-    exportaciones: {
-      executor: 'constant-arrival-rate', exec: 'exportacion', rate: 2, timeUnit: '1m', duration: DURATION,
-      preAllocatedVUs: 2, maxVUs: 4,
-    },
+function cashierScenario(exec, vus) {
+  return LIMIT_MODE
+    ? { executor: 'ramping-vus', exec, startVUs: 0, stages: [{ duration: DURATION, target: vus }], gracefulRampDown: '10s' }
+    : { executor: 'constant-vus', exec, vus, duration: DURATION, gracefulStop: '30s' };
+}
+
+const scenarios = {
+  cajeros: cashierScenario('cajero', STORES * 2),
+  administracion: {
+    executor: 'constant-vus', exec: 'administracion', vus: Math.max(1, Math.round(STORES / 5)), duration: DURATION,
   },
+  exportaciones: {
+    executor: 'constant-arrival-rate', exec: 'exportacion', rate: 2, timeUnit: '1m', duration: DURATION,
+    preAllocatedVUs: 2, maxVUs: 4,
+  },
+};
+if (RESTAURANTS > 0) {
+  scenarios.meseros = cashierScenario('mesero', RESTAURANTS * 2);
+  scenarios.cocinas = { executor: 'constant-vus', exec: 'cocina', vus: RESTAURANTS, duration: DURATION };
+}
+
+// En modo límite la prueba se detiene sola al pasar el umbral (después de un minuto de margen).
+const stop = (rule) => (LIMIT_MODE ? { threshold: rule, abortOnFail: true, delayAbortEval: '1m' } : rule);
+
+export const options = {
+  setupTimeout: '60m',
+  scenarios,
   thresholds: {
     // Menos del 1 % de errores en lo que hace un cajero (el 429 del cupo de exportaciones no cuenta como error).
-    'http_req_failed{scenario:cajeros}': ['rate<0.01'],
+    'http_req_failed{scenario:cajeros}': [LIMIT_MODE ? stop('rate<0.05') : 'rate<0.01'],
     'http_req_failed{scenario:administracion}': ['rate<0.01'],
     // Tiempos de respuesta: lo que el cajero siente al cobrar y al leer un código.
-    'http_req_duration{nombre:venta}': ['p(95)<800', 'p(99)<2000'],
+    'http_req_duration{nombre:venta}': LIMIT_MODE ? [stop('p(95)<2000')] : ['p(95)<800', 'p(99)<2000'],
     'http_req_duration{nombre:lector}': ['p(95)<300'],
     'http_req_duration{nombre:tablero}': ['p(95)<1500'],
     checks: ['rate>0.99'],
     // Solo para que aparezcan en el resumen.
     'http_reqs{nombre:venta}': ['count>0'],
     'http_req_duration{nombre:exportacion}': ['max>=0'],
+    ...(RESTAURANTS > 0 ? {
+      'http_req_failed{scenario:meseros}': ['rate<0.01'],
+      'http_req_duration{nombre:comanda}': ['p(95)<800'],
+      'http_req_duration{nombre:cobro mesa}': ['p(95)<1000'],
+      'http_req_duration{nombre:cocina}': ['p(95)<500'],
+      'http_reqs{nombre:cobro mesa}': ['count>0'],
+    } : {}),
   },
   summaryTrendStats: ['avg', 'med', 'p(95)', 'p(99)', 'max'],
 };
@@ -68,11 +100,11 @@ function headers(token) {
   return h;
 }
 
-function post(path, body, token, nombre, extra) {
-  return http.post(BASE + path, JSON.stringify(body), {
+function post(path, body, token, nombre, extra, params) {
+  return http.post(BASE + path, JSON.stringify(body), Object.assign({
     headers: Object.assign(headers(token), extra || {}),
     tags: { nombre: nombre || 'preparacion' },
-  });
+  }, params || {}));
 }
 
 function get(path, token, nombre, params) {
@@ -153,6 +185,48 @@ function prepareStore(i) {
   return { owner, cashier, branchId, cash, products };
 }
 
+
+/** Restaurante: dueño con caja abierta (cobra y ve la cocina), un mesero invitado, 15 productos y 10 mesas. */
+function prepareRestaurant(i) {
+  const tag = `${RUN}_r${i}`;
+  const ownerPlatform = register(`carga-${tag}@carga.test`, `Dueña restaurante ${i}`);
+  const tenant = expectStatus(post('/tenants', {
+    slug: `carga_${tag}`, legalName: `Restaurante Carga ${i} S.A.S.`, tradeName: `Restaurante Carga ${i}`,
+    businessType: 'RESTAURANT',
+  }, ownerPlatform), 201, `restaurante ${i}`);
+  const owner = selectTenant(ownerPlatform, tenant.id);
+  const branches = expectStatus(get('/branches?page=0&size=10', owner), 200, 'sucursales');
+  const branchId = branches.content.find((b) => b.code === 'PRINCIPAL').id;
+  const methods = expectStatus(get('/payment-methods', owner), 200, 'medios de pago');
+  const cash = methods.find((m) => m.code === 'CASH').id;
+
+  const requests = [];
+  for (let p = 0; p < 15; p++) {
+    requests.push(['POST', `${BASE}/products`, JSON.stringify({
+      sku: `PLATO-${p + 1}`, name: `Plato ${p + 1}`, baseUnitId: UND, taxId: IVA19, cost: 0,
+      salePrice: 8000 + 2000 * (p % 8), trackInventory: false,
+    }), { headers: headers(owner), tags: { nombre: 'preparacion' } }]);
+  }
+  const products = http.batch(requests).map((res, p) => expectStatus(res, 201, `plato ${p + 1}`).id);
+  const zone = expectStatus(post('/dining/zones', { branchId, name: 'Salón' }, owner), 201, 'zona');
+  const tables = [];
+  for (let t = 1; t <= 10; t++) {
+    tables.push(expectStatus(post('/dining/tables', { zoneId: zone.id, name: `${t}` }, owner), 201, `mesa ${t}`).id);
+  }
+  expectStatus(post('/cash/sessions', { cashRegisterId: CAJA_1, openingAmount: 100000 }, owner), 201, 'abrir caja');
+
+  const roles = expectStatus(get('/roles', owner), 200, 'roles');
+  const waiterRole = roles.find((r) => r.code === 'WAITER').id;
+  const waiterEmail = `carga-${tag}-mesero@carga.test`;
+  const invitation = expectStatus(post('/members/invitations', {
+    email: waiterEmail, roleIds: [waiterRole], branchIds: [branchId],
+  }, owner), 201, 'invitar mesero');
+  const waiterPlatform = register(waiterEmail, `Mesero ${i}`);
+  expectStatus(post('/invitations/accept', { token: invitation.token }, waiterPlatform), 200, 'aceptar invitación');
+  const waiter = selectTenant(waiterPlatform, tenant.id);
+  return { owner, waiter, cash, products, tables };
+}
+
 export function setup() {
   const health = http.get(HEALTH);
   if (health.status !== 200) {
@@ -166,10 +240,27 @@ export function setup() {
       console.log(`Preparadas ${i} de ${STORES} tiendas (${Math.round((Date.now() - started) / 1000)} s)`);
     }
   }
-  return { stores, preparacionSegundos: Math.round((Date.now() - started) / 1000) };
+  const restaurants = [];
+  for (let i = 1; i <= RESTAURANTS; i++) {
+    restaurants.push(prepareRestaurant(i));
+    if (i % 10 === 0) {
+      console.log(`Preparados ${i} de ${RESTAURANTS} restaurantes (${Math.round((Date.now() - started) / 1000)} s)`);
+    }
+  }
+  return { stores, restaurants, preparacionSegundos: Math.round((Date.now() - started) / 1000) };
 }
 
 // ---------------------------------------------------------------- escenarios
+
+/**
+ * La primera vuelta de cada cajero o mesero empieza en un momento al azar dentro de una pausa: en un negocio real las
+ * cajas no cobran todas en el mismo segundo, y sin esto los primeros segundos miden una avalancha que no existe.
+ */
+function staggerStart() {
+  if (exec.vu.iterationInScenario === 0) {
+    sleep(Math.random() * PACE);
+  }
+}
 
 /**
  * Una venta de una de las cajas (dueño en CAJA-1 o cajero en CAJA-2): lee de 1 a 4 productos y cobra en efectivo.
@@ -177,6 +268,7 @@ export function setup() {
  * recibe la misma carga.
  */
 export function cajero(data) {
+  staggerStart();
   const index = exec.scenario.iterationInTest % (data.stores.length * 2);
   const store = data.stores[Math.floor(index / 2)];
   const token = index % 2 === 0 ? store.owner : store.cashier;
@@ -201,6 +293,63 @@ export function cajero(data) {
     'total correcto': (r) => r.status !== 201 || Number(r.json('total')) === total,
   });
   sleep(PACE * (0.5 + Math.random()));
+}
+
+/**
+ * Un mesero atiende sus 5 mesas (la mitad de las del restaurante, sin cruzarse con el otro): abre la cuenta, pide
+ * 1 a 3 rondas que salen a cocina y la dueña la cobra en efectivo con el 10 % de propina.
+ */
+export function mesero(data) {
+  staggerStart();
+  const index = exec.scenario.iterationInTest;
+  const slot = index % (data.restaurants.length * 2);
+  const place = data.restaurants[Math.floor(slot / 2)];
+  const half = slot % 2;
+  const round = Math.floor(index / (data.restaurants.length * 2));
+  const table = place.tables[half * 5 + (round % 5)];
+  const token = half === 0 ? place.owner : place.waiter;
+
+  const open = post('/tabs', { kind: 'TABLE', tableId: table, guests: randomInt(1, 6) }, token, 'abrir mesa');
+  if (!check(open, { 'mesa abierta': (r) => r.status === 201 })) {
+    sleep(PACE);
+    return; // la mesa quedó abierta en la vuelta anterior (cobro fallido): la siguiente vuelta usa otra
+  }
+  const tab = open.json('id');
+  const rounds = randomInt(1, 3);
+  for (let r = 0; r < rounds; r++) {
+    const items = [];
+    for (let l = randomInt(1, 4); l > 0; l--) {
+      items.push({ productId: place.products[randomInt(0, place.products.length - 1)], quantity: randomInt(1, 2) });
+    }
+    check(post(`/tabs/${tab}/items`, { items }, token, 'comanda'), { 'pedido 200': (x) => x.status === 200 });
+    check(post(`/tabs/${tab}/send`, {}, token, 'comanda'), { 'a cocina 200': (x) => x.status === 200 });
+    sleep(PACE * (0.5 + Math.random()));
+  }
+  const current = get(`/tabs/${tab}`, token, 'ver mesa');
+  const total = Number(current.json('total'));
+  const tip = Math.round(total * 0.1 / 100) * 100;
+  const charge = post(`/tabs/${tab}/charge`, {
+    expectedTotal: total, payments: [{ paymentMethodId: place.cash, amount: Math.ceil((total + tip) / 1000) * 1000 }],
+    tip: tip > 0 ? { amount: tip, paymentMethodId: place.cash, suggestedPercent: 10 } : null,
+  }, place.owner, 'cobro mesa', { 'Idempotency-Key': key() });
+  check(charge, { 'mesa cobrada 201': (r) => r.status === 201 });
+  sleep(PACE * (0.5 + Math.random()));
+}
+
+/** Pantalla de cocina: mira el tablero y avanza cada comanda un estado. */
+export function cocina(data) {
+  const place = data.restaurants[(__VU - 1) % data.restaurants.length];
+  const board = get('/kitchen/board', place.owner, 'cocina');
+  check(board, { 'tablero cocina 200': (r) => r.status === 200 });
+  const next = { NEW: 'PREPARING', PREPARING: 'READY', READY: 'DELIVERED' };
+  for (const ticket of (board.status === 200 ? board.json() : []).slice(0, 6)) {
+    if (next[ticket.status]) {
+      // 409: el otro cocinero (o el mesero) ya la movió; es normal, no cuenta como error.
+      post(`/kitchen/tickets/${ticket.id}/status`, { status: next[ticket.status] }, place.owner, 'cocina estado',
+        undefined, { responseCallback: http.expectedStatuses(200, 409) });
+    }
+  }
+  sleep(2 + Math.random() * 2);
 }
 
 /** Dueños revisando el día: tablero, ventas recientes y existencias. */
@@ -248,7 +397,7 @@ export function handleSummary(data) {
   const lines = [
     '',
     'PRUEBA DE CARGA — POS HÍBRIDO',
-    `Tiendas: ${STORES} · cajeros: ${STORES * 2} · productos por tienda: ${PRODUCTS} · duración: ${DURATION} · pausa entre ventas: ~${PACE} s`,
+    `Modo: ${LIMIT_MODE ? 'límite (sube hasta romper)' : 'carga fija'} · tiendas: ${STORES} · cajeros: ${STORES * 2} · productos por tienda: ${PRODUCTS} · duración: ${DURATION} · pausa entre ventas: ~${PACE} s`,
     `Preparación: ${preparation} s · duración total: ${Math.round(seconds)} s`,
     '',
     `Ventas registradas: ${sales ? sales.values.count : '—'} (${sales ? (sales.values.count / minutes).toFixed(0) : '—'} por minuto de prueba)`,
@@ -257,6 +406,19 @@ export function handleSummary(data) {
     `Tablero · mediana ${ms(trend('tablero'), 'med')} · p95 ${ms(trend('tablero'), 'p(95)')}`,
     `Exportación CSV · mediana ${ms(trend('exportacion'), 'med')} · p95 ${ms(trend('exportacion'), 'p(95)')}`,
     `Errores (cajeros): ${pct(m['http_req_failed{scenario:cajeros}'])} · verificaciones correctas: ${pct(m.checks)}`,
+    ...(RESTAURANTS > 0 ? [
+      `Restaurantes: ${RESTAURANTS} · meseros: ${RESTAURANTS * 2} · mesas cobradas: ${m['http_reqs{nombre:cobro mesa}'] ? m['http_reqs{nombre:cobro mesa}'].values.count : '—'}`,
+      `Comanda · p95 ${ms(trend('comanda'), 'p(95)')} · Cobro de mesa · p95 ${ms(trend('cobro mesa'), 'p(95)')} · Tablero de cocina · p95 ${ms(trend('cocina'), 'p(95)')}`,
+      `Errores (meseros): ${pct(m['http_req_failed{scenario:meseros}'])}`,
+    ] : []),
+    ...(LIMIT_MODE ? [
+      '',
+      `MODO LÍMITE: llegó a ${m.vus_max ? m.vus_max.values.max : '—'} usuarios virtuales a la vez`
+        + ` (${m.vus ? m.vus.values.max : '—'} activos al final) de ${STORES * 2 + RESTAURANTS * 2} previstos.`,
+      data.state.testRunDurationMs / 1000 < preparation + 60
+        ? 'Se detuvo casi al empezar: revisa el backend.'
+        : 'Si se detuvo antes de terminar, ese número es lo que aguanta este equipo con venta p95 < 2 s.',
+    ] : []),
     '',
     failed.length === 0 ? 'RESULTADO: APROBADA (se cumplieron todos los umbrales)' : `RESULTADO: NO APROBADA\n  - ${failed.join('\n  - ')}`,
     '',

@@ -1,0 +1,16 @@
+# Pruebas de seguridad y de uso real (decisión 276). Se usa junto al docker-compose.yml de la raíz, en el mismo proyecto
+# aparte de la prueba de carga ("poscarga"): base de datos propia, tus datos de desarrollo no se tocan.
+#
+#   docker compose -p poscarga -f docker-compose.yml -f loadtest/compose.ataques.yml up -d --build postgres-db mailpit backend
+#   node loadtest/ataques.mjs
+#   node loadtest/uso-real.mjs
+#   docker compose -p poscarga -f docker-compose.yml -f loadtest/compose.ataques.yml down -v
+#
+# A diferencia de la prueba de carga, aquí los límites quedan COMO EN PRODUCCIÓN (login 10/min, registro 5/min,
+# 300/min por usuario, sesión de 15 min): las pruebas verifican que funcionen. Solo se quitan la confirmación del correo
+# y el código de activación, que necesitarían un buzón y la consola de plataforma.
+services:
+  backend:
+    environment:
+      EMAIL_VERIFICATION_REQUIRED: "false"
+      SUBSCRIPTION_TRIAL_WITHOUT_CODE: "true"

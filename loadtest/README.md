@@ -42,7 +42,54 @@ Para una prueba corta (por ejemplo, para ver que todo arranca), antes del paso 2
 $env:TIENDAS = "5"; $env:DURACION = "2m"
 ```
 
-Variables: `TIENDAS` (50), `PRODUCTOS` por tienda (20), `DURACION` (10m), `PAUSA_VENTA` en segundos (6).
+Variables: `TIENDAS` (50), `PRODUCTOS` por tienda (20), `DURACION` (10m), `PAUSA_VENTA` en segundos (6),
+`RESTAURANTES` (0) y `MODO` (`normal` o `limite`).
+
+### Restaurantes y meta de más de 100 negocios (decisión 276)
+
+Con `RESTAURANTES` se suman restaurantes: 2 meseros por restaurante abren mesa, piden por rondas, envían a cocina y
+la dueña cobra con propina, mientras una pantalla de cocina por restaurante avanza las comandas. Para la meta de más de
+100 negocios:
+
+```powershell
+$env:TIENDAS = "120"; $env:RESTAURANTES = "30"; $env:DURACION = "10m"
+docker compose -p poscarga -f docker-compose.yml -f loadtest/compose.carga.yml run --rm k6
+```
+
+Con `MODO=limite` la carga sube poco a poco desde cero hasta el total durante `DURACION`, y la prueba se detiene sola
+cuando la venta pasa de 2 s (p95) o falla más del 5 %. El resumen dice a cuántos usuarios a la vez llegó: es lo que
+aguanta ese equipo.
+
+```powershell
+$env:TIENDAS = "300"; $env:RESTAURANTES = "50"; $env:MODO = "limite"; $env:DURACION = "15m"
+```
+
+Al terminar, borra las variables (`Remove-Item Env:TIENDAS, Env:RESTAURANTES, Env:MODO, Env:DURACION`).
+
+## Pruebas de seguridad y de uso real (decisión 276)
+
+Dos scripts de Node (sin instalar nada; Node 20 o más nuevo) que se corren contra el mismo proyecto aparte de Docker,
+pero con los límites de producción (`compose.ataques.yml`):
+
+| Script | Qué hace |
+|---|---|
+| `ataques.mjs` | ~75 intentos de lo que haría alguien malintencionado: tokens falsificados, entrar a otro negocio, un cajero haciendo cosas de dueño, inyección SQL, montos negativos, peticiones simultáneas (doble cobro, última unidad, retiros), límites de login y bloqueo de cuenta |
+| `uso-real.mjs` | Un día completo de una tienda (ventas, fiado, anulación, descuento, cierre) y de un restaurante (mesa, cocina, cuenta dividida, propinas), con las cuentas hechas a mano: compara caja, inventario, fiado, reportes y propinas |
+
+```powershell
+cd C:\Users\danii\Documents\GitHub\Pos-Hibrid-Dan
+docker compose down
+docker compose -p poscarga -f docker-compose.yml -f loadtest/compose.ataques.yml up -d --build postgres-db mailpit backend
+node loadtest/ataques.mjs
+node loadtest/uso-real.mjs
+docker compose -p poscarga -f docker-compose.yml -f loadtest/compose.ataques.yml down -v
+docker compose up -d
+```
+
+Cada línea sale con ✔ (aguantó o cuadró) o ✘ y el detalle; al final, lo que no aguantó ordenado por gravedad. Los
+resultados quedan en `loadtest/resultados/ataques.json` y `uso-real.json`. Como los límites son los de producción, si
+corres `ataques.mjs` dos veces seguidas espera un minuto entre una y otra (el límite de registros es de 5 por minuto;
+el script espera solo cuando le toca).
 
 También se puede correr en GitHub: pestaña **Actions → Prueba de carga → Run workflow** (~20 min de Actions). Deja
 los resultados como artefacto, con el uso de CPU y memoria de cada contenedor.
