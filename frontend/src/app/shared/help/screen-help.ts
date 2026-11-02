@@ -105,6 +105,7 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     tips: [
       'Las compras a crédito, primero las que vencen antes; arriba lo vencido y lo que vence esta semana.',
       'Un pago puede ser todo el saldo o un abono; en efectivo sale de tu caja abierta.',
+      'Cada pago queda en la recepción y en la auditoría: quién pagó, cuándo y con qué medio.',
     ],
   },
   '/app/productos/modelos': {
