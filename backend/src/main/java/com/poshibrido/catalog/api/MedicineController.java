@@ -37,7 +37,7 @@ public class MedicineController {
                                   @Size(max = 200) String dosageForm, @Size(max = 120) String route,
                                   @Size(max = 10) String atc, @Size(max = 300) String holder,
                                   @Size(max = 20) String saleCondition, Boolean antibiotic, Boolean coldChain,
-                                  Boolean unitSale) {
+                                  Boolean unitSale, Boolean tracksLots) {
     }
 
     /** 204 si el producto aún no tiene ficha. */
@@ -52,7 +52,8 @@ public class MedicineController {
     public MedicineView save(@PathVariable UUID id, @Valid @RequestBody MedicineRequest r) {
         return medicines.save(id, new MedicineInput(r.kind(), r.sanitaryRegistration(), r.cum(), r.activeIngredients(),
                 r.dosageForm(), r.route(), r.atc(), r.holder(), r.saleCondition(), Boolean.TRUE.equals(r.antibiotic()),
-                Boolean.TRUE.equals(r.coldChain()), Boolean.TRUE.equals(r.unitSale())));
+                Boolean.TRUE.equals(r.coldChain()), Boolean.TRUE.equals(r.unitSale()),
+                Boolean.TRUE.equals(r.tracksLots())));
     }
 
     @GetMapping("/api/v1/medicines/catalog")

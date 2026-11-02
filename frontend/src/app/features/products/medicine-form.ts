@@ -36,6 +36,7 @@ export type MedicineForm = FormGroup<{
   antibiotic: FormControl<boolean>;
   coldChain: FormControl<boolean>;
   unitSale: FormControl<boolean>;
+  tracksLots: FormControl<boolean>;
 }>;
 
 export function medicineForm(fb: FormBuilder): MedicineForm {
@@ -53,7 +54,15 @@ export function medicineForm(fb: FormBuilder): MedicineForm {
     antibiotic: c.control(false),
     coldChain: c.control(false),
     unitSale: c.control(false),
+    tracksLots: c.control(false),
   });
+}
+
+/** Llevan lote y vencimiento siempre (igual que MedicineService.LOT_KINDS); los demás tipos, si se marca. */
+export const LOT_KINDS: ReadonlySet<MedicineKind> = new Set<MedicineKind>(['MEDICINE', 'PHYTOTHERAPEUTIC', 'MEDICAL_DEVICE']);
+
+export function lotsForced(kind: MedicineKind | ''): boolean {
+  return kind !== '' && LOT_KINDS.has(kind);
 }
 
 export function needsCondition(kind: MedicineKind | ''): boolean {
@@ -118,6 +127,7 @@ export function toMedicineInput(form: MedicineForm): MedicineSheetInput | null {
     antibiotic,
     coldChain: v.coldChain,
     unitSale: v.unitSale && unitSaleBlock(v.kind, condition ?? '', antibiotic) === null,
+    tracksLots: lotsForced(v.kind) || v.tracksLots,
   };
 }
 
@@ -135,6 +145,7 @@ export function fillMedicine(form: MedicineForm, sheet: MedicineSheet): void {
     antibiotic: sheet.antibiotic,
     coldChain: sheet.coldChain,
     unitSale: sheet.unitSale,
+    tracksLots: sheet.tracksLots,
   });
 }
 
@@ -164,6 +175,45 @@ export function applyCum(form: MedicineForm, entry: CumEntry): void {
 /** Nombre sugerido para un producto nuevo: el del registro, sin marcas ® ni ™. */
 export function suggestedName(entry: CumEntry): string {
   return entry.productName.replace(/[®™©]/g, '').replace(/\s+/g, ' ').trim().slice(0, 150);
+}
+
+/**
+ * Categoría sugerida por el código ATC (grupo anatómico de la OMS, con nombres de mostrador). Es solo una sugerencia:
+ * el negocio organiza sus categorías como quiera. Los antibióticos (J01) y los analgésicos (N02) van aparte porque así
+ * se buscan en una droguería.
+ */
+export function atcCategory(atc: string | null | undefined): string | null {
+  const code = (atc ?? '').trim().toUpperCase();
+  if (code.startsWith('J01')) {
+    return 'Antibióticos';
+  }
+  if (code.startsWith('N02')) {
+    return 'Analgésicos';
+  }
+  return ATC_GROUPS[code.charAt(0)] ?? null;
+}
+
+const ATC_GROUPS: Readonly<Record<string, string>> = {
+  A: 'Digestivo y metabolismo',
+  B: 'Sangre',
+  C: 'Cardiovascular',
+  D: 'Dermatológicos',
+  G: 'Genitourinario y hormonas sexuales',
+  H: 'Hormonas',
+  J: 'Antiinfecciosos',
+  L: 'Oncológicos e inmunomoduladores',
+  M: 'Músculo y articulaciones',
+  N: 'Sistema nervioso',
+  P: 'Antiparasitarios',
+  R: 'Respiratorio',
+  S: 'Ojos y oídos',
+  V: 'Varios',
+};
+
+/** Compara nombres de categoría sin tildes ni mayúsculas. */
+export function sameCategoryName(a: string, b: string): boolean {
+  const fold = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+  return fold(a) === fold(b);
 }
 
 /** Etiquetas cortas para la lista de productos y el POS. */

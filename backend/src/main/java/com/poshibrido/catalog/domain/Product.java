@@ -215,4 +215,9 @@ public class Product extends AuditableEntity {
     private static BigDecimal scale4(BigDecimal value) {
         return value.setScale(4, RoundingMode.HALF_UP);
     }
+
+    /** Lotes y vencimientos (Fase 13-2): lo decide la ficha del medicamento. */
+    public void setTracksLots(boolean tracksLots) {
+        this.tracksLots = tracksLots;
+    }
 }

@@ -150,6 +150,18 @@ public class StockLedger {
         public StockMovement post(UUID branchId, UUID productId, MovementType type, BigDecimal signedQuantity,
                                   BigDecimal entryCost, boolean allowNegative, String referenceType,
                                   UUID referenceId, String reason) {
+            return post(branchId, productId, null, type, signedQuantity, entryCost, allowNegative, referenceType,
+                    referenceId, reason);
+        }
+
+        /**
+         * Igual que el otro {@code post}, de un lote (Fase 13-2): además del saldo del producto mueve el saldo del lote
+         * en la sucursal ({@code lot_balances}, que no puede quedar negativo). El saldo del producto ya está bloqueado,
+         * así que el del lote también queda serializado.
+         */
+        public StockMovement post(UUID branchId, UUID productId, UUID lotId, MovementType type,
+                                  BigDecimal signedQuantity, BigDecimal entryCost, boolean allowNegative,
+                                  String referenceType, UUID referenceId, String reason) {
             if (signedQuantity.signum() == 0 || (signedQuantity.signum() > 0) != type.isEntry()) {
                 throw new IllegalArgumentException("Signo de cantidad inválido para " + type);
             }
@@ -178,15 +190,38 @@ public class StockLedger {
                         + ", se requieren " + signedQuantity.negate().stripTrailingZeros().toPlainString() + ".");
             }
             balance.applyMovement(signedQuantity);
-            StockMovement movement = StockMovement.record(branchId, productId, type, signedQuantity, unitCost,
+            StockMovement movement = StockMovement.record(branchId, productId, lotId, type, signedQuantity, unitCost,
                     balance.getQuantity(), referenceType, referenceId, reason, actor);
             em.persist(movement);
+            if (lotId != null) {
+                moveLot(branchId, productId, lotId, signedQuantity, product.name());
+            }
             movements.add(movement);
             if (touched.add(productId) && costLocked.contains(productId)) {
                 // Solo los productos bloqueados pueden tener el costo aún sin marcar.
                 catalog.lockCost(productId);
             }
             return movement;
+        }
+
+        private void moveLot(UUID branchId, UUID productId, UUID lotId, BigDecimal signedQuantity, String name) {
+            if (signedQuantity.signum() < 0) {
+                List<?> current = em.createNativeQuery(
+                        "SELECT quantity FROM lot_balances WHERE branch_id = ?1 AND lot_id = ?2 FOR UPDATE")
+                        .setParameter(1, branchId).setParameter(2, lotId).getResultList();
+                BigDecimal available = current.isEmpty() ? BigDecimal.ZERO : (BigDecimal) current.getFirst();
+                if (available.add(signedQuantity).signum() < 0) {
+                    throw new BusinessRuleException("No hay suficiente de " + name + " en ese lote: disponible "
+                            + available.stripTrailingZeros().toPlainString() + ".");
+                }
+            }
+            em.createNativeQuery("""
+                    INSERT INTO lot_balances (branch_id, product_id, lot_id, quantity, updated_at)
+                    VALUES (?1, ?2, ?3, ?4, now())
+                    ON CONFLICT (branch_id, lot_id) DO UPDATE
+                    SET quantity = lot_balances.quantity + excluded.quantity, updated_at = now()""")
+                    .setParameter(1, branchId).setParameter(2, productId).setParameter(3, lotId)
+                    .setParameter(4, signedQuantity).executeUpdate();
         }
 
         public List<StockMovement> movements() {

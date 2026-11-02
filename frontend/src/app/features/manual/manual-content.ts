@@ -598,7 +598,9 @@ export const MANUAL: readonly ManualChapter[] = [
             + 'activo, la forma y el ATC; en un producto nuevo también el nombre y el impuesto Excluido.',
           'Elige la condición de venta: bajo fórmula médica, venta libre, control especial o monopolio del Estado. Si no '
             + 'estás seguro, déjalo bajo fórmula: el catálogo del INVIMA no trae este dato.',
-          'Marca si necesita nevera y si se puede vender por unidad (sobres o blíster con su lote y vencimiento).',
+          'Marca si necesita nevera y si se puede vender por unidad (sobres o blíster con su lote y vencimiento). '
+            + 'Medicamentos, fitoterapéuticos y dispositivos médicos controlan lotes y vencimientos siempre; en los '
+            + 'demás tipos márcalo si lo quieres.',
           'Pon el precio y el código de barras y guarda.',
         ],
         tips: [
@@ -607,8 +609,61 @@ export const MANUAL: readonly ManualChapter[] = [
           'En Productos y en Vender puedes buscar por el principio activo ("acetaminofen") además del nombre.',
           'Los cosméticos, dispositivos y suplementos llevan tipo y registro, sin condición de venta.',
           'El catálogo del INVIMA lo actualiza XASKA; si una presentación nueva no aparece, llena la ficha a mano.',
+          'Si el producto no tiene categoría, XASKA te sugiere una por el código ATC (Antibióticos, Analgésicos, '
+            + 'Cardiovascular…): si ya la tienes la elige; si no, toca "Crearla y usarla" o "No, gracias".',
         ],
         who: 'Propietario, Administrador y quien gestione productos; los demás la ven sin cambiarla.',
+      },
+      {
+        id: 'recibir-compra',
+        title: 'Recibir mercancía de un proveedor (compras)',
+        summary: 'Cuando llega un pedido lo registras contra la factura del proveedor: revisas cada producto, anotas '
+          + 'lote y vencimiento, rechazas lo que llegó mal y sube el inventario con el costo promedio. En una droguería '
+          + 'es la recepción técnica que exige la Resolución 1403 de 2007.',
+        steps: [
+          'Entra a Compras → Recibir mercancía.',
+          'Busca el proveedor (debe estar creado en Proveedores) y escribe el número y la fecha de su factura.',
+          'Escanea o busca cada producto de la factura. Escribe la cantidad, la presentación (unidad o caja) y el costo '
+            + 'sin IVA tal como viene en la factura; el IVA % sale del producto (cámbialo si la factura dice otro).',
+          'En medicamentos escribe el lote y la fecha de vencimiento como vienen en el empaque. Si un mismo producto '
+            + 'llegó en dos lotes, agrégalo dos veces.',
+          'Si algo llegó roto, vencido o no coincide, toca "Rechazar" y escribe el motivo: queda en la recepción pero '
+            + 'no entra al inventario ni se le debe al proveedor.',
+          'Si llegó algo de nevera, anota la temperatura que marcó el termómetro (debe estar entre 2 y 8 °C).',
+          'Marca los puntos de la revisión técnica.',
+          'Elige "De contado" (y el medio: en efectivo sale de tu caja abierta) o "A crédito" con la fecha en que '
+            + 'vence. Toca "Registrar recepción".',
+        ],
+        tips: [
+          'No se puede recibir un producto vencido; lo que vence en menos de 6 meses se puede recibir, pero te avisa.',
+          'Un lote ya registrado con otra fecha de vencimiento se rechaza: revisa el empaque (puede ser un error o un '
+            + 'producto adulterado).',
+          'La misma factura del mismo proveedor no se puede registrar dos veces.',
+          'La recepción no se edita ni se borra: es tu soporte ante la Secretaría de Salud. Si después devuelves algo, '
+            + 'hazlo con un ajuste de inventario.',
+          'El costo del producto se recalcula solo (costo promedio) con cada compra.',
+        ],
+        who: 'Propietario, Administrador y Bodega. Pagar de contado necesita además el permiso de pagar a proveedores.',
+      },
+      {
+        id: 'cuentas-por-pagar',
+        title: 'Cuentas por pagar y pagos a proveedores',
+        summary: 'Las compras a crédito quedan en Cuentas por pagar con su fecha de vencimiento. Ahí ves cuánto debes, '
+          + 'cuánto está vencido y cuánto vence esta semana, y registras cada pago o abono.',
+        steps: [
+          'Entra a Cuentas por pagar (o en Compras toca "Cuentas por pagar").',
+          'Arriba ves lo que debes, lo vencido y lo que vence en los próximos 7 días. Abajo, cada factura con su saldo, '
+            + 'primero las que vencen antes.',
+          'Toca "Pagar" en la factura, escribe el valor (todo el saldo o un abono), elige el medio y la referencia de '
+            + 'la transferencia si la tienes. Toca "Registrar pago".',
+        ],
+        tips: [
+          'Un pago en efectivo sale de tu caja abierta y aparece en su informe como "Pagos a proveedores"; no puede '
+            + 'pasar de lo que hay en la caja.',
+          'No se puede pagar más que el saldo de la factura.',
+          'Cada pago queda en la recepción (quién, cuándo y cómo) y en la auditoría.',
+        ],
+        who: 'Propietario, Administrador y Contador.',
       },
       {
         id: 'tallas-colores',

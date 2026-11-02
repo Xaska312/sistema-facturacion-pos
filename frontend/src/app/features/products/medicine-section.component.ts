@@ -9,6 +9,7 @@ import {
   KIND_OPTIONS,
   MedicineForm,
   isAntibioticAtc,
+  lotsForced,
   medicineProblem,
   needsCondition,
   unitSaleBlock,
@@ -17,7 +18,7 @@ import {
 /**
  * Ficha del medicamento en el editor de productos (Fase 13-1, decisión 279), con el módulo Medicamentos: tipo de
  * producto, búsqueda en el catálogo CUM del INVIMA, registro sanitario, principio activo, condición de venta y marcas
- * (antibiótico, nevera, venta por unidad). El editor guarda la ficha después del producto.
+ * (antibiótico, nevera, venta por unidad, lotes). El editor guarda la ficha después del producto.
  */
 @Component({
   selector: 'app-medicine-section',
@@ -137,6 +138,13 @@ import {
             <span>Se puede vender por unidad (sobre, blíster)
               <small class="block text-muted">{{ unitBlock() ?? 'Solo si cada unidad conserva su empaque con lote y vencimiento. Configúrala en Presentaciones.' }}</small></span>
           </label>
+          <label class="flex items-start gap-2">
+            <input type="checkbox" formControlName="tracksLots" class="mt-1"
+                   [attr.disabled]="forcedLots() || disabled() ? true : null" />
+            <span>Controla lotes y vencimientos
+              <small class="block text-muted">{{ forcedLots() ? 'Obligatorio en medicamentos, fitoterapéuticos y dispositivos médicos: al recibir la compra se pide el lote y el vencimiento.'
+                : 'Márcalo si quieres registrar el lote y el vencimiento al recibir este producto.' }}</small></span>
+          </label>
         </div>
 
         @if (problem(); as p) {
@@ -170,6 +178,7 @@ export class MedicineSectionComponent implements OnInit {
   protected readonly antibiotic = computed(() => (this.value(),
     this.kind() === 'MEDICINE' && (this.form().controls.antibiotic.value || this.atcAntibiotic())));
   protected readonly unitBlock = computed(() => unitSaleBlock(this.kind(), this.condition(), this.antibiotic()));
+  protected readonly forcedLots = computed(() => lotsForced(this.kind()));
   protected readonly problem = computed(() => (this.value(), medicineProblem(this.form())));
 
   ngOnInit(): void {
@@ -187,6 +196,9 @@ export class MedicineSectionComponent implements OnInit {
       if (form.controls.unitSale.value
         && unitSaleBlock(form.controls.kind.value, form.controls.saleCondition.value, antibiotic)) {
         form.controls.unitSale.setValue(false, { emitEvent: false });
+      }
+      if (lotsForced(form.controls.kind.value) && !form.controls.tracksLots.value) {
+        form.controls.tracksLots.setValue(true, { emitEvent: false });
       }
       this.value.update((n) => n + 1);
     });

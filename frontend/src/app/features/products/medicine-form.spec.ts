@@ -2,10 +2,13 @@ import { FormBuilder } from '@angular/forms';
 import { CumEntry } from '../../core/api/medicines.api';
 import {
   applyCum,
+  atcCategory,
   isAntibioticAtc,
+  lotsForced,
   medicineForm,
   medicineProblem,
   medicineTags,
+  sameCategoryName,
   suggestedName,
   toMedicineInput,
   unitSaleBlock,
@@ -67,5 +70,28 @@ describe('ficha del medicamento (Fase 13-1, decisión 279)', () => {
       coldChain: true, unitSale: false }).map((t) => t.label)).toEqual(['Fórmula', 'Antibiótico', 'Nevera']);
     expect(medicineTags({ kind: 'MEDICINE', saleCondition: 'CONTROLLED', activeIngredients: null, antibiotic: false,
       coldChain: false, unitSale: false }).map((t) => t.label)).toEqual(['Control especial']);
+  });
+
+  it('medicamento, fitoterapéutico y dispositivo llevan lotes siempre; los demás, si se marca (Fase 13-2)', () => {
+    const f = form();
+    f.patchValue({ kind: 'COSMETIC' });
+    expect(lotsForced('COSMETIC')).toBeFalse();
+    expect(toMedicineInput(f)!.tracksLots).toBeFalse();
+    f.patchValue({ tracksLots: true });
+    expect(toMedicineInput(f)!.tracksLots).toBeTrue();
+    f.patchValue({ kind: 'MEDICAL_DEVICE', tracksLots: false });
+    expect(lotsForced('MEDICAL_DEVICE')).toBeTrue();
+    expect(toMedicineInput(f)!.tracksLots).toBeTrue();
+  });
+
+  it('sugiere la categoría por el ATC, con antibióticos y analgésicos aparte', () => {
+    expect(atcCategory('J01CA04')).toBe('Antibióticos');
+    expect(atcCategory('J05AB01')).toBe('Antiinfecciosos');
+    expect(atcCategory('n02be01')).toBe('Analgésicos');
+    expect(atcCategory('C09AA02')).toBe('Cardiovascular');
+    expect(atcCategory('')).toBeNull();
+    expect(atcCategory('X99')).toBeNull();
+    expect(sameCategoryName('ANTIBIOTICOS ', 'Antibióticos')).toBeTrue();
+    expect(sameCategoryName('Analgésicos', 'Antibióticos')).toBeFalse();
   });
 });

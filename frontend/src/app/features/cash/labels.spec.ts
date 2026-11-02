@@ -3,7 +3,7 @@ import { CASH_MOVEMENT_LABEL, differenceLabel } from './labels';
 describe('etiquetas de caja', () => {
   it('nombra cada tipo de movimiento', () => {
     expect(CASH_MOVEMENT_LABEL.WITHDRAWAL).toBe('Retiro');
-    expect(Object.keys(CASH_MOVEMENT_LABEL).length).toBe(12);
+    expect(Object.keys(CASH_MOVEMENT_LABEL).length).toBe(13);
     expect(CASH_MOVEMENT_LABEL.TIP_PAYOUT).toBe('Reparto de propinas');
     expect(CASH_MOVEMENT_LABEL.CREDIT_PAYMENT).toBe('Abono de fiado');
   });

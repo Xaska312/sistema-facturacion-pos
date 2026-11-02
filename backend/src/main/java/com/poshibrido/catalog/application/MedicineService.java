@@ -1,6 +1,7 @@
 package com.poshibrido.catalog.application;
 
 import com.poshibrido.audit.application.AuditLogger;
+import com.poshibrido.catalog.domain.Product;
 import com.poshibrido.catalog.domain.ProductMedicine;
 import com.poshibrido.catalog.infrastructure.ProductMedicineRepository;
 import com.poshibrido.catalog.infrastructure.ProductRepository;
@@ -41,6 +42,8 @@ public class MedicineService {
     public static final Set<String> CONDITIONS = Set.of("OTC", "PRESCRIPTION", "CONTROLLED", "STATE_MONOPOLY");
     private static final Set<String> WITH_CONDITION = Set.of("MEDICINE", "PHYTOTHERAPEUTIC");
     private static final Set<String> RESTRICTED = Set.of("CONTROLLED", "STATE_MONOPOLY");
+    /** Llevan lote y vencimiento siempre (decisión del usuario, Fase 13-2); los demás tipos, si se marca. */
+    public static final Set<String> LOT_KINDS = Set.of("MEDICINE", "PHYTOTHERAPEUTIC", "MEDICAL_DEVICE");
     private static final Pattern CUM = Pattern.compile("^\\d{1,15}-\\d{1,6}$");
     private static final Pattern ATC = Pattern.compile("^[A-Z]\\d{2}([A-Z]([A-Z](\\d{2})?)?)?$");
 
@@ -51,31 +54,33 @@ public class MedicineService {
     /** Lo que se envía para guardar la ficha. */
     public record MedicineInput(String kind, String sanitaryRegistration, String cum, String activeIngredients,
                                 String dosageForm, String route, String atc, String holder, String saleCondition,
-                                boolean antibiotic, boolean coldChain, boolean unitSale) {
+                                boolean antibiotic, boolean coldChain, boolean unitSale, boolean tracksLots) {
     }
 
     public record MedicineView(UUID productId, String kind, String sanitaryRegistration, String cum,
                                String activeIngredients, String dosageForm, String route, String atc, String holder,
-                               String saleCondition, boolean antibiotic, boolean coldChain, boolean unitSale) {
+                               String saleCondition, boolean antibiotic, boolean coldChain, boolean unitSale,
+                               boolean tracksLots) {
     }
 
     @Transactional(readOnly = true)
     public Optional<MedicineView> get(UUID productId) {
-        requireProduct(productId);
-        return medicines.findById(productId).map(MedicineService::view);
+        boolean lots = requireProduct(productId).isTracksLots();
+        return medicines.findById(productId).map(m -> view(m, lots));
     }
 
     @Transactional
     public MedicineView save(UUID productId, MedicineInput input) {
-        requireProduct(productId);
+        Product product = requireProduct(productId);
         ProductMedicine.Data data = validate(input);
         UUID actor = CurrentActor.requireUserId();
         Optional<ProductMedicine> existing = medicines.findById(productId);
-        Map<String, Object> before = existing.map(m -> snapshot(view(m))).orElse(null);
+        Map<String, Object> before = existing.map(m -> snapshot(view(m, product.isTracksLots()))).orElse(null);
         ProductMedicine medicine = existing.orElseGet(() -> ProductMedicine.create(productId, actor));
         medicine.apply(data, actor);
         medicines.save(medicine);
-        MedicineView view = view(medicine);
+        product.setTracksLots(LOT_KINDS.contains(data.kind()) || input.tracksLots());
+        MedicineView view = view(medicine, product.isTracksLots());
         audit.log("PRODUCT_MEDICINE_SAVED", "product", productId, before, snapshot(view));
         return view;
     }
@@ -139,16 +144,14 @@ public class MedicineService {
                 antibiotic, in.coldChain(), in.unitSale());
     }
 
-    private void requireProduct(UUID productId) {
-        if (!products.existsById(productId)) {
-            throw new NotFoundException("Producto no encontrado.");
-        }
+    private Product requireProduct(UUID productId) {
+        return products.findById(productId).orElseThrow(() -> new NotFoundException("Producto no encontrado."));
     }
 
-    private static MedicineView view(ProductMedicine m) {
+    private static MedicineView view(ProductMedicine m, boolean tracksLots) {
         return new MedicineView(m.getProductId(), m.getKind(), m.getSanitaryRegistration(), m.getCum(),
                 m.getActiveIngredients(), m.getDosageForm(), m.getRoute(), m.getAtc(), m.getHolder(),
-                m.getSaleCondition(), m.isAntibiotic(), m.isColdChain(), m.isUnitSale());
+                m.getSaleCondition(), m.isAntibiotic(), m.isColdChain(), m.isUnitSale(), tracksLots);
     }
 
     private static Map<String, Object> snapshot(MedicineView v) {
@@ -161,6 +164,7 @@ public class MedicineService {
         data.put("antibiotic", v.antibiotic());
         data.put("coldChain", v.coldChain());
         data.put("unitSale", v.unitSale());
+        data.put("tracksLots", v.tracksLots());
         return data;
     }
 

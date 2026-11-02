@@ -141,6 +141,7 @@ public class CashQueryService {
         BigDecimal tips = totals.getOrDefault(CashMovementType.TIP, BigDecimal.ZERO)
                 .add(totals.getOrDefault(CashMovementType.TIP_VOID, BigDecimal.ZERO));
         BigDecimal tipPayouts = totals.getOrDefault(CashMovementType.TIP_PAYOUT, BigDecimal.ZERO);
+        BigDecimal supplierPayments = totals.getOrDefault(CashMovementType.SUPPLIER_PAYMENT, BigDecimal.ZERO);
         BigDecimal expected = session.isOpen()
                 ? CashCount.expected(session.getOpeningAmount(), totals.values())
                 : session.getExpectedAmount();
@@ -148,9 +149,9 @@ public class CashQueryService {
         CashSection cash = audit
                 ? new CashSection(session.getOpeningAmount(), sales, voids, incomes, expenses, withdrawals,
                         creditPayments, orderPayments, expected, session.getCountedAmount(),
-                        session.getDifference(), tips, tipPayouts)
+                        session.getDifference(), tips, tipPayouts, supplierPayments)
                 : new CashSection(session.getOpeningAmount(), null, null, null, null, null, null, null, null,
-                        session.getCountedAmount(), null, null, null);
+                        session.getCountedAmount(), null, null, null, null);
         Summary summary = salesSummary.summarize(session.getId(), session.getClosedAt());
         SessionView view = toView(session, registerMap(), names(List.of(session)));
         return new SessionReport(view, summary.salesCount(), summary.salesTotal(), summary.voidedCount(),

@@ -17,6 +17,14 @@ describe('capacidades en lenguaje natural', () => {
     expect(text.join(' ')).not.toContain(':');
   });
 
+  it('bodega recibe mercancía pero no paga; el contador paga (Fase 13-2)', () => {
+    expect(describeCapabilities(new Set(['purchases:read', 'purchases:receive']))).toEqual([
+      'recibir mercancía de los proveedores (revisión técnica, lotes y vencimientos)',
+      'consultar compras y cuentas por pagar',
+    ]);
+    expect(describeCapabilities(new Set(['purchases:read', 'purchases:pay']))).toEqual(['pagar a proveedores']);
+  });
+
   it('no repite "consultar" cuando puede administrar', () => {
     const text = describeCapabilities(new Set(['products:read', 'products:manage']));
     expect(text).toEqual(['administrar productos, categorías y precios']);

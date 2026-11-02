@@ -20,7 +20,9 @@ public enum CashMovementType {
     /** Propina en efectivo de una venta anulada: sale de la caja. */
     TIP_VOID(false),
     /** Entrega de propinas al equipo desde la caja. */
-    TIP_PAYOUT(false);
+    TIP_PAYOUT(false),
+    /** Pago en efectivo a un proveedor desde la caja (Fase 13-2). */
+    SUPPLIER_PAYMENT(false);
 
     private final boolean entry;
 
