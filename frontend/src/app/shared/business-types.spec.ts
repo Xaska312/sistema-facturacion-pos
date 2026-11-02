@@ -14,6 +14,7 @@ describe('tipos de negocio y módulos (Fase 12a)', () => {
   it('Comercio trae todos los módulos y Comercio, Servicios y Restaurante se eligen al crear', () => {
     expect(businessTypeInfo('RETAIL').defaultModules).toEqual(['CREDIT', 'ORDERS', 'QUOTES', 'VARIANTS', 'SCALE']);
     expect(businessTypeInfo('RESTAURANT').defaultModules).toEqual(['ORDERS', 'MODIFIERS', 'TABLES', 'KITCHEN']);
+    expect(businessTypeInfo('PHARMACY').defaultModules).toEqual(['CREDIT', 'ORDERS', 'QUOTES', 'MEDICINES']);
     expect(BUSINESS_TYPES.filter((t) => t.open).map((t) => t.label)).toEqual(['Comercio', 'Servicios', 'Restaurante']);
     expect([...BUSINESS_TYPES, ...BUSINESS_MODULES].every((x) => x.glyph in XICONS)).toBeTrue();
   });

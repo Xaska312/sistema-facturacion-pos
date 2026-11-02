@@ -14,6 +14,7 @@ import com.poshibrido.catalog.infrastructure.CategoryRepository;
 import com.poshibrido.catalog.infrastructure.PriceListItemRepository;
 import com.poshibrido.catalog.infrastructure.PriceListRepository;
 import com.poshibrido.catalog.infrastructure.ProductBarcodeRepository;
+import com.poshibrido.catalog.infrastructure.ProductMedicineRepository;
 import com.poshibrido.catalog.infrastructure.ProductModelRepository;
 import com.poshibrido.catalog.infrastructure.ProductRepository;
 import com.poshibrido.catalog.infrastructure.TaxRepository;
@@ -62,6 +63,7 @@ public class ProductService {
     private final AuditLogger audit;
     private final StockPresence stock;
     private final ProductModelRepository models;
+    private final ProductMedicineRepository medicines;
 
     /** {@code includeVariants}: falso en la lista de productos (las tallas se ven en su modelo); verdadero en el POS. */
     @Transactional(readOnly = true)
@@ -73,7 +75,10 @@ public class ProductService {
                 categoryId == null, categoryId == null ? NO_CATEGORY : categoryId, includeInactive, includeVariants,
                 pageable);
         References refs = references();
-        return page.map(p -> toView(p, refs, List.of()));
+        Map<UUID, ProductView.MedicineBadge> badges = new HashMap<>();
+        medicines.findAllById(page.map(Product::getId).getContent())
+                .forEach(m -> badges.put(m.getProductId(), MedicineService.badge(m)));
+        return page.map(p -> toView(p, refs, List.of(), badges.get(p.getId())));
     }
 
     @Transactional(readOnly = true)
@@ -284,6 +289,10 @@ public class ProductService {
     }
 
     ProductView toView(Product p, References refs, List<PriceListItem> items) {
+        return toView(p, refs, items, medicines.findById(p.getId()).map(MedicineService::badge).orElse(null));
+    }
+
+    ProductView toView(Product p, References refs, List<PriceListItem> items, ProductView.MedicineBadge medicine) {
         Map<UUID, Unit> unitById = refs.units();
         Tax tax = refs.taxes().get(p.getTaxId());
         Category category = p.getCategoryId() == null ? null : refs.categories().get(p.getCategoryId());
@@ -312,7 +321,7 @@ public class ProductService {
                 p.getTaxId(), tax == null ? null : tax.getCode(), tax == null ? null : tax.getType(),
                 tax == null ? null : tax.getRate(), p.getCost(), p.isCostLocked(), p.getSalePrice(), p.isTrackInventory(),
                 p.isOpenPrice(), p.isTracksLots(), p.isActive(), conversions, barcodeViews, listPrices, p.getModelId(),
-                p.getVariantSize(), p.getVariantColor());
+                p.getVariantSize(), p.getVariantColor(), medicine);
     }
 
     private static String code(Map<UUID, Unit> units, UUID id) {

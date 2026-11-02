@@ -41,5 +41,7 @@ public enum SecurityEvent {
     /** Pidió restablecer la contraseña (con {@code user_id} nulo si el correo no existe). */
     PASSWORD_RESET_REQUESTED,
     /** Cambió la contraseña con el enlace del correo (se cierran todas sus sesiones). */
-    PASSWORD_RESET
+    PASSWORD_RESET,
+    /** El administrador cargó el catálogo CUM del INVIMA (Fase 13-1): {@code details.total}, {@code removed}. */
+    CUM_CATALOG_IMPORTED
 }

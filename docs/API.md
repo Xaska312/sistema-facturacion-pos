@@ -465,3 +465,18 @@ Permisos: `quotes:read` (ver; Propietario, Administrador, Cajero, Vendedor y Con
 Ajustes (`PUT /settings`) agrega `quoteValidityDays` (1 a 365, por defecto 15) y `quoteTerms` (hasta 1000 caracteres); sin dato se conserva el valor. Auditoría: `QUOTE_CREATED`, `QUOTE_UPDATED`, `QUOTE_REJECTED`, `QUOTE_CONVERTED` (con `type` y el pedido o la venta).
 
 Pedidos y cotizaciones (decisión 261): `POST /orders/{id}/deliver` y `POST /quotes/{id}/sell` ya aceptaban varios `payments`; la pantalla ahora los usa (por ejemplo, efectivo + Fiado dentro del cupo).
+
+## Medicamentos (Fase 13-1, decisión 279)
+
+Módulo `MEDICINES` (prendido en Farmacia; cualquier negocio lo puede prender). Las rutas del negocio exigen `module:medicines`.
+
+| Método | Ruta | Permiso | Notas |
+|---|---|---|---|
+| GET | `/products/{id}/medicine` | `products:read` | Ficha del medicamento; **204** si el producto no tiene ficha |
+| PUT | `/products/{id}/medicine` | `products:manage` | `{kind, sanitaryRegistration?, cum?, activeIngredients?, dosageForm?, route?, atc?, holder?, saleCondition?, antibiotic?, coldChain?, unitSale?}`. `kind`: MEDICINE, PHYTOTHERAPEUTIC, MEDICAL_DEVICE, COSMETIC, SUPPLEMENT, OTHER. `saleCondition` (OTC, PRESCRIPTION, CONTROLLED, STATE_MONOPOLY) obligatoria en medicamento y fitoterapéutico; se ignora en los demás. ATC J01 → `antibiotic: true`. 422: antibiótico de venta libre, por unidad siendo antibiótico o control especial, CUM sin el formato `expediente-consecutivo`. Auditoría `PRODUCT_MEDICINE_SAVED` |
+| GET | `/medicines/catalog?q=` | `products:read` | Hasta 25 presentaciones del catálogo CUM que contienen todas las palabras (nombre, principio activo, CUM, registro, titular; sin tildes) |
+| GET | `/medicines/catalog/{cum}` | `products:read` | Una presentación; 404 si no está |
+
+`ProductView` trae `medicine: {kind, saleCondition, activeIngredients, antibiotic, coldChain, unitSale}` o `null`, y `GET /products?search=` también busca por principio activo.
+
+**Catálogo CUM (consola de plataforma, solo administradores):** `GET /platform/cum` → `{total, lastImport}`. Carga por tandas: `POST /platform/cum/imports` `{sourceName?}` → 201 `{id}`; `POST /platform/cum/imports/{id}/rows` `{rows: [{cum, productName, holder?, sanitaryRegistration?, presentation?, atc?, atcDescription?, route?, dosageForm?, activeIngredients, ium?}]}` (1 a 2.000 por tanda, se agregan o actualizan) → `{received}`; `POST /platform/cum/imports/{id}/finish` `{total}` → 409 si no llegaron todas (el catálogo anterior queda igual); si llegaron, quita las presentaciones que no vinieron y registra el evento `CUM_CATALOG_IMPORTED`. Una carga terminada no recibe más tandas (409).

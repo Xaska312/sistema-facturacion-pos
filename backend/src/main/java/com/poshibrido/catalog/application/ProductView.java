@@ -13,7 +13,14 @@ public record ProductView(UUID id, String sku, String name, String description, 
                           boolean trackInventory, boolean openPrice, boolean tracksLots, boolean active,
                           List<ConversionView> conversions,
                           List<BarcodeView> barcodes, List<ListPriceView> listPrices, UUID modelId,
-                          String variantSize, String variantColor) {
+                          String variantSize, String variantColor, MedicineBadge medicine) {
+
+    /**
+     * Resumen de la ficha del medicamento (Fase 13-1, decisión 279) para la lista y el POS; nulo si no tiene ficha.
+     */
+    public record MedicineBadge(String kind, String saleCondition, String activeIngredients, boolean antibiotic,
+                                boolean coldChain, boolean unitSale) {
+    }
 
     public record ConversionView(UUID unitId, String unitCode, BigDecimal factor, BigDecimal salePrice,
                                  BigDecimal effectivePrice) {

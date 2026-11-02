@@ -11,10 +11,12 @@ import { DataTableComponent } from '../../shared/table/data-table.component';
 import { ColumnDef, TableQuery, initialQuery, toPageQuery } from '../../shared/table/table';
 import { permissionFlag } from '../../core/auth/permission-flag';
 import { LatestRequest } from '../../shared/latest-request';
+import { CellTemplateDirective } from '../../shared/table/cell-template.directive';
+import { medicineTags } from './medicine-form';
 
 @Component({
   selector: 'app-products',
-  imports: [FormsModule, RouterLink, ButtonModule, DataTableComponent, PageHeaderComponent],
+  imports: [FormsModule, RouterLink, ButtonModule, DataTableComponent, PageHeaderComponent, CellTemplateDirective],
   template: `
     <app-page-header title="Productos" [description]="'Lo que vendes: precio, impuesto, unidad y códigos de barras.'
                        + (hasVariants() ? ' Los productos con tallas y colores están en «Con tallas».' : '')">
@@ -35,7 +37,8 @@ import { LatestRequest } from '../../shared/latest-request';
     </app-page-header>
 
     <app-data-table [columns]="columns" [page]="page()" [loading]="loading()" [trackBy]="trackById"
-                    initialSort="name,asc" caption="Productos" searchPlaceholder="Buscar por nombre, SKU o código de barras"
+                    initialSort="name,asc" caption="Productos"
+                    [searchPlaceholder]="hasMedicines() ? 'Buscar por nombre, principio activo, SKU o código' : 'Buscar por nombre, SKU o código de barras'"
                     emptyIcon="pi pi-box" emptyTitle="Aún no hay productos"
                     emptyMessage="Crea tu primer producto o impórtalos todos desde una plantilla de Excel."
                     [emptyActionLabel]="canManage() ? 'Crear producto' : null" (emptyAction)="create()"
@@ -53,6 +56,22 @@ import { LatestRequest } from '../../shared/latest-request';
         <input type="checkbox" [ngModel]="includeInactive" (ngModelChange)="includeInactive = $event; reloadFirstPage()" />
         Ver inactivos
       </label>
+      <!-- Ficha del medicamento (Fase 13-1): principio activo y marcas (fórmula, antibiótico, nevera). -->
+      <ng-template appCell="name" let-row>
+        <span class="block">{{ row.name }}</span>
+        @if (row.medicine?.activeIngredients) {
+          <span class="block text-xs text-muted">{{ row.medicine.activeIngredients }}</span>
+        }
+        @if (tags(row).length > 0) {
+          <span class="flex flex-wrap gap-1 mt-1">
+            @for (t of tags(row); track t.label) {
+              <span class="text-[11px] font-semibold rounded-full px-2 py-0.5"
+                    [class]="t.tone === 'danger' ? 'bg-danger-soft text-danger-soft-fg'
+                      : t.tone === 'warn' ? 'bg-warning-soft text-warning-soft-fg' : 'bg-info-soft text-info-soft-fg'">{{ t.label }}</span>
+            }
+          </span>
+        }
+      </ng-template>
       <ng-template #actions let-row>
         <p-button label="Ver" icon="pi pi-eye" size="small" [text]="true" (onClick)="open(row)" />
         @if (canManage()) {
@@ -73,6 +92,8 @@ export class ProductsComponent implements OnInit {
   protected readonly canManage = permissionFlag('products:manage');
   protected readonly hasVariants = permissionFlag('module:variants');
   protected readonly hasScale = permissionFlag('module:scale');
+  protected readonly hasMedicines = permissionFlag('module:medicines');
+  protected readonly tags = (p: Product) => medicineTags(p.medicine);
 
   protected readonly page = signal<PageResponse<Product> | null>(null);
   protected readonly categories = signal<Category[]>([]);
@@ -84,7 +105,7 @@ export class ProductsComponent implements OnInit {
   protected readonly trackById = (row: Product): string => row.id;
   protected readonly columns: ColumnDef<Product>[] = [
     { header: 'SKU', cell: (p) => p.sku, kind: 'mono', sortField: 'sku' },
-    { header: 'Nombre', cell: (p) => p.name, sortField: 'name' },
+    { header: 'Nombre', cell: (p) => p.name, sortField: 'name', template: 'name' },
     { header: 'Categoría', cell: (p) => p.categoryName, hideOnMobile: true },
     { header: 'Unidad', cell: (p) => p.baseUnitCode, hideOnMobile: true },
     { header: 'Impuesto', cell: (p) => p.taxCode, hideOnMobile: true },

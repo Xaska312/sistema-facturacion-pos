@@ -103,6 +103,12 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/platform/platform-events.component').then((m) => m.PlatformEventsComponent),
       },
+      {
+        path: 'cum',
+        title: 'Plataforma: catálogo CUM',
+        loadComponent: () =>
+          import('./features/platform/platform-cum.component').then((m) => m.PlatformCumComponent),
+      },
     ],
   },
   {

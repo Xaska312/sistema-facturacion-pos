@@ -28,7 +28,8 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
             select p from Product p
             where (lower(p.name) like :pattern escape '\\'
                    or upper(p.sku) like :patternUpper escape '\\'
-                   or p.id in (select b.product.id from ProductBarcode b where b.barcode = :exact))
+                   or p.id in (select b.product.id from ProductBarcode b where b.barcode = :exact)
+                   or p.id in (select m.productId from ProductMedicine m where lower(m.activeIngredients) like :pattern escape '\\'))
               and (:anyCategory = true or p.categoryId = :categoryId)
               and (:includeInactive = true or p.active = true)
               and (:includeVariants = true or p.modelId is null)
@@ -75,7 +76,8 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
             where p.active = true and p.trackInventory = true
               and (lower(p.name) like :pattern escape '\\'
                    or upper(p.sku) like :patternUpper escape '\\'
-                   or p.id in (select b.product.id from ProductBarcode b where b.barcode = :exact))
+                   or p.id in (select b.product.id from ProductBarcode b where b.barcode = :exact)
+                   or p.id in (select m.productId from ProductMedicine m where lower(m.activeIngredients) like :pattern escape '\\'))
               and (:anyCategory = true or p.categoryId = :categoryId)
             """)
     Page<Product> searchTracked(@Param("pattern") String pattern, @Param("patternUpper") String patternUpper,
