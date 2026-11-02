@@ -63,6 +63,9 @@ import { differenceLabel } from './labels';
         @if (r.cash.tipPayouts) {
           <p class="flex justify-between"><span>Propinas repartidas</span><span>{{ cop(r.cash.tipPayouts) }}</span></p>
         }
+        @if (r.cash.supplierPayments) {
+          <p class="flex justify-between"><span>Pagos a proveedores</span><span>{{ cop(r.cash.supplierPayments) }}</span></p>
+        }
         @if (r.auditView) {
           <p class="flex justify-between font-medium border-t mt-1 pt-1"><span>Esperado</span><span>{{ cop(r.cash.expected) }}</span></p>
         }

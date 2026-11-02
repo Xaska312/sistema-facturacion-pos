@@ -416,6 +416,37 @@ export const routes: Routes = [
         loadComponent: () => import('./features/quotes/quote-detail.component').then((m) => m.QuoteDetailComponent),
       },
       {
+        path: 'compras',
+        title: 'Compras',
+        canActivate: [permissionGuard],
+        data: { permission: 'purchases:read' },
+        loadComponent: () => import('./features/purchases/purchases.component').then((m) => m.PurchasesComponent),
+      },
+      {
+        path: 'compras/nueva',
+        title: 'Recibir mercancía',
+        canActivate: [permissionGuard],
+        canDeactivate: [unsavedChangesGuard],
+        data: { permission: 'purchases:receive' },
+        loadComponent: () =>
+          import('./features/purchases/receipt-editor.component').then((m) => m.ReceiptEditorComponent),
+      },
+      {
+        path: 'compras/:id',
+        title: 'Recepción de mercancía',
+        canActivate: [permissionGuard],
+        data: { permission: 'purchases:read' },
+        loadComponent: () =>
+          import('./features/purchases/receipt-detail.component').then((m) => m.ReceiptDetailComponent),
+      },
+      {
+        path: 'cuentas-por-pagar',
+        title: 'Cuentas por pagar',
+        canActivate: [permissionGuard],
+        data: { permission: 'purchases:read' },
+        loadComponent: () => import('./features/purchases/payables.component').then((m) => m.PayablesComponent),
+      },
+      {
         path: 'clientes',
         title: 'Clientes',
         canActivate: [permissionGuard],

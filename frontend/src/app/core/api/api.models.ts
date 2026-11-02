@@ -525,7 +525,8 @@ export type CashMovementType =
   | 'ORDER_REFUND'
   | 'TIP'
   | 'TIP_VOID'
-  | 'TIP_PAYOUT';
+  | 'TIP_PAYOUT'
+  | 'SUPPLIER_PAYMENT';
 export type ManualCashMovementType = 'INCOME' | 'EXPENSE' | 'WITHDRAWAL';
 
 export interface PaymentMethod {
@@ -613,6 +614,8 @@ export interface CashSection {
   /** Propinas en efectivo (menos las de ventas anuladas) y entregadas al equipo (Fase 12b-5). */
   tips?: number | null;
   tipPayouts?: number | null;
+  /** Pagos a proveedores en efectivo (Fase 13-2, decisión 280). */
+  supplierPayments?: number | null;
 }
 
 export interface CashReport {

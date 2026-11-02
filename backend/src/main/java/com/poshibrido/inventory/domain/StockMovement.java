@@ -86,4 +86,14 @@ public class StockMovement {
         m.createdAt = Instant.now();
         return m;
     }
+
+    /** Movimiento de un lote (Fase 13-2): el saldo {@code balanceAfter} sigue siendo el del producto en la sucursal. */
+    public static StockMovement record(UUID branchId, UUID productId, UUID lotId, MovementType type, BigDecimal quantity,
+                                       BigDecimal unitCost, BigDecimal balanceAfter, String referenceType,
+                                       UUID referenceId, String reason, UUID createdBy) {
+        StockMovement m = record(branchId, productId, type, quantity, unitCost, balanceAfter, referenceType,
+                referenceId, reason, createdBy);
+        m.lotId = lotId;
+        return m;
+    }
 }

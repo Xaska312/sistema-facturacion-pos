@@ -4,7 +4,10 @@ import com.poshibrido.cash.domain.CashMovement;
 import com.poshibrido.cash.domain.CashMovementType;
 import com.poshibrido.cash.domain.CashSession;
 import com.poshibrido.cash.domain.PaymentMethod;
+import com.poshibrido.cash.domain.CashCount;
+import com.poshibrido.cash.infrastructure.CashMovementRepository;
 import com.poshibrido.cash.infrastructure.CashSessionRepository;
+import com.poshibrido.shared.error.BusinessRuleException;
 import com.poshibrido.cash.infrastructure.PaymentMethodRepository;
 import com.poshibrido.shared.security.CurrentActor;
 import jakarta.persistence.EntityManager;
@@ -30,9 +33,11 @@ public class CashLedger implements CashApi {
     private static final String CREDIT_PAYMENT_REFERENCE = "CREDIT_PAYMENT";
     private static final String ORDER_PAYMENT_REFERENCE = "ORDER_PAYMENT";
     private static final String TIP_PAYOUT_REFERENCE = "TIP_PAYOUT";
+    private static final String SUPPLIER_PAYMENT_REFERENCE = "SUPPLIER_PAYMENT";
 
     private final CashSessionRepository sessions;
     private final PaymentMethodRepository paymentMethods;
+    private final CashMovementRepository movements;
 
     @PersistenceContext
     private EntityManager em;
@@ -121,6 +126,31 @@ public class CashLedger implements CashApi {
     public void recordTipPayoutCash(UUID sessionId, BigDecimal amount, UUID payoutId, String label) {
         em.persist(CashMovement.record(sessionId, CashMovementType.TIP_PAYOUT, amount, label, TIP_PAYOUT_REFERENCE,
                 payoutId, null, CurrentActor.userId().orElse(null)));
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public UUID recordSupplierPaymentCash(UUID actorId, BigDecimal amount, UUID paymentId, String label) {
+        List<UUID> open = sessions.lockOpenOf(actorId);
+        if (open.isEmpty()) {
+            throw new BusinessRuleException("Abre tu caja para pagar en efectivo, o elige otro medio de pago.");
+        }
+        UUID sessionId = open.getFirst();
+        if (sessions.lockForOutflow(sessionId).isEmpty()) {
+            throw new BusinessRuleException("La sesión de caja está cerrada.");
+        }
+        CashSession session = sessions.findById(sessionId).orElseThrow();
+        em.refresh(session);
+        List<BigDecimal> current = movements.totalsByType(sessionId).stream()
+                .map(row -> row[1] instanceof BigDecimal d ? d : new BigDecimal(String.valueOf(row[1])))
+                .toList();
+        if (amount.compareTo(CashCount.expected(session.getOpeningAmount(), current)) > 0) {
+            throw new BusinessRuleException("No hay suficiente efectivo en tu caja para ese pago. Elige otro medio de "
+                    + "pago o regístralo a crédito.");
+        }
+        em.persist(CashMovement.record(sessionId, CashMovementType.SUPPLIER_PAYMENT, amount, label,
+                SUPPLIER_PAYMENT_REFERENCE, paymentId, null, actorId));
+        return sessionId;
     }
 
     /** La fila ya está bloqueada: se carga (o relee) la entidad para devolver sus datos actuales. */

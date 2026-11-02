@@ -89,6 +89,24 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     ],
     terms: ['costo-promedio', 'lista-precios'],
   },
+  '/app/compras': {
+    manual: 'recibir-compra',
+    title: 'Compras',
+    tips: [
+      'Cada fila es una factura de proveedor recibida, con lo pagado y lo que falta.',
+      'Al recibir revisas cada producto, anotas lote y vencimiento y rechazas lo que llegó mal.',
+      'Lo aceptado sube el inventario y recalcula el costo promedio; la recepción no se edita ni se borra.',
+    ],
+    terms: ['costo-promedio'],
+  },
+  '/app/cuentas-por-pagar': {
+    manual: 'cuentas-por-pagar',
+    title: 'Cuentas por pagar',
+    tips: [
+      'Las compras a crédito, primero las que vencen antes; arriba lo vencido y lo que vence esta semana.',
+      'Un pago puede ser todo el saldo o un abono; en efectivo sale de tu caja abierta.',
+    ],
+  },
   '/app/productos/modelos': {
     manual: 'tallas-colores',
     title: 'Productos con tallas',

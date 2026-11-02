@@ -52,4 +52,10 @@ public interface CashApi {
 
     /** Entrega de propinas al equipo desde la caja ({@code amount} positivo; sale de la caja). */
     void recordTipPayoutCash(UUID sessionId, BigDecimal amount, UUID payoutId, String label);
+
+    /**
+     * Pago en efectivo a un proveedor (Fase 13-2) desde la caja abierta de quien paga: la bloquea para salidas y exige
+     * que haya ese efectivo (sin decir cuánto hay: cierre ciego). Devuelve la sesión de caja.
+     */
+    UUID recordSupplierPaymentCash(UUID actorId, BigDecimal amount, UUID paymentId, String label);
 }

@@ -17,7 +17,16 @@ import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
 import { permissionFlag } from '../../core/auth/permission-flag';
 import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
 import { CumEntry, MedicinesApi } from '../../core/api/medicines.api';
-import { applyCum, fillMedicine, medicineForm, medicineProblem, suggestedName, toMedicineInput } from './medicine-form';
+import {
+  applyCum,
+  atcCategory,
+  fillMedicine,
+  medicineForm,
+  medicineProblem,
+  sameCategoryName,
+  suggestedName,
+  toMedicineInput,
+} from './medicine-form';
 import { MedicineSectionComponent } from './medicine-section.component';
 
 /** Alta y edición de un producto: datos, presentaciones, códigos de barras y precios por lista. */
@@ -85,6 +94,15 @@ import { MedicineSectionComponent } from './medicine-section.component';
                 <option [value]="c.id">{{ categoryPath(c) }}</option>
               }
             </select>
+            @if (categorySuggestion(); as suggested) {
+              <span class="flex flex-wrap items-center gap-2 text-xs" role="status">
+                <span>Sugerida por el código ATC: <strong>{{ suggested }}</strong></span>
+                <button type="button" class="text-brand font-medium hover:underline min-h-8" [disabled]="creatingCategory()"
+                        (click)="createSuggestedCategory(suggested)">Crearla y usarla</button>
+                <button type="button" class="text-muted hover:underline min-h-8" (click)="categorySuggestion.set(null)">
+                  No, gracias</button>
+              </span>
+            }
           </label>
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">Se vende por</span>
@@ -288,6 +306,9 @@ export class ProductEditorComponent implements OnInit, HasUnsavedChanges {
   /** Módulo Medicamentos (Fase 13-1, decisión 279): ficha del medicamento debajo de los datos básicos. */
   protected readonly medicinesOn = permissionFlag('module:medicines');
   protected readonly medicine = medicineForm(this.fb);
+  /** Categoría que sugiere el ATC y que el negocio aún no tiene (Fase 13-2): se ofrece crearla, nunca se impone. */
+  protected readonly categorySuggestion = signal<string | null>(null);
+  protected readonly creatingCategory = signal(false);
   /** Una talla de un modelo no se edita aquí (fase 8d): solo desde su modelo. */
   protected readonly editable = computed(() => this.canEdit() && !this.product()?.modelId);
   protected readonly formatCop = formatCop;
@@ -364,6 +385,7 @@ export class ProductEditorComponent implements OnInit, HasUnsavedChanges {
    */
   protected onPicked(entry: CumEntry): void {
     applyCum(this.medicine, entry);
+    this.suggestCategory(entry.atc);
     if (!this.form.controls.name.value.trim()) {
       this.form.controls.name.setValue(suggestedName(entry));
       this.form.controls.name.markAsDirty();
@@ -377,6 +399,39 @@ export class ProductEditorComponent implements OnInit, HasUnsavedChanges {
       }
     }
   }
+  /**
+   * Sugerencia de categoría por el ATC (Fase 13-2): solo si el producto no tiene categoría. Si el negocio ya tiene una
+   * con ese nombre se elige; si no, se ofrece crearla.
+   */
+  private suggestCategory(atc: string | null): void {
+    const name = atcCategory(atc);
+    this.categorySuggestion.set(null);
+    if (!name || this.form.controls.categoryId.value) {
+      return;
+    }
+    const existing = this.activeCategories().find((c) => sameCategoryName(c.name, name));
+    if (existing) {
+      this.form.controls.categoryId.setValue(existing.id);
+      this.form.controls.categoryId.markAsDirty();
+    } else if (this.canEdit()) {
+      this.categorySuggestion.set(name);
+    }
+  }
+
+  protected createSuggestedCategory(name: string): void {
+    this.creatingCategory.set(true);
+    this.api.saveCategory(null, name, null).subscribe({
+      next: (category) => {
+        this.categories.update((list) => [...list, category]);
+        this.form.controls.categoryId.setValue(category.id);
+        this.form.controls.categoryId.markAsDirty();
+        this.categorySuggestion.set(null);
+        this.creatingCategory.set(false);
+      },
+      error: () => this.creatingCategory.set(false),
+    });
+  }
+
 
   @HostListener('window:beforeunload', ['$event'])
   protected beforeUnload(event: BeforeUnloadEvent): void {

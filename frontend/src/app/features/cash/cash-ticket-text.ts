@@ -52,6 +52,9 @@ export function cashRows(report: CashReport): [string, number][] {
   if (c.tipPayouts) {
     rows.push(['Propinas repartidas', c.tipPayouts]);
   }
+  if (c.supplierPayments) {
+    rows.push(['Pagos a proveedores', c.supplierPayments]);
+  }
   return rows;
 }
 

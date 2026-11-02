@@ -18,6 +18,8 @@ export interface MedicineSheet {
   antibiotic: boolean;
   coldChain: boolean;
   unitSale: boolean;
+  /** Lote y vencimiento en compras y ventas (Fase 13-2): siempre en medicamento, fitoterapéutico y dispositivo médico. */
+  tracksLots: boolean;
 }
 
 export type MedicineSheetInput = Omit<MedicineSheet, 'productId'>;
