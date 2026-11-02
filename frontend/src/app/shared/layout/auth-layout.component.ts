@@ -20,7 +20,8 @@ const BRAND_TILES: readonly BrandTile[] = [
  * Marco de las pantallas fuera del negocio (entrada, registro, claves, correo, invitaciones, elegir o crear negocio,
  * condiciones), con la identidad de XASKA (decisión 264): a la izquierda un panel en baldosa con el logo, la frase y
  * los íconos propios; a la derecha el contenido, centrado. En el celular el panel queda arriba, solo con el logo.
- * Los colores del panel son los de XASKA ({@code --xaska-panel*}), no los del negocio.
+ * Los colores del panel son los de XASKA ({@code --xaska-panel*}), no los del negocio. En computador, abajo, un "POS"
+ * gigante con degradado y recortado por el borde, como en xaska.co (decisión 278); en el celular no se muestra.
  */
 @Component({
   selector: 'app-auth-layout',
@@ -29,7 +30,10 @@ const BRAND_TILES: readonly BrandTile[] = [
   template: `
     <div class="auth">
       <aside class="auth-brand">
-        <app-xaska-logo [wordmark]="true" [tag]="true" size="lg" label="XASKA POS" />
+        <div class="auth-top">
+          <app-xaska-logo [wordmark]="true" [tag]="true" size="lg" label="XASKA POS" />
+          <p class="auth-foot text-sm auth-muted">Hecho en Colombia · xaska.co</p>
+        </div>
         <div class="auth-pitch">
           <p class="text-4xl xl:text-5xl font-extrabold tracking-tight leading-[1.05]">
             El punto de venta<br />de tu negocio.
@@ -46,7 +50,7 @@ const BRAND_TILES: readonly BrandTile[] = [
             </li>
           }
         </ul>
-        <p class="auth-foot text-sm auth-muted">Hecho en Colombia · xaska.co</p>
+        <span class="auth-pos" aria-hidden="true">POS</span>
       </aside>
       <main class="auth-main">
         <div class="auth-slot" [class.auth-slot--md]="width() === 'md'" [class.auth-slot--lg]="width() === 'lg'">
@@ -78,7 +82,8 @@ const BRAND_TILES: readonly BrandTile[] = [
     }
     .auth-pitch,
     .auth-tiles,
-    .auth-foot {
+    .auth-foot,
+    .auth-pos {
       display: none;
     }
     .auth-muted { color: var(--xaska-panel-muted); }
@@ -120,6 +125,32 @@ const BRAND_TILES: readonly BrandTile[] = [
       }
       .auth-foot { display: block; }
       .auth-main { padding: 2rem; }
+      /* "POS" gigante al final del panel, recortado por el borde de abajo como en xaska.co. */
+      .auth-brand { overflow: hidden; }
+      .auth-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+      }
+      .auth-pos {
+        display: block;
+        margin: 0 0 calc(-2.5rem - 0.2em) -0.06em;
+        font-size: clamp(6rem, 21vh, 13rem);
+        font-weight: 800;
+        line-height: 1;
+        letter-spacing: -0.04em;
+        white-space: nowrap;
+        user-select: none;
+        background: linear-gradient(90deg, var(--xaska-pos-from), var(--xaska-pos-to));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+    }
+    /* Pantallas muy bajas: no cabe sin apretar los íconos. */
+    @media (min-width: 1024px) and (max-height: 700px) {
+      .auth-pos { display: none; }
     }
     .auth-tile {
       display: flex;
