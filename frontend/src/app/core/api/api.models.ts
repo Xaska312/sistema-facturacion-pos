@@ -295,6 +295,20 @@ export interface Product {
   modelId?: string | null;
   variantSize?: string | null;
   variantColor?: string | null;
+  /** Resumen de la ficha del medicamento (Fase 13-1, decisión 279); null si no tiene ficha. */
+  medicine?: MedicineBadge | null;
+}
+
+export type MedicineKind = 'MEDICINE' | 'PHYTOTHERAPEUTIC' | 'MEDICAL_DEVICE' | 'COSMETIC' | 'SUPPLEMENT' | 'OTHER';
+export type SaleCondition = 'OTC' | 'PRESCRIPTION' | 'CONTROLLED' | 'STATE_MONOPOLY';
+
+export interface MedicineBadge {
+  kind: MedicineKind;
+  saleCondition: SaleCondition | null;
+  activeIngredients: string | null;
+  antibiotic: boolean;
+  coldChain: boolean;
+  unitSale: boolean;
 }
 
 export interface ProductInput {

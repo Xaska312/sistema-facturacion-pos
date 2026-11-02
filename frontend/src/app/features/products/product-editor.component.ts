@@ -4,7 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
-import { forkJoin } from 'rxjs';
+import { EMPTY, Observable, catchError, forkJoin, map, of, switchMap } from 'rxjs';
 import { Category, PriceList, Product, Tax, Unit } from '../../core/api/api.models';
 import { CatalogApi } from '../../core/api/catalog.api';
 import { formatCop } from '../../shared/money';
@@ -16,11 +16,15 @@ import { TermComponent } from '../../shared/help/term.component';
 import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
 import { permissionFlag } from '../../core/auth/permission-flag';
 import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
+import { CumEntry, MedicinesApi } from '../../core/api/medicines.api';
+import { applyCum, fillMedicine, medicineForm, medicineProblem, suggestedName, toMedicineInput } from './medicine-form';
+import { MedicineSectionComponent } from './medicine-section.component';
 
 /** Alta y edición de un producto: datos, presentaciones, códigos de barras y precios por lista. */
 @Component({
   selector: 'app-product-editor',
-  imports: [TermComponent, ReactiveFormsModule, PesosInputDirective, RouterLink, ButtonModule, InputTextModule, PageHeaderComponent, StatusBadgeComponent],
+  imports: [TermComponent, ReactiveFormsModule, PesosInputDirective, RouterLink, ButtonModule, InputTextModule, PageHeaderComponent, StatusBadgeComponent,
+    MedicineSectionComponent],
   template: `
     <app-page-header [title]="isNew() ? 'Nuevo producto' : (product()?.name ?? 'Producto')">
       @if (product()?.active === false) {
@@ -116,6 +120,10 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
             <textarea formControlName="description" rows="2" class="border rounded px-2 py-2"></textarea>
           </label>
         </section>
+
+        @if (medicinesOn()) {
+          <app-medicine-section [form]="medicine" [disabled]="!editable()" (picked)="onPicked($event)" />
+        }
 
         <!-- Códigos de barras -->
         <section class="card p-4 flex flex-col gap-2">
@@ -276,6 +284,10 @@ export class ProductEditorComponent implements OnInit, HasUnsavedChanges {
   protected readonly canEdit = permissionFlag('products:manage');
   private readonly canAdjustStock = permissionFlag('inventory:adjust');
   private readonly confirm = inject(ConfirmService);
+  private readonly medicines = inject(MedicinesApi);
+  /** Módulo Medicamentos (Fase 13-1, decisión 279): ficha del medicamento debajo de los datos básicos. */
+  protected readonly medicinesOn = permissionFlag('module:medicines');
+  protected readonly medicine = medicineForm(this.fb);
   /** Una talla de un modelo no se edita aquí (fase 8d): solo desde su modelo. */
   protected readonly editable = computed(() => this.canEdit() && !this.product()?.modelId);
   protected readonly formatCop = formatCop;
@@ -316,6 +328,9 @@ export class ProductEditorComponent implements OnInit, HasUnsavedChanges {
           fillForm(this.fb, this.form, p);
           this.showAdvanced.set(p.conversions.length > 0 || p.listPrices.length > 0);
         });
+        if (this.medicinesOn()) {
+          this.medicines.sheet(id).subscribe((sheet) => sheet && fillMedicine(this.medicine, sheet));
+        }
       } else {
         const und = refs.units.find((u) => u.code === 'UND');
         const iva = refs.taxes.find((t) => t.code === 'IVA19');
@@ -340,7 +355,27 @@ export class ProductEditorComponent implements OnInit, HasUnsavedChanges {
   }
 
   hasUnsavedChanges(): boolean {
-    return this.editable() && !this.saved && this.form.dirty;
+    return this.editable() && !this.saved && (this.form.dirty || this.medicine.dirty);
+  }
+
+  /**
+   * Presentación elegida del catálogo CUM: llena la ficha; en un producto nuevo sugiere el nombre del registro y el
+   * impuesto Excluido (los medicamentos están excluidos de IVA, Estatuto Tributario art. 424).
+   */
+  protected onPicked(entry: CumEntry): void {
+    applyCum(this.medicine, entry);
+    if (!this.form.controls.name.value.trim()) {
+      this.form.controls.name.setValue(suggestedName(entry));
+      this.form.controls.name.markAsDirty();
+    }
+    if (this.isNew()) {
+      const excluded = this.taxes().find((t) => t.code === 'EXCLUIDO' && t.active);
+      if (excluded && this.form.controls.taxId.value !== excluded.id) {
+        this.form.controls.taxId.setValue(excluded.id);
+        this.messages.add({ severity: 'info', summary: 'Impuesto: Excluido',
+          detail: 'Los medicamentos están excluidos de IVA. Cámbialo si no aplica.', life: 5000 });
+      }
+    }
   }
 
   @HostListener('window:beforeunload', ['$event'])
@@ -402,11 +437,16 @@ export class ProductEditorComponent implements OnInit, HasUnsavedChanges {
       }
       this.form.controls.sku.setValue(sku);
     }
+    const medicineIssue = this.medicinesOn() ? medicineProblem(this.medicine) : null;
+    if (medicineIssue) {
+      this.messages.add({ severity: 'warn', summary: 'Revisa la ficha del medicamento', detail: medicineIssue });
+      return;
+    }
     const input = toInput(this.form);
     const current = this.product();
     this.saving.set(true);
     const request = current ? this.api.updateProduct(current.id, input) : this.api.createProduct(input);
-    request.subscribe({
+    request.pipe(switchMap((saved) => this.saveMedicine(saved))).subscribe({
       next: (saved) => {
         this.saving.set(false);
         this.messages.add({ severity: 'success', summary: 'Producto guardado', detail: saved.name });
@@ -419,6 +459,31 @@ export class ProductEditorComponent implements OnInit, HasUnsavedChanges {
       },
       error: () => this.saving.set(false),
     });
+  }
+
+  /**
+   * Guarda la ficha después del producto (si cambió o el producto es nuevo). Si la ficha falla, el producto ya quedó
+   * guardado: se abre su edición para corregirla.
+   */
+  private saveMedicine(saved: Product): Observable<Product> {
+    const sheet = this.medicinesOn() ? toMedicineInput(this.medicine) : null;
+    if (!sheet || (!this.medicine.dirty && this.product())) {
+      return of(saved);
+    }
+    return this.medicines.saveSheet(saved.id, sheet).pipe(
+      map(() => {
+        this.medicine.markAsPristine();
+        return saved;
+      }),
+      catchError(() => {
+        this.saving.set(false);
+        this.saved = true;
+        this.messages.add({ severity: 'warn', summary: 'Producto guardado sin su ficha',
+          detail: 'Corrige la ficha del medicamento y guarda de nuevo.' });
+        void this.router.navigate(['/app/productos', saved.id]);
+        return EMPTY;
+      }),
+    );
   }
 
   /** Producto nuevo: el siguiente paso natural es decir cuántos hay (sin buscar dónde se hace). */

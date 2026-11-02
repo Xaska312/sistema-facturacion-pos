@@ -68,6 +68,7 @@ const ACTIONS: Readonly<Record<string, string>> = {
   BUSINESS_CLOSED: 'Eliminó (cerró) el negocio',
   BUSINESS_CREATED: 'Creó el negocio',
   KITCHEN_SENT: 'Envió un pedido a cocina',
+  PRODUCT_MEDICINE_SAVED: 'Guardó la ficha de un medicamento',
   TIP_PAYOUT_CREATED: 'Registró un reparto de propinas',
   CONSUMPTION_TAX_APPLIED: 'Aplicó el impuesto al consumo a categorías',
   KITCHEN_TICKET_REPRINTED: 'Reimprimió una comanda',

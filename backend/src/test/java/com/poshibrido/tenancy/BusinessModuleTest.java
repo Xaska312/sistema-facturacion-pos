@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Set;
 
 import static com.poshibrido.tenancy.domain.BusinessModule.CREDIT;
+import static com.poshibrido.tenancy.domain.BusinessModule.MEDICINES;
 import static com.poshibrido.tenancy.domain.BusinessModule.MODIFIERS;
 import static com.poshibrido.tenancy.domain.BusinessModule.ORDERS;
 import static com.poshibrido.tenancy.domain.BusinessModule.QUOTES;
@@ -27,7 +28,7 @@ class BusinessModuleTest {
         assertThat(BusinessType.SERVICES.defaultModules()).containsExactlyInAnyOrder(CREDIT, ORDERS, QUOTES);
         assertThat(BusinessType.RESTAURANT.defaultModules()).containsExactlyInAnyOrder(ORDERS, MODIFIERS,
                 BusinessModule.TABLES, BusinessModule.KITCHEN);
-        assertThat(BusinessType.PHARMACY.defaultModules()).containsExactlyInAnyOrder(CREDIT, ORDERS, QUOTES);
+        assertThat(BusinessType.PHARMACY.defaultModules()).containsExactlyInAnyOrder(CREDIT, ORDERS, QUOTES, MEDICINES);
         assertThat(EnumSet.allOf(BusinessType.class).stream().filter(BusinessType::isOpen))
                 .containsExactlyInAnyOrder(BusinessType.RETAIL, BusinessType.SERVICES, BusinessType.RESTAURANT);
     }
@@ -54,7 +55,7 @@ class BusinessModuleTest {
         assertThat(BusinessModule.effectivePermissions(roles, EnumSet.allOf(BusinessModule.class)))
                 .containsExactly("credit:manage", "orders:manage", "quotes:read", "audit:read", "module:credit",
                         "module:orders", "module:quotes", "module:variants", "module:scale", "module:modifiers",
-                        "module:tables", "module:kitchen");
+                        "module:tables", "module:kitchen", "module:medicines");
     }
 
     @Test

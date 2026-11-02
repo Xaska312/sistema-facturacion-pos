@@ -150,6 +150,54 @@ export class PlatformApi {
   revokeCode(id: string): Observable<ActivationCode> {
     return this.http.post<ActivationCode>(`${this.base}/activation-codes/${id}/revoke`, {});
   }
+
+  /** Catálogo CUM del INVIMA (Fase 13-1, decisión 279): cuántas presentaciones hay y la última carga. */
+  cumStatus(): Observable<CumStatus> {
+    return this.http.get<CumStatus>(`${this.base}/cum`);
+  }
+
+  startCumImport(sourceName: string): Observable<{ id: string }> {
+    return this.http.post<{ id: string }>(`${this.base}/cum/imports`, { sourceName });
+  }
+
+  addCumRows(importId: string, rows: readonly CumRowInput[]): Observable<{ received: number }> {
+    return this.http.post<{ received: number }>(`${this.base}/cum/imports/${importId}/rows`, { rows });
+  }
+
+  finishCumImport(importId: string, total: number): Observable<CumImport> {
+    return this.http.post<CumImport>(`${this.base}/cum/imports/${importId}/finish`, { total });
+  }
+}
+
+/** Una presentación lista para enviar (ver cum-csv.ts en la consola de plataforma). */
+export interface CumRowInput {
+  cum: string;
+  productName: string;
+  holder: string | null;
+  sanitaryRegistration: string | null;
+  presentation: string | null;
+  atc: string | null;
+  atcDescription: string | null;
+  route: string | null;
+  dosageForm: string | null;
+  activeIngredients: string;
+  ium: string | null;
+}
+
+export interface CumImport {
+  id: string;
+  status: 'RUNNING' | 'DONE';
+  sourceName: string | null;
+  startedAt: string;
+  finishedAt: string | null;
+  rowsReceived: number;
+  total: number | null;
+  removed: number | null;
+}
+
+export interface CumStatus {
+  total: number;
+  lastImport: CumImport | null;
 }
 
 /** Fechas AAAA-MM-DD del calendario local → instantes ISO (desde el inicio del día; hasta el inicio del siguiente). */

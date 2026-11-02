@@ -587,6 +587,30 @@ export const MANUAL: readonly ManualChapter[] = [
         tips: ['Si un SKU ya existe, ese producto se actualiza con los datos del archivo.'],
       },
       {
+        id: 'ficha-medicamento',
+        title: 'Ficha del medicamento (droguerías)',
+        summary: 'Con el módulo Medicamentos, cada producto lleva su ficha: tipo de producto, registro sanitario INVIMA, '
+          + 'CUM, principio activo y condición de venta. Es lo que revisa la Secretaría de Salud en la visita.',
+        steps: [
+          'Entra a Productos → Nuevo producto (o abre uno que ya tienes).',
+          'En "Ficha del medicamento", busca en el catálogo del INVIMA por nombre, principio activo o CUM y toca la '
+            + 'presentación que vendes (revisa que sea la misma caja). Se llenan el registro, el CUM, el principio '
+            + 'activo, la forma y el ATC; en un producto nuevo también el nombre y el impuesto Excluido.',
+          'Elige la condición de venta: bajo fórmula médica, venta libre, control especial o monopolio del Estado. Si no '
+            + 'estás seguro, déjalo bajo fórmula: el catálogo del INVIMA no trae este dato.',
+          'Marca si necesita nevera y si se puede vender por unidad (sobres o blíster con su lote y vencimiento).',
+          'Pon el precio y el código de barras y guarda.',
+        ],
+        tips: [
+          'Un antibiótico (código ATC J01) queda marcado solo: siempre con fórmula médica y nunca por unidad.',
+          'Los de control especial no se venden por unidad.',
+          'En Productos y en Vender puedes buscar por el principio activo ("acetaminofen") además del nombre.',
+          'Los cosméticos, dispositivos y suplementos llevan tipo y registro, sin condición de venta.',
+          'El catálogo del INVIMA lo actualiza XASKA; si una presentación nueva no aparece, llena la ficha a mano.',
+        ],
+        who: 'Propietario, Administrador y quien gestione productos; los demás la ven sin cambiarla.',
+      },
+      {
         id: 'tallas-colores',
         title: 'Productos con tallas y colores (calzado y ropa)',
         summary: 'Un modelo (p. ej. "Tenis Runner") con un solo precio crea un producto por cada talla y color, cada uno con su código de barras y su propia existencia.',

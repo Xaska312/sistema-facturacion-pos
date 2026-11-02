@@ -34,7 +34,12 @@ public enum BusinessModule {
     /** Mesas y cuentas abiertas (Fase 12b-2): mesa, para llevar y domicilio. */
     TABLES("tables:operate", "tables:manage", "tables:void", "tips:manage"),
     /** Cocina y comandas (Fase 12b-3): estaciones, enviar lo pedido en las cuentas e imprimir comandas. Necesita Mesas. */
-    KITCHEN("kitchen:send", "kitchen:manage", "kitchen:view");
+    KITCHEN("kitchen:send", "kitchen:manage", "kitchen:view"),
+    /**
+     * Medicamentos (Fase 13-1, decisión 279): ficha del medicamento en cada producto (registro INVIMA, CUM, principio
+     * activo, condición de venta) y búsqueda en el catálogo CUM compartido. Prendido en Farmacia.
+     */
+    MEDICINES;
 
     private static final String AUTHORITY_PREFIX = "module:";
 

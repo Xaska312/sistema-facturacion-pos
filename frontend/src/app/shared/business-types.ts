@@ -6,7 +6,8 @@ import { XIconName } from './icons/xicons';
  * propone los módulos y el dueño los prende o apaga en Ajustes. Farmacia sale como "Pronto" (solo la asigna la
  * consola de plataforma a negocios piloto); Restaurante es abierto desde la decisión 273.
  */
-export type BusinessModule = 'CREDIT' | 'ORDERS' | 'QUOTES' | 'VARIANTS' | 'SCALE' | 'MODIFIERS' | 'TABLES' | 'KITCHEN';
+export type BusinessModule = 'CREDIT' | 'ORDERS' | 'QUOTES' | 'VARIANTS' | 'SCALE' | 'MODIFIERS' | 'TABLES' | 'KITCHEN'
+  | 'MEDICINES';
 
 export interface BusinessTypeInfo {
   code: BusinessType;
@@ -35,7 +36,7 @@ export const BUSINESS_TYPES: readonly BusinessTypeInfo[] = [
   { code: 'RESTAURANT', label: 'Restaurante', description: 'Mesas, comandas, cocina y propinas.', glyph: 'type-restaurant',
     open: true, defaultModules: ['ORDERS', 'MODIFIERS', 'TABLES', 'KITCHEN'] },
   { code: 'PHARMACY', label: 'Farmacia', description: 'Lotes, vencimientos y factura electrónica.', glyph: 'type-pharmacy',
-    open: false, defaultModules: ['CREDIT', 'ORDERS', 'QUOTES'] },
+    open: false, defaultModules: ['CREDIT', 'ORDERS', 'QUOTES', 'MEDICINES'] },
 ];
 
 export const BUSINESS_MODULES: readonly BusinessModuleInfo[] = [
@@ -50,6 +51,8 @@ export const BUSINESS_MODULES: readonly BusinessModuleInfo[] = [
     glyph: 'tables' },
   { code: 'KITCHEN', label: 'Cocina y comandas', description: 'Enviar lo pedido a cocina y bar, pantalla de cocina e imprimir comandas.',
     glyph: 'kitchen', requires: 'TABLES' },
+  { code: 'MEDICINES', label: 'Medicamentos', description: 'Ficha del medicamento (registro INVIMA, CUM, principio activo, venta con fórmula) y catálogo del INVIMA.',
+    glyph: 'type-pharmacy' },
 ];
 
 export function businessTypeInfo(code: BusinessType | null | undefined): BusinessTypeInfo {
