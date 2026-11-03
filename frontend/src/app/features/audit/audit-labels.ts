@@ -75,6 +75,7 @@ const ACTIONS: Readonly<Record<string, string>> = {
   PURCHASE_RECEIVED: 'Recibió mercancía de un proveedor',
   SUPPLIER_PAYMENT_CREATED: 'Registró un pago a un proveedor',
   PURCHASE_RETURNED: 'Devolvió mercancía a un proveedor',
+  TECHNICAL_DIRECTOR_UPDATED: 'Cambió los datos del director técnico',
   TIP_PAYOUT_CREATED: 'Registró un reparto de propinas',
   CONSUMPTION_TAX_APPLIED: 'Aplicó el impuesto al consumo a categorías',
   KITCHEN_TICKET_REPRINTED: 'Reimprimió una comanda',

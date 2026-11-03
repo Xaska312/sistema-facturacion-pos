@@ -88,6 +88,9 @@ import {
 import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
 import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
 import { documentShortLabel } from '../../shared/document-types';
+import { DispensingInfo, PharmacyApi } from '../../core/api/pharmacy.api';
+import { DispensationDraft, dispensationProblem, emptyDispensation, needsDetails, toDispensationInput } from './dispensation';
+import { isoDay } from '../orders/order-text';
 
 /** Datos del producto que trae el precio vigente (completan las líneas que vienen de una cuenta de mesa). */
 function productData(price: ProductLookup): Pick<CartLine, 'sku' | 'unitCode' | 'trackInventory' | 'factor'> {
@@ -434,6 +437,40 @@ const STOCK_PAGES = 5;
         </div>
       }
 
+      <!-- Medicamentos bajo fórmula (Fase 13-4): confirmar la fórmula y, en antibióticos, sus datos. -->
+      @if (dispensing().length > 0) {
+        <fieldset class="rounded-2xl border border-line p-3 mb-4 flex flex-col gap-2">
+          <legend class="px-1 text-sm font-semibold">Fórmula médica</legend>
+          <p class="text-xs text-muted">Bajo fórmula: {{ dispensingNames() }}. No cambies el medicamento ni la cantidad
+            de la fórmula.</p>
+          @if (canDispense()) {
+            <label class="flex items-start gap-2 text-sm min-h-8">
+              <input type="checkbox" class="mt-1" [ngModel]="rx.seen" (ngModelChange)="rx.seen = $event; rxRevision.set(rxRevision() + 1)" />
+              <span>Vi la fórmula médica y entrego lo que dice.</span>
+            </label>
+            @if (rxDetails()) {
+              <div class="grid gap-2 sm:grid-cols-2">
+                <label class="flex flex-col gap-1 text-xs font-medium">Quién la firmó
+                  <input pInputText maxlength="160" [(ngModel)]="rx.prescriberName" (ngModelChange)="rxRevision.set(rxRevision() + 1)" placeholder="Dra. Marta Gómez" /></label>
+                <label class="flex flex-col gap-1 text-xs font-medium">Registro médico (opcional)
+                  <input pInputText maxlength="40" [(ngModel)]="rx.prescriberLicense" /></label>
+                <label class="flex flex-col gap-1 text-xs font-medium">Fecha de la fórmula
+                  <input type="date" class="border rounded-lg px-2 py-2" [max]="todayIso" [(ngModel)]="rx.prescriptionDate"
+                         (ngModelChange)="rxRevision.set(rxRevision() + 1)" /></label>
+                <label class="flex flex-col gap-1 text-xs font-medium">Documento del paciente
+                  <input pInputText maxlength="20" [(ngModel)]="rx.patientDocument" (ngModelChange)="rxRevision.set(rxRevision() + 1)" /></label>
+                <label class="flex flex-col gap-1 text-xs font-medium sm:col-span-2">Nombre del paciente
+                  <input pInputText maxlength="160" [(ngModel)]="rx.patientName" (ngModelChange)="rxRevision.set(rxRevision() + 1)" /></label>
+              </div>
+              <p class="text-xs text-muted">Antibiótico o control especial: estos datos quedan en el libro de dispensación.</p>
+            }
+          }
+          @if (rxProblem(); as problem) {
+            <p class="text-sm text-warning" role="status">{{ problem }}</p>
+          }
+        </fieldset>
+      }
+
       <div class="flex items-center justify-between gap-2 mb-2">
         <p id="pay-methods" class="text-sm font-medium">{{ mixed ? 'Agregar otro medio' : 'Medio de pago' }}</p>
         @if (payMethods().length > 1) {
@@ -757,6 +794,16 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   /** Logo para el tiquete (fase 8c). */
   protected readonly brandLogo = inject(BrandingService).logo;
   protected readonly auth = inject(AuthService);
+  private readonly pharmacy = inject(PharmacyApi);
+  /** Líneas del carrito que se venden con fórmula (Fase 13-4); se consultan al abrir el cobro. */
+  protected readonly dispensing = signal<DispensingInfo[]>([]);
+  protected rx: DispensationDraft = emptyDispensation();
+  protected readonly rxRevision = signal(0);
+  protected readonly todayIso = isoDay(new Date());
+  protected readonly canDispense = computed(() => this.auth.hasPermission('pharmacy:dispense'));
+  protected readonly rxDetails = computed(() => needsDetails(this.dispensing()));
+  protected readonly rxProblem = computed(() => (this.rxRevision(),
+    dispensationProblem(this.dispensing(), this.rx, this.canDispense(), this.todayIso)));
   private readonly cash = inject(CashApi);
   private readonly sales = inject(SalesApi);
   private readonly catalog = inject(CatalogApi);
@@ -1645,7 +1692,26 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
     this.payments = cash ? [this.draft(cash, this.due())] : [];
     this.paymentsRevision.update((n) => n + 1);
     this.idempotencyKey ??= newIdempotencyKey('sale');
+    this.loadDispensing();
     this.payOpen = true;
+  }
+
+  /** Con el módulo Medicamentos, qué líneas del carrito se venden con fórmula (Fase 13-4). Mesas: no aplica. */
+  private loadDispensing(): void {
+    this.dispensing.set([]);
+    this.rx = emptyDispensation();
+    this.rxRevision.update((n) => n + 1);
+    if (this.tab() || !this.auth.hasPermission('module:medicines')) {
+      return;
+    }
+    const ids = [...new Set(this.lines().map((l) => l.productId))];
+    this.pharmacy.dispensing(ids).pipe(catchError(() => of([] as DispensingInfo[])))
+      .subscribe((list) => this.dispensing.set(list));
+  }
+
+  protected dispensingNames(): string {
+    const ids = new Set(this.dispensing().map((d) => d.productId));
+    return [...new Set(this.lines().filter((l) => ids.has(l.productId)).map((l) => l.name))].join(', ');
   }
 
   private lookupDone(): void {
@@ -1792,7 +1858,7 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
 
   canConfirm(): boolean {
     return this.paymentSummary().valid && this.missingReferences().length === 0 && this.creditProblem() === null
-      && !this.saving();
+      && this.rxProblem() === null && !this.saving();
   }
 
   /**
@@ -1839,6 +1905,7 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
       })),
       expectedTotal: this.totals().total,
       notes: null,
+      dispensation: toDispensationInput(this.dispensing(), this.rx),
     };
     this.idempotencyKey ??= newIdempotencyKey('sale');
     this.saving.set(true);

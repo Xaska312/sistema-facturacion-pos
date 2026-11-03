@@ -245,6 +245,15 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     ],
     terms: ['saldo-inicial', 'costo-promedio'],
   },
+  '/app/farmacia/dispensaciones': {
+    manual: 'dispensar-formula',
+    title: 'Libro de dispensación',
+    tips: [
+      'Cada venta con medicamentos bajo fórmula queda aquí: quién la dispensó y de qué lote.',
+      'En antibióticos y control especial ves quién firmó la fórmula, su fecha y el paciente.',
+      'Filtra por fechas o "Solo antibióticos"; busca por paciente, documento, médico o número de venta.',
+    ],
+  },
   '/app/inventario/vencimientos': {
     manual: 'lotes-vencimientos',
     title: 'Vencimientos',

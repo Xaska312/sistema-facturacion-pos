@@ -56,6 +56,16 @@ public class MedicineController {
                 Boolean.TRUE.equals(r.tracksLots())));
     }
 
+    /**
+     * De los productos del carrito, cuáles se venden con fórmula (Fase 13-4): el POS pide la confirmación (y en
+     * antibióticos y control especial, los datos de la fórmula) antes de cobrar. Máximo 200.
+     */
+    @GetMapping("/api/v1/medicines/dispensing")
+    @PreAuthorize("hasAuthority('sales:create') and hasAuthority('module:medicines')")
+    public List<MedicineService.DispensingInfo> dispensing(@RequestParam List<UUID> productIds) {
+        return medicines.dispensing(productIds);
+    }
+
     @GetMapping("/api/v1/medicines/catalog")
     @PreAuthorize("hasAuthority('products:read') and hasAuthority('module:medicines')")
     public List<CumEntry> searchCatalog(@RequestParam @Size(max = 100) String q) {

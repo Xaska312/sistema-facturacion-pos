@@ -666,6 +666,29 @@ export const MANUAL: readonly ManualChapter[] = [
         who: 'Propietario, Administrador y Contador.',
       },
       {
+        id: 'dispensar-formula',
+        title: 'Vender medicamentos con fórmula (dispensación)',
+        summary: 'Con el módulo Medicamentos, lo que es bajo fórmula médica solo lo vende quien puede dispensar '
+          + '(Director técnico, Auxiliar de farmacia, Propietario o Administrador) y confirmando que vio la fórmula. '
+          + 'En los antibióticos también se anotan los datos de la fórmula.',
+        steps: [
+          'Agrega los productos como siempre y toca Cobrar.',
+          'Si algo es bajo fórmula, en el cobro sale "Fórmula médica": marca "Vi la fórmula médica y entrego lo que '
+            + 'dice". Entrega exactamente lo que dice la fórmula: no la cambies ni recomiendes otro.',
+          'Si es un antibiótico (o de control especial), escribe quién firmó la fórmula (y su registro si lo tiene), '
+            + 'la fecha de la fórmula y el documento y nombre del paciente.',
+          'Cobra como siempre. Todo queda en Reportes → Libro de dispensación, con el lote que salió.',
+        ],
+        tips: [
+          'Un cajero sin permiso de dispensar no puede cobrar algo bajo fórmula: el sistema le pide llamar al director '
+            + 'técnico o al auxiliar.',
+          'Lo bajo fórmula se vende solo desde Vender (no desde pedidos, cotizaciones ni mesas), porque ahí se confirma.',
+          'En el libro filtra "Solo antibióticos" para el reporte de antibióticos dispensados.',
+          'Los datos del director técnico se llenan en Ajustes y salen en las actas de baja.',
+        ],
+        who: 'Director técnico, Auxiliar de farmacia, Propietario y Administrador.',
+      },
+      {
         id: 'lotes-vencimientos',
         title: 'Lotes y vencimientos (droguerías)',
         summary: 'Los medicamentos, fitoterapéuticos y dispositivos médicos (y lo que marques) se manejan por lote. '

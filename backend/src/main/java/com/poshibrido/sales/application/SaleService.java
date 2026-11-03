@@ -15,6 +15,7 @@ import com.poshibrido.inventory.domain.MovementType;
 import com.poshibrido.organization.application.BusinessSettings;
 import com.poshibrido.organization.application.BusinessSettingsApi;
 import com.poshibrido.parties.application.CustomerApi;
+import com.poshibrido.pharmacy.application.DispensationRules;
 import com.poshibrido.parties.application.CustomerApi.CustomerRef;
 import com.poshibrido.sales.application.SaleCommands.Create;
 import com.poshibrido.catalog.application.ModifierApi;
@@ -55,6 +56,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -110,6 +112,10 @@ public class SaleService {
 
     @PersistenceContext
     private EntityManager em;
+
+    /** Reglas de la dispensación (Fase 13-4); se inyecta aparte para no alargar el constructor. */
+    @org.springframework.beans.factory.annotation.Autowired
+    private DispensationRules dispensation;
 
     public SaleService(CashApi cash, CreditApi credit, OrderApi orders, StockLedger ledger, PricingApi pricing,
                        InventoryCatalogApi catalog, ModifierApi modifiers, CustomerApi customers,
@@ -316,6 +322,15 @@ public class SaleService {
             throw new ForbiddenException("Necesitas el permiso de descuentos para dar más del "
                     + cfg.maxDiscountPercent().stripTrailingZeros().toPlainString() + " %.");
         }
+        // Medicamentos bajo fórmula (Fase 13-4): permiso, fórmula vista y, en antibióticos, sus datos.
+        Map<Integer, UUID> lineProducts = new LinkedHashMap<>();
+        Map<UUID, String> productNames = new HashMap<>();
+        priced.forEach(l -> {
+            lineProducts.put(l.lineNo(), l.line().productId());
+            productNames.put(l.line().productId(), l.product().name());
+        });
+        DispensationRules.Checked dispensed = dispensation.check(lineProducts, productNames, c.dispensation(),
+                options == Options.POS, java.time.LocalDate.now(java.time.ZoneId.of(cfg.timezone())));
         Totals totals = Totals.of(priced);
         if (!changes.isEmpty() || (c.expectedTotal() != null
                 && c.expectedTotal().setScale(2, RoundingMode.HALF_UP).compareTo(totals.total()) != 0)) {
@@ -459,6 +474,9 @@ public class SaleService {
                             cfg.allowNegativeStock(), false, REFERENCE_TYPE, saleId, label);
                 }
             }
+        }
+        if (dispensed != null) {
+            dispensation.record(saleId, session.branchId(), actor, dispensed);
         }
         if (saleCash.signum() > 0) {
             cash.recordSaleCash(session.id(), saleCash, saleId, label);
