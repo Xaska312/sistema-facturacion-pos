@@ -117,7 +117,7 @@ public class InventoryCatalogService implements InventoryCatalogApi {
         Unit base = unitById.get(p.getBaseUnitId());
         return new StockProduct(p.getId(), p.getSku(), p.getName(), p.isActive(), p.isTrackInventory(),
                 p.getBaseUnitId(), code(unitById, p.getBaseUnitId()), base != null && base.isAllowsDecimals(),
-                p.getCost(), Map.copyOf(factors), Map.copyOf(codes));
+                p.getCost(), Map.copyOf(factors), Map.copyOf(codes), p.isTracksLots());
     }
 
     private static String code(Map<UUID, Unit> unitById, UUID id) {

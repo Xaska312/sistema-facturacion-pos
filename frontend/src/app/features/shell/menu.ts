@@ -14,6 +14,8 @@ export interface MenuItem {
   permission?: string;
   /** Grupo del menú lateral. */
   section?: MenuSection;
+  /** Módulo que debe estar prendido (su autoridad, p. ej. 'module:medicines'). */
+  module?: string;
 }
 
 /** Menú lateral. Las opciones de fases siguientes se agregan aquí con su permiso. */
@@ -42,6 +44,15 @@ export const MENU: MenuItem[] = [
     icon: 'pi pi-arrow-right-arrow-left',
     glyph: 'movements',
     permission: 'inventory:read',
+    section: 'Inventario',
+  },
+  {
+    label: 'Vencimientos',
+    route: '/app/inventario/vencimientos',
+    icon: 'pi pi-calendar-times',
+    glyph: 'expiry',
+    permission: 'inventory:read',
+    module: 'module:medicines',
     section: 'Inventario',
   },
   { label: 'Compras', route: '/app/compras', icon: 'pi pi-truck', glyph: 'purchases', permission: 'purchases:read', section: 'Inventario' },
@@ -96,7 +107,7 @@ export function dockItems(visible: readonly MenuItem[], type: BusinessType = 'RE
 export const EXACT_MATCH_ROUTES: ReadonlySet<string> = new Set(['/app', '/app/inventario', '/app/caja']);
 
 export function visibleMenu(has: (permission: string) => boolean): MenuItem[] {
-  return MENU.filter((item) => !item.permission || has(item.permission));
+  return MENU.filter((item) => (!item.permission || has(item.permission)) && (!item.module || has(item.module)));
 }
 
 /** Agrega el título de sección antes del primer elemento de cada grupo. */

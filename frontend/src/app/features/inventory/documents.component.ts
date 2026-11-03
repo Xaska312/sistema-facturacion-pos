@@ -17,7 +17,7 @@ import { DOCUMENT_LABEL, DOCUMENT_ROUTE, documentNumber } from './labels';
 import { permissionFlag } from '../../core/auth/permission-flag';
 import { LatestRequest } from '../../shared/latest-request';
 
-/** Documentos de inventario (saldo inicial, ajustes, traslados y conteos) y acceso a crearlos. */
+/** Documentos de inventario (saldo inicial, ajustes, traslados, conteos y bajas) y acceso a crearlos. */
 @Component({
   selector: 'app-inventory-documents',
   imports: [FormsModule, RouterLink, DatePipe, ButtonModule, DialogModule, DataTableComponent, HasPermissionDirective,
@@ -31,6 +31,8 @@ import { LatestRequest } from '../../shared/latest-request';
         <a pButton [routerLink]="['/app/inventario/nuevo', routes.ADJUSTMENT]" label="Ajuste" severity="secondary"
            [outlined]="true"></a>
         <a pButton [routerLink]="['/app/inventario/nuevo', routes.COUNT]" label="Conteo físico" severity="secondary"
+           [outlined]="true"></a>
+        <a pButton [routerLink]="['/app/inventario/nuevo', routes.DISPOSAL]" label="Baja" severity="secondary"
            [outlined]="true"></a>
       </ng-container>
       <a *hasPermission="'inventory:transfer'" pButton [routerLink]="['/app/inventario/nuevo', routes.TRANSFER]"
@@ -80,6 +82,13 @@ import { LatestRequest } from '../../shared/latest-request';
             · {{ d.reason }}
           }
         </p>
+        @if (d.type === 'DISPOSAL') {
+          <p class="text-sm mb-3 flex flex-wrap items-center gap-2">
+            <span>Dispuesto: {{ d.disposalMethod }}{{ d.witnessName ? ' · testigo ' + d.witnessName : '' }}</span>
+            <a pButton [routerLink]="['/app/inventario/acta', d.id]" label="Ver e imprimir acta" icon="pi pi-print"
+               size="small" [outlined]="true"></a>
+          </p>
+        }
         <app-data-table [columns]="lineColumns()" [items]="d.lines" [trackBy]="lineKey" [pageSizeOptions]="[]"
                         caption="Líneas del documento">
           <ng-template appCell="product" let-row>
@@ -108,7 +117,7 @@ export class InventoryDocumentsComponent implements OnInit {
 
   protected readonly labels = DOCUMENT_LABEL;
   protected readonly routes = DOCUMENT_ROUTE;
-  protected readonly types: InventoryDocumentType[] = ['INITIAL', 'ADJUSTMENT', 'TRANSFER', 'COUNT'];
+  protected readonly types: InventoryDocumentType[] = ['INITIAL', 'ADJUSTMENT', 'TRANSFER', 'COUNT', 'DISPOSAL'];
   protected readonly q = formatQuantity;
   protected readonly cop = formatCop;
   protected readonly docNumber = documentNumber;
@@ -129,6 +138,10 @@ export class InventoryDocumentsComponent implements OnInit {
       { header: 'Cantidad', cell: (l) => l.quantity, kind: 'number' },
       { header: 'Unidad', cell: (l) => l.unitCode },
     ];
+    if (this.detail()?.lines.some((l) => l.lotNumber)) {
+      base.push({ header: 'Lote', cell: (l) => l.lotNumber ?? (l.lotNumber === null ? 'Sin lote' : null), kind: 'mono' },
+        { header: 'Vence', cell: (l) => l.expirationDate ?? null, kind: 'date' });
+    }
     if (this.detail()?.type === 'COUNT') {
       return [...base,
         { header: 'Esperado', cell: (l) => l.expectedQuantity, kind: 'number' },

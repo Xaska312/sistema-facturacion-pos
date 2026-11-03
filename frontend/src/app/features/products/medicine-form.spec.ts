@@ -94,4 +94,11 @@ describe('ficha del medicamento (Fase 13-1, decisión 279)', () => {
     expect(sameCategoryName('ANTIBIOTICOS ', 'Antibióticos')).toBeTrue();
     expect(sameCategoryName('Analgésicos', 'Antibióticos')).toBeFalse();
   });
+
+  it('marca "Vence pronto" cuando el lote que sale primero está dentro del aviso (Fase 13-3)', () => {
+    const badge = { kind: 'MEDICINE' as const, saleCondition: 'OTC' as const, activeIngredients: null, antibiotic: false,
+      coldChain: false, unitSale: false, nextExpiration: '2027-01-15', expiringSoon: true };
+    expect(medicineTags(badge).map((t) => t.label)).toEqual(['Vence pronto']);
+    expect(medicineTags({ ...badge, expiringSoon: false })).toEqual([]);
+  });
 });

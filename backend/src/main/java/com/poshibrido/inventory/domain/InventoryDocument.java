@@ -45,6 +45,12 @@ public class InventoryDocument {
     @Column
     private String notes;
 
+    @Column(name = "disposal_method")
+    private String disposalMethod;
+
+    @Column(name = "witness_name")
+    private String witnessName;
+
     @Column(name = "idempotency_key")
     private String idempotencyKey;
 
@@ -67,6 +73,17 @@ public class InventoryDocument {
         d.idempotencyKey = idempotencyKey;
         d.createdBy = createdBy;
         d.createdAt = Instant.now();
+        return d;
+    }
+
+    /** Baja (Fase 13-3): con cómo se dispuso y quién lo presenció (acta). */
+    public static InventoryDocument disposal(long number, UUID branchId, String reason, String notes,
+                                            String idempotencyKey, UUID createdBy, String disposalMethod,
+                                            String witnessName) {
+        InventoryDocument d = create(number, InventoryDocumentType.DISPOSAL, branchId, null, reason, notes,
+                idempotencyKey, createdBy);
+        d.disposalMethod = disposalMethod;
+        d.witnessName = witnessName;
         return d;
     }
 }

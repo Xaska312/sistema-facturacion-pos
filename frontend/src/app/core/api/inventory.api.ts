@@ -7,6 +7,7 @@ import {
   InventoryDocumentType,
   InventoryLineInput,
   KardexRow,
+  MovementType,
   PageResponse,
   ProductLookup,
   StockAlert,
@@ -18,6 +19,9 @@ export interface DocumentInput {
   branchId: string;
   /** Solo traslados. */
   toBranchId?: string | null;
+  /** Solo bajas (acta): cómo se dispuso y quién lo presenció. */
+  disposalMethod?: string | null;
+  witnessName?: string | null;
   reason?: string | null;
   notes?: string | null;
   lines: InventoryLineInput[];
@@ -28,7 +32,76 @@ const DOCUMENT_PATH: Record<InventoryDocumentType, string> = {
   ADJUSTMENT: 'adjustments',
   TRANSFER: 'transfers',
   COUNT: 'counts',
+  DISPOSAL: 'disposals',
 };
+
+export type LotStatus = 'EXPIRED' | 'EXPIRING' | 'OK';
+
+/** Un lote con existencia en una sucursal (Fase 13-3). */
+export interface LotRow {
+  branchId: string;
+  branchName: string | null;
+  productId: string;
+  sku: string;
+  name: string;
+  unitCode: string;
+  lotId: string;
+  lotNumber: string;
+  expirationDate: string | null;
+  quantity: number;
+  value: number;
+  daysLeft: number | null;
+  status: LotStatus;
+}
+
+export interface LotSummary {
+  alertMonths: number;
+  expiredLots: number;
+  expiredValue: number;
+  expiringLots: number;
+  expiringValue: number;
+  unlottedProducts: number;
+}
+
+export interface UnlottedRow {
+  branchId: string;
+  branchName: string | null;
+  productId: string;
+  sku: string;
+  name: string;
+  unitCode: string;
+  quantity: number;
+}
+
+export interface ProductLots {
+  productId: string;
+  branchId: string;
+  unlotted: number;
+  lots: LotRow[];
+}
+
+export interface TraceEntry {
+  at: string;
+  branchName: string | null;
+  type: MovementType;
+  quantity: number;
+  document: string | null;
+  party: string | null;
+  reason: string | null;
+}
+
+export interface LotTrace {
+  productId: string;
+  sku: string;
+  name: string;
+  unitCode: string;
+  lotNumber: string;
+  expirationDate: string | null;
+  onHand: number;
+  received: number;
+  sold: number;
+  entries: TraceEntry[];
+}
 
 /** Inventario: existencias, alertas, kardex y documentos. */
 @Injectable({ providedIn: 'root' })
@@ -84,10 +157,40 @@ export class InventoryApi {
     const body =
       type === 'TRANSFER'
         ? { fromBranchId: input.branchId, toBranchId: input.toBranchId, notes: input.notes, lines: input.lines }
-        : { branchId: input.branchId, reason: input.reason, notes: input.notes, lines: input.lines };
+        : type === 'DISPOSAL'
+          ? { branchId: input.branchId, reason: input.reason, notes: input.notes, lines: input.lines,
+            disposalMethod: input.disposalMethod, witnessName: input.witnessName }
+          : { branchId: input.branchId, reason: input.reason, notes: input.notes, lines: input.lines };
     return this.http.post<InventoryDocument>(`/api/v1/inventory/${DOCUMENT_PATH[type]}`, body, {
       headers: new HttpHeaders({ 'Idempotency-Key': idempotencyKey }),
     });
+  }
+
+  // ------------------------------------------------------------- lotes y vencimientos (Fase 13-3)
+
+  lots(branchId: string | null, status: LotStatus | null, search: string | null, query: PageQuery):
+    Observable<PageResponse<LotRow>> {
+    return this.http.get<PageResponse<LotRow>>('/api/v1/inventory/lots', {
+      params: pageParams(query, { branchId, status, search }),
+    });
+  }
+
+  lotSummary(branchId: string | null): Observable<LotSummary> {
+    const params = branchId ? new HttpParams().set('branchId', branchId) : new HttpParams();
+    return this.http.get<LotSummary>('/api/v1/inventory/lots/summary', { params });
+  }
+
+  unlotted(branchId: string | null): Observable<UnlottedRow[]> {
+    const params = branchId ? new HttpParams().set('branchId', branchId) : new HttpParams();
+    return this.http.get<UnlottedRow[]>('/api/v1/inventory/lots/unlotted', { params });
+  }
+
+  productLots(productId: string, branchId: string): Observable<ProductLots> {
+    return this.http.get<ProductLots>('/api/v1/inventory/lots/product', { params: { productId, branchId } });
+  }
+
+  trace(productId: string, lot: string): Observable<LotTrace> {
+    return this.http.get<LotTrace>('/api/v1/inventory/lots/trace', { params: { productId, lot } });
   }
 
   lookup(code: string): Observable<ProductLookup> {

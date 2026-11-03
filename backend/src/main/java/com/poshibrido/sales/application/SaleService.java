@@ -454,8 +454,9 @@ public class SaleService {
         if (stock != null) {
             for (PricedLine l : priced) {
                 if (l.price().trackInventory()) {
-                    stock.post(session.branchId(), l.line().productId(), MovementType.SALE, l.baseQuantity().negate(),
-                            null, cfg.allowNegativeStock(), REFERENCE_TYPE, saleId, label);
+                    // Con lotes, FEFO: primero lo que no tiene lote, luego el que vence primero; nunca un vencido.
+                    stock.postOut(session.branchId(), l.line().productId(), MovementType.SALE, l.baseQuantity(),
+                            cfg.allowNegativeStock(), false, REFERENCE_TYPE, saleId, label);
                 }
             }
         }
@@ -548,11 +549,16 @@ public class SaleService {
         items.stream().filter(SaleItem::isTrackInventory).forEach(i -> tracked.add(i.getProductId()));
         if (!tracked.isEmpty()) {
             StockLedger.Session stock = ledger.open(Set.of(sale.getBranchId()), tracked, Set.of(), true);
-            for (SaleItem item : items) {
-                if (item.isTrackInventory()) {
-                    stock.post(sale.getBranchId(), item.getProductId(), MovementType.SALE_VOID, item.getBaseQuantity(),
-                            null, true, REFERENCE_TYPE, saleId, label);
-                }
+            // Vuelve a los mismos lotes de los que salió (Fase 13-3): se toman del kardex de la venta.
+            List<?> sold = em.createNativeQuery("""
+                    SELECT product_id, lot_id, -sum(quantity) FROM stock_movements
+                    WHERE reference_type = ?1 AND reference_id = ?2 AND type = 'SALE'
+                    GROUP BY product_id, lot_id ORDER BY min(entry_no)""")
+                    .setParameter(1, REFERENCE_TYPE).setParameter(2, saleId).getResultList();
+            for (Object o : sold) {
+                Object[] row = (Object[]) o;
+                stock.post(sale.getBranchId(), (UUID) row[0], (UUID) row[1], MovementType.SALE_VOID,
+                        (BigDecimal) row[2], null, true, REFERENCE_TYPE, saleId, label);
             }
         }
         if (refundSession != null && cashNet.signum() > 0) {

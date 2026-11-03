@@ -233,5 +233,8 @@ export function medicineTags(badge: MedicineBadge | null | undefined): { label: 
   if (badge.coldChain) {
     tags.push({ label: 'Nevera', tone: 'info' });
   }
+  if (badge.expiringSoon) {
+    tags.push({ label: 'Vence pronto', tone: 'warn' });
+  }
   return tags;
 }

@@ -10,6 +10,8 @@ export const MOVEMENT_LABEL: Record<MovementType, string> = {
   TRANSFER_OUT: 'Traslado (salida)',
   TRANSFER_IN: 'Traslado (entrada)',
   RETURN: 'Devolución',
+  DISPOSAL: 'Baja (vencido o averiado)',
+  SUPPLIER_RETURN: 'Devolución al proveedor',
 };
 
 export const DOCUMENT_LABEL: Record<InventoryDocumentType, string> = {
@@ -17,6 +19,7 @@ export const DOCUMENT_LABEL: Record<InventoryDocumentType, string> = {
   ADJUSTMENT: 'Ajuste',
   TRANSFER: 'Traslado',
   COUNT: 'Conteo físico',
+  DISPOSAL: 'Baja con acta',
 };
 
 export const STATUS_LABEL: Record<StockStatus, string> = {
@@ -31,6 +34,7 @@ export const DOCUMENT_ROUTE: Record<InventoryDocumentType, string> = {
   ADJUSTMENT: 'ajuste',
   TRANSFER: 'traslado',
   COUNT: 'conteo',
+  DISPOSAL: 'baja',
 };
 
 export function documentTypeFromRoute(segment: string): InventoryDocumentType | null {

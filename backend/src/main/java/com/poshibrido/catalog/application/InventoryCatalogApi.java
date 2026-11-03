@@ -18,7 +18,7 @@ public interface InventoryCatalogApi {
      */
     record StockProduct(UUID id, String sku, String name, boolean active, boolean trackInventory, UUID baseUnitId,
                         String baseUnitCode, boolean baseUnitAllowsDecimals, BigDecimal cost,
-                        Map<UUID, BigDecimal> factors, Map<UUID, String> units) {
+                        Map<UUID, BigDecimal> factors, Map<UUID, String> units, boolean tracksLots) {
     }
 
     Map<UUID, StockProduct> stockProducts(Collection<UUID> productIds);

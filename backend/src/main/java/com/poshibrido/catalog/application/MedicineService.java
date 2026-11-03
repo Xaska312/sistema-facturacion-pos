@@ -12,6 +12,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.poshibrido.organization.application.BusinessSettings;
+import com.poshibrido.organization.application.BusinessSettingsApi;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -50,6 +57,10 @@ public class MedicineService {
     private final ProductMedicineRepository medicines;
     private final ProductRepository products;
     private final AuditLogger audit;
+    private final BusinessSettingsApi settings;
+
+    @PersistenceContext
+    private EntityManager em;
 
     /** Lo que se envía para guardar la ficha. */
     public record MedicineInput(String kind, String sanitaryRegistration, String cum, String activeIngredients,
@@ -90,14 +101,37 @@ public class MedicineService {
     public Map<UUID, ProductView.MedicineBadge> badges(Collection<UUID> productIds) {
         Map<UUID, ProductView.MedicineBadge> result = new HashMap<>();
         if (!productIds.isEmpty()) {
-            medicines.findAllById(productIds).forEach(m -> result.put(m.getProductId(), badge(m)));
+            Map<UUID, LocalDate> next = nextExpirations(productIds);
+            BusinessSettings cfg = settings.current();
+            LocalDate limit = LocalDate.now(ZoneId.of(cfg.timezone())).plusMonths(cfg.expiryAlertMonths());
+            medicines.findAllById(productIds).forEach(m -> {
+                LocalDate expiration = next.get(m.getProductId());
+                result.put(m.getProductId(), badge(m, expiration, expiration != null && !expiration.isAfter(limit)));
+            });
         }
         return result;
     }
 
-    static ProductView.MedicineBadge badge(ProductMedicine m) {
+    static ProductView.MedicineBadge badge(ProductMedicine m, LocalDate nextExpiration, boolean expiringSoon) {
         return new ProductView.MedicineBadge(m.getKind(), m.getSaleCondition(), m.getActiveIngredients(),
-                m.isAntibiotic(), m.isColdChain(), m.isUnitSale());
+                m.isAntibiotic(), m.isColdChain(), m.isUnitSale(), nextExpiration, expiringSoon);
+    }
+
+    /** Vencimiento más cercano por producto entre los lotes con existencia que aún no vencen. */
+    private Map<UUID, LocalDate> nextExpirations(Collection<UUID> productIds) {
+        BusinessSettings cfg = settings.current();
+        LocalDate today = LocalDate.now(ZoneId.of(cfg.timezone()));
+        Map<UUID, LocalDate> result = new HashMap<>();
+        for (Object o : em.createNativeQuery("""
+                SELECT b.product_id, min(l.expiration_date) FROM lot_balances b JOIN lots l ON l.id = b.lot_id
+                WHERE b.product_id IN (:ids) AND b.quantity > 0 AND l.expiration_date > :today
+                GROUP BY b.product_id""").setParameter("ids", productIds).setParameter("today", today)
+                .getResultList()) {
+            Object[] r = (Object[]) o;
+            Object v = r[1];
+            result.put((UUID) r[0], v instanceof java.sql.Date d ? d.toLocalDate() : (LocalDate) v);
+        }
+        return result;
     }
 
     static ProductMedicine.Data validate(MedicineInput in) {

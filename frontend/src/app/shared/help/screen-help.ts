@@ -241,8 +241,27 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
       'Empieza con un saldo inicial: lo que tienes hoy en el local.',
       'Usa un ajuste para daños, vencimientos o regalos, y un conteo físico para corregir según lo que contaste.',
       'Un traslado mueve mercancía de una sucursal a otra.',
+      'Una baja saca lo vencido o averiado y deja el acta para imprimir.',
     ],
     terms: ['saldo-inicial', 'costo-promedio'],
+  },
+  '/app/inventario/vencimientos': {
+    manual: 'lotes-vencimientos',
+    title: 'Vencimientos',
+    tips: [
+      'Lo vencido no se puede vender: dalo de baja con acta o devuélvelo al proveedor desde la compra.',
+      'Lo que vence pronto sale primero al vender; los meses de aviso se cambian en Ajustes.',
+      'Lo que está "sin lote" es de antes: cárgale el lote con un conteo físico.',
+    ],
+  },
+  '/app/inventario/trazabilidad': {
+    manual: 'lotes-vencimientos',
+    title: 'Trazabilidad de un lote',
+    tips: [
+      'Elige el producto y escribe el lote: ves la compra de la que entró y cada venta, traslado o baja.',
+      'Ante una alerta sanitaria del INVIMA sabes a quién se le vendió ese lote.',
+      'Las ventas a consumidor final no tienen nombre; regístrale el cliente si quieres poder ubicarlo.',
+    ],
   },
   '/app/inventario/kardex': {
     manual: 'existencias',

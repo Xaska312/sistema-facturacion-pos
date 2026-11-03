@@ -62,6 +62,7 @@ public class InventoryQueryService {
     private final BranchApi branches;
     private final MemberDirectory members;
     private final AuditLogger audit;
+    private final LotRegistry lots;
 
     @Transactional(readOnly = true)
     public Page<StockRow> stock(UUID branchId, String search, UUID categoryId, Pageable pageable) {
@@ -163,10 +164,12 @@ public class InventoryQueryService {
                         .filter(m -> InventoryDocumentService.REFERENCE_TYPE.equals(m.getReferenceType()))
                         .map(StockMovement::getReferenceId).collect(Collectors.toSet())).stream()
                 .collect(Collectors.toMap(InventoryDocument::getId, InventoryDocument::getNumber));
+        Map<UUID, LotRegistry.LotRef> lotRefs = lots.refs(content.stream().map(StockMovement::getLotId).toList());
         return result.map(m -> new KardexRow(m.getEntryNo() == null ? 0 : m.getEntryNo(), m.getCreatedAt(),
                 m.getBranchId(), branchById.containsKey(m.getBranchId()) ? branchById.get(m.getBranchId()).name() : null,
                 m.getType(), m.getQuantity(), m.getUnitCost(), m.getBalanceAfter(), m.getReferenceType(),
-                m.getReferenceId(), numbers.get(m.getReferenceId()), m.getReason(), names.get(m.getCreatedBy())));
+                m.getReferenceId(), numbers.get(m.getReferenceId()), m.getReason(), names.get(m.getCreatedBy()),
+                m.getLotId() == null ? null : lotRefs.get(m.getLotId()).lotNumber()));
     }
 
     @Transactional(readOnly = true)
@@ -197,14 +200,17 @@ public class InventoryQueryService {
         List<InventoryDocumentLine> docLines = lines.findByDocumentIdOrderByLineNo(id);
         Map<UUID, StockProduct> products = catalog.stockProducts(
                 docLines.stream().map(InventoryDocumentLine::getProductId).collect(Collectors.toSet()));
+        Map<UUID, LotRegistry.LotRef> lotRefs = lots.refs(docLines.stream().map(InventoryDocumentLine::getLotId).toList());
         List<DocumentLineView> lineViews = docLines.stream().map(l -> {
+            LotRegistry.LotRef lot = l.getLotId() == null ? null : lotRefs.get(l.getLotId());
             StockProduct p = products.get(l.getProductId());
             BigDecimal difference = l.getExpectedQuantity() == null ? null
                     : l.getCountedQuantity().subtract(l.getExpectedQuantity());
             return new DocumentLineView(l.getLineNo(), l.getProductId(), p == null ? null : p.sku(),
                     p == null ? null : p.name(), l.getUnitId(), p == null ? null : p.units().get(l.getUnitId()),
                     l.getQuantity(), l.getFactor(), l.getBaseQuantity(), l.getDirection(), l.getUnitCost(),
-                    l.getExpectedQuantity(), l.getCountedQuantity(), difference);
+                    l.getExpectedQuantity(), l.getCountedQuantity(), difference,
+                    lot == null ? null : lot.lotNumber(), lot == null ? null : lot.expirationDate());
         }).toList();
         return view(d, branchMap(branchIds), members.displayNames(java.util.Collections.singleton(d.getCreatedBy())),
                 lineViews);
@@ -224,7 +230,7 @@ public class InventoryQueryService {
         return new DocumentView(d.getId(), d.getNumber(), d.getType(), d.getBranchId(), from == null ? null : from.name(),
                 d.getTargetBranchId(), to == null ? null : to.name(), d.getReason(), d.getNotes(), d.getCreatedBy(),
                 names.get(d.getCreatedBy()), d.getCreatedAt(), lineViews == null ? 0 : lineViews.size(),
-                lineViews == null ? List.of() : lineViews);
+                lineViews == null ? List.of() : lineViews, d.getDisposalMethod(), d.getWitnessName());
     }
 
     private static StockRow row(UUID branchId, StockProduct p, StockBalance b) {

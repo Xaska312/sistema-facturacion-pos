@@ -11,9 +11,32 @@ export interface DraftLine {
   quantity: number | null;
   direction: Direction;
   unitCost: number | null;
-  /** Existencia actual en unidad base (conteos). */
+  /** Existencia actual en unidad base (conteos; con lote, la del lote). */
   currentQuantity: number | null;
   baseUnitCode: string;
+  /** Lotes (Fase 13-3): el producto los controla; el lote y su vencimiento de esta línea. */
+  tracksLots?: boolean;
+  lotNumber?: string;
+  expirationDate?: string;
+  /** Conteo: línea de un lote ya registrado (no se cambia el número) o de lo que no tiene lote. */
+  lotFixed?: boolean;
+  /** Lotes con existencia en la sucursal, para elegir de cuál sale (salidas, traslados y bajas). */
+  lotOptions?: { lotNumber: string; expirationDate: string | null; quantity: number; expired: boolean }[];
+}
+
+/** Lote como lo guarda el servidor: mayúsculas y sin espacios de sobra. */
+export function normalizeLot(lot: string | null | undefined): string {
+  return (lot ?? '').trim().replace(/\s+/g, ' ').toUpperCase();
+}
+
+/** La línea es una entrada (saldo inicial, ajuste de entrada): lleva lote y vencimiento nuevos. */
+export function isEntry(type: InventoryDocumentType, line: DraftLine): boolean {
+  return type === 'INITIAL' || (type === 'ADJUSTMENT' && line.direction === 'IN');
+}
+
+/** Copia de la línea para otro lote del mismo producto. */
+export function anotherLot(line: DraftLine): DraftLine {
+  return { ...line, quantity: null, lotNumber: '', expirationDate: '', lotFixed: false, currentQuantity: 0 };
 }
 
 export function draftLine(product: Product, unitId: string | null): DraftLine {
@@ -32,6 +55,9 @@ export function draftLine(product: Product, unitId: string | null): DraftLine {
     unitCost: null,
     currentQuantity: null,
     baseUnitCode: product.baseUnitCode ?? '',
+    tracksLots: product.tracksLots,
+    lotNumber: '',
+    expirationDate: '',
   };
 }
 
@@ -102,13 +128,31 @@ export function linesProblem(type: InventoryDocumentType, lines: DraftLine[]): s
   if (lines.length === 0) {
     return 'Agrega al menos un producto.';
   }
+  const seen = new Set<string>();
   for (const line of lines) {
+    const key = line.productId + '|' + normalizeLot(line.lotNumber);
+    if (seen.has(key)) {
+      return line.lotNumber ? `El lote ${normalizeLot(line.lotNumber)} de ${line.name} está dos veces.`
+        : `${line.name} está dos veces: deja una sola línea (o indica el lote de cada una).`;
+    }
+    seen.add(key);
     const q = line.quantity === null || String(line.quantity) === '' ? NaN : Number(line.quantity);
     if (Number.isNaN(q) || q < 0 || (q === 0 && type !== 'COUNT')) {
       return `Revisa la cantidad de ${line.name}.`;
     }
     if (type === 'INITIAL' && (line.unitCost === null || String(line.unitCost) === '' || Number(line.unitCost) < 0)) {
       return `Indica el costo de ${line.name}.`;
+    }
+    const lot = normalizeLot(line.lotNumber);
+    const newLot = isEntry(type, line) || (type === 'COUNT' && !line.lotFixed && lot !== '');
+    if (line.tracksLots && isEntry(type, line) && (!lot || !line.expirationDate)) {
+      return `${line.name} lleva lote y vencimiento: escríbelos como vienen en el empaque.`;
+    }
+    if (newLot && lot && !/^[A-Z0-9][A-Z0-9 ./_-]{0,39}$/.test(lot)) {
+      return `El lote de ${line.name} solo admite letras, números, guion, punto o barra (máximo 40).`;
+    }
+    if (type === 'COUNT' && !line.lotFixed && lot && !line.expirationDate) {
+      return `Escribe el vencimiento del lote ${lot} de ${line.name}.`;
     }
   }
   return null;
@@ -117,6 +161,11 @@ export function linesProblem(type: InventoryDocumentType, lines: DraftLine[]): s
 export function toLineInputs(type: InventoryDocumentType, lines: DraftLine[]): InventoryLineInput[] {
   return lines.map((l) => {
     const input: InventoryLineInput = { productId: l.productId, unitId: l.unitId, quantity: Number(l.quantity) };
+    const lot = normalizeLot(l.lotNumber);
+    if (lot) {
+      input.lotNumber = lot;
+      input.expirationDate = l.expirationDate || null;
+    }
     const hasCost = l.unitCost !== null && String(l.unitCost) !== '';
     if (type === 'ADJUSTMENT') {
       input.direction = l.direction;

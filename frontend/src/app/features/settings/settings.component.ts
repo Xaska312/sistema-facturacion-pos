@@ -202,6 +202,19 @@ const TIMEZONE_LABEL: Record<string, string> = {
           </label>
         </fieldset>
       }
+      <!-- Medicamentos (Fase 13-3): aviso de vencimiento de los lotes. -->
+      @if (hasMedicines()) {
+        <fieldset class="flex flex-col gap-4" [disabled]="!canEdit()">
+          <legend class="text-base font-semibold mb-2">Vencimientos</legend>
+          <label class="flex flex-col gap-1 max-w-xs">
+            <span class="text-sm font-medium">Avisar con cuántos meses de anticipación</span>
+            <input pInputText type="number" min="1" max="12" step="1" formControlName="expiryAlertMonths"
+                   aria-describedby="expiry-help" />
+            <span id="expiry-help" class="text-xs text-muted">Los lotes que vencen dentro de ese tiempo salen en
+              Vencimientos y con la marca "Vence pronto" al vender. Lo usual es 3.</span>
+          </label>
+        </fieldset>
+      }
       @if (canEdit()) {
         <div class="flex justify-end">
           <p-button type="submit" label="Guardar" [loading]="saving()" [disabled]="form.invalid || form.pristine" />
@@ -266,6 +279,7 @@ export class SettingsComponent implements OnInit {
   protected readonly canEdit = computed(() => this.auth.hasPermission('settings:manage'));
   protected readonly hasQuotes = computed(() => this.auth.hasPermission('module:quotes'));
   protected readonly hasTables = computed(() => this.auth.hasPermission('module:tables'));
+  protected readonly hasMedicines = computed(() => this.auth.hasPermission('module:medicines'));
   /** Solo el dueño puede eliminar (cerrar) el negocio; el backend lo vuelve a comprobar. */
   protected readonly isOwner = computed(() => this.auth.currentTenant()?.owner === true);
   protected readonly tradeName = computed(() => this.auth.currentTenant()?.tradeName ?? null);
@@ -291,6 +305,7 @@ export class SettingsComponent implements OnInit {
     quoteValidityDays: [15, [Validators.required, Validators.min(1), Validators.max(365)]],
     quoteTerms: ['', Validators.maxLength(1000)],
     tipPercent: [10, [Validators.required, Validators.min(0), Validators.max(20)]],
+    expiryAlertMonths: [3, [Validators.required, Validators.min(1), Validators.max(12)]],
   });
 
   ngOnInit(): void {

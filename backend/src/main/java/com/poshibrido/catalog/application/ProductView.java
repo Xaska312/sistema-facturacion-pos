@@ -18,8 +18,13 @@ public record ProductView(UUID id, String sku, String name, String description, 
     /**
      * Resumen de la ficha del medicamento (Fase 13-1, decisión 279) para la lista y el POS; nulo si no tiene ficha.
      */
+    /**
+     * {@code nextExpiration}: el vencimiento más cercano entre los lotes con existencia que aún no vencen (el que sale
+     * primero con FEFO), y {@code expiringSoon} si cae dentro de los meses de aviso de Ajustes (Fase 13-3).
+     */
     public record MedicineBadge(String kind, String saleCondition, String activeIngredients, boolean antibiotic,
-                                boolean coldChain, boolean unitSale) {
+                                boolean coldChain, boolean unitSale, java.time.LocalDate nextExpiration,
+                                boolean expiringSoon) {
     }
 
     public record ConversionView(UUID unitId, String unitCode, BigDecimal factor, BigDecimal salePrice,

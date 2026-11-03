@@ -17,13 +17,13 @@ public final class PurchaseViews {
                                  String supplierName, String supplierInvoice, LocalDate invoiceDate, String paymentType,
                                  LocalDate dueDate, BigDecimal total, BigDecimal paid, BigDecimal balance,
                                  boolean overdue, BigDecimal rejectedTotal, Instant receivedAt, String receivedByName,
-                                 int lineCount) {
+                                 int lineCount, BigDecimal returnedTotal) {
     }
 
     public record LineView(int lineNo, UUID productId, String productName, String sku, String unitCode,
                            BigDecimal quantity, BigDecimal unitCost, BigDecimal taxRate, BigDecimal lineTotal,
                            String lotNumber, LocalDate expirationDate, String sanitaryRegistration, String status,
-                           String rejectReason, BigDecimal baseQuantity) {
+                           String rejectReason, BigDecimal baseQuantity, BigDecimal returnedQuantity) {
     }
 
     public record PaymentView(UUID id, BigDecimal amount, String methodName, boolean fromCash, String reference,
@@ -32,7 +32,16 @@ public final class PurchaseViews {
 
     public record ReceiptView(ReceiptSummary summary, BigDecimal subtotal, BigDecimal taxTotal,
                               BigDecimal coldChainTemperature, String notes, boolean checksConfirmed,
-                              List<LineView> lines, List<PaymentView> payments) {
+                              List<LineView> lines, List<PaymentView> payments, List<ReturnView> returns) {
+    }
+
+    /** Devolución al proveedor (Fase 13-3): lo devuelto baja lo que se le debe. */
+    public record ReturnView(UUID id, long number, String reason, BigDecimal subtotal, BigDecimal taxTotal,
+                             BigDecimal total, Instant createdAt, String createdByName, List<ReturnLineView> lines) {
+    }
+
+    public record ReturnLineView(int receiptLineNo, UUID productId, String productName, String unitCode,
+                                 BigDecimal quantity, String lotNumber, BigDecimal lineTotal) {
     }
 
     /** Cuentas por pagar: lo que se debe, lo vencido, lo que vence en 7 días y las facturas con saldo. */
