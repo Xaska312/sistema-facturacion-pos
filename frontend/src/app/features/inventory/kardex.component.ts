@@ -24,7 +24,7 @@ import { LatestRequest } from '../../shared/latest-request';
       cada una.
     </p>
 
-    <app-data-table [columns]="columns" [page]="page()" [loading]="loading()" [trackBy]="trackByEntry" [pageSize]="50"
+    <app-data-table [columns]="columns()" [page]="page()" [loading]="loading()" [trackBy]="trackByEntry" [pageSize]="50"
                     [pageSizeOptions]="[20, 50, 100]" caption="Movimientos del producto, del más reciente al más antiguo"
                     emptyIcon="pi pi-list" emptyTitle="Sin movimientos en el periodo"
                     emptyMessage="Cambia la sucursal o las fechas para ver otros movimientos."
@@ -80,7 +80,17 @@ export class KardexComponent implements OnInit {
   private query: TableQuery = initialQuery(50);
 
   protected readonly trackByEntry = (row: KardexRow): number => row.entryNo;
-  protected readonly columns: ColumnDef<KardexRow>[] = [
+  /** Con lotes (Fase 13-3), una columna con el lote de cada movimiento ("Sin lote" = existencias de antes). */
+  protected readonly columns = computed<ColumnDef<KardexRow>[]>(() => {
+    const lots = this.product()?.tracksLots ?? false;
+    return lots
+      ? [...this.baseColumns.slice(0, 2),
+        { header: 'Lote', cell: (m: KardexRow) => m.lotNumber ?? 'Sin lote', kind: 'mono' as const },
+        ...this.baseColumns.slice(2)]
+      : this.baseColumns;
+  });
+
+  private readonly baseColumns: ColumnDef<KardexRow>[] = [
     { header: 'Fecha', cell: (m) => m.createdAt, kind: 'datetime' },
     { header: 'Movimiento', cell: (m) => MOVEMENT_LABEL[m.type] },
     { header: 'Documento', cell: (m) => documentNumber(m.documentNumber), kind: 'mono', hideOnMobile: true },
