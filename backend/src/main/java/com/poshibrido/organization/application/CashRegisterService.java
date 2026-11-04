@@ -6,6 +6,8 @@ import com.poshibrido.organization.domain.CashRegister;
 import com.poshibrido.organization.infrastructure.BranchRepository;
 import com.poshibrido.organization.infrastructure.CashRegisterRepository;
 import com.poshibrido.shared.error.BusinessRuleException;
+import com.poshibrido.subscription.application.SubscriptionApi;
+import com.poshibrido.tenancy.application.CurrentTenant;
 import com.poshibrido.shared.error.ConflictException;
 import com.poshibrido.shared.error.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,7 @@ public class CashRegisterService {
     private final CashRegisterRepository registers;
     private final BranchRepository branches;
     private final AuditLogger audit;
+    private final SubscriptionApi subscriptions;
 
     @Transactional(readOnly = true)
     public Page<CashRegister> list(UUID branchId, Pageable pageable) {
@@ -47,6 +50,8 @@ public class CashRegisterService {
         if (registers.existsByBranchIdAndCode(branchId, code)) {
             throw new ConflictException("La sucursal ya tiene una caja con el código " + code + ".");
         }
+        // Decisión 288: el plan limita las cajas activas.
+        subscriptions.requireCanAddRegister(CurrentTenant.require());
         CashRegister created = CashRegister.create(branchId, code, name.trim());
         created.setShared(shared);
         CashRegister register = registers.save(created);
@@ -78,6 +83,7 @@ public class CashRegisterService {
         CashRegister register = get(id);
         if (register.isActive() != active) {
             if (active) {
+                subscriptions.requireCanAddRegister(CurrentTenant.require());
                 register.activate();
             } else {
                 register.deactivate();

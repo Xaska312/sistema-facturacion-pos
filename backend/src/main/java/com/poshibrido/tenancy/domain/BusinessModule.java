@@ -90,6 +90,26 @@ public enum BusinessModule {
         return List.copyOf(result);
     }
 
+    /**
+     * Con las funciones del plan (decisión 288): además, sin los permisos de las funciones que el plan no incluye y con
+     * la autoridad {@code plan:…} de las que sí.
+     */
+    public static List<String> effectivePermissions(Collection<String> rolePermissions, Set<BusinessModule> enabled,
+                                                    Set<PlanFeature> features) {
+        Set<String> result = new LinkedHashSet<>();
+        for (String permission : effectivePermissions(rolePermissions, enabled)) {
+            if (PlanFeature.owning(permission).map(features::contains).orElse(true)) {
+                result.add(permission);
+            }
+        }
+        features.stream().sorted().forEach(f -> result.add(f.authority()));
+        return List.copyOf(result);
+    }
+
+    public static Set<BusinessModule> all() {
+        return EnumSet.allOf(BusinessModule.class);
+    }
+
     /** "CREDIT,ORDERS" ↔ conjunto; los códigos desconocidos se ignoran (un módulo retirado no rompe la lectura). */
     public static Set<BusinessModule> parse(String csv) {
         Set<BusinessModule> result = EnumSet.noneOf(BusinessModule.class);

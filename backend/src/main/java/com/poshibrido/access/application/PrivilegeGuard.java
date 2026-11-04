@@ -5,6 +5,7 @@ import com.poshibrido.shared.error.ForbiddenException;
 import com.poshibrido.shared.security.CurrentActor;
 import com.poshibrido.tenancy.application.CurrentTenant;
 import com.poshibrido.tenancy.domain.BusinessModule;
+import com.poshibrido.tenancy.domain.PlanFeature;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -53,6 +54,8 @@ public class PrivilegeGuard {
 
     /** Permiso de un módulo que está apagado en este negocio (su autoridad {@code module:…} no está en el token). */
     private static boolean isOfDisabledModule(String permission, Set<String> actor) {
-        return BusinessModule.owning(permission).map(m -> !actor.contains(m.authority())).orElse(false);
+        return BusinessModule.owning(permission).map(m -> !actor.contains(m.authority())).orElse(false)
+                // Decisión 288: lo mismo con una función que el plan no incluye.
+                || PlanFeature.owning(permission).map(f -> !actor.contains(f.authority())).orElse(false);
     }
 }

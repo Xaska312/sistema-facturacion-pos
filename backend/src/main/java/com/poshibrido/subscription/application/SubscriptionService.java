@@ -1,5 +1,7 @@
 package com.poshibrido.subscription.application;
 
+import com.poshibrido.audit.application.SecurityEvent;
+import com.poshibrido.audit.application.SecurityEventLogger;
 import com.poshibrido.mail.MailTemplates;
 import com.poshibrido.mail.Mailer;
 import com.poshibrido.shared.api.PageResponse;
@@ -8,6 +10,8 @@ import com.poshibrido.shared.error.BusinessRuleException;
 import com.poshibrido.shared.error.NotFoundException;
 import com.poshibrido.shared.id.Ids;
 import com.poshibrido.subscription.application.ActivationCodeService.Redeemed;
+import com.poshibrido.subscription.application.SubscriptionViews.Entitled;
+import com.poshibrido.subscription.application.SubscriptionViews.Extras;
 import com.poshibrido.subscription.application.SubscriptionViews.PaymentView;
 import com.poshibrido.subscription.application.SubscriptionViews.PlanView;
 import com.poshibrido.subscription.application.SubscriptionViews.SubscriptionRow;
@@ -16,6 +20,8 @@ import com.poshibrido.subscription.application.SubscriptionViews.Usage;
 import com.poshibrido.subscription.domain.BillingCycle;
 import com.poshibrido.subscription.domain.SubscriptionStatus;
 import com.poshibrido.tenancy.application.TenantRef;
+import com.poshibrido.tenancy.domain.BusinessModule;
+import com.poshibrido.tenancy.domain.PlanFeature;
 import com.poshibrido.tenancy.domain.TenantSchemas;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -32,7 +38,12 @@ import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
@@ -55,24 +66,49 @@ public class SubscriptionService implements SubscriptionApi {
     private final ActivationCodeService codes;
     private final Mailer mailer;
     private final MailTemplates templates;
+    private final SecurityEventLogger securityEvents;
     private final ConcurrentHashMap<UUID, Cached> cache = new ConcurrentHashMap<>();
 
     public SubscriptionService(DataSource dataSource, SubscriptionProperties properties, ActivationCodeService codes,
-                               Mailer mailer, MailTemplates templates) {
+                               Mailer mailer, MailTemplates templates, SecurityEventLogger securityEvents) {
         this.jdbc = new JdbcTemplate(dataSource);
         this.properties = properties;
         this.codes = codes;
         this.mailer = mailer;
         this.templates = templates;
+        this.securityEvents = securityEvents;
     }
 
     /** Suscripción con su plan y los datos del negocio y del dueño. */
     record Current(UUID tenantId, String slug, String tradeName, String schema, String tenantStatus, String ownerEmail,
                    String ownerName, PlanView plan, boolean trial, BillingCycle cycle, Instant startedAt,
-                   Instant endsAt) {
+                   Instant endsAt, Extras extras, Instant priceLockedUntil) {
 
         SubscriptionStatus status(Duration grace, Instant now) {
             return SubscriptionStatus.of(trial, endsAt, grace, now);
+        }
+
+        /** Los extras cuentan mientras no tengan fecha de fin o no haya llegado. */
+        boolean extrasActive(Instant now) {
+            return extras.until() == null || extras.until().isAfter(now);
+        }
+
+        Entitled entitled(Instant now) {
+            boolean on = extrasActive(now);
+            Set<String> modules = new java.util.LinkedHashSet<>(plan.modules());
+            Set<String> features = new java.util.LinkedHashSet<>(plan.features());
+            if (on) {
+                modules.addAll(extras.modules());
+                features.addAll(extras.features());
+            }
+            return new Entitled(plus(plan.maxBranches(), on ? extras.branches() : 0),
+                    plus(plan.maxUsers(), on ? extras.users() : 0), plus(plan.maxRegisters(), on ? extras.registers() : 0),
+                    csvList(BusinessModule.format(BusinessModule.parse(String.join(",", modules)))),
+                    csvList(PlanFeature.format(PlanFeature.parse(String.join(",", features)))));
+        }
+
+        private static Integer plus(Integer max, int extra) {
+            return max == null ? null : max + extra;
         }
     }
 
@@ -143,7 +179,7 @@ public class SubscriptionService implements SubscriptionApi {
     @Override
     public void requireCanAddBranch(TenantRef tenant) {
         current(tenant.id()).ifPresent(c -> {
-            Integer max = c.plan().maxBranches();
+            Integer max = c.entitled(Instant.now()).maxBranches();
             if (max != null && countBranches(c.schema()) >= max) {
                 throw new BusinessRuleException("Tu plan " + c.plan().name() + " permite " + max
                         + (max == 1 ? " sucursal activa" : " sucursales activas")
@@ -155,13 +191,34 @@ public class SubscriptionService implements SubscriptionApi {
     @Override
     public void requireCanAddUser(TenantRef tenant) {
         current(tenant.id()).ifPresent(c -> {
-            Integer max = c.plan().maxUsers();
+            Integer max = c.entitled(Instant.now()).maxUsers();
             if (max != null && countUsers(c.tenantId(), c.schema()) >= max) {
                 throw new BusinessRuleException("Tu plan " + c.plan().name() + " permite " + max
                         + " usuarios (contando las invitaciones pendientes). Para agregar otro, revoca una invitación,"
                         + " desactiva a alguien o cambia a un plan con más usuarios.");
             }
         });
+    }
+
+    @Override
+    public void requireCanAddRegister(TenantRef tenant) {
+        current(tenant.id()).ifPresent(c -> {
+            Integer max = c.entitled(Instant.now()).maxRegisters();
+            if (max != null && countRegisters(c.schema()) >= max) {
+                throw new BusinessRuleException("Tu plan " + c.plan().name() + " permite " + max
+                        + (max == 1 ? " caja activa" : " cajas activas")
+                        + ". Para agregar otra, desactiva una o cambia a un plan con más cajas.");
+            }
+        });
+    }
+
+    @Override
+    public Entitlements entitlements(UUID tenantId) {
+        return current(tenantId).map(c -> {
+            Entitled e = c.entitled(Instant.now());
+            return new Entitlements(c.plan().name(), BusinessModule.parse(String.join(",", e.modules())),
+                    PlanFeature.parse(String.join(",", e.features())));
+        }).orElseGet(Entitlements::everything);
     }
 
     // ------------------------------------------------------------------ consultas
@@ -174,12 +231,15 @@ public class SubscriptionService implements SubscriptionApi {
         SubscriptionStatus status = c.status(properties.grace(), now);
         // Un negocio que no terminó de crearse no tiene schema: sin uso que contar.
         boolean provisioned = "ACTIVE".equals(c.tenantStatus()) || "SUSPENDED".equals(c.tenantStatus());
-        Usage usage = provisioned ? new Usage(countBranches(c.schema()), countUsers(c.tenantId(), c.schema()))
-                : new Usage(0, 0);
+        Usage usage = provisioned ? new Usage(countBranches(c.schema()), countUsers(c.tenantId(), c.schema()),
+                countRegisters(c.schema())) : new Usage(0, 0, 0);
+        Extras x = c.extras();
         return new SubscriptionView(c.tenantId(), c.tradeName(), c.plan(), status, c.trial(), c.cycle(),
                 c.startedAt(), c.endsAt(), c.trial() ? null : c.endsAt().plus(properties.grace()),
                 daysLeft(c.endsAt(), now), usage, properties.paymentInstructions(),
-                withPayments ? payments(tenantId) : List.of());
+                withPayments ? payments(tenantId) : List.of(), c.entitled(now),
+                new Extras(x.modules(), x.features(), x.branches(), x.registers(), x.users(), x.note(), x.until(),
+                        c.extrasActive(now)), c.priceLockedUntil());
     }
 
     /** Vista del propio negocio: sin las notas internas que el administrador escribe en cada pago. */
@@ -190,9 +250,12 @@ public class SubscriptionService implements SubscriptionApi {
                 .map(p -> new PaymentView(p.id(), p.planCode(), p.billingCycle(), p.periods(), p.amount(), p.method(),
                         p.reference(), null, p.periodStart(), p.periodEnd(), p.source(), p.createdAt()))
                 .toList();
+        Extras x = v.extras();
+        // La nota de los extras es interna del administrador.
         return new SubscriptionView(v.tenantId(), v.tradeName(), v.plan(), v.status(), v.trial(), v.billingCycle(),
                 v.startedAt(), v.endsAt(), v.graceEndsAt(), v.daysLeft(), v.usage(), v.paymentInstructions(),
-                payments);
+                payments, v.entitled(), new Extras(x.modules(), x.features(), x.branches(), x.registers(), x.users(),
+                        null, x.until(), x.active()), v.priceLockedUntil());
     }
 
     @Transactional(readOnly = true)
@@ -243,12 +306,15 @@ public class SubscriptionService implements SubscriptionApi {
     // ------------------------------------------------------------------ administración (consola de plataforma)
 
     @Transactional
-    public PlanView updatePlan(String code, String name, Integer maxBranches, Integer maxUsers,
-                               BigDecimal monthlyPrice, BigDecimal annualPrice, boolean active) {
+    public PlanView updatePlan(String code, String name, Integer maxBranches, Integer maxUsers, Integer maxRegisters,
+                               BigDecimal monthlyPrice, BigDecimal annualPrice, boolean active,
+                               List<String> modules, List<String> features) {
         int updated = jdbc.update("""
-                UPDATE platform.plans SET name = ?, max_branches = ?, max_users = ?, monthly_price = ?,
-                       annual_price = ?, active = ?, updated_at = now()
-                WHERE code = ?""", name.trim(), maxBranches, maxUsers, monthlyPrice, annualPrice, active, code);
+                UPDATE platform.plans SET name = ?, max_branches = ?, max_users = ?, max_registers = ?,
+                       monthly_price = ?, annual_price = ?, active = ?, modules = coalesce(?, modules),
+                       features = coalesce(?, features), updated_at = now()
+                WHERE code = ?""", name.trim(), maxBranches, maxUsers, maxRegisters, monthlyPrice, annualPrice, active,
+                modules == null ? null : modulesCsv(modules), features == null ? null : featuresCsv(features), code);
         if (updated == 0) {
             throw new NotFoundException("Plan no encontrado.");
         }
@@ -292,6 +358,64 @@ public class SubscriptionService implements SubscriptionApi {
         mailer.send(templates.subscriptionPaid(updated.ownerEmail(), updated.ownerName(), updated.tradeName(),
                 updated.plan().name(), end));
         return view(tenantId, true);
+    }
+
+    /**
+     * Extras de un negocio (decisión 288): módulos, funciones, sedes, cajas y usuarios de más que el administrador le da
+     * aunque su plan no los incluya, con una nota y una fecha de fin opcional. Queda en los eventos de seguridad.
+     */
+    @Transactional
+    public SubscriptionView setExtras(UUID tenantId, List<String> modules, List<String> features, int branches,
+                                      int registers, int users, String note, Instant until, UUID adminId) {
+        if (branches < 0 || branches > 100 || registers < 0 || registers > 100 || users < 0 || users > 500) {
+            throw new BusinessRuleException("Los extras van de 0 a 100 sedes o cajas y de 0 a 500 usuarios.");
+        }
+        if (until != null && !until.isAfter(Instant.now())) {
+            throw new BusinessRuleException("La fecha de fin de los extras debe ser futura (o vacía, sin fin).");
+        }
+        String mods = modulesCsv(modules);
+        String feats = featuresCsv(features);
+        String cleanNote = blankToNull(note);
+        if (cleanNote != null && cleanNote.length() > 300) {
+            throw new BusinessRuleException("La nota admite hasta 300 caracteres.");
+        }
+        int updated = jdbc.update("""
+                UPDATE platform.subscriptions SET extra_modules = ?, extra_features = ?, extra_branches = ?,
+                       extra_registers = ?, extra_users = ?, extras_note = ?, extras_until = ?, updated_at = now()
+                WHERE tenant_id = ?""", mods, feats, branches, registers, users, cleanNote,
+                until == null ? null : Timestamp.from(until), tenantId);
+        if (updated == 0) {
+            throw new NotFoundException("El negocio no tiene suscripción.");
+        }
+        evict(tenantId);
+        Map<String, Object> details = new LinkedHashMap<>();
+        details.put("modules", mods);
+        details.put("features", feats);
+        details.put("branches", branches);
+        details.put("registers", registers);
+        details.put("users", users);
+        details.put("until", until == null ? null : until.toString());
+        details.put("note", cleanNote);
+        securityEvents.record(SecurityEvent.SUBSCRIPTION_EXTRAS_CHANGED, adminId, null, tenantId, details);
+        return view(tenantId, true);
+    }
+
+    private static String modulesCsv(List<String> codes) {
+        Set<BusinessModule> set = EnumSet.noneOf(BusinessModule.class);
+        for (String code : codes == null ? List.<String>of() : codes) {
+            set.add(Arrays.stream(BusinessModule.values()).filter(m -> m.name().equals(code)).findFirst()
+                    .orElseThrow(() -> new BusinessRuleException("Módulo desconocido: " + code)));
+        }
+        return BusinessModule.format(set);
+    }
+
+    private static String featuresCsv(List<String> codes) {
+        Set<PlanFeature> set = EnumSet.noneOf(PlanFeature.class);
+        for (String code : codes == null ? List.<String>of() : codes) {
+            set.add(Arrays.stream(PlanFeature.values()).filter(f -> f.name().equals(code)).findFirst()
+                    .orElseThrow(() -> new BusinessRuleException("Función desconocida: " + code)));
+        }
+        return PlanFeature.format(set);
     }
 
     /** Cambia el plan sin cambiar la fecha de fin (p. ej. pasar a Pro a mitad de mes). */
@@ -346,8 +470,9 @@ public class SubscriptionService implements SubscriptionApi {
         return jdbc.query("""
                 SELECT s.*, t.slug, t.trade_name, t.schema_name, t.status AS tenant_status, u.email, u.full_name,
                        p.code AS p_code, p.name AS p_name, p.max_branches AS p_max_branches,
-                       p.max_users AS p_max_users, p.monthly_price AS p_monthly_price,
-                       p.annual_price AS p_annual_price, p.active AS p_active
+                       p.max_users AS p_max_users, p.max_registers AS p_max_registers,
+                       p.monthly_price AS p_monthly_price, p.annual_price AS p_annual_price, p.active AS p_active,
+                       p.modules AS p_modules, p.features AS p_features, p.legacy AS p_legacy
                 FROM platform.subscriptions s
                 JOIN platform.tenants t ON t.id = s.tenant_id
                 JOIN platform.users u ON u.id = t.owner_user_id
@@ -356,7 +481,11 @@ public class SubscriptionService implements SubscriptionApi {
                 rs.getString("slug"), rs.getString("trade_name"), rs.getString("schema_name"),
                 rs.getString("tenant_status"), rs.getString("email"), rs.getString("full_name"), plan(rs, "p_"),
                 rs.getBoolean("trial"), BillingCycle.valueOf(rs.getString("billing_cycle")),
-                rs.getTimestamp("started_at").toInstant(), rs.getTimestamp("ends_at").toInstant()), tenantId)
+                rs.getTimestamp("started_at").toInstant(), rs.getTimestamp("ends_at").toInstant(),
+                new Extras(csvList(rs.getString("extra_modules")), csvList(rs.getString("extra_features")),
+                        rs.getInt("extra_branches"), rs.getInt("extra_registers"), rs.getInt("extra_users"),
+                        rs.getString("extras_note"), instantOrNull(rs.getTimestamp("extras_until")), true),
+                instantOrNull(rs.getTimestamp("price_locked_until"))), tenantId)
                 .stream().findFirst();
     }
 
@@ -386,6 +515,12 @@ public class SubscriptionService implements SubscriptionApi {
         return count == null ? 0 : count;
     }
 
+    private long countRegisters(String schema) {
+        Long count = jdbc.queryForObject("SELECT count(*) FROM " + TenantSchemas.requireTenantSchema(schema)
+                + ".cash_registers WHERE active", Long.class);
+        return count == null ? 0 : count;
+    }
+
     /** Miembros activos más invitaciones pendientes vigentes (al aceptarlas serán usuarios). */
     private long countUsers(UUID tenantId, String schema) {
         Long members = jdbc.queryForObject("SELECT count(*) FROM " + TenantSchemas.requireTenantSchema(schema)
@@ -407,8 +542,18 @@ public class SubscriptionService implements SubscriptionApi {
     private static PlanView plan(ResultSet rs, String prefix) throws SQLException {
         return new PlanView(rs.getString(prefix + "code"), rs.getString(prefix + "name"),
                 (Integer) rs.getObject(prefix + "max_branches"), (Integer) rs.getObject(prefix + "max_users"),
-                rs.getBigDecimal(prefix + "monthly_price"), rs.getBigDecimal(prefix + "annual_price"),
-                rs.getBoolean(prefix + "active"));
+                (Integer) rs.getObject(prefix + "max_registers"), rs.getBigDecimal(prefix + "monthly_price"),
+                rs.getBigDecimal(prefix + "annual_price"), rs.getBoolean(prefix + "active"),
+                csvList(rs.getString(prefix + "modules")), csvList(rs.getString(prefix + "features")),
+                rs.getBoolean(prefix + "legacy"));
+    }
+
+    private static List<String> csvList(String csv) {
+        return csv == null || csv.isBlank() ? List.of() : List.of(csv.split(","));
+    }
+
+    private static Instant instantOrNull(Timestamp t) {
+        return t == null ? null : t.toInstant();
     }
 
     static long daysLeft(Instant endsAt, Instant now) {

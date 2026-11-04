@@ -11,6 +11,7 @@ import { Subscription, SubscriptionStatus } from '../../core/api/api.models';
 import { OrganizationApi } from '../../core/api/organization.api';
 import { SubscriptionApi } from '../../core/api/subscription.api';
 import { AuthService } from '../../core/auth/auth.service';
+import { includedText } from '../platform/plan-features';
 import { formatDate } from '../../shared/format';
 import { formatCop } from '../../shared/money';
 import { FormDialogComponent } from '../../shared/forms/form-dialog.component';
@@ -67,12 +68,26 @@ const TIMEZONE_LABEL: Record<string, string> = {
           </div>
           <div class="flex flex-col gap-1">
             <dt class="text-muted">Uso de sucursales</dt>
-            <dd>{{ s.usage.branches }} de {{ s.plan.maxBranches ?? 'sin límite' }}</dd>
+            <dd>{{ s.usage.branches }} de {{ s.entitled.maxBranches ?? 'sin límite' }}</dd>
           </div>
           <div class="flex flex-col gap-1">
             <dt class="text-muted">Uso de usuarios</dt>
-            <dd>{{ s.usage.users }} de {{ s.plan.maxUsers ?? 'sin límite' }}</dd>
+            <dd>{{ s.usage.users }} de {{ s.entitled.maxUsers ?? 'sin límite' }}</dd>
           </div>
+          <div class="flex flex-col gap-1">
+            <dt class="text-muted">Uso de cajas</dt>
+            <dd>{{ s.usage.registers }} de {{ s.entitled.maxRegisters ?? 'sin límite' }}</dd>
+          </div>
+          <div class="flex flex-col gap-1 sm:col-span-2">
+            <dt class="text-muted">Incluye</dt>
+            <dd>{{ included(s.entitled.modules, s.entitled.features) }}</dd>
+          </div>
+          @if (s.priceLockedUntil) {
+            <div class="flex flex-col gap-1 sm:col-span-2">
+              <dt class="text-muted">Tu precio</dt>
+              <dd>Se mantiene hasta el {{ formatDate(s.priceLockedUntil) }}, como cliente de antes de los planes nuevos.</dd>
+            </div>
+          }
           @if (s.plan.monthlyPrice !== null || s.plan.annualPrice !== null) {
             <div class="flex flex-col gap-1 sm:col-span-2">
               <dt class="text-muted">Precio</dt>
@@ -236,7 +251,9 @@ const TIMEZONE_LABEL: Record<string, string> = {
 
     <app-branding-section />
 
-    <app-printer-section />
+    @if (canDirectPrint()) {
+      <app-printer-section />
+    }
 
     @if (isOwner()) {
       <section class="card p-4 md:p-6 mt-6 max-w-2xl border border-danger" aria-labelledby="danger-title">
@@ -288,6 +305,9 @@ export class SettingsComponent implements OnInit {
   protected readonly hasQuotes = computed(() => this.auth.hasPermission('module:quotes'));
   protected readonly hasTables = computed(() => this.auth.hasPermission('module:tables'));
   protected readonly hasMedicines = computed(() => this.auth.hasPermission('module:medicines'));
+  /** Impresión directa (decisión 288: según el plan). */
+  protected readonly canDirectPrint = computed(() => this.auth.hasPermission('plan:direct-print'));
+  protected readonly included = includedText;
   /** Solo el dueño puede eliminar (cerrar) el negocio; el backend lo vuelve a comprobar. */
   protected readonly isOwner = computed(() => this.auth.currentTenant()?.owner === true);
   protected readonly tradeName = computed(() => this.auth.currentTenant()?.tradeName ?? null);

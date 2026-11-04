@@ -14,9 +14,23 @@ public final class SubscriptionViews {
     private SubscriptionViews() {
     }
 
-    /** Límites {@code null} = sin límite; precios {@code null} = aún no definidos. */
-    public record PlanView(String code, String name, Integer maxBranches, Integer maxUsers, BigDecimal monthlyPrice,
-                           BigDecimal annualPrice, boolean active) {
+    /**
+     * Límites {@code null} = sin límite; precios {@code null} = aún no definidos. {@code modules}/{@code features}: lo que
+     * incluye (decisión 288); {@code legacy}: plan anterior (Básico, Pro), para los clientes que ya lo tenían.
+     */
+    public record PlanView(String code, String name, Integer maxBranches, Integer maxUsers, Integer maxRegisters,
+                           BigDecimal monthlyPrice, BigDecimal annualPrice, boolean active, List<String> modules,
+                           List<String> features, boolean legacy) {
+    }
+
+    /** Lo que el administrador le dio de más a un negocio; {@code until} nulo = sin fecha de fin. */
+    public record Extras(List<String> modules, List<String> features, int branches, int registers, int users,
+                         String note, Instant until, boolean active) {
+    }
+
+    /** Lo que el negocio puede usar hoy: su plan más los extras vigentes. Límites {@code null} = sin límite. */
+    public record Entitled(Integer maxBranches, Integer maxUsers, Integer maxRegisters, List<String> modules,
+                           List<String> features) {
     }
 
     /**
@@ -27,10 +41,11 @@ public final class SubscriptionViews {
     public record SubscriptionView(UUID tenantId, String tradeName, PlanView plan, SubscriptionStatus status,
                                    boolean trial, BillingCycle billingCycle, Instant startedAt, Instant endsAt,
                                    Instant graceEndsAt, long daysLeft, Usage usage, String paymentInstructions,
-                                   List<PaymentView> payments) {
+                                   List<PaymentView> payments, Entitled entitled, Extras extras,
+                                   Instant priceLockedUntil) {
     }
 
-    public record Usage(long branches, long users) {
+    public record Usage(long branches, long users, long registers) {
     }
 
     public record PaymentView(UUID id, String planCode, BillingCycle billingCycle, int periods, BigDecimal amount,

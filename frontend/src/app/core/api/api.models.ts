@@ -964,14 +964,44 @@ export interface MyDay {
 export type SubscriptionStatus = 'TRIAL' | 'ACTIVE' | 'PAST_DUE' | 'EXPIRED';
 export type BillingCycle = 'MONTHLY' | 'ANNUAL';
 
+/** Funciones que dependen del plan (decisión 288). */
+export type PlanFeature = 'PURCHASES' | 'DIRECT_PRINT' | 'AUDIT' | 'TRANSFERS' | 'ZONE_REGISTERS';
+
 export interface Plan {
   code: string;
   name: string;
   maxBranches: number | null;
   maxUsers: number | null;
+  maxRegisters: number | null;
   monthlyPrice: number | null;
   annualPrice: number | null;
   active: boolean;
+  /** Módulos y funciones que incluye (decisión 288). */
+  modules: string[];
+  features: PlanFeature[];
+  /** Plan anterior (Básico, Pro): solo para quienes ya lo tenían. */
+  legacy: boolean;
+}
+
+/** Lo que el administrador le dio de más a un negocio; until null = sin fin. note: solo en la consola. */
+export interface SubscriptionExtras {
+  modules: string[];
+  features: PlanFeature[];
+  branches: number;
+  registers: number;
+  users: number;
+  note: string | null;
+  until: string | null;
+  active: boolean;
+}
+
+/** Lo que el negocio puede usar hoy: plan + extras vigentes. Límites null = sin límite. */
+export interface Entitled {
+  maxBranches: number | null;
+  maxUsers: number | null;
+  maxRegisters: number | null;
+  modules: string[];
+  features: PlanFeature[];
 }
 
 export interface SubscriptionPayment {
@@ -1000,10 +1030,14 @@ export interface Subscription {
   endsAt: string;
   graceEndsAt: string | null;
   daysLeft: number;
-  usage: { branches: number; users: number };
+  usage: { branches: number; users: number; registers: number };
   /** Instrucciones de pago configuradas en el servidor. */
   paymentInstructions: string;
   payments: SubscriptionPayment[];
+  entitled: Entitled;
+  extras: SubscriptionExtras;
+  /** Clientes de antes de los planes nuevos: su precio se mantiene hasta esta fecha. */
+  priceLockedUntil: string | null;
 }
 
 export interface SubscriptionRow {
@@ -1056,6 +1090,9 @@ export interface PlanInput {
   name: string;
   maxBranches: number | null;
   maxUsers: number | null;
+  maxRegisters: number | null;
+  modules: string[];
+  features: PlanFeature[];
   monthlyPrice: number | null;
   annualPrice: number | null;
   active: boolean;

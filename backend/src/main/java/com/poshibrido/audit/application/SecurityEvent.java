@@ -32,6 +32,8 @@ public enum SecurityEvent {
     TENANT_CLOSE_DENIED,
     /** Cambió el tipo o los módulos del negocio (Fase 12a): el dueño en Ajustes o el administrador en la consola. */
     TENANT_PROFILE_CHANGED,
+    /** El administrador le dio (o quitó) extras a un negocio: módulos, funciones, sedes, cajas o usuarios (decisión 288). */
+    SUBSCRIPTION_EXTRAS_CHANGED,
     /** El administrador eliminó definitivamente un negocio (decisión 262). */
     TENANT_DELETED,
     /** Intento de eliminar con la contraseña o el nombre equivocados. */

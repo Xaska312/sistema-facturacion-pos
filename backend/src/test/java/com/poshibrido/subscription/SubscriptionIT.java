@@ -58,7 +58,7 @@ class SubscriptionIT extends IntegrationTest {
         api.getWith(owner.tenant(), "/api/v1/subscription")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("TRIAL"))
-                .andExpect(jsonPath("$.plan.code").value("PRO"))
+                .andExpect(jsonPath("$.plan.code").value("EMPRESA"))
                 .andExpect(jsonPath("$.daysLeft").value(14))
                 .andExpect(jsonPath("$.usage.branches").value(1))
                 .andExpect(jsonPath("$.usage.users").value(1));

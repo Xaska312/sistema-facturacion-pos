@@ -3,7 +3,9 @@ import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { Observable } from 'rxjs';
-import { Plan, PlanInput } from '../../core/api/api.models';
+import { Plan, PlanFeature, PlanInput } from '../../core/api/api.models';
+import { BUSINESS_MODULES } from '../../shared/business-types';
+import { PLAN_FEATURES, includedText, toggle } from './plan-features';
 import { PlatformApi } from '../../core/api/platform.api';
 import { FormDialogComponent } from '../../shared/forms/form-dialog.component';
 import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
@@ -19,6 +21,9 @@ interface PlanDraft {
   name: string;
   maxBranches: number | null;
   maxUsers: number | null;
+  maxRegisters: number | null;
+  modules: string[];
+  features: PlanFeature[];
   monthlyPrice: number | null;
   annualPrice: number | null;
   active: boolean;
@@ -31,7 +36,7 @@ interface PlanDraft {
     DataTableComponent, CellTemplateDirective],
   template: `
     <app-page-header title="Planes"
-                     description="Límites y precios de cada plan. Un cambio de límites aplica al crear sucursales o invitar usuarios; lo que ya existe sigue funcionando." />
+                     description="Límites, lo que incluye y precios de cada plan. Un cambio aplica en la siguiente renovación de la sesión de cada usuario; lo que ya existe sigue funcionando." />
 
     <app-data-table [columns]="columns" [items]="plans()" [loading]="loading()" [trackBy]="trackByCode"
                     caption="Planes de suscripción" emptyIcon="pi pi-tags"
@@ -44,7 +49,7 @@ interface PlanDraft {
       </ng-template>
     </app-data-table>
 
-    <app-form-dialog [(visible)]="editOpen" [header]="'Editar plan ' + (target()?.name ?? '')" width="30rem"
+    <app-form-dialog [(visible)]="editOpen" [header]="'Editar plan ' + (target()?.name ?? '')" width="36rem"
                      [dirty]="dirty()" [invalidMessage]="problem()" [save]="saveRequest"
                      successMessage="Plan guardado" (saved)="load()">
       <div class="flex flex-col gap-3">
@@ -61,6 +66,10 @@ interface PlanDraft {
             <label for="plan-users" class="text-sm font-medium">Máximo de usuarios</label>
             <input pInputText id="plan-users" type="number" min="1" [(ngModel)]="draft.maxUsers" />
           </div>
+          <div class="flex flex-col gap-1">
+            <label for="plan-registers" class="text-sm font-medium">Máximo de cajas</label>
+            <input pInputText id="plan-registers" type="number" min="1" [(ngModel)]="draft.maxRegisters" />
+          </div>
         </div>
         <small class="text-muted -mt-1">Vacío = sin límite. Los usuarios cuentan las invitaciones pendientes.</small>
         <div class="grid grid-cols-2 gap-3">
@@ -73,6 +82,28 @@ interface PlanDraft {
             <input pInputText id="plan-annual" appPesos [(ngModel)]="draft.annualPrice" />
           </div>
         </div>
+        <fieldset class="flex flex-col gap-1">
+          <legend class="text-sm font-medium mb-1">Módulos que incluye</legend>
+          <div class="grid grid-cols-2 gap-1">
+            @for (m of modules; track m.code) {
+              <label class="flex items-center gap-2 text-sm">
+                <input type="checkbox" [ngModel]="draft.modules.includes(m.code)"
+                       (ngModelChange)="draft.modules = toggleIn(draft.modules, m.code, $event)" />{{ m.label }}
+              </label>
+            }
+          </div>
+        </fieldset>
+        <fieldset class="flex flex-col gap-1">
+          <legend class="text-sm font-medium mb-1">Funciones que incluye</legend>
+          <div class="grid grid-cols-2 gap-1">
+            @for (f of features; track f.code) {
+              <label class="flex items-center gap-2 text-sm" [title]="f.description">
+                <input type="checkbox" [ngModel]="draft.features.includes(f.code)"
+                       (ngModelChange)="draft.features = toggleIn(draft.features, f.code, $event)" />{{ f.label }}
+              </label>
+            }
+          </div>
+        </fieldset>
         <label class="flex items-center gap-2 text-sm">
           <input type="checkbox" [(ngModel)]="draft.active" />
           Activo (se puede elegir en pagos y códigos nuevos)
@@ -91,11 +122,16 @@ export class PlatformPlansComponent implements OnInit {
   protected draft: PlanDraft = emptyDraft();
   private snapshot = '';
 
+  protected readonly modules = BUSINESS_MODULES;
+  protected readonly features = PLAN_FEATURES;
+  protected readonly toggleIn = toggle;
   protected readonly trackByCode = (row: Plan): string => row.code;
   protected readonly columns: ColumnDef<Plan>[] = [
     { header: 'Plan', cell: (p) => p.name },
     { header: 'Sucursales', cell: (p) => limitText(p.maxBranches) },
     { header: 'Usuarios', cell: (p) => limitText(p.maxUsers) },
+    { header: 'Cajas', cell: (p) => limitText(p.maxRegisters) },
+    { header: 'Incluye', cell: (p) => includedText(p.modules, p.features) + (p.legacy ? ' (plan anterior)' : '') },
     { header: 'Precio mensual', cell: (p) => p.monthlyPrice, template: 'monthly' },
     { header: 'Precio anual', cell: (p) => p.annualPrice, template: 'annual' },
     { header: 'Estado', cell: (p) => activeStatus(p.active), kind: 'status' },
@@ -123,6 +159,7 @@ export class PlatformPlansComponent implements OnInit {
   edit(plan: Plan): void {
     this.target.set(plan);
     this.draft = { name: plan.name, maxBranches: plan.maxBranches, maxUsers: plan.maxUsers,
+      maxRegisters: plan.maxRegisters, modules: [...plan.modules], features: [...plan.features],
       monthlyPrice: plan.monthlyPrice, annualPrice: plan.annualPrice, active: plan.active };
     this.snapshot = JSON.stringify(this.draft);
     this.editOpen = true;
@@ -136,7 +173,7 @@ export class PlatformPlansComponent implements OnInit {
     if (!this.draft.name.trim()) {
       return 'Escribe el nombre del plan.';
     }
-    if (!validLimit(this.draft.maxBranches) || !validLimit(this.draft.maxUsers)) {
+    if (!validLimit(this.draft.maxBranches) || !validLimit(this.draft.maxUsers) || !validLimit(this.draft.maxRegisters)) {
       return 'Los límites son números enteros desde 1 (o vacíos, sin límite).';
     }
     return null;
@@ -151,6 +188,9 @@ export class PlatformPlansComponent implements OnInit {
       name: this.draft.name.trim(),
       maxBranches: toLimit(this.draft.maxBranches),
       maxUsers: toLimit(this.draft.maxUsers),
+      maxRegisters: toLimit(this.draft.maxRegisters),
+      modules: this.draft.modules,
+      features: this.draft.features,
       monthlyPrice: this.draft.monthlyPrice,
       annualPrice: this.draft.annualPrice,
       active: this.draft.active,
@@ -160,7 +200,8 @@ export class PlatformPlansComponent implements OnInit {
 }
 
 function emptyDraft(): PlanDraft {
-  return { name: '', maxBranches: null, maxUsers: null, monthlyPrice: null, annualPrice: null, active: true };
+  return { name: '', maxBranches: null, maxUsers: null, maxRegisters: null, modules: [], features: [], monthlyPrice: null,
+    annualPrice: null, active: true };
 }
 
 /** El campo numérico vacío llega como null o ''. */

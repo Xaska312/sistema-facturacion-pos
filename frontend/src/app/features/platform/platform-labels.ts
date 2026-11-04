@@ -20,6 +20,7 @@ export const EVENT_LABEL: Readonly<Record<string, string>> = {
   TENANT_CLOSED: 'Negocio cerrado por su dueño',
   TENANT_CLOSE_DENIED: 'Contraseña errada al cerrar un negocio',
   TENANT_PROFILE_CHANGED: 'Cambió el tipo o los módulos de un negocio',
+  SUBSCRIPTION_EXTRAS_CHANGED: 'Le dio extras a un negocio (módulos, funciones, sedes, cajas o usuarios)',
   CUM_CATALOG_IMPORTED: 'Cargó el catálogo CUM del INVIMA',
   TENANT_DELETED: 'Negocio eliminado definitivamente',
   TENANT_DELETE_DENIED: 'Contraseña errada al eliminar un negocio',

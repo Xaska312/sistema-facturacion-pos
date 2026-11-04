@@ -573,3 +573,14 @@ Todo con `pharmacy:quality` y el módulo Medicamentos. `branchId` opcional (la p
 | GET | `/pharmacy/visit-report?branchId=&from=&to=` | Informe para la visita: establecimiento y director técnico, `quality{points, readings, expected, missing, outOfRange}`, `expired`, `expiring`, `disposals`, `receipts`, `dispensations{total, antibiotics, controlled, voided}`, `antibiotics`, `adverseEvents` |
 
 `PHARMACY` ya se elige al crear el negocio y en `PUT /business-profile`. Política de datos 1.2.
+
+## Planes y extras (decisión 288)
+
+| Método | Ruta | Permiso | Notas |
+|---|---|---|---|
+| PUT | `/platform/plans/{code}` | Administrador de plataforma | Además `maxRegisters`, `modules[]` y `features[]` (nulos = no cambian) |
+| PUT | `/platform/tenants/{tenantId}/subscription/extras` | Administrador de plataforma | `{modules[], features[], branches, registers, users, note?, until?}`. Se suman al plan; `until` futuro o nulo (sin fin). Evento `SUBSCRIPTION_EXTRAS_CHANGED` |
+| GET | `/subscription` y `/platform/tenants/{id}/subscription` | — | Traen `entitled{maxBranches, maxUsers, maxRegisters, modules, features}`, `extras` (sin `note` para el negocio), `usage.registers` y `priceLockedUntil` |
+| GET/PUT | `/business-profile` | — | Traen `allowedModules` y `planName`; PUT da 422 si se prende un módulo que el plan no incluye |
+
+Funciones (`features`): `PURCHASES`, `DIRECT_PRINT`, `AUDIT`, `TRANSFERS`, `ZONE_REGISTERS`; en el token, `plan:purchases`, `plan:direct-print`… `POST /cash-registers` y activar una caja dan 422 al pasar el límite de cajas.

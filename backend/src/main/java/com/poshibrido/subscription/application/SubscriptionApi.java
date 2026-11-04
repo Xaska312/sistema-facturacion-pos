@@ -1,7 +1,10 @@
 package com.poshibrido.subscription.application;
 
 import com.poshibrido.tenancy.application.TenantRef;
+import com.poshibrido.tenancy.domain.BusinessModule;
+import com.poshibrido.tenancy.domain.PlanFeature;
 
+import java.util.Set;
 import java.util.UUID;
 
 /** Lo que otros módulos necesitan de la suscripción. */
@@ -25,4 +28,20 @@ public interface SubscriptionApi {
 
     /** 422 si el plan no admite otro usuario (miembros activos + invitaciones pendientes). */
     void requireCanAddUser(TenantRef tenant);
+
+    /** 422 si el plan no admite otra caja activa (decisión 288). */
+    void requireCanAddRegister(TenantRef tenant);
+
+    /**
+     * Módulos y funciones que el plan del negocio (más sus extras vigentes) incluye (decisión 288). Sin suscripción,
+     * todo (no se le quita nada a un negocio por un dato que falta).
+     */
+    Entitlements entitlements(UUID tenantId);
+
+    record Entitlements(String planName, Set<BusinessModule> modules, Set<PlanFeature> features) {
+
+        public static Entitlements everything() {
+            return new Entitlements(null, BusinessModule.all(), PlanFeature.all());
+        }
+    }
 }

@@ -828,6 +828,10 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   private readonly printer = inject(PrintAgentService);
   private readonly drawerService = inject(CashDrawerService);
   protected readonly canOpenDrawer = computed(() => this.printer.ready() && this.auth.hasPermission('cash:drawer'));
+  /** Impresión directa incluida en el plan (decisión 288). */
+  private directPrint(): boolean {
+    return this.auth.hasPermission('plan:direct-print');
+  }
   /** La caja de la zona de la mesa, si no es esta (decisión 285: la venta queda en esa caja). */
   protected readonly otherRegister = computed(() => {
     const cr = this.tab()?.chargeRegister;
@@ -968,7 +972,9 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
 
   ngOnInit(): void {
     // Con XASKA Impresora en este equipo (decisión 286): saber ya si está, para el botón "Abrir cajón".
-    void this.printer.ensure();
+    if (this.directPrint()) {
+      void this.printer.ensure();
+    }
     this.sales.config().subscribe((config) => {
       this.config.set(config);
       this.customer.update((c) => (c.id ? c : { ...c, id: config.finalConsumerId }));
@@ -2011,7 +2017,7 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   /** Con XASKA Impresora: directo a la térmica (volver a imprimir nunca abre el cajón); si no, la ventana del navegador. */
   async print(): Promise<void> {
     const sale = this.lastSale();
-    if (sale && (await this.printer.ensure())) {
+    if (sale && this.directPrint() && (await this.printer.ensure())) {
       await this.sendReceipt(sale, false);
       return;
     }
@@ -2025,7 +2031,7 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   private async afterSale(sale: Sale): Promise<void> {
     const prefs = this.printer.prefs();
     const cash = prefs.drawerOnCash && sale.payments.some((p) => this.payMethods().find((m) => m.id === p.paymentMethodId)?.affectsCash);
-    if (!prefs.autoPrint && !cash) {
+    if ((!prefs.autoPrint && !cash) || !this.directPrint()) {
       return;
     }
     if (!(await this.printer.ensure())) {
