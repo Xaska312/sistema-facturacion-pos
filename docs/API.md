@@ -533,6 +533,8 @@ Con el módulo `MEDICINES`. Permisos nuevos `pharmacy:dispense` y `pharmacy:reco
 | Método | Ruta | Permiso | Notas |
 |---|---|---|---|
 | PUT | `/dining/zones/{id}/layout` | `tables:manage` | `{tables: [{tableId, x, y, w, h, shape}]}`. La mesa se acomoda dentro del plano; redonda y cuadrada quedan igual de anchas que altas; tamaño 4 a 40. 422 si una mesa no es de la zona o la forma no existe. Auditoría `DINING_LAYOUT_UPDATED` |
+| GET | `/dining/registers?branchId=` | `tables:manage` | Cajas activas de la sucursal `[{id, name, open}]`, para elegir la de una zona (decisión 285) |
+| PUT | `/dining/zones/{id}/cash-register` | `tables:manage` | `{cashRegisterId}` (null = la caja de quien cobra). Las mesas de la zona se cobran en esa caja aunque se cobre desde otra; si está cerrada, cobrar da 422. La caja debe ser de la sucursal y estar activa. Auditoría `DINING_ZONE_CASH_REGISTER_UPDATED`. Zonas, salón (`zones[].cashRegister`) y cuenta (`chargeRegister`) traen `{id, name, open}` |
 | POST | `/tabs/{id}/bill-request` | `tables:operate` | `{requested}`: marca o desmarca que la mesa pidió la cuenta. Agregar productos lo desmarca. Auditoría `TAB_BILL_REQUESTED` / `TAB_BILL_REQUEST_CLEARED` |
 
 `POST /kitchen/tickets/{id}/status` con `DELIVERED`: quien tiene `kitchen:send` (el mesero) la marca entregada desde cualquier estado (antes solo desde Lista), para las cocinas que solo imprimen la comanda.

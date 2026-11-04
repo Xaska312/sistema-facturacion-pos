@@ -318,6 +318,9 @@ export const MANUAL: readonly ManualChapter[] = [
           'Toca una mesa para cambiarle el nombre (Barra 2), los puestos, la zona o desactivarla.',
           'Toca "Plano" en la zona y arrastra cada mesa a donde está en tu local. Tócala para elegir si es cuadrada, '
             + 'redonda o rectangular y su tamaño. Toca "Guardar plano".',
+          'Si cada piso tiene su caja (y tienes dos cajas o más), edita la zona con el lápiz y elige su "Caja de esta '
+            + 'zona". Las ventas de esas mesas quedan en esa caja aunque se cobren en otra; al cerrar, las dos cajas '
+            + 'cuadran el efectivo juntas.',
         ],
         tips: [
           'El nombre de la mesa no se repite en la sucursal, para que el mesero no se confunda.',

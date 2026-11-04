@@ -53,10 +53,19 @@ export interface FloorTable {
   map: MapSpot;
 }
 
+/** Una caja de la sucursal; open: tiene un turno abierto ahora. */
+export interface RegisterOption {
+  id: string;
+  name: string;
+  open: boolean;
+}
+
 export interface FloorZone {
   id: string;
   name: string;
   tables: FloorTable[];
+  /** Caja propia de la zona (decisión 285): sus mesas se cobran en esa caja. Nula = la de quien cobra. */
+  cashRegister: RegisterOption | null;
 }
 
 export interface Floor {
@@ -84,6 +93,8 @@ export interface DiningZone {
   position: number;
   active: boolean;
   tables: DiningTable[];
+  /** Caja propia de la zona (decisión 285). Nula = la de quien cobra (lo normal). */
+  cashRegister: RegisterOption | null;
 }
 
 export interface TabItemModifier {
@@ -150,6 +161,8 @@ export interface Tab {
   saleIds: string[];
   /** La mesa pidió la cuenta (decisión 284). */
   billRequestedAt: string | null;
+  /** Caja de la zona de la mesa (decisión 285): la venta queda ahí aunque se cobre desde otra. */
+  chargeRegister: RegisterOption | null;
 }
 
 /** Comanda vista desde la cuenta. */
@@ -229,6 +242,17 @@ export class DiningApi {
 
   createZone(branchId: string, name: string): Observable<DiningZone> {
     return this.http.post<DiningZone>('/api/v1/dining/zones', { branchId, name });
+  }
+
+  /** Cajas activas de la sucursal (para elegir la de una zona). */
+  registers(branchId: string | null): Observable<RegisterOption[]> {
+    const params = branchId ? new HttpParams().set('branchId', branchId) : undefined;
+    return this.http.get<RegisterOption[]>('/api/v1/dining/registers', { params });
+  }
+
+  /** Caja de una zona (decisión 285); null = la de quien cobra. */
+  setZoneCashRegister(zoneId: string, cashRegisterId: string | null): Observable<DiningZone> {
+    return this.http.put<DiningZone>(`/api/v1/dining/zones/${zoneId}/cash-register`, { cashRegisterId });
   }
 
   updateZone(id: string, name: string, position: number, active: boolean): Observable<DiningZone> {
