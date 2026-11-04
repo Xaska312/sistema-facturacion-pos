@@ -12,7 +12,7 @@ RUN npm run build
 FROM --platform=$BUILDPLATFORM golang:1.24-alpine AS agent
 WORKDIR /agent
 COPY print-agent/ ./
-RUN go test ./... && CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "-H windowsgui -s -w" -o XASKA-Impresora.exe .
+RUN go test ./... && CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "-H windowsgui" -o XASKA-Impresora.exe .
 
 FROM caddy:2-alpine
 COPY deploy/Caddyfile /etc/caddy/Caddyfile

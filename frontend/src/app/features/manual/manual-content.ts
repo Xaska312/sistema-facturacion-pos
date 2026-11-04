@@ -218,7 +218,8 @@ export const MANUAL: readonly ManualChapter[] = [
           + 'térmica (sin la ventana de impresión) y el cajón monedero se abre solo al cobrar en efectivo.',
         steps: [
           'En el computador de la caja entra a Configuración → Ajustes → "Impresora de este equipo" y toca "Descargar '
-            + 'XASKA Impresora". Ábrelo con doble clic: se instala solo y arranca con Windows.',
+            + 'XASKA Impresora". Guárdalo en una carpeta fija (por ejemplo Documentos) y ábrelo con doble clic. Cuando '
+            + 'pregunte si arranca con Windows, di que sí.',
           'Vuelve a Ajustes y toca "Buscar de nuevo". Si el navegador pregunta si XASKA puede usar los dispositivos '
             + 'de este equipo, toca "Permitir".',
           'Elige tu impresora y el ancho del papel, y toca "Imprimir prueba".',

@@ -6,9 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
-	"path/filepath"
-	"strconv"
 	"strings"
 	"syscall"
 	"unsafe"
@@ -33,10 +30,6 @@ const (
 	printerEnumLocal       = 0x2
 	printerEnumConnections = 0x4
 	errInsufficientBuffer  = syscall.Errno(122)
-	createNoWindow         = 0x08000000
-	runKey                 = `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`
-	runValue               = "XASKA Impresora"
-	exeName                = "XASKA-Impresora.exe"
 )
 
 type printerInfo4 struct {
@@ -144,79 +137,116 @@ func utf16Ptr(p *uint16) string {
 	return syscall.UTF16ToString(chars)
 }
 
-// installDir: %LOCALAPPDATA%\XASKA (no pide permisos de administrador).
-func installPath() string {
-	base := os.Getenv("LOCALAPPDATA")
-	if base == "" {
-		base, _ = os.UserConfigDir()
+var (
+	advapi32           = syscall.NewLazyDLL("advapi32.dll")
+	procRegOpenKeyEx   = advapi32.NewProc("RegOpenKeyExW")
+	procRegSetValueEx  = advapi32.NewProc("RegSetValueExW")
+	procRegQueryValue  = advapi32.NewProc("RegQueryValueExW")
+	procRegDeleteValue = advapi32.NewProc("RegDeleteValueW")
+	procRegCloseKey    = advapi32.NewProc("RegCloseKey")
+)
+
+const (
+	hkeyCurrentUser = 0x80000001
+	keyQueryValue   = 0x0001
+	keySetValue     = 0x0002
+	regSZ           = 1
+	runKey          = `Software\Microsoft\Windows\CurrentVersion\Run`
+	runValue        = "XASKA Impresora"
+	mbOK            = 0x0
+	mbYesNo         = 0x4
+	mbIconInfo      = 0x40
+	mbIconError     = 0x10
+	mbIconQuestion  = 0x20
+	idYes           = 6
+)
+
+func openRun(access uintptr) (syscall.Handle, error) {
+	key, _ := syscall.UTF16PtrFromString(runKey)
+	var h syscall.Handle
+	if r, _, _ := procRegOpenKeyEx.Call(hkeyCurrentUser, uintptr(unsafe.Pointer(key)), 0, access,
+		uintptr(unsafe.Pointer(&h))); r != 0 {
+		return 0, syscall.Errno(r)
 	}
-	return filepath.Join(base, "XASKA", exeName)
+	return h, nil
 }
 
-func installedHere() bool {
+// autostartCommand: lo que arranca con Windows (este mismo archivo, sin preguntas).
+func autostartCommand() (string, error) {
 	self, err := os.Executable()
-	return err == nil && strings.EqualFold(filepath.Clean(self), filepath.Clean(installPath()))
+	if err != nil {
+		return "", err
+	}
+	return `"` + self + `" -serve`, nil
 }
 
-func hidden(name string, args ...string) error {
-	cmd := exec.Command(name, args...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true, CreationFlags: createNoWindow}
-	return cmd.Run()
+func autostartIsSet() bool {
+	h, err := openRun(keyQueryValue)
+	if err != nil {
+		return false
+	}
+	defer procRegCloseKey.Call(uintptr(h))
+	name, _ := syscall.UTF16PtrFromString(runValue)
+	buf := make([]uint16, 1024)
+	size := uint32(len(buf) * 2)
+	if r, _, _ := procRegQueryValue.Call(uintptr(h), uintptr(unsafe.Pointer(name)), 0, 0,
+		uintptr(unsafe.Pointer(&buf[0])), uintptr(unsafe.Pointer(&size))); r != 0 {
+		return false
+	}
+	want, err := autostartCommand()
+	return err == nil && strings.EqualFold(syscall.UTF16ToString(buf), want)
 }
 
-// stopOthers: cierra otra copia que esté corriendo (para reemplazarla por la nueva versión).
-func stopOthers() {
-	_ = hidden("taskkill", "/F", "/IM", exeName, "/FI", "PID ne "+strconv.Itoa(os.Getpid()))
-}
-
-func installSelf() error {
-	self, err := os.Executable()
+// setAutostart: pone o quita la entrada "Run" del usuario (sin reg.exe ni permisos de administrador).
+func setAutostart(on bool) error {
+	h, err := openRun(keySetValue)
 	if err != nil {
 		return err
 	}
-	dest := installPath()
-	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
+	defer procRegCloseKey.Call(uintptr(h))
+	name, _ := syscall.UTF16PtrFromString(runValue)
+	if !on {
+		procRegDeleteValue.Call(uintptr(h), uintptr(unsafe.Pointer(name)))
+		return nil
+	}
+	cmd, err := autostartCommand()
+	if err != nil {
 		return err
 	}
-	stopOthers()
-	if !strings.EqualFold(filepath.Clean(self), filepath.Clean(dest)) {
-		data, err := os.ReadFile(self)
-		if err != nil {
-			return err
-		}
-		if err := os.WriteFile(dest, data, 0o755); err != nil {
-			return fmt.Errorf("no se pudo copiar a %s: %v", dest, err)
-		}
+	data, _ := syscall.UTF16FromString(cmd)
+	if r, _, _ := procRegSetValueEx.Call(uintptr(h), uintptr(unsafe.Pointer(name)), 0, regSZ,
+		uintptr(unsafe.Pointer(&data[0])), uintptr(len(data)*2)); r != 0 {
+		return syscall.Errno(r)
 	}
-	if err := hidden("reg", "add", runKey, "/v", runValue, "/t", "REG_SZ", "/d", `"`+dest+`" -serve`, "/f"); err != nil {
-		return fmt.Errorf("no se pudo dejar para arrancar con Windows: %v", err)
-	}
-	cmd := exec.Command(dest, "-serve")
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true, CreationFlags: createNoWindow}
-	return cmd.Start()
+	return nil
 }
 
-func uninstallSelf() error {
-	stopOthers()
-	_ = hidden("reg", "delete", runKey, "/v", runValue, "/f")
-	return errUninstalled
-}
-
-var errUninstalled = errors.New("uninstalled")
-
-func notify(err error) {
+func messageBox(text string, flags uintptr) int {
 	title, _ := syscall.UTF16PtrFromString("XASKA Impresora")
-	var text string
-	var icon uintptr = 0x40 // información
-	switch {
-	case err == nil:
-		text = "XASKA Impresora quedó instalado y arranca solo con Windows.\n\nVuelve a XASKA → Ajustes → Impresora de este equipo y elige tu impresora."
-	case errors.Is(err, errUninstalled):
-		text = "XASKA Impresora ya no arranca con Windows. Puedes borrar la carpeta " + filepath.Dir(installPath()) + "."
-	default:
-		text = "No se pudo instalar XASKA Impresora:\n" + err.Error()
-		icon = 0x10 // error
-	}
 	msg, _ := syscall.UTF16PtrFromString(text)
-	procMessageBox.Call(0, uintptr(unsafe.Pointer(msg)), uintptr(unsafe.Pointer(title)), icon)
+	r, _, _ := procMessageBox.Call(0, uintptr(unsafe.Pointer(msg)), uintptr(unsafe.Pointer(title)), flags)
+	return int(r)
+}
+
+// welcome: al abrirlo con doble clic. Pregunta una sola vez si arranca con Windows.
+func welcome() {
+	if autostartIsSet() {
+		messageBox("XASKA Impresora está funcionando.\n\nVuelve a XASKA → Ajustes → Impresora de este equipo.", mbOK|mbIconInfo)
+		return
+	}
+	answer := messageBox("XASKA Impresora está funcionando. Vuelve a XASKA → Ajustes → Impresora de este equipo.\n\n"+
+		"¿Quieres que arranque solo cada vez que prendas este computador?\n\n"+
+		"(Antes de decir que sí, guarda este archivo en una carpeta fija, por ejemplo Documentos: el arranque lo busca ahí.)",
+		mbYesNo|mbIconQuestion)
+	if answer == idYes {
+		info(setAutostart(true), "Listo: XASKA Impresora arrancará solo con Windows.")
+	}
+}
+
+func info(err error, ok string) {
+	if err != nil {
+		messageBox("No se pudo: "+err.Error(), mbOK|mbIconError)
+		return
+	}
+	messageBox(ok, mbOK|mbIconInfo)
 }
