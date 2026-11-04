@@ -17,7 +17,7 @@ export const MAP_STATES: readonly { state: MapState; label: string; hint: string
   { state: 'FREE', label: 'Libre', hint: 'Toca para abrir la cuenta' },
   { state: 'ORDERING', label: 'Pidiendo', hint: 'Ocupada, aún no pide a cocina' },
   { state: 'KITCHEN', label: 'En cocina', hint: 'Su pedido se está preparando' },
-  { state: 'READY', label: 'Para llevar', hint: 'Hay platos listos en la cocina' },
+  { state: 'READY', label: 'Platos listos', hint: 'Hay platos listos en la cocina' },
   { state: 'EATING', label: 'Comiendo', hint: 'Ya tiene todo servido' },
   { state: 'BILL', label: 'Pidió la cuenta', hint: 'Cóbrala' },
 ];
