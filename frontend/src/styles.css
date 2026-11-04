@@ -365,6 +365,12 @@
     color: var(--text);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Celular (decisión 283): sin zoom por doble toque, sin agrandar el texto al girar el iPhone y sin
+       desplazamiento horizontal si algo se pasa del ancho (clip no rompe los encabezados fijos). */
+    touch-action: manipulation;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    overflow-x: clip;
   }
 
   :focus-visible {
