@@ -442,13 +442,16 @@ public class KitchenService {
         if (from.equals(target)) {
             return ticket(id);
         }
-        if (!TicketStatus.allowed(from, target)) {
+        // El mesero marca entregado lo que llevó a la mesa, aunque la cocina no la haya marcado lista (en las cocinas
+        // que solo imprimen la comanda nadie lo hace): así el mapa sabe que la mesa está comiendo (decisión 284).
+        boolean waiterDelivers = "DELIVERED".equals(target) && CurrentActor.permissions().contains(SEND_PERMISSION);
+        if (!waiterDelivers && !TicketStatus.allowed(from, target)) {
             throw new BusinessRuleException("No se puede pasar de " + TicketStatus.label(from) + " a "
                     + TicketStatus.label(target) + ".");
         }
         Set<String> permissions = CurrentActor.permissions();
         boolean kitchen = permissions.contains(VIEW_PERMISSION);
-        boolean deliver = "READY".equals(from) && "DELIVERED".equals(target) && permissions.contains(SEND_PERMISSION);
+        boolean deliver = waiterDelivers;
         if (!kitchen && !deliver) {
             throw new ForbiddenException("Solo la cocina cambia el estado de la comanda; tú puedes marcarla entregada "
                     + "cuando esté lista.");

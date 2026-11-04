@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -75,6 +76,21 @@ public class DiningController {
     @PreAuthorize("hasAuthority('tables:manage')")
     public ZoneView updateZone(@PathVariable UUID id, @Valid @RequestBody ZoneUpdate request) {
         return service.updateZone(id, request.name(), request.position(), request.active());
+    }
+
+    public record SpotRequest(@NotNull UUID tableId, BigDecimal x, BigDecimal y, BigDecimal w, BigDecimal h,
+                              @Size(max = 10) String shape) {
+    }
+
+    public record LayoutRequest(@NotNull @Size(max = 500) List<@Valid @NotNull SpotRequest> tables) {
+    }
+
+    /** Plano de la zona (decisión 284): lugar, tamaño y forma de cada mesa. */
+    @PutMapping("/zones/{id}/layout")
+    @PreAuthorize("hasAuthority('tables:manage')")
+    public ZoneView saveLayout(@PathVariable UUID id, @Valid @RequestBody LayoutRequest request) {
+        return service.saveLayout(id, request.tables().stream().map(t -> new DiningService.SpotInput(t.tableId(),
+                t.x(), t.y(), t.w(), t.h(), t.shape())).toList());
     }
 
     @PostMapping("/tables")

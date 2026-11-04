@@ -3,11 +3,13 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
+import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { SkeletonModule } from 'primeng/skeleton';
 import { Observable, concatMap, from, last } from 'rxjs';
 import { BranchOption, DiningApi, DiningTable, DiningZone } from '../../core/api/dining.api';
 import { problemMessage } from '../../core/errors/problem';
+import { LayoutEditorComponent } from './layout-editor.component';
 import { EmptyStateComponent } from '../../shared/empty-state.component';
 import { FormDialogComponent } from '../../shared/forms/form-dialog.component';
 import { PageHeaderComponent } from '../../shared/page-header.component';
@@ -31,7 +33,7 @@ export function nextTableNames(existing: readonly string[], fromNumber: number, 
 @Component({
   selector: 'app-dining-setup',
   imports: [FormsModule, RouterLink, ButtonModule, InputTextModule, SkeletonModule, PageHeaderComponent,
-    FormDialogComponent, EmptyStateComponent],
+    FormDialogComponent, EmptyStateComponent, DialogModule, LayoutEditorComponent],
   template: `
     <app-page-header title="Configurar mesas" description="Zonas de tu local y sus mesas. El nombre de la mesa es el que ve el mesero (4, Barra 2, Terraza A).">
       <a pButton routerLink="/app/mesas" label="Ver el salón" icon="pi pi-arrow-left" severity="secondary" [outlined]="true"></a>
@@ -62,6 +64,9 @@ export function nextTableNames(existing: readonly string[], fromNumber: number, 
               <h2 [id]="'z-' + z.id" class="text-lg font-extrabold tracking-tight">{{ z.name }}{{ z.active ? '' : ' · Inactiva' }}</h2>
               <div class="flex flex-wrap gap-2">
                 <p-button label="Agregar mesas" icon="pi pi-plus" size="small" [outlined]="true" (onClick)="openBulk(z)" />
+                @if (z.tables.length > 0) {
+                  <p-button label="Plano" icon="pi pi-map" size="small" [outlined]="true" (onClick)="layoutZone.set(z)" />
+                }
                 <p-button icon="pi pi-pencil" size="small" [text]="true" severity="secondary" [ariaLabel]="'Editar zona ' + z.name"
                           (onClick)="openZone(z)" />
               </div>
@@ -86,6 +91,13 @@ export function nextTableNames(existing: readonly string[], fromNumber: number, 
     } @else {
       <p-skeleton height="10rem" borderRadius="1.25rem" />
     }
+
+    <p-dialog [visible]="layoutZone() !== null" (visibleChange)="$event || layoutZone.set(null)" [modal]="true"
+              [header]="'Plano de ' + (layoutZone()?.name ?? '')" [style]="{ width: '60rem' }" [breakpoints]="{ '960px': '100vw' }">
+      @if (layoutZone(); as lz) {
+        <app-layout-editor [zone]="lz" (saved)="load(); layoutZone.set(null)" (closed)="layoutZone.set(null)" />
+      }
+    </p-dialog>
 
     <app-form-dialog [(visible)]="zoneOpen" [header]="editingZone() ? 'Editar zona' : 'Nueva zona'" width="26rem"
                      [dirty]="true" [invalidMessage]="zoneName.trim() ? null : 'Escribe el nombre de la zona.'"
@@ -174,6 +186,8 @@ export class DiningSetupComponent implements OnInit {
   protected readonly branches = signal<BranchOption[]>([]);
   protected readonly branchId = signal<string | null>(null);
   protected readonly zones = signal<DiningZone[] | null>(null);
+  /** Zona cuyo plano se está editando (decisión 284). */
+  protected readonly layoutZone = signal<DiningZone | null>(null);
   protected readonly editingZone = signal<DiningZone | null>(null);
   protected readonly editingTable = signal<DiningTable | null>(null);
   protected readonly bulkZone = signal<DiningZone | null>(null);

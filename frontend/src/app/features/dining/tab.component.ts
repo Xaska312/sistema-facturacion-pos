@@ -103,9 +103,9 @@ interface Picking {
         </div>
       }
 
-      <div [class]="isOpen() ? 'grid gap-4 lg:grid-cols-[1fr_24rem]' : 'grid gap-4 max-w-2xl'">
+      <div [class]="isOpen() ? 'grid gap-4 lg:grid-cols-[minmax(0,1fr)_24rem]' : 'grid gap-4 max-w-2xl'">
         @if (isOpen()) {
-          <section class="min-h-[28rem] lg:h-[calc(100dvh-14rem)] flex flex-col lg:flex" [class.hidden]="pane() !== 'add'"
+          <section class="min-w-0 min-h-[28rem] lg:h-[calc(100dvh-14rem)] flex flex-col lg:flex" [class.hidden]="pane() !== 'add'"
                    aria-label="Productos para pedir">
             <app-product-grid class="flex-1 min-h-0" [favoriteIds]="favorites()" (pick)="pick($event)"
                               (pickModel)="openModel($event)" (favoriteToggle)="toggleFavorite($event)" />
@@ -211,7 +211,7 @@ interface Picking {
                         <span class="status" [attr.data-status]="k.status">{{ statusLabel(k.status) }}</span>
                         <span class="text-muted"> · {{ time(k.sentAt) }} · {{ k.items === 1 ? '1 producto' : k.items + ' productos' }}</span></span>
                       <span class="flex gap-1">
-                        @if (canSend() && k.status === 'READY') {
+                        @if (canSend() && k.status !== 'DELIVERED') {
                           <p-button label="Entregada" icon="pi pi-check" size="small" (onClick)="deliver(k.id)" />
                         }
                         @if (canSend()) {
@@ -223,6 +223,15 @@ interface Picking {
                   }
                 </ul>
               </div>
+            }
+            @if (isOpen() && t.tableId) {
+              <!-- Pidió la cuenta (decisión 284): la mesa queda en rojo en el mapa. -->
+              <p-button styleClass="w-full min-h-12 mt-3 font-semibold" [icon]="t.billRequestedAt ? 'pi pi-times' : 'pi pi-flag'"
+                        [label]="t.billRequestedAt ? 'Ya no pide la cuenta' : 'Pidió la cuenta'" severity="secondary"
+                        [outlined]="true" [loading]="billSaving()" (onClick)="toggleBill(t)" />
+              @if (t.billRequestedAt) {
+                <p class="text-xs mt-1 bill-note">Pidió la cuenta a las {{ time(t.billRequestedAt) }}: en el mapa sale en rojo.</p>
+              }
             }
             @if (isOpen() && canCharge()) {
               <p-button styleClass="w-full min-h-14 mt-3 text-lg font-bold" icon="pi pi-wallet" label="Cobrar"
@@ -479,6 +488,7 @@ interface Picking {
     .status[data-status='NEW'] { background: var(--info-soft); color: var(--info-soft-text); }
     .status[data-status='PREPARING'] { background: var(--warning-soft); color: var(--warning-soft-text); }
     .status[data-status='READY'] { background: var(--success-soft); color: var(--success-soft-text); }
+    .bill-note { color: var(--table-bill-text); background: var(--table-bill-bg); border-radius: 0.5rem; padding: 0.25rem 0.5rem; }
   `,
 })
 export class TabComponent implements OnInit, HasUnsavedChanges {
@@ -503,6 +513,7 @@ export class TabComponent implements OnInit, HasUnsavedChanges {
   protected readonly unsent = computed(() => this.items().filter((i) => !i.sentAt).length);
   protected readonly sending = signal(false);
   protected readonly tab = signal<Tab | null>(null);
+  protected readonly billSaving = signal(false);
   protected readonly notFound = signal(false);
   protected readonly isOpen = computed(() => this.tab()?.status === 'OPEN');
   protected readonly items = computed(() => activeItems(this.tab()?.items ?? []));
@@ -711,7 +722,25 @@ export class TabComponent implements OnInit, HasUnsavedChanges {
     });
   }
 
-  /** El plato llegó a la mesa: la comanda sale de la pantalla de cocina (Fase 12b-4). */
+  /** Pidió la cuenta, o se desmarca (decisión 284). */
+  protected toggleBill(t: Tab): void {
+    this.billSaving.set(true);
+    this.api.requestBill(t.id, !t.billRequestedAt).subscribe({
+      next: (updated) => {
+        this.billSaving.set(false);
+        this.tab.set(updated);
+      },
+      error: (e: unknown) => {
+        this.billSaving.set(false);
+        this.messages.add({ severity: 'error', summary: 'No se marcó', detail: problemMessage(e) });
+      },
+    });
+  }
+
+  /**
+   * El plato llegó a la mesa: la comanda sale de la pantalla de cocina (Fase 12b-4). También si la cocina no la marcó
+   * lista (cocinas que solo imprimen la comanda): así el mapa sabe que la mesa está comiendo (decisión 284).
+   */
   protected deliver(ticketId: string): void {
     this.kitchen.setStatus(ticketId, 'DELIVERED').subscribe({
       next: () => this.reload(),

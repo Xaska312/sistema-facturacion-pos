@@ -316,12 +316,36 @@ export const MANUAL: readonly ManualChapter[] = [
           'Toca "Nueva zona" y escribe su nombre.',
           'En la zona toca "Agregar mesas": di desde qué número y cuántas (por ejemplo, 1 a 10) y cuántos puestos tiene cada una.',
           'Toca una mesa para cambiarle el nombre (Barra 2), los puestos, la zona o desactivarla.',
+          'Toca "Plano" en la zona y arrastra cada mesa a donde está en tu local. Tócala para elegir si es cuadrada, '
+            + 'redonda o rectangular y su tamaño. Toca "Guardar plano".',
         ],
         tips: [
           'El nombre de la mesa no se repite en la sucursal, para que el mesero no se confunda.',
           'Una mesa o zona con una cuenta abierta no se puede desactivar hasta cobrarla o moverla.',
+          'Si tienes dos pisos, crea una zona por piso: cada una tiene su plano.',
+          'Una mesa nueva aparece sola en un hueco del plano; "Acomodar en filas" las ordena todas.',
         ],
         who: 'Propietario y Administrador.',
+      },
+      {
+        id: 'mapa-mesas',
+        title: 'El mapa de mesas y sus colores',
+        summary: 'En Mesas ves el plano de cada zona con las mesas donde están en el local, y cada una del color de en qué va.',
+        steps: [
+          'Verde: libre. Tócala para abrir su cuenta.',
+          'Gris: ocupada, todavía no ha pedido a cocina.',
+          'Amarillo: su pedido está en cocina.',
+          'Azul: hay platos listos para llevar.',
+          'Morado: comiendo, ya tiene todo servido.',
+          'Rojo: pidió la cuenta. En la cuenta, el mesero toca "Pidió la cuenta"; si pide algo más, se quita solo.',
+        ],
+        tips: [
+          'Arriba eliges ver el "Plano" o la "Lista"; el equipo lo recuerda.',
+          'Si tu cocina solo imprime la comanda, el mesero toca "Entregada" en la cuenta cuando lleva el plato: así la '
+            + 'mesa pasa a morado.',
+          'Los colores se actualizan solos en todos los celulares y en la caja.',
+        ],
+        who: 'Meseros, caja y quien atienda las mesas.',
       },
       {
         id: 'mesas',
