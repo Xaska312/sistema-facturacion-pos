@@ -14,6 +14,7 @@ import { MyDayComponent } from '../dashboard/my-day.component';
 import { StockAlertsComponent } from '../dashboard/stock-alerts.component';
 import { FirstStepsComponent } from '../onboarding/first-steps.component';
 import { OrdersAlertComponent } from '../orders/orders-alert.component';
+import { QualityAlertComponent } from '../pharmacy/quality-alert.component';
 import { describeCapabilities, firstName, greeting, quickActions } from './capabilities';
 import { MENU } from './menu';
 
@@ -39,7 +40,7 @@ export function glyphFor(route: string): XIconName {
 @Component({
   selector: 'app-home',
   imports: [RouterLink, SkeletonModule, XIconComponent, DashboardComponent, MyDayComponent, StockAlertsComponent,
-    FirstStepsComponent, OrdersAlertComponent],
+    FirstStepsComponent, OrdersAlertComponent, QualityAlertComponent],
   template: `
     <h1 class="sr-only">{{ title }}</h1>
     @if (hero(); as h) {
@@ -83,6 +84,9 @@ export function glyphFor(route: string): XIconName {
 
     <!-- Pedidos atrasados o para hoy (decisión 258); no ocupa espacio si no hay. -->
     <app-orders-alert class="block mb-5 empty:hidden" />
+
+    <!-- Droguería: temperatura de la mañana o de la tarde por registrar (decisión 287). -->
+    <app-quality-alert class="block mb-5 empty:hidden" />
 
     <!-- Las gráficas (Chart.js) se cargan aparte, después de pintar la página. -->
     @if (auth.hasPermission('reports:read')) {

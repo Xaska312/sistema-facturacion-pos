@@ -34,6 +34,11 @@ export function canChooseType(type: BusinessTypeInfo, current: BusinessType | nu
         </button>
       }
     </div>
+    @for (t of types; track t.code) {
+      @if (t.notice && value() === t.code) {
+        <p class="notice mt-2" role="note"><i class="pi pi-info-circle" aria-hidden="true"></i>{{ t.notice }}</p>
+      }
+    }
   `,
   styles: `
     .type-tile {
@@ -58,6 +63,17 @@ export function canChooseType(type: BusinessTypeInfo, current: BusinessType | nu
     .type-tile[aria-checked='true'] .text-muted { color: var(--brand-soft-text); }
     .type-tile:disabled { opacity: 0.6; cursor: not-allowed; }
     .type-tile[aria-checked='true']:disabled { opacity: 0.85; }
+    .notice {
+      display: flex;
+      gap: 0.5rem;
+      align-items: flex-start;
+      padding: 0.625rem 0.875rem;
+      border-radius: 1rem;
+      background: var(--warning-soft);
+      color: var(--warning-soft-text);
+      font-size: 0.8125rem;
+      line-height: 1.4;
+    }
     .soon {
       padding: 0.0625rem 0.5rem;
       border-radius: 9999px;

@@ -554,3 +554,22 @@ Solo atiende orígenes de XASKA (`https://app.xaska.co`, `https://xaska.co`, `ht
 | GET | `/status` | — | `{app:"xaska-impresora", version, printers:[...], default}` |
 | POST | `/print` | `{printer, data (base64 ESC/POS, máx. 1 MB), doc}` | `{ok, printer}`; 422 si la impresora no existe, 502 si Windows no recibió el trabajo |
 | POST | `/drawer` | `{printer}` | Manda solo el pulso al cajón (ESC p 0 25 250) |
+
+## Calidad de la droguería (decisión 287)
+
+Todo con `pharmacy:quality` y el módulo Medicamentos. `branchId` opcional (la primera sucursal que atiende).
+
+| Método | Ruta | Notas |
+|---|---|---|
+| GET | `/pharmacy/quality/today?branchId=` | `{branchId, branches, date, shift, afternoonOpen, points:[{point, morning, afternoon}], missing:["Nevera · mañana"]}` |
+| GET | `/pharmacy/quality/points?branchId=` | Puntos de control |
+| POST | `/pharmacy/quality/points?branchId=` | `{name, kind: ROOM\|FRIDGE, tempMin, tempMax, humidityMin, humidityMax}` (la nevera no lleva humedad). 409 nombre repetido. Auditoría `QUALITY_POINT_CREATED` |
+| PUT | `/pharmacy/quality/points/{id}` | Nombre, rangos y `active` (el tipo no cambia). `QUALITY_POINT_UPDATED` |
+| POST | `/pharmacy/quality/readings` | `{pointId, shift: MORNING\|AFTERNOON, temperature, humidity, actionTaken}`. Solo hoy; la tarde desde las 12; fuera de rango exige `actionTaken` (422); repetida 409. Inmutable. `QUALITY_READING_RECORDED` |
+| GET | `/pharmacy/quality/readings?branchId=&from=&to=` | Hasta un año (por defecto el mes) |
+| GET | `/pharmacy/adverse-events?branchId=&from=&to=` | Por defecto el último año |
+| POST | `/pharmacy/adverse-events` | `{occurredOn, patientName, patientDocument?, patientAge?, productId?, productName, lotNumber?, description, serious, reportedOn?, invimaReference?}`. `ADVERSE_EVENT_RECORDED` |
+| PUT | `/pharmacy/adverse-events/{id}/report` | `{reportedOn, invimaReference?}` (entre la fecha del evento y hoy). `ADVERSE_EVENT_REPORTED` |
+| GET | `/pharmacy/visit-report?branchId=&from=&to=` | Informe para la visita: establecimiento y director técnico, `quality{points, readings, expected, missing, outOfRange}`, `expired`, `expiring`, `disposals`, `receipts`, `dispensations{total, antibiotics, controlled, voided}`, `antibiotics`, `adverseEvents` |
+
+`PHARMACY` ya se elige al crear el negocio y en `PUT /business-profile`. Política de datos 1.2.

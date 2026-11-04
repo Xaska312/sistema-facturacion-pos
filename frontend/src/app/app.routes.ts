@@ -318,6 +318,20 @@ export const routes: Routes = [
           import('./features/inventory/documents.component').then((m) => m.InventoryDocumentsComponent),
       },
       {
+        path: 'farmacia/calidad',
+        title: 'Temperatura y calidad',
+        canActivate: [permissionGuard],
+        data: { permission: 'pharmacy:quality', module: 'module:medicines' },
+        loadComponent: () => import('./features/pharmacy/quality.component').then((m) => m.QualityComponent),
+      },
+      {
+        path: 'farmacia/informe',
+        title: 'Informe para la visita',
+        canActivate: [permissionGuard],
+        data: { permission: 'pharmacy:quality', module: 'module:medicines' },
+        loadComponent: () => import('./features/pharmacy/visit-report.component').then((m) => m.VisitReportComponent),
+      },
+      {
         path: 'farmacia/dispensaciones',
         title: 'Libro de dispensación',
         canActivate: [permissionGuard],

@@ -58,7 +58,7 @@ export const MANUAL: readonly ManualChapter[] = [
           'En "Elige el negocio con el que vas a trabajar", toca "Crear un negocio".',
           'Escribe el nombre comercial (el que ven tus clientes) y la razón social.',
           'Revisa el identificador que se propone: solo minúsculas, números y "_". No se puede cambiar después.',
-          'Elige el tipo de negocio: Comercio, Servicios o Restaurante (Farmacia llega pronto).',
+          'Elige el tipo de negocio: Comercio, Servicios, Restaurante o Droguería.',
           'Toca "Continuar" y luego "Crear negocio". En unos segundos entras al negocio.',
         ],
         tips: [
@@ -799,6 +799,58 @@ export const MANUAL: readonly ManualChapter[] = [
           'Si la factura ya estaba pagada, el valor queda a tu favor: pídele al proveedor la nota crédito.',
         ],
         who: 'Propietario, Administrador y Bodega.',
+      },
+      {
+        id: 'temperatura-humedad',
+        title: 'Temperatura y humedad',
+        summary: 'La planilla que pide la Secretaría de Salud: el local (termohigrómetro) y la nevera de cadena de frío, '
+          + 'mañana y tarde. Con el módulo Medicamentos, en Inventario → "Temperatura y calidad".',
+        steps: [
+          'La primera vez toca "Crear local y nevera" (local de 15 a 30 °C y humedad de 35 a 70 %; nevera de 2 a 8 °C). '
+            + 'Los rangos y otros puntos, en "Puntos de control".',
+          'Cada mañana escribe la temperatura y la humedad del local y la temperatura de la nevera, y toca "Guardar lectura". '
+            + 'Desde las 12 se registra la de la tarde.',
+          'Si una lectura sale del rango, escribe qué se hizo (se prendió el aire, se revisó la nevera).',
+          'En "Planilla del mes" ves todas las lecturas por día; lo que salió del rango va en rojo con su acción.',
+        ],
+        tips: [
+          'Si falta la lectura de la mañana, o la de la tarde después de las 2, el inicio te lo recuerda.',
+          'Las lecturas no se cambian ni se borran. Si anotaste mal, acláralo en la lectura siguiente.',
+          'Lo pueden registrar el dueño, el administrador, el director técnico y el auxiliar de farmacia.',
+        ],
+        who: 'Propietario, Administrador, Director técnico y Auxiliar de farmacia.',
+      },
+      {
+        id: 'eventos-adversos',
+        title: 'Eventos adversos',
+        summary: 'Cuando un medicamento le hace daño a un paciente, la droguería lo reporta al INVIMA (formato FOREAM). '
+          + 'Aquí queda el registro y el seguimiento.',
+        steps: [
+          'En "Temperatura y calidad" → "Eventos adversos" toca "Registrar evento".',
+          'Escribe la fecha, el medicamento (y su lote si lo sabes), el paciente y qué le pasó; marca si es grave.',
+          'Repórtalo en la página del INVIMA y después toca "Anotar reporte" con la fecha y el número que te dieron.',
+        ],
+        tips: [
+          'Los que faltan por reportar salen en rojo, aquí y en el informe para la visita.',
+          'Son datos de salud: solo los ven quienes tienen el permiso de calidad.',
+        ],
+        who: 'Propietario, Administrador, Director técnico y Auxiliar de farmacia.',
+      },
+      {
+        id: 'informe-visita',
+        title: 'Informe para la visita de la Secretaría',
+        summary: 'Un documento en hoja carta con lo que la inspección revisa de un periodo, listo para imprimir o guardar en PDF.',
+        steps: [
+          'En "Temperatura y calidad" toca "Informe para la visita".',
+          'Elige las fechas (por defecto el mes actual).',
+          'Toca "Imprimir o guardar PDF". Para el PDF, elige "Guardar como PDF" como impresora.',
+        ],
+        tips: [
+          'Trae el director técnico, la planilla de temperatura (lo que faltó y lo que salió del rango), vencidos y por '
+            + 'vencer, actas de baja, recepciones técnicas, antibióticos dispensados y eventos adversos.',
+          'Revísalo unos días antes de la visita: lo que falta sale resaltado para corregirlo a tiempo.',
+        ],
+        who: 'Propietario, Administrador, Director técnico y Auxiliar de farmacia.',
       },
       {
         id: 'tallas-colores',

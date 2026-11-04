@@ -1,6 +1,7 @@
 import {
   FirstStepCounts,
   buildFirstSteps,
+  buildPharmacySteps,
   buildRestaurantSteps,
   dismissFirstSteps,
   firstStepsKey,
@@ -74,5 +75,17 @@ describe('primeros pasos de un restaurante', () => {
     expect(steps.map((s) => s.id)).not.toContain('modifiers');
     expect(steps.map((s) => s.id)).not.toContain('stations');
     expect(firstStepsProgress(steps).complete).toBeTrue();
+  });
+});
+
+describe('primeros pasos de una droguería (decisión 287)', () => {
+  const counts = { branches: 1, categories: 3, products: 20, stockDocuments: 1, team: 2, cashSessions: 1, sales: 1,
+    director: 0, qualityPoints: 0 };
+
+  it('pide el director técnico y la planilla de temperatura antes de terminar', () => {
+    const steps = buildPharmacySteps(counts);
+    expect(steps.map((s) => s.id)).toEqual(['director', 'branch', 'products', 'stock', 'quality', 'team', 'cash', 'sale']);
+    expect(firstStepsProgress(steps).next?.id).toBe('director');
+    expect(firstStepsProgress(buildPharmacySteps({ ...counts, director: 1, qualityPoints: 2 })).complete).toBeTrue();
   });
 });
