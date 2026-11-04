@@ -96,6 +96,22 @@ public class MedicineService {
         return view;
     }
 
+    /** Un producto que se vende con fórmula (Fase 13-4). {@code strict}: antibiótico o control especial. */
+    public record DispensingInfo(UUID productId, String saleCondition, boolean antibiotic, boolean strict) {
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.List<DispensingInfo> dispensing(Collection<UUID> productIds) {
+        if (productIds.isEmpty() || productIds.size() > 200) {
+            return java.util.List.of();
+        }
+        return medicines.findAllById(productIds).stream()
+                .filter(m -> m.getSaleCondition() != null && !"OTC".equals(m.getSaleCondition()))
+                .map(m -> new DispensingInfo(m.getProductId(), m.getSaleCondition(), m.isAntibiotic(),
+                        m.isAntibiotic() || !"PRESCRIPTION".equals(m.getSaleCondition())))
+                .toList();
+    }
+
     /** Resumen para la lista de productos y el POS (una consulta para toda la página). */
     @Transactional(readOnly = true)
     public Map<UUID, ProductView.MedicineBadge> badges(Collection<UUID> productIds) {

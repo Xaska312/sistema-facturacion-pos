@@ -11,6 +11,7 @@ interface CapabilityRule {
 
 const RULES: readonly CapabilityRule[] = [
   { permission: 'sales:create', text: 'vender' },
+  { permission: 'pharmacy:dispense', text: 'dispensar medicamentos con fórmula médica' },
   { permission: 'tables:operate', text: 'atender mesas, para llevar y domicilios' },
   { permission: 'kitchen:send', text: 'enviar pedidos a cocina e imprimir comandas' },
   { permission: 'kitchen:view', text: 'usar la pantalla de cocina y marcar los platos listos' },
@@ -30,6 +31,7 @@ const RULES: readonly CapabilityRule[] = [
   { permission: 'reports:read', text: 'ver el tablero y los reportes' },
   { permission: 'tips:manage', text: 'ver las propinas y registrar su reparto' },
   { permission: 'audit:read', text: 'consultar la auditoría (quién hizo qué y cuándo)' },
+  { permission: 'pharmacy:records', text: 'consultar el libro de dispensación' },
   { permission: 'products:manage', text: 'administrar productos, categorías y precios' },
   { permission: 'products:read', text: 'consultar productos', coveredBy: 'products:manage' },
   { permission: 'modifiers:manage', text: 'crear adiciones (tamaños, extras, término)' },

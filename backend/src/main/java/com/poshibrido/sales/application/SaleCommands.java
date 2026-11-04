@@ -1,5 +1,6 @@
 package com.poshibrido.sales.application;
 
+import com.poshibrido.pharmacy.application.DispensationRules;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
@@ -43,13 +44,19 @@ public final class SaleCommands {
      * @param customerId    nulo = consumidor final
      * @param expectedTotal total que mostró la pantalla (opcional)
      * @param tip           propina (solo al cobrar una cuenta de mesa) o nula
+     * @param dispensation  confirmación de la fórmula (Fase 13-4) si la venta lleva medicamentos bajo fórmula
      */
     public record Create(UUID customerId, List<ItemLine> items, List<PaymentLine> payments, BigDecimal expectedTotal,
-                         String notes, Tip tip) {
+                         String notes, Tip tip, DispensationRules.Dispensation dispensation) {
+
+        public Create(UUID customerId, List<ItemLine> items, List<PaymentLine> payments, BigDecimal expectedTotal,
+                      String notes, Tip tip) {
+            this(customerId, items, payments, expectedTotal, notes, tip, null);
+        }
 
         public Create(UUID customerId, List<ItemLine> items, List<PaymentLine> payments, BigDecimal expectedTotal,
                       String notes) {
-            this(customerId, items, payments, expectedTotal, notes, null);
+            this(customerId, items, payments, expectedTotal, notes, null, null);
         }
     }
 }

@@ -1,4 +1,5 @@
 import { ConsumptionTaxSectionComponent } from './consumption-tax-section.component';
+import { TechnicalDirectorSectionComponent } from '../pharmacy/technical-director-section.component';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -36,7 +37,7 @@ const TIMEZONE_LABEL: Record<string, string> = {
 
 @Component({
   selector: 'app-settings',
-  imports: [ConsumptionTaxSectionComponent, ReactiveFormsModule, FormsModule, ButtonModule, InputTextModule, PageHeaderComponent, FormDialogComponent,
+  imports: [ConsumptionTaxSectionComponent, TechnicalDirectorSectionComponent, ReactiveFormsModule, FormsModule, ButtonModule, InputTextModule, PageHeaderComponent, FormDialogComponent,
     BrandingSectionComponent, BusinessProfileSectionComponent],
   template: `
     <app-page-header title="Ajustes del negocio" description="Cómo funciona tu negocio: tipo y módulos, inventario, impuestos, zona horaria, moneda, tiquete y marca." />
@@ -226,6 +227,10 @@ const TIMEZONE_LABEL: Record<string, string> = {
 
     @if (hasTables() && canEdit()) {
       <app-consumption-tax-section />
+    }
+
+    @if (hasMedicines()) {
+      <app-technical-director-section class="block mt-4" />
     }
 
     <app-branding-section />

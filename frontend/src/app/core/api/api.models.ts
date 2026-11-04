@@ -1,3 +1,5 @@
+import type { DispensationInput } from './pharmacy.api';
+
 /** Modelos de la API (espejo de los DTO del backend). */
 
 export type BusinessType = 'RETAIL' | 'PHARMACY' | 'RESTAURANT' | 'SERVICES';
@@ -812,6 +814,8 @@ export interface SaleInput {
   payments: SalePaymentInput[];
   expectedTotal: number | null;
   notes: string | null;
+  /** Confirmación de la fórmula (Fase 13-4) si la venta lleva medicamentos bajo fórmula. */
+  dispensation?: DispensationInput | null;
 }
 
 /** Detalle del 409 cuando cambiaron precios. */

@@ -1,6 +1,7 @@
 package com.poshibrido.sales.api;
 
 import com.poshibrido.catalog.application.PricingApi.ResolvedPrice;
+import com.poshibrido.pharmacy.application.DispensationRules;
 import com.poshibrido.sales.application.SaleCommands;
 import com.poshibrido.sales.application.SaleQueryService;
 import com.poshibrido.sales.application.ModifierChoices;
@@ -76,7 +77,8 @@ public class SaleController {
                                     @NotEmpty @Size(max = 200) List<@Valid @NotNull ItemRequest> items,
                                     @Size(max = 10) List<@Valid @NotNull PaymentRequest> payments,
                                     @DecimalMin("0") @Digits(integer = 12, fraction = 2) BigDecimal expectedTotal,
-                                    @Size(max = 255) String notes) {
+                                    @Size(max = 255) String notes,
+                                    @Valid DispensationRequest dispensation) {
 
         SaleCommands.Create toCommand() {
             return new SaleCommands.Create(customerId,
@@ -90,7 +92,17 @@ public class SaleController {
                     payments == null ? List.of() : payments.stream()
                             .map(p -> new SaleCommands.PaymentLine(p.paymentMethodId(), p.amount(), p.reference()))
                             .toList(),
-                    expectedTotal, notes);
+                    expectedTotal, notes, null, dispensation == null ? null : dispensation.toData());
+        }
+    }
+
+    /** Confirmación de la fórmula (Fase 13-4); en antibióticos y control especial, con sus datos. */
+    public record DispensationRequest(boolean prescriptionSeen, @Size(max = 160) String prescriberName,
+                                      @Size(max = 40) String prescriberLicense, java.time.LocalDate prescriptionDate,
+                                      @Size(max = 20) String patientDocument, @Size(max = 160) String patientName) {
+        DispensationRules.Dispensation toData() {
+            return new DispensationRules.Dispensation(prescriptionSeen, prescriberName, prescriberLicense,
+                    prescriptionDate, patientDocument, patientName);
         }
     }
 

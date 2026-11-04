@@ -3,6 +3,8 @@ import { Router, RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { InventoryDocument } from '../../core/api/api.models';
 import { InventoryApi } from '../../core/api/inventory.api';
+import { PharmacyApi, TechnicalDirector } from '../../core/api/pharmacy.api';
+import { professionLabel } from '../pos/dispensation';
 import { AuthService } from '../../core/auth/auth.service';
 import { formatDateTime } from '../../shared/format';
 import { formatCop, formatQuantity } from '../../shared/money';
@@ -75,8 +77,14 @@ import { documentNumber } from './labels';
         }
         <div class="grid grid-cols-2 gap-8 mt-16">
           <div class="border-t pt-1">
-            <p>{{ d.createdByName ?? '' }}</p>
-            <p class="text-xs">Responsable (director técnico o regente)</p>
+            @if (director(); as dt) {
+              <p>{{ dt.name }}</p>
+              <p class="text-xs">Director técnico · {{ profession(dt.profession) }} · TP {{ dt.license }}</p>
+              <p class="text-xs text-muted">Registró: {{ d.createdByName ?? '—' }}</p>
+            } @else {
+              <p>{{ d.createdByName ?? '' }}</p>
+              <p class="text-xs">Responsable (director técnico o regente)</p>
+            }
           </div>
           <div class="border-t pt-1">
             <p>{{ d.witnessName ?? '' }}</p>
@@ -102,6 +110,10 @@ export class DisposalActComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   protected readonly doc = signal<InventoryDocument | null>(null);
+  /** Director técnico de Ajustes (Fase 13-4), si está registrado y el módulo Medicamentos está prendido. */
+  protected readonly director = signal<TechnicalDirector | null>(null);
+  private readonly pharmacy = inject(PharmacyApi);
+  protected readonly profession = professionLabel;
   protected readonly businessName = computed(() => this.auth.currentTenant()?.tradeName ?? '');
   protected readonly total = computed(() =>
     (this.doc()?.lines ?? []).reduce((sum, l) => sum + (l.unitCost ?? 0) * l.baseQuantity, 0));
@@ -113,6 +125,12 @@ export class DisposalActComponent implements OnInit {
   protected readonly number = documentNumber;
 
   ngOnInit(): void {
+    if (this.auth.hasPermission('module:medicines')) {
+      this.pharmacy.technicalDirector().subscribe({
+        next: (dt) => this.director.set(dt.name ? dt : null),
+        error: () => this.director.set(null),
+      });
+    }
     this.api.document(this.id()).subscribe({
       next: (d) => {
         if (d.type !== 'DISPOSAL') {

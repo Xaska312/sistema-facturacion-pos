@@ -12,6 +12,7 @@ import { DiningApi } from '../../core/api/dining.api';
 import { InventoryApi } from '../../core/api/inventory.api';
 import { ModifiersApi, PosModifierCatalog } from '../../core/api/modifiers.api';
 import { PartiesApi } from '../../core/api/parties.api';
+import { PharmacyApi } from '../../core/api/pharmacy.api';
 import { SalesApi } from '../../core/api/sales.api';
 import { AuthService } from '../../core/auth/auth.service';
 import { BrandingService } from '../../core/theme/branding.service';
@@ -89,6 +90,7 @@ describe('PosComponent: celular, pausar venta y cliente nuevo', () => {
         { provide: CreditApi, useValue: credit },
         { provide: ModifiersApi, useValue: { pos: () => of(modifierCatalog) } },
         { provide: DiningApi, useValue: jasmine.createSpyObj<DiningApi>('DiningApi', ['tab', 'charge']) },
+        { provide: PharmacyApi, useValue: { dispensing: () => of([]) } },
         { provide: ConfirmService, useValue: confirm },
         { provide: MessageService, useValue: jasmine.createSpyObj<MessageService>('MessageService', ['add']) },
         { provide: TourService, useValue: jasmine.createSpyObj<TourService>('TourService', ['offer', 'start']) },

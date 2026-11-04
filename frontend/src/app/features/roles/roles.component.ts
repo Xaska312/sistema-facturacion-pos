@@ -21,6 +21,7 @@ const MODULE_LABEL: Record<string, string> = {
   parties: 'Clientes y proveedores',
   inventory: 'Inventario',
   purchases: 'Compras',
+  pharmacy: 'Farmacia',
   cash: 'Caja',
   sales: 'Ventas',
   credit: 'Fiados',

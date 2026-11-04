@@ -512,3 +512,16 @@ Parte de la base (cualquier negocio). Permisos: `purchases:read` (Propietario, A
 | POST | `/purchases/{id}/returns` | `purchases:receive` | Devolución al proveedor `{reason, lines:[{receiptLineNo, quantity}]}` (unidad de la línea; hasta lo aceptado menos lo devuelto). Movimiento `SUPPLIER_RETURN` del lote recibido; el valor (costo + IVA) baja el saldo (`summary.returnedTotal`, `lines[].returnedQuantity`, `returns[]`). Auditoría `PURCHASE_RETURNED` |
 
 **Ajustes:** `expiryAlertMonths` (1 a 12, por defecto 3).
+
+## Dispensación (Fase 13-4, decisión 282)
+
+Con el módulo `MEDICINES`. Permisos nuevos `pharmacy:dispense` y `pharmacy:records` (46 en total; solo llegan al token con el módulo). Roles del sistema `PHARMACIST` (Director técnico: vender, dispensar, compras sin pagar, inventario, lotes, bajas, reportes, libro) y `PHARMACY_ASSISTANT` (Auxiliar de farmacia: vende y dispensa).
+
+`POST /sales` acepta `dispensation: {prescriptionSeen, prescriberName?, prescriberLicense?, prescriptionDate?, patientDocument?, patientName?}`. Si la venta lleva algo `PRESCRIPTION`, `CONTROLLED` o `STATE_MONOPOLY`: 403 sin `pharmacy:dispense`; 422 sin `prescriptionSeen`; en antibióticos y control especial 422 sin quién firmó, fecha (no futura), documento (3 a 20 letras o números, sin puntos) y nombre del paciente. Pedidos, cotizaciones y cuentas de mesa con algo bajo fórmula → 422 (se vende desde Vender).
+
+| Método | Ruta | Permiso | Notas |
+|---|---|---|---|
+| GET | `/medicines/dispensing?productIds=` | `sales:create` | Cuáles se venden con fórmula: `[{productId, saleCondition, antibiotic, strict}]` (máx. 200) |
+| GET | `/pharmacy/dispensations?from=&to=&antibioticOnly=&search=&page=&size=` | `pharmacy:records` | Libro: venta, fecha, sucursal, quién dispensó, datos de la fórmula, paciente, `voided`, líneas con sus lotes. Por defecto los últimos 30 días |
+| GET | `/pharmacy/technical-director` | `settings:read`, `pharmacy:records` o `inventory:read` | `{name, profession: PHARMACIST\|PHARMACY_REGENT\|PHARMACY_TECHNICIAN, license}` |
+| PUT | `/pharmacy/technical-director` | `settings:manage` | Con nombre exige profesión y tarjeta profesional. Auditoría `TECHNICAL_DIRECTOR_UPDATED` |

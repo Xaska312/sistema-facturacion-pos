@@ -45,6 +45,8 @@ export const XICONS = {
     fill: '<path d="M3 6h11v10H3z"/>' },
   purchases: { stroke: '<path d="M4 8l8-4 8 4v9l-8 4-8-4z"/><path d="M4 8l8 4 8-4M12 12v9"/><path d="M9 3.5l8 4"/>',
     fill: '<path d="M4 8l8 4v9l-8-4z"/>' },
+  dispensing: { stroke: '<path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/><path d="M11 6.5v5M8.5 9h5"/>',
+    fill: '<path d="M5 4h11a3 3 0 0 1 3 3v7H8a3 3 0 0 0-3 3z"/>' },
   expiry: { stroke: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M9.5 13.5l5 5M14.5 13.5l-5 5"/>',
     fill: '<rect x="3" y="10" width="18" height="11" rx="2"/>' },
   payables: { stroke: '<path d="M6 3h12v18l-2-1.5-2 1.5-2-1.5-2 1.5-2-1.5L6 21z"/><circle cx="12" cy="11" r="3.5"/><path d="M12 9.5V11l1 1"/>',

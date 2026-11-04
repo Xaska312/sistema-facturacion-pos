@@ -318,6 +318,13 @@ export const routes: Routes = [
           import('./features/inventory/documents.component').then((m) => m.InventoryDocumentsComponent),
       },
       {
+        path: 'farmacia/dispensaciones',
+        title: 'Libro de dispensación',
+        canActivate: [permissionGuard],
+        data: { permission: 'pharmacy:records', module: 'module:medicines' },
+        loadComponent: () => import('./features/pharmacy/dispensations.component').then((m) => m.DispensationsComponent),
+      },
+      {
         path: 'inventario/vencimientos',
         title: 'Vencimientos',
         canActivate: [permissionGuard],

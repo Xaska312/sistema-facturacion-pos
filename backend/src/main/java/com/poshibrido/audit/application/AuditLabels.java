@@ -81,6 +81,7 @@ public final class AuditLabels {
             Map.entry("PURCHASE_RECEIVED", "Recibió mercancía de un proveedor"),
             Map.entry("SUPPLIER_PAYMENT_CREATED", "Registró un pago a un proveedor"),
             Map.entry("PURCHASE_RETURNED", "Devolvió mercancía a un proveedor"),
+            Map.entry("TECHNICAL_DIRECTOR_UPDATED", "Cambió los datos del director técnico"),
             Map.entry("QUOTE_REJECTED", "Rechazó una cotización"),
             Map.entry("QUOTE_UPDATED", "Modificó una cotización"),
             Map.entry("CASH_SESSION_LEFT", "Dejó una caja compartida"),

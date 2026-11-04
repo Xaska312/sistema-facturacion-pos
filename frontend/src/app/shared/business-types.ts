@@ -72,6 +72,7 @@ const MODULE_BY_PERMISSION_PREFIX: Readonly<Record<string, BusinessModule>> = {
   modifiers: 'MODIFIERS',
   tables: 'TABLES',
   kitchen: 'KITCHEN',
+  pharmacy: 'MEDICINES',
 };
 
 /** Módulo del que depende un permiso de rol, o null si es de la base. */

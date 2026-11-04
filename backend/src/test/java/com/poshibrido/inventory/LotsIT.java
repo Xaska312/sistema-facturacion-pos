@@ -48,7 +48,7 @@ class LotsIT extends IntegrationTest {
                 .andExpect(status().isCreated()), "$.id");
         doc(s, "initial-balances", branch, null, "[" + line(amox, "3", null, null) + "]").andExpect(status().isCreated());
         api.putWith(s, "/api/v1/products/" + amox + "/medicine",
-                "{\"kind\":\"MEDICINE\",\"saleCondition\":\"PRESCRIPTION\"}").andExpect(status().isOk());
+                "{\"kind\":\"MEDICINE\",\"saleCondition\":\"OTC\"}").andExpect(status().isOk());
         api.getWith(s, "/api/v1/inventory/lots/summary?branchId=" + branch).andExpect(jsonPath("$.unlottedProducts").value(1))
                 .andExpect(jsonPath("$.alertMonths").value(3));
 
