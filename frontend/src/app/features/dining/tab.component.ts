@@ -103,9 +103,9 @@ interface Picking {
         </div>
       }
 
-      <div [class]="isOpen() ? 'grid gap-4 lg:grid-cols-[1fr_24rem]' : 'grid gap-4 max-w-2xl'">
+      <div [class]="isOpen() ? 'grid gap-4 lg:grid-cols-[minmax(0,1fr)_24rem]' : 'grid gap-4 max-w-2xl'">
         @if (isOpen()) {
-          <section class="min-h-[28rem] lg:h-[calc(100dvh-14rem)] flex flex-col lg:flex" [class.hidden]="pane() !== 'add'"
+          <section class="min-w-0 min-h-[28rem] lg:h-[calc(100dvh-14rem)] flex flex-col lg:flex" [class.hidden]="pane() !== 'add'"
                    aria-label="Productos para pedir">
             <app-product-grid class="flex-1 min-h-0" [favoriteIds]="favorites()" (pick)="pick($event)"
                               (pickModel)="openModel($event)" (favoriteToggle)="toggleFavorite($event)" />
