@@ -96,6 +96,11 @@ public interface CashSessionRepository extends JpaRepository<CashSession, UUID> 
     @Query(value = "SELECT id FROM cash_sessions WHERE id = :id AND status = 'OPEN' FOR SHARE", nativeQuery = true)
     List<UUID> lockIfOpen(@Param("id") UUID id);
 
+    /** La sesión abierta de una caja, con bloqueo compartido (decisión 285: la caja de una zona de mesas). */
+    @Query(value = "SELECT id FROM cash_sessions WHERE cash_register_id = :registerId AND status = 'OPEN' FOR SHARE",
+            nativeQuery = true)
+    List<UUID> lockOpenOfRegister(@Param("registerId") UUID registerId);
+
     /** Bloqueo exclusivo para cerrar la sesión. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select s from CashSession s where s.id = :id")

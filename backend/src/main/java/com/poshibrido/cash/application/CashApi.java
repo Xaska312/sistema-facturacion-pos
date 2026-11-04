@@ -21,6 +21,12 @@ public interface CashApi {
     /** Sesión abierta del usuario, con bloqueo compartido (el cierre espera). Vacío si no tiene caja abierta. */
     Optional<OpenSession> lockOpenSessionOf(UUID userId);
 
+    /**
+     * La sesión abierta de una caja (la abriera quien la abriera), con bloqueo compartido. Vacío si está cerrada. Para
+     * las zonas de mesas con caja propia (decisión 285).
+     */
+    Optional<OpenSession> lockOpenSessionOfRegister(UUID cashRegisterId);
+
     /** La sesión indicada con bloqueo compartido, solo si sigue abierta. */
     Optional<OpenSession> lockIfOpen(UUID sessionId);
 

@@ -79,6 +79,7 @@ const ACTIONS: Readonly<Record<string, string>> = {
   TAB_BILL_REQUESTED: 'Marcó que una mesa pidió la cuenta',
   TAB_BILL_REQUEST_CLEARED: 'Desmarcó que una mesa pidió la cuenta',
   DINING_LAYOUT_UPDATED: 'Cambió el plano de mesas de una zona',
+  DINING_ZONE_CASH_REGISTER_UPDATED: 'Cambió la caja de una zona de mesas',
   TIP_PAYOUT_CREATED: 'Registró un reparto de propinas',
   CONSUMPTION_TAX_APPLIED: 'Aplicó el impuesto al consumo a categorías',
   KITCHEN_TICKET_REPRINTED: 'Reimprimió una comanda',

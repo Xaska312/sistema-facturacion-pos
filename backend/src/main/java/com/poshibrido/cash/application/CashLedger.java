@@ -50,6 +50,12 @@ public class CashLedger implements CashApi {
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
+    public Optional<OpenSession> lockOpenSessionOfRegister(UUID cashRegisterId) {
+        return first(sessions.lockOpenOfRegister(cashRegisterId));
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
     public Optional<OpenSession> lockIfOpen(UUID sessionId) {
         return first(sessions.lockIfOpen(sessionId));
     }

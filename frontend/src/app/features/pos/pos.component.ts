@@ -149,6 +149,13 @@ const STOCK_PAGES = 5;
           <div class="tab-banner" role="status">
             <span class="font-bold">Cobrando {{ t.label }}{{ tabParts() ? ' · una parte' : '' }}</span>
             <span class="text-sm">{{ tabParts() ? 'Solo los productos que eligió esta persona.' : 'Los productos se cambian en la cuenta.' }}</span>
+            @if (otherRegister(); as cr) {
+              <span class="text-sm font-semibold">
+                <i class="pi pi-wallet" aria-hidden="true"></i>
+                {{ cr.open ? 'La venta queda en ' + cr.name + ', la caja de ' + (t.zoneName ?? 'esa zona') + '.'
+                  : cr.name + ' (la caja de ' + (t.zoneName ?? 'esa zona') + ') está cerrada: ábrela para cobrar esta mesa.' }}
+              </span>
+            }
             <span class="flex-1"></span>
             <button type="button" class="tool-btn" (click)="leaveTab()">
               <i class="pi pi-arrow-left" aria-hidden="true"></i>Volver a la cuenta
@@ -813,6 +820,11 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   private readonly router = inject(Router);
   /** Cuenta de mesa que se está cobrando (Fase 12b-2, /pos?cuenta=…); null en una venta normal. */
   protected readonly tab = signal<Tab | null>(null);
+  /** La caja de la zona de la mesa, si no es esta (decisión 285: la venta queda en esa caja). */
+  protected readonly otherRegister = computed(() => {
+    const cr = this.tab()?.chargeRegister;
+    return cr && cr.id !== this.session()?.cashRegisterId ? cr : null;
+  });
   /** Cobro por productos (Fase 12b-5): las líneas y cantidades de esta parte; null = todo lo pendiente. */
   protected readonly tabParts = signal<ChargePart[] | null>(null);
   protected readonly tipChoice = signal<TipChoice>('none');
