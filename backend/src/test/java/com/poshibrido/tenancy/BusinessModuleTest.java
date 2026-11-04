@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class BusinessModuleTest {
 
     @Test
-    void comercioKeepsEverythingAndComercioServiciosAndRestauranteAreOpen() {
+    void comercioKeepsEverythingAndEveryTypeIsOpen() {
         assertThat(BusinessType.RETAIL.defaultModules()).containsExactlyInAnyOrder(CREDIT, ORDERS, QUOTES, VARIANTS,
                 SCALE);
         assertThat(BusinessType.SERVICES.defaultModules()).containsExactlyInAnyOrder(CREDIT, ORDERS, QUOTES);
@@ -30,7 +30,8 @@ class BusinessModuleTest {
                 BusinessModule.TABLES, BusinessModule.KITCHEN);
         assertThat(BusinessType.PHARMACY.defaultModules()).containsExactlyInAnyOrder(CREDIT, ORDERS, QUOTES, MEDICINES);
         assertThat(EnumSet.allOf(BusinessType.class).stream().filter(BusinessType::isOpen))
-                .containsExactlyInAnyOrder(BusinessType.RETAIL, BusinessType.SERVICES, BusinessType.RESTAURANT);
+                .containsExactlyInAnyOrder(BusinessType.RETAIL, BusinessType.SERVICES, BusinessType.RESTAURANT,
+                        BusinessType.PHARMACY);
     }
 
     @Test

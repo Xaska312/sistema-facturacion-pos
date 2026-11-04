@@ -34,8 +34,9 @@ import { ReceiptWidth, loadReceiptWidth, saveReceiptWidth } from '../../shared/r
             <p class="status warn" role="status"><i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
               No encuentro XASKA Impresora en este computador.</p>
             <ol class="list-decimal pl-5 text-sm flex flex-col gap-1">
-              <li>Descárgalo e instálalo con doble clic (es para Windows). Si Windows avisa que es un programa
-                desconocido, toca "Más información" → "Ejecutar de todas formas".</li>
+              <li>Descárgalo, guárdalo en una carpeta fija (por ejemplo Documentos) y ábrelo con doble clic (es para
+                Windows). Si Windows avisa que es un programa desconocido, toca "Más información" → "Ejecutar de todas
+                formas". Cuando pregunte si arranca con Windows, di que sí.</li>
               <li>Vuelve aquí y toca "Buscar de nuevo". Si el navegador pregunta si XASKA puede usar los
                 dispositivos de este equipo, toca "Permitir".</li>
             </ol>

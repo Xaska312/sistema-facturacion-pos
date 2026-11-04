@@ -15,8 +15,6 @@ func (noSpooler) PrintRaw(string, string, []byte) error {
 
 func systemSpooler() Spooler { return noSpooler{} }
 
-func installedHere() bool { return true }
-
-func installSelf() error   { return errors.New("solo funciona en Windows") }
-func uninstallSelf() error { return errors.New("solo funciona en Windows") }
-func notify(err error)     {}
+func setAutostart(bool) error { return errors.New("solo funciona en Windows") }
+func welcome()                {}
+func info(error, string)      {}

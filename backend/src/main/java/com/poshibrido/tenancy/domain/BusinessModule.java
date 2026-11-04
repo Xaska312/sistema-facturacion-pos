@@ -39,7 +39,7 @@ public enum BusinessModule {
      * Medicamentos (Fase 13-1, decisión 279): ficha del medicamento en cada producto (registro INVIMA, CUM, principio
      * activo, condición de venta) y búsqueda en el catálogo CUM compartido. Prendido en Farmacia.
      */
-    MEDICINES("pharmacy:dispense", "pharmacy:records");
+    MEDICINES("pharmacy:dispense", "pharmacy:records", "pharmacy:quality");
 
     private static final String AUTHORITY_PREFIX = "module:";
 

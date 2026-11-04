@@ -1,7 +1,9 @@
 // XASKA Impresora: programa pequeño que corre en el computador de la caja y deja que la app de XASKA imprima el
 // tiquete directo en la impresora térmica (sin la ventana de impresión) y abra el cajón monedero (decisión 286).
 //
-// Escucha solo en 127.0.0.1 y solo atiende a las páginas de XASKA (cabecera Origin). Recibe los bytes ESC/POS ya
+// No se copia a otra carpeta ni corre escondido: funciona desde donde se guardó, y solo si la persona dice que sí
+// queda para arrancar con Windows (una entrada en "Run" de su usuario). Escucha solo en 127.0.0.1 y solo atiende a las
+// páginas de XASKA (cabecera Origin). Recibe los bytes ESC/POS ya
 // armados por la app y los manda tal cual (RAW) a la cola de Windows de la impresora elegida, así la impresora sigue
 // funcionando con su driver normal para los demás programas.
 package main
@@ -179,27 +181,26 @@ func writeError(w http.ResponseWriter, status int, message string) {
 }
 
 func main() {
-	install := flag.Bool("install", false, "instalar y arrancar con Windows")
 	uninstall := flag.Bool("uninstall", false, "quitar el arranque con Windows")
-	serve := flag.Bool("serve", false, "solo atender (lo usa el arranque con Windows)")
+	serve := flag.Bool("serve", false, "atender sin preguntar nada (lo usa el arranque con Windows)")
 	origins := flag.String("origins", os.Getenv("XASKA_ORIGINS"), "orígenes extra permitidos, separados por coma")
 	flag.Parse()
 
-	switch {
-	case *uninstall:
-		notify(uninstallSelf())
-		return
-	case *install || (!*serve && !installedHere()):
-		// Doble clic en el descargado: se instala, queda para arrancar con Windows y se arranca ya.
-		notify(installSelf())
+	if *uninstall {
+		info(setAutostart(false), "XASKA Impresora ya no arranca con Windows. Puedes borrar este archivo cuando quieras.")
 		return
 	}
-
 	ln, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", Port))
 	if err != nil {
 		// Ya hay uno corriendo (o el puerto está ocupado): no se arranca otro.
-		log.Printf("XASKA Impresora ya está corriendo: %v", err)
+		if !*serve {
+			info(nil, "XASKA Impresora ya está funcionando en este computador.")
+		}
 		return
+	}
+	if !*serve {
+		// Abierto con doble clic: avisa que quedó funcionando y pregunta (una vez) si arranca con Windows.
+		go welcome()
 	}
 	srv := &http.Server{
 		Handler:           &server{spool: systemSpooler(), extra: strings.Split(*origins, ",")},

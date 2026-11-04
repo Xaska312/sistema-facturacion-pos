@@ -20,8 +20,11 @@ import static com.poshibrido.tenancy.domain.BusinessModule.VARIANTS;
 public enum BusinessType {
     /** Comercio (tienda, papelería, ropa…): los módulos de siempre; Adiciones se prende en Ajustes (granizados). */
     RETAIL(true, EnumSet.of(CREDIT, ORDERS, QUOTES, VARIANTS, SCALE)),
-    /** Farmacia: "Pronto" para el público (Fase 13); el administrador de plataforma la asigna a pilotos. */
-    PHARMACY(false, EnumSet.of(CREDIT, ORDERS, QUOTES, MEDICINES)),
+    /**
+     * Droguería y farmacia (Fase 13): medicamentos, compras, lotes, dispensación y calidad. Abierta al público en la
+     * decisión 287, con aviso de que la factura electrónica y el control especial vienen después.
+     */
+    PHARMACY(true, EnumSet.of(CREDIT, ORDERS, QUOTES, MEDICINES)),
     /**
      * Restaurante (Fase 12b, abierto al público en la decisión 273): mesas, cocina, adiciones y pedidos (encargos). Sin
      * fiado: en restaurantes casi no se usa; se prende en Ajustes.

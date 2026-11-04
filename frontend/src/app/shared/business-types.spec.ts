@@ -11,11 +11,12 @@ import {
 import { canChooseType } from './business-type-picker.component';
 
 describe('tipos de negocio y módulos (Fase 12a)', () => {
-  it('Comercio trae todos los módulos y Comercio, Servicios y Restaurante se eligen al crear', () => {
+  it('Comercio trae todos los módulos y todos los tipos se eligen al crear', () => {
     expect(businessTypeInfo('RETAIL').defaultModules).toEqual(['CREDIT', 'ORDERS', 'QUOTES', 'VARIANTS', 'SCALE']);
     expect(businessTypeInfo('RESTAURANT').defaultModules).toEqual(['ORDERS', 'MODIFIERS', 'TABLES', 'KITCHEN']);
     expect(businessTypeInfo('PHARMACY').defaultModules).toEqual(['CREDIT', 'ORDERS', 'QUOTES', 'MEDICINES']);
-    expect(BUSINESS_TYPES.filter((t) => t.open).map((t) => t.label)).toEqual(['Comercio', 'Servicios', 'Restaurante']);
+    expect(BUSINESS_TYPES.filter((t) => t.open).map((t) => t.label)).toEqual(['Comercio', 'Servicios', 'Restaurante', 'Droguería']);
+    expect(businessTypeInfo('PHARMACY').notice).toContain('factura electrónica');
     expect([...BUSINESS_TYPES, ...BUSINESS_MODULES].every((x) => x.glyph in XICONS)).toBeTrue();
   });
 
@@ -38,11 +39,12 @@ describe('tipos de negocio y módulos (Fase 12a)', () => {
     expect(withRequirements(['KITCHEN', 'TABLES'])).toEqual(['TABLES', 'KITCHEN']);
   });
 
-  it('un tipo "Pronto" solo se elige si el negocio ya lo tiene', () => {
-    const pharmacy = businessTypeInfo('PHARMACY');
-    expect(canChooseType(pharmacy, null)).toBeFalse();
-    expect(canChooseType(pharmacy, 'RETAIL')).toBeFalse();
-    expect(canChooseType(pharmacy, 'PHARMACY')).toBeTrue();
+  it('un tipo "Pronto" solo se elige si el negocio ya lo tiene; Droguería ya es abierta (decisión 287)', () => {
+    const soon = { ...businessTypeInfo('PHARMACY'), open: false };
+    expect(canChooseType(soon, null)).toBeFalse();
+    expect(canChooseType(soon, 'RETAIL')).toBeFalse();
+    expect(canChooseType(soon, 'PHARMACY')).toBeTrue();
+    expect(canChooseType(businessTypeInfo('PHARMACY'), null)).toBeTrue();
     expect(canChooseType(businessTypeInfo('RESTAURANT'), null)).toBeTrue();
     expect(canChooseType(businessTypeInfo('SERVICES'), 'RETAIL')).toBeTrue();
   });

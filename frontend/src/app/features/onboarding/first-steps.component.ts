@@ -6,6 +6,7 @@ import { Observable, catchError, forkJoin, map, of } from 'rxjs';
 import { AccessApi } from '../../core/api/access.api';
 import { CashApi } from '../../core/api/cash.api';
 import { CatalogApi } from '../../core/api/catalog.api';
+import { PharmacyApi } from '../../core/api/pharmacy.api';
 import { DiningApi } from '../../core/api/dining.api';
 import { KitchenApi } from '../../core/api/kitchen.api';
 import { ModifiersApi } from '../../core/api/modifiers.api';
@@ -17,8 +18,10 @@ import { MISC_PRODUCT_SKU } from '../products/product-form';
 import {
   FirstStep,
   FirstStepCounts,
+  PharmacyStepCounts,
   RestaurantStepCounts,
   buildFirstSteps,
+  buildPharmacySteps,
   buildRestaurantSteps,
   dismissFirstSteps,
   firstStepsKey,
@@ -199,6 +202,17 @@ export class FirstStepsComponent implements OnInit {
       sales: count('sales:read', () => this.sales.search({ from: null, to: null, status: null, search: null, cashSessionId: null }, 0, 1)
         .pipe(map((p) => p.totalElements))),
     };
+    if (this.auth.currentTenant()?.businessType === 'PHARMACY' && has('module:medicines')) {
+      // Droguería (decisión 287): director técnico y puntos de temperatura.
+      const pharmacy = this.injector.get(PharmacyApi);
+      const drugstore: { [K in keyof PharmacyStepCounts]: Observable<PharmacyStepCounts[K]> } = {
+        ...counts,
+        director: count('settings:read', () => pharmacy.technicalDirector().pipe(map((dt) => (dt.name ? 1 : 0)))),
+        qualityPoints: count('pharmacy:quality', () => pharmacy.qualityPoints(null).pipe(map((list) => list.length))),
+      };
+      forkJoin(drugstore).subscribe((result) => this.steps.set(buildPharmacySteps(result)));
+      return;
+    }
     if (this.auth.currentTenant()?.businessType !== 'RESTAURANT') {
       forkJoin(counts).subscribe((result) => this.steps.set(buildFirstSteps(result)));
       return;

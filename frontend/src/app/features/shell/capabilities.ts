@@ -33,6 +33,7 @@ const RULES: readonly CapabilityRule[] = [
   { permission: 'tips:manage', text: 'ver las propinas y registrar su reparto' },
   { permission: 'audit:read', text: 'consultar la auditoría (quién hizo qué y cuándo)' },
   { permission: 'pharmacy:records', text: 'consultar el libro de dispensación' },
+  { permission: 'pharmacy:quality', text: 'registrar temperatura, humedad y eventos adversos' },
   { permission: 'products:manage', text: 'administrar productos, categorías y precios' },
   { permission: 'products:read', text: 'consultar productos', coveredBy: 'products:manage' },
   { permission: 'modifiers:manage', text: 'crear adiciones (tamaños, extras, término)' },

@@ -3,8 +3,8 @@ import { XIconName } from './icons/xicons';
 
 /**
  * Tipos de negocio y módulos (Fase 12a, decisión 267). Espejo de BusinessType y BusinessModule del backend: el tipo
- * propone los módulos y el dueño los prende o apaga en Ajustes. Farmacia sale como "Pronto" (solo la asigna la
- * consola de plataforma a negocios piloto); Restaurante es abierto desde la decisión 273.
+ * propone los módulos y el dueño los prende o apaga en Ajustes. Restaurante es abierto desde la decisión 273 y Droguería
+ * desde la 287 (con aviso de lo que aún no tiene).
  */
 export type BusinessModule = 'CREDIT' | 'ORDERS' | 'QUOTES' | 'VARIANTS' | 'SCALE' | 'MODIFIERS' | 'TABLES' | 'KITCHEN'
   | 'MEDICINES';
@@ -16,6 +16,8 @@ export interface BusinessTypeInfo {
   glyph: XIconName;
   /** Se puede elegir al crear el negocio o en Ajustes. */
   open: boolean;
+  /** Aviso al elegirlo (Farmacia: lo que aún no tiene; decisión 287). */
+  notice?: string;
   defaultModules: readonly BusinessModule[];
 }
 
@@ -35,8 +37,10 @@ export const BUSINESS_TYPES: readonly BusinessTypeInfo[] = [
     glyph: 'type-services', open: true, defaultModules: ['CREDIT', 'ORDERS', 'QUOTES'] },
   { code: 'RESTAURANT', label: 'Restaurante', description: 'Mesas, comandas, cocina y propinas.', glyph: 'type-restaurant',
     open: true, defaultModules: ['ORDERS', 'MODIFIERS', 'TABLES', 'KITCHEN'] },
-  { code: 'PHARMACY', label: 'Farmacia', description: 'Lotes, vencimientos y factura electrónica.', glyph: 'type-pharmacy',
-    open: false, defaultModules: ['CREDIT', 'ORDERS', 'QUOTES', 'MEDICINES'] },
+  { code: 'PHARMACY', label: 'Droguería', description: 'Medicamentos con fórmula, compras, lotes, vencimientos y temperatura.',
+    glyph: 'type-pharmacy', open: true, defaultModules: ['CREDIT', 'ORDERS', 'QUOTES', 'MEDICINES'],
+    notice: 'La factura electrónica de la DIAN y el control especial (libro oficial y Anexo 13) llegan después. '
+      + 'Mientras tanto, el tiquete es un comprobante interno.' },
 ];
 
 export const BUSINESS_MODULES: readonly BusinessModuleInfo[] = [

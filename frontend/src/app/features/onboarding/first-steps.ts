@@ -14,7 +14,7 @@ export interface FirstStepCounts {
 }
 
 export type FirstStepId = 'branch' | 'categories' | 'products' | 'stock' | 'team' | 'cash' | 'sale' | 'tables'
-  | 'modifiers' | 'stations' | 'tips';
+  | 'modifiers' | 'stations' | 'tips' | 'director' | 'quality';
 
 /** Conteos de un restaurante (Fase 12b, apertura al público): mesas, adiciones, estaciones e INC. */
 export interface RestaurantStepCounts extends FirstStepCounts {
@@ -24,6 +24,13 @@ export interface RestaurantStepCounts extends FirstStepCounts {
   stations: number | null;
   /** 1 si el impuesto al consumo ya está activo. */
   consumptionTax: number | null;
+}
+
+/** Conteos de una droguería (decisión 287): director técnico y puntos de temperatura. */
+export interface PharmacyStepCounts extends FirstStepCounts {
+  /** 1 si el director técnico está registrado. */
+  director: number | null;
+  qualityPoints: number | null;
 }
 
 export interface FirstStep {
@@ -153,6 +160,41 @@ export function buildRestaurantSteps(counts: RestaurantStepCounts, modules: Read
     },
   );
   return steps;
+}
+
+/**
+ * Primeros pasos de una droguería (decisión 287): director técnico, medicamentos con su ficha, existencias con lote y
+ * vencimiento, el local y la nevera para la temperatura, el equipo (director técnico y auxiliar) y la primera venta.
+ */
+export function buildPharmacySteps(counts: PharmacyStepCounts): FirstStep[] {
+  const base = buildFirstSteps(counts);
+  const step = (id: FirstStepId) => base.find((s) => s.id === id)!;
+  return [
+    {
+      id: 'director', permission: 'settings:manage', route: '/app/ajustes', actionLabel: 'Ir a Ajustes',
+      title: 'Registra al director técnico',
+      description: 'Nombre, profesión y tarjeta profesional: salen en las actas y en el informe para la visita.',
+      done: atLeast(counts.director, 1), optional: false,
+    },
+    step('branch'),
+    {
+      ...step('products'), title: 'Carga tus medicamentos',
+      description: 'Busca cada uno en el catálogo del INVIMA (CUM) para llenar su ficha, o súbelos desde Excel.',
+    },
+    {
+      ...step('stock'), title: 'Carga lo que tienes, con lote y vencimiento',
+      description: 'El saldo inicial de cada medicamento, con su lote. Desde ahí se vende primero lo que vence antes.',
+    },
+    {
+      id: 'quality', permission: 'pharmacy:quality', route: '/app/farmacia/calidad', actionLabel: 'Crear local y nevera',
+      title: 'Prepara la planilla de temperatura',
+      description: 'Crea el local y la nevera con sus rangos; las lecturas se registran mañana y tarde.',
+      done: atLeast(counts.qualityPoints, 1), optional: false,
+    },
+    { ...step('team'), description: 'Invita al director técnico y a los auxiliares (roles Director técnico y Auxiliar de farmacia).' },
+    step('cash'),
+    step('sale'),
+  ];
 }
 
 /** Los pasos opcionales cuentan como hechos para terminar, pero no se resaltan como siguientes. */
