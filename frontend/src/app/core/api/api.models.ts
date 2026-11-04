@@ -194,6 +194,8 @@ export interface BusinessSettings {
   quoteTerms: string;
   /** Propina que se sugiere al cobrar una mesa (Fase 12b-5), 0 a 20 %; 0 = no se sugiere. */
   tipPercent: number;
+  /** Meses de anticipación del aviso de vencimiento de un lote (Fase 13-3), 1 a 12. */
+  expiryAlertMonths: number;
 }
 
 export interface Department {
@@ -309,6 +311,9 @@ export interface MedicineBadge {
   antibiotic: boolean;
   coldChain: boolean;
   unitSale: boolean;
+  /** Vencimiento del lote que sale primero (Fase 13-3) y si está dentro del aviso de Ajustes. */
+  nextExpiration?: string | null;
+  expiringSoon?: boolean;
 }
 
 export interface ProductInput {
@@ -400,8 +405,10 @@ export type MovementType =
   | 'ADJUSTMENT_OUT'
   | 'TRANSFER_OUT'
   | 'TRANSFER_IN'
-  | 'RETURN';
-export type InventoryDocumentType = 'INITIAL' | 'ADJUSTMENT' | 'TRANSFER' | 'COUNT';
+  | 'RETURN'
+  | 'DISPOSAL'
+  | 'SUPPLIER_RETURN';
+export type InventoryDocumentType = 'INITIAL' | 'ADJUSTMENT' | 'TRANSFER' | 'COUNT' | 'DISPOSAL';
 export type Direction = 'IN' | 'OUT';
 
 export interface StockRow {
@@ -443,6 +450,8 @@ export interface KardexRow {
   documentNumber: number | null;
   reason: string | null;
   createdByName: string | null;
+  /** Lote del movimiento (Fase 13-3). */
+  lotNumber?: string | null;
 }
 
 export interface InventoryDocumentLine {
@@ -460,6 +469,8 @@ export interface InventoryDocumentLine {
   expectedQuantity: number | null;
   countedQuantity: number | null;
   difference: number | null;
+  lotNumber?: string | null;
+  expirationDate?: string | null;
 }
 
 export interface InventoryDocument {
@@ -477,6 +488,9 @@ export interface InventoryDocument {
   createdAt: string;
   lineCount: number;
   lines: InventoryDocumentLine[];
+  /** Acta de baja (Fase 13-3): cómo se dispuso y quién lo presenció. */
+  disposalMethod?: string | null;
+  witnessName?: string | null;
 }
 
 export interface InventoryLineInput {
@@ -487,6 +501,9 @@ export interface InventoryLineInput {
   unitCost?: number | null;
   /** Conteos: existencia en unidad base que mostraba el sistema al empezar a contar ese producto. */
   expectedQuantity?: number | null;
+  /** Lote (Fase 13-3) y su vencimiento si es nuevo. */
+  lotNumber?: string | null;
+  expirationDate?: string | null;
 }
 
 export interface ProductLookup {

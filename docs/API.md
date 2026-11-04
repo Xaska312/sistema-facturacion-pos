@@ -494,3 +494,21 @@ Parte de la base (cualquier negocio). Permisos: `purchases:read` (Propietario, A
 | GET | `/purchases/{id}` | `purchases:read` | `{summary, subtotal, taxTotal, coldChainTemperature, notes, checksConfirmed, lines[], payments[]}` |
 | GET | `/purchases/payables?supplierId=` | `purchases:read` | `{totalDue, overdue, dueSoon (7 días), receipts[]}`: facturas con saldo, primero las que vencen antes |
 | POST | `/purchases/{id}/payments` | `purchases:pay` | `{amount, paymentMethodId, reference?}`, `Idempotency-Key` opcional. 422 si pasa del saldo o, en efectivo, de lo que hay en la caja abierta de quien paga. En efectivo crea el movimiento de caja `SUPPLIER_PAYMENT` (informe de caja: `cash.supplierPayments`, negativo). Auditoría `SUPPLIER_PAYMENT_CREATED` |
+
+## Lotes y vencimientos (Fase 13-3, decisión 281)
+
+**Ventas:** en un producto con `tracksLots` la salida es FEFO: primero lo que no tiene lote (existencias de antes), luego el lote que vence primero; nunca un lote vencido (422 "está vencido" si solo queda eso). La anulación vuelve a los mismos lotes. `ProductView.medicine` trae `nextExpiration` y `expiringSoon`.
+
+**Documentos de inventario:** cada línea acepta `lotNumber` y `expirationDate` (obligatorio si el lote es nuevo). Entradas (saldo inicial, ajuste IN) de un producto con lotes exigen lote; salidas y traslados sin lote van con FEFO (el traslado lleva cada parte al destino con su lote; lo vencido no se traslada); el conteo cuenta por lote (sin lote = lo que no tiene lote) y un mismo producto puede ir en varias líneas si son lotes distintos. Lote en un producto sin `tracksLots` → 422. Las líneas de `DocumentView` traen `lotNumber` y `expirationDate`; el kardex, `lotNumber`.
+
+| Método | Ruta | Permiso | Notas |
+|---|---|---|---|
+| POST | `/inventory/disposals` | `inventory:adjust` | Baja con acta: `{branchId, reason, disposalMethod, witnessName?, notes?, lines}`; movimiento `DISPOSAL`. `DocumentView` trae `disposalMethod` y `witnessName` |
+| GET | `/inventory/lots?branchId=&status=EXPIRED\|EXPIRING\|OK&search=&page=&size=` | `inventory:read` | Lotes con existencia, los que vencen primero arriba (`daysLeft`, `status`, `value` al costo promedio) |
+| GET | `/inventory/lots/summary?branchId=` | `inventory:read` | `{alertMonths, expiredLots, expiredValue, expiringLots, expiringValue, unlottedProducts}` |
+| GET | `/inventory/lots/unlotted?branchId=` | `inventory:read` | Productos con lotes que tienen existencia sin lote |
+| GET | `/inventory/lots/product?productId=&branchId=` | `inventory:read` | `{unlotted, lots[]}` |
+| GET | `/inventory/lots/trace?productId=&lot=` | `inventory:read` | Trazabilidad: `{onHand, received, sold, entries[{at, branchName, type, quantity, document, party, reason}]}` |
+| POST | `/purchases/{id}/returns` | `purchases:receive` | Devolución al proveedor `{reason, lines:[{receiptLineNo, quantity}]}` (unidad de la línea; hasta lo aceptado menos lo devuelto). Movimiento `SUPPLIER_RETURN` del lote recibido; el valor (costo + IVA) baja el saldo (`summary.returnedTotal`, `lines[].returnedQuantity`, `returns[]`). Auditoría `PURCHASE_RETURNED` |
+
+**Ajustes:** `expiryAlertMonths` (1 a 12, por defecto 3).

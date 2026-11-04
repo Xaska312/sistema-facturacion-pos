@@ -10,6 +10,7 @@ import { PageHeaderComponent } from '../../shared/page-header.component';
 import { StatusBadgeComponent } from '../../shared/status-badge.component';
 import { formatDay, isoDay } from '../orders/order-text';
 import { dueLabel, purchaseBadge, receiptNumber } from './purchase-text';
+import { PurchaseReturnDialogComponent } from './purchase-return-dialog.component';
 import { SupplierPaymentDialogComponent } from './supplier-payment-dialog.component';
 
 /**
@@ -19,7 +20,8 @@ import { SupplierPaymentDialogComponent } from './supplier-payment-dialog.compon
  */
 @Component({
   selector: 'app-receipt-detail',
-  imports: [RouterLink, ButtonModule, PageHeaderComponent, StatusBadgeComponent, SupplierPaymentDialogComponent],
+  imports: [RouterLink, ButtonModule, PageHeaderComponent, StatusBadgeComponent, SupplierPaymentDialogComponent,
+    PurchaseReturnDialogComponent],
   template: `
     @if (receipt(); as r) {
       @let s = r.summary;
@@ -28,6 +30,10 @@ import { SupplierPaymentDialogComponent } from './supplier-payment-dialog.compon
         <a pButton routerLink="/app/compras" label="Compras" icon="pi pi-arrow-left" [text]="true" severity="secondary"></a>
         @if (canPay() && s.balance > 0) {
           <p-button label="Registrar pago" icon="pi pi-wallet" (onClick)="payDialog()?.open(s)" />
+        }
+        @if (canReturn() && returnable()) {
+          <p-button label="Devolver al proveedor" icon="pi pi-replay" severity="secondary" [outlined]="true"
+                    (onClick)="returnDialog()?.open(r)" />
         }
       </app-page-header>
 
@@ -85,6 +91,9 @@ import { SupplierPaymentDialogComponent } from './supplier-payment-dialog.compon
                     @if (l.status === 'REJECTED') {
                       <span class="block text-xs text-danger">Rechazado: {{ l.rejectReason }}</span>
                     }
+                    @if (l.returnedQuantity > 0) {
+                      <span class="block text-xs text-warning">Devuelto: {{ q(l.returnedQuantity) }} {{ l.unitCode }}</span>
+                    }
                   </td>
                   <td class="p-2 text-right tabular-nums">{{ q(l.quantity) }} {{ l.unitCode }}</td>
                   <td class="p-2">{{ l.lotNumber ?? '—' }}@if (l.expirationDate) { · {{ day(l.expirationDate) }} }</td>
@@ -98,6 +107,9 @@ import { SupplierPaymentDialogComponent } from './supplier-payment-dialog.compon
               <tr class="border-t"><td colspan="5" class="p-2 text-right">Subtotal</td><td class="p-2 text-right tabular-nums">{{ cop(r.subtotal) }}</td></tr>
               <tr><td colspan="5" class="p-2 text-right">IVA</td><td class="p-2 text-right tabular-nums">{{ cop(r.taxTotal) }}</td></tr>
               <tr class="font-semibold"><td colspan="5" class="p-2 text-right">Total</td><td class="p-2 text-right tabular-nums">{{ cop(s.total) }}</td></tr>
+              @if (s.returnedTotal > 0) {
+                <tr class="text-muted"><td colspan="5" class="p-2 text-right">Devuelto al proveedor</td><td class="p-2 text-right tabular-nums">-{{ cop(s.returnedTotal) }}</td></tr>
+              }
               @if (s.rejectedTotal > 0) {
                 <tr class="text-muted"><td colspan="5" class="p-2 text-right">Rechazado (no se debe)</td><td class="p-2 text-right tabular-nums">{{ cop(s.rejectedTotal) }}</td></tr>
               }
@@ -117,6 +129,25 @@ import { SupplierPaymentDialogComponent } from './supplier-payment-dialog.compon
         }
       </section>
 
+      @if (r.returns.length > 0) {
+        <section class="card p-4 mt-4 max-w-5xl">
+          <h2 class="font-bold tracking-tight mb-2">Devoluciones al proveedor</h2>
+          @for (d of r.returns; track d.id) {
+            <div class="text-sm border-t first:border-t-0 py-2">
+              <p class="flex flex-wrap justify-between gap-2">
+                <span>{{ when(d.createdAt) }} · {{ d.reason }} · {{ d.createdByName ?? '—' }}</span>
+                <span class="tabular-nums font-medium">-{{ cop(d.total) }}</span>
+              </p>
+              <p class="text-xs text-muted">
+                @for (l of d.lines; track l.receiptLineNo; let last = $last) {
+                  {{ l.productName }} {{ q(l.quantity) }} {{ l.unitCode }}{{ l.lotNumber ? ' (lote ' + l.lotNumber + ')' : '' }}{{ last ? '' : ' · ' }}
+                }
+              </p>
+            </div>
+          }
+        </section>
+      }
+
       <section class="card p-4 mt-4 max-w-5xl">
         <h2 class="font-bold tracking-tight mb-2">Pagos</h2>
         @for (p of r.payments; track p.id) {
@@ -131,6 +162,7 @@ import { SupplierPaymentDialogComponent } from './supplier-payment-dialog.compon
       </section>
 
       <app-supplier-payment-dialog (paid)="onPaid($event)" />
+      <app-purchase-return-dialog (returned)="onReturned($event)" />
     } @else {
       <p class="text-muted p-4">Cargando…</p>
     }
@@ -145,6 +177,8 @@ export class ReceiptDetailComponent implements OnInit {
   private readonly messages = inject(MessageService);
   protected readonly canPay = permissionFlag('purchases:pay');
   protected readonly payDialog = viewChild(SupplierPaymentDialogComponent);
+  protected readonly returnDialog = viewChild(PurchaseReturnDialogComponent);
+  protected readonly canReturn = permissionFlag('purchases:receive');
   protected readonly receipt = signal<PurchaseReceipt | null>(null);
 
   protected readonly cop = formatCop;
@@ -167,6 +201,17 @@ export class ReceiptDetailComponent implements OnInit {
       next: (r) => this.receipt.set(r),
       error: () => void this.router.navigate(['/app/compras']),
     });
+  }
+
+  /** Queda algo aceptado sin devolver. */
+  protected returnable(): boolean {
+    return (this.receipt()?.lines ?? []).some((l) => l.status === 'ACCEPTED' && l.quantity > (l.returnedQuantity ?? 0));
+  }
+
+  protected onReturned(receipt: PurchaseReceipt): void {
+    this.messages.add({ severity: 'success', summary: 'Devolución registrada',
+      detail: 'Salió del inventario y se descontó de lo que le debes al proveedor.', life: 4000 });
+    this.receipt.set(receipt);
   }
 
   protected onPaid(payment: SupplierPayment): void {

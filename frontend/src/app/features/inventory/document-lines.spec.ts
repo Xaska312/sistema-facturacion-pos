@@ -1,5 +1,15 @@
 import { Product, ProductVariant } from '../../core/api/api.models';
-import { addScan, baseQuantity, draftLine, linesProblem, mergeGridLines, toLineInputs, variantLine } from './document-lines';
+import {
+  addScan,
+  anotherLot,
+  baseQuantity,
+  draftLine,
+  linesProblem,
+  mergeGridLines,
+  normalizeLot,
+  toLineInputs,
+  variantLine,
+} from './document-lines';
 
 const product: Product = {
   id: 'p1', sku: 'GAS', name: 'Gaseosa', description: null, categoryId: null, categoryName: null,
@@ -82,5 +92,23 @@ describe('document-lines', () => {
       const merged = mergeGridLines([old38], ['v38'], [variantLine(variant('v38', '38'), 6, { ...options, currentQuantity: 5 })]);
       expect([merged[0].quantity, merged[0].currentQuantity]).toEqual([6, 7]);
     });
+  });
+
+  it('lotes (Fase 13-3): entradas con lote y vencimiento, sin repetir el mismo lote, lote en mayúsculas', () => {
+    const med = { ...product, tracksLots: true };
+    const line = { ...draftLine(med, null), quantity: 5, unitCost: 1000 };
+    expect(linesProblem('INITIAL', [line])).toContain('lote y vencimiento');
+    const withLot = { ...line, lotNumber: ' a-1 ', expirationDate: '2028-01-31' };
+    expect(linesProblem('INITIAL', [withLot])).toBeNull();
+    expect(linesProblem('INITIAL', [withLot, { ...withLot }])).toContain('dos veces');
+    const other = { ...anotherLot(withLot), quantity: 2, unitCost: 1000, lotNumber: 'B-2', expirationDate: '2029-01-01' };
+    expect(linesProblem('INITIAL', [withLot, other])).toBeNull();
+    expect(toLineInputs('INITIAL', [withLot])[0]).toEqual(jasmine.objectContaining({ lotNumber: 'A-1',
+      expirationDate: '2028-01-31' }));
+    // En una salida el lote es opcional (sin él, el que vence primero).
+    expect(linesProblem('ADJUSTMENT', [{ ...line, direction: 'OUT' }])).toBeNull();
+    // En el conteo, un lote nuevo necesita vencimiento.
+    expect(linesProblem('COUNT', [{ ...line, lotNumber: 'C-3', lotFixed: false }])).toContain('vencimiento');
+    expect(normalizeLot(' x  9 ')).toBe('X 9');
   });
 });

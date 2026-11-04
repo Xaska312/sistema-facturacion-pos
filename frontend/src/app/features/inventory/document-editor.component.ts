@@ -9,7 +9,19 @@ import { CatalogApi } from '../../core/api/catalog.api';
 import { InventoryApi } from '../../core/api/inventory.api';
 import { OrganizationApi } from '../../core/api/organization.api';
 import { formatQuantity } from '../../shared/money';
-import { DraftLine, addScan, baseQuantity, draftLine, linesProblem, mergeGridLines, toLineInputs } from './document-lines';
+import {
+  DraftLine,
+  addScan,
+  anotherLot,
+  baseQuantity,
+  draftLine,
+  isEntry,
+  linesProblem,
+  mergeGridLines,
+  normalizeLot,
+  toLineInputs,
+} from './document-lines';
+import { formatDay, isoDay } from '../orders/order-text';
 import { SizeGridDialogComponent, SizeGridResult } from './size-grid-dialog.component';
 import { DOCUMENT_LABEL, documentNumber, documentTypeFromRoute } from './labels';
 import { PageHeaderComponent } from '../../shared/page-header.component';
@@ -58,6 +70,26 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
                    [placeholder]="t === 'ADJUSTMENT' ? 'Daño, vencimiento, donación…' : 'Conteo físico'" />
           </label>
         }
+        @if (t === 'DISPOSAL') {
+          <label class="flex flex-col gap-1">
+            <span class="text-sm font-medium">Motivo</span>
+            <select class="border rounded px-2 py-2" [(ngModel)]="reason">
+              <option value="">Elige…</option>
+              @for (r of disposalReasons; track r) {
+                <option [value]="r">{{ r }}</option>
+              }
+            </select>
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="text-sm font-medium">Cómo se dispuso</span>
+            <input pInputText [(ngModel)]="disposalMethod" maxlength="200"
+                   placeholder="Gestor de residuos que lo recogió y número de su acta" />
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="text-sm font-medium">Testigo (opcional)</span>
+            <input pInputText [(ngModel)]="witnessName" maxlength="160" placeholder="Nombre de quien lo presenció" />
+          </label>
+        }
         <label class="flex flex-col gap-1 md:col-span-3">
           <span class="text-sm font-medium">Notas</span>
           <input pInputText [(ngModel)]="notes" maxlength="500" />
@@ -89,15 +121,20 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
                 @if (t === 'ADJUSTMENT') { <th class="p-2">Tipo</th> }
                 <th class="p-2">{{ t === 'COUNT' ? 'Contado' : 'Cantidad' }}</th>
                 <th class="p-2">Unidad</th>
+                @if (hasLots()) { <th class="p-2">Lote · vence</th> }
                 @if (t === 'COUNT') { <th class="p-2 text-right">En sistema</th><th class="p-2 text-right">Diferencia</th> }
                 @if (t === 'INITIAL' || t === 'ADJUSTMENT') { <th class="p-2">Costo por unidad</th> }
                 <th class="p-2"></th>
               </tr>
             </thead>
             <tbody>
-              @for (line of lines(); track line.productId; let i = $index) {
+              @for (line of lines(); track $index; let i = $index) {
                 <tr class="border-t">
-                  <td class="p-2"><span class="font-mono">{{ line.sku }}</span> {{ line.name }}</td>
+                  <td class="p-2"><span class="font-mono">{{ line.sku }}</span> {{ line.name }}
+                    @if (line.tracksLots && entry(t, line)) {
+                      <button type="button" class="block text-xs text-brand hover:underline" (click)="addLot(i)">+ Otro lote</button>
+                    }
+                  </td>
                   @if (t === 'ADJUSTMENT') {
                     <td class="p-2">
                       <select class="border rounded px-2 py-1" [(ngModel)]="line.direction">
@@ -114,6 +151,33 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
                       }
                     </select>
                   </td>
+                  @if (hasLots()) {
+                    <td class="p-2">
+                      @if (!line.tracksLots) {
+                        <span class="text-xs text-muted">—</span>
+                      } @else if (entry(t, line) || (t === 'COUNT' && !line.lotFixed)) {
+                        <span class="flex gap-1">
+                          <input pInputText class="w-28 uppercase" maxlength="40" placeholder="Lote" [(ngModel)]="line.lotNumber"
+                                 [attr.aria-label]="'Lote de ' + line.name" />
+                          <input type="date" class="border rounded px-1 py-1" [(ngModel)]="line.expirationDate"
+                                 [attr.aria-label]="'Vencimiento de ' + line.name" />
+                        </span>
+                      } @else if (t === 'COUNT') {
+                        <span>{{ line.lotNumber || 'Sin lote (de antes)' }}</span>
+                        @if (line.expirationDate) { <span class="block text-xs text-muted">{{ day(line.expirationDate) }}</span> }
+                      } @else {
+                        <select class="border rounded px-2 py-1 max-w-56" [(ngModel)]="line.lotNumber"
+                                [attr.aria-label]="'Lote de ' + line.name">
+                          <option value="">{{ t === 'DISPOSAL' ? 'Sin lote (de antes)' : 'El que vence primero' }}</option>
+                          @for (o of line.lotOptions ?? []; track o.lotNumber) {
+                            @if (!(t === 'TRANSFER' && o.expired)) {
+                              <option [value]="o.lotNumber">{{ o.lotNumber }} · {{ o.expirationDate ? day(o.expirationDate) : 'sin fecha' }} · {{ q(o.quantity) }}{{ o.expired ? ' · VENCIDO' : '' }}</option>
+                            }
+                          }
+                        </select>
+                      }
+                    </td>
+                  }
                   @if (t === 'COUNT') {
                     <td class="p-2 text-right">{{ q(line.currentQuantity) }} {{ line.baseUnitCode }}</td>
                     <td class="p-2 text-right" [class.text-danger]="difference(line) < 0"
@@ -130,17 +194,25 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
                     </td>
                   }
                   <td class="p-2 text-right">
+                    @if (t === 'COUNT' && line.tracksLots) {
+                      <button type="button" class="text-xs text-brand hover:underline mr-1" (click)="addLot(i)">+ Lote nuevo</button>
+                    }
                     <p-button label="Quitar" size="small" [text]="true" severity="danger" (onClick)="remove(i)" />
                   </td>
                 </tr>
               } @empty {
-                <tr><td colspan="7" class="p-6 text-center text-muted">Agrega productos escaneando o buscando.</td></tr>
+                <tr><td colspan="8" class="p-6 text-center text-muted">Agrega productos escaneando o buscando.</td></tr>
               }
             </tbody>
           </table>
         </div>
       </section>
 
+      @if (t === 'COUNT' && hasLots()) {
+        <p class="text-xs text-muted max-w-5xl mt-2">En los productos con lotes cuenta cada lote por separado. Lo que
+          esté "Sin lote (de antes)" pásalo a su lote: cuenta el lote con lo que encontraste y deja "Sin lote" en 0.
+          Para un lote que no está en la lista usa "+ Lote nuevo".</p>
+      }
       <div class="flex justify-end gap-2 mt-4 max-w-5xl items-center">
         @if (problem(); as message) {
           <span class="text-sm text-warning">{{ message }}</span>
@@ -160,6 +232,8 @@ export class InventoryDocumentEditorComponent implements OnInit, HasUnsavedChang
   readonly kind = input.required<string>();
   /** ?producto=id: llega desde "Producto creado → registrar existencias" y entra ya en la lista. */
   readonly producto = input<string>();
+  /** ?lote=X: con ?producto, la baja de ese lote desde Vencimientos (Fase 13-3). */
+  readonly lote = input<string>();
 
   private readonly api = inject(InventoryApi);
   private readonly catalog = inject(CatalogApi);
@@ -173,7 +247,14 @@ export class InventoryDocumentEditorComponent implements OnInit, HasUnsavedChang
     ADJUSTMENT: 'Entradas o salidas por daño, vencimiento, donación, etc. Las salidas se valoran al costo promedio.',
     TRANSFER: 'Mueve mercancía de una sucursal a otra al instante.',
     COUNT: 'Escribe lo que contaste: el sistema ajusta la diferencia con lo registrado.',
+    DISPOSAL: 'Saca del inventario lo vencido, averiado o retirado del mercado y deja el acta: motivo, lote, cantidad, cómo se dispuso y testigo.',
   };
+  protected readonly disposalReasons = ['Vencido', 'Averiado o deteriorado', 'Retiro del mercado (alerta sanitaria)',
+    'Mal almacenado (temperatura)', 'Otro'];
+  protected readonly day = formatDay;
+  protected readonly hasLots = computed(() => this.lines().some((l) => l.tracksLots));
+  protected disposalMethod = '';
+  protected witnessName = '';
   protected readonly q = formatQuantity;
   protected readonly sizeGrid = viewChild(SizeGridDialogComponent);
   protected readonly type = computed(() => documentTypeFromRoute(this.kind()));
@@ -202,7 +283,13 @@ export class InventoryDocumentEditorComponent implements OnInit, HasUnsavedChang
   ngOnInit(): void {
     const productId = this.producto();
     if (productId) {
-      this.catalog.product(productId, true).subscribe((p) => this.addProduct(p, null, false));
+      this.catalog.product(productId, true).subscribe((p) => {
+        this.addProduct(p, null, false);
+        const lot = this.lote();
+        if (lot) {
+          this.lines.update((list) => list.map((l) => (l.productId === p.id ? { ...l, lotNumber: normalizeLot(lot) } : l)));
+        }
+      });
     }
     this.organization.branches({ page: 0, size: 100, sort: 'code,asc' }).subscribe((p) => {
       const active = p.content.filter((b) => b.active);
@@ -227,6 +314,12 @@ export class InventoryDocumentEditorComponent implements OnInit, HasUnsavedChang
     if (t === 'ADJUSTMENT' && !this.reason.trim()) {
       return 'Escribe el motivo del ajuste.';
     }
+    if (t === 'DISPOSAL' && !this.reason.trim()) {
+      return 'Elige el motivo de la baja.';
+    }
+    if (t === 'DISPOSAL' && !this.disposalMethod.trim()) {
+      return 'Escribe cómo se dispuso (el gestor de residuos y su acta).';
+    }
     return linesProblem(t, this.lines());
   }
 
@@ -236,7 +329,8 @@ export class InventoryDocumentEditorComponent implements OnInit, HasUnsavedChang
   }
 
   hasUnsavedChanges(): boolean {
-    return !this.saved && (this.lines().length > 0 || this.reason.trim() !== '' || this.notes.trim() !== '');
+    return !this.saved && (this.lines().length > 0 || this.reason.trim() !== '' || this.notes.trim() !== ''
+      || this.disposalMethod.trim() !== '');
   }
 
   @HostListener('window:beforeunload', ['$event'])
@@ -319,6 +413,11 @@ export class InventoryDocumentEditorComponent implements OnInit, HasUnsavedChang
       return;
     }
     const existing = this.lines().find((l) => l.productId === product.id);
+    if (existing?.tracksLots) {
+      this.messages.add({ severity: 'info', summary: 'Ya está en la lista',
+        detail: `${product.name}: escribe la cantidad de cada lote (o usa "+ Otro lote").` });
+      return;
+    }
     if (existing) {
       const added = scanned ? addScan(existing, unitId ?? product.baseUnitId) : null;
       if (added) {
@@ -331,6 +430,11 @@ export class InventoryDocumentEditorComponent implements OnInit, HasUnsavedChang
     const line = draftLine(product, unitId);
     if (scanned) {
       line.quantity = 1;
+    }
+    if (product.tracksLots && this.type() !== 'INITIAL') {
+      this.lines.update((list) => [...list, line]);
+      this.loadLots(product.id);
+      return;
     }
     // Saldo inicial: el costo ya está en el producto; se propone para no escribirlo dos veces (se puede cambiar).
     if (this.type() === 'INITIAL' && product.cost > 0) {
@@ -358,13 +462,71 @@ export class InventoryDocumentEditorComponent implements OnInit, HasUnsavedChang
     this.lines.update((list) => list.filter((_, i) => i !== index));
   }
 
+  protected entry(type: InventoryDocumentType, line: DraftLine): boolean {
+    return isEntry(type, line);
+  }
+
+  /** Otra línea del mismo producto para otro lote (entradas) o un lote nuevo encontrado en el conteo. */
+  addLot(index: number): void {
+    this.lines.update((list) => [...list.slice(0, index + 1), anotherLot(list[index]), ...list.slice(index + 1)]);
+  }
+
+  /**
+   * Lotes del producto en la sucursal (Fase 13-3). En el conteo, una línea por lote y otra por lo que no tiene lote;
+   * en salidas, traslados y bajas, las opciones para elegir de qué lote sale.
+   */
+  private loadLots(productId: string): void {
+    const branchId = this.branchId;
+    if (!branchId) {
+      return;
+    }
+    this.api.productLots(productId, branchId).subscribe((found) => {
+      if (branchId !== this.branchId) {
+        return;
+      }
+      const today = isoDay(new Date());
+      const options = found.lots.map((l) => ({ lotNumber: l.lotNumber, expirationDate: l.expirationDate,
+        quantity: l.quantity, expired: !!l.expirationDate && l.expirationDate <= today }));
+      if (this.type() === 'COUNT') {
+        this.lines.update((list) => {
+          const index = list.findIndex((l) => l.productId === productId);
+          if (index < 0) {
+            return list;
+          }
+          const template = list[index];
+          const lotLines: DraftLine[] = found.lots.map((l) => ({ ...template, quantity: null, lotNumber: l.lotNumber,
+            expirationDate: l.expirationDate ?? '', lotFixed: true, currentQuantity: l.quantity, unitId: template.units[0].id }));
+          const unlotted: DraftLine = { ...template, lotNumber: '', expirationDate: '', lotFixed: true,
+            currentQuantity: found.unlotted, unitId: template.units[0].id };
+          const replacement = found.unlotted > 0 || lotLines.length === 0 ? [...lotLines, unlotted] : lotLines;
+          return [...list.slice(0, index), ...replacement,
+            ...list.slice(index + 1).filter((l) => l.productId !== productId)];
+        });
+      } else {
+        this.lines.update((list) => list.map((l) => (l.productId === productId ? { ...l, lotOptions: options } : l)));
+      }
+    });
+  }
+
   refreshBalances(): void {
+    for (const productId of new Set(this.lines().filter((l) => l.tracksLots).map((l) => l.productId))) {
+      if (this.type() !== 'COUNT' && this.type() !== 'INITIAL') {
+        this.loadLots(productId);
+      }
+    }
     if (this.type() !== 'COUNT' || !this.branchId) {
       return;
     }
     // Lo de la sucursal anterior no sirve: sin dato, el servidor compara con el saldo actual (nunca con otra sucursal).
     this.lines.update((list) => list.map((l) => ({ ...l, currentQuantity: null })));
-    for (const line of this.lines()) {
+    const lotted = new Set(this.lines().filter((l) => l.tracksLots).map((l) => l.productId));
+    // Los productos con lotes se vuelven a armar con los lotes de la sucursal nueva.
+    this.lines.update((list) => list.filter((l, i) => !l.tracksLots
+      || list.findIndex((x) => x.productId === l.productId) === i));
+    for (const productId of lotted) {
+      this.loadLots(productId);
+    }
+    for (const line of this.lines().filter((l) => !l.tracksLots)) {
       this.loadCurrent(this.branchId, line.productId);
     }
   }
@@ -379,6 +541,8 @@ export class InventoryDocumentEditorComponent implements OnInit, HasUnsavedChang
       toBranchId: this.toBranchId || null,
       reason: this.reason.trim() || null,
       notes: this.notes.trim() || null,
+      disposalMethod: t === 'DISPOSAL' ? this.disposalMethod.trim() : null,
+      witnessName: t === 'DISPOSAL' ? this.witnessName.trim() || null : null,
       lines: toLineInputs(t, this.lines()),
     };
     const fingerprint = JSON.stringify([t, body]);

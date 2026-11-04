@@ -5,6 +5,7 @@ import com.poshibrido.inventory.application.InventoryCommands.Direction;
 import com.poshibrido.inventory.application.InventoryCommands.Line;
 import com.poshibrido.inventory.application.InventoryDocumentService;
 import com.poshibrido.inventory.application.InventoryQueryService;
+import com.poshibrido.inventory.application.LotQueryService;
 import com.poshibrido.inventory.application.InventoryViews.AlertRow;
 import com.poshibrido.inventory.application.InventoryViews.DocumentView;
 import com.poshibrido.inventory.application.InventoryViews.KardexRow;
@@ -59,6 +60,7 @@ public class InventoryController {
     private static final Set<String> STOCK_SORT = Set.of("name", "sku");
 
     private final InventoryQueryService queries;
+    private final LotQueryService lots;
     private final InventoryDocumentService documents;
     private final BusinessSettingsApi settings;
     private final ExportGate heavy;
@@ -69,9 +71,11 @@ public class InventoryController {
                               @NotNull @DecimalMin("0") @Digits(integer = 10, fraction = 4) BigDecimal quantity,
                               Direction direction,
                               @DecimalMin("0") @Digits(integer = 12, fraction = 2) BigDecimal unitCost,
-                              @Digits(integer = 10, fraction = 4) BigDecimal expectedQuantity) {
+                              @Digits(integer = 10, fraction = 4) BigDecimal expectedQuantity,
+                              @Size(max = 40) String lotNumber, LocalDate expirationDate) {
         Line toLine() {
-            return new Line(productId, unitId, quantity, direction, unitCost, expectedQuantity);
+            return new Line(productId, unitId, quantity, direction, unitCost, expectedQuantity, lotNumber,
+                    expirationDate);
         }
     }
 
@@ -90,6 +94,12 @@ public class InventoryController {
 
     public record CountRequest(@NotNull UUID branchId, @Size(max = 255) String reason, @Size(max = 500) String notes,
                                @NotEmpty @Size(max = 500) List<@Valid @NotNull LineRequest> lines) {
+    }
+
+    public record DisposalRequest(@NotNull UUID branchId, @NotBlank @Size(max = 255) String reason,
+                                  @NotBlank @Size(max = 200) String disposalMethod,
+                                  @Size(max = 160) String witnessName, @Size(max = 500) String notes,
+                                  @NotEmpty @Size(max = 500) List<@Valid @NotNull LineRequest> lines) {
     }
 
     public record StockLevelsRequest(@NotNull UUID branchId, @NotNull UUID productId,
@@ -136,6 +146,43 @@ public class InventoryController {
     @PreAuthorize("hasAuthority('inventory:read')")
     public List<AlertRow> alerts(@RequestParam(required = false) UUID branchId) {
         return queries.alerts(branchId);
+    }
+
+    // ---------------------------------------------------------------- lotes y vencimientos (Fase 13-3)
+
+    /** Lotes con existencia; {@code status} EXPIRED, EXPIRING u OK (sin él, todos). Los que vencen primero arriba. */
+    @GetMapping("/lots")
+    @PreAuthorize("hasAuthority('inventory:read')")
+    public PageResponse<LotQueryService.LotRow> lots(@RequestParam(required = false) UUID branchId,
+                                                     @RequestParam(required = false) LotQueryService.LotStatus status,
+                                                     @RequestParam(required = false) String search,
+                                                     @RequestParam(defaultValue = "0") int page,
+                                                     @RequestParam(defaultValue = "50") int size) {
+        return lots.lots(branchId, status, search, page, size);
+    }
+
+    @GetMapping("/lots/summary")
+    @PreAuthorize("hasAuthority('inventory:read')")
+    public LotQueryService.LotSummary lotSummary(@RequestParam(required = false) UUID branchId) {
+        return lots.summary(branchId);
+    }
+
+    @GetMapping("/lots/unlotted")
+    @PreAuthorize("hasAuthority('inventory:read')")
+    public List<LotQueryService.UnlottedRow> unlotted(@RequestParam(required = false) UUID branchId) {
+        return lots.unlotted(branchId);
+    }
+
+    @GetMapping("/lots/product")
+    @PreAuthorize("hasAuthority('inventory:read')")
+    public LotQueryService.ProductLots productLots(@RequestParam UUID productId, @RequestParam UUID branchId) {
+        return lots.productLots(productId, branchId);
+    }
+
+    @GetMapping("/lots/trace")
+    @PreAuthorize("hasAuthority('inventory:read')")
+    public LotQueryService.LotTrace trace(@RequestParam UUID productId, @RequestParam String lot) {
+        return lots.trace(productId, lot);
     }
 
     @PutMapping("/stock-levels")
@@ -223,6 +270,16 @@ public class InventoryController {
                               @RequestHeader(name = "Idempotency-Key", required = false) String key) {
         return documents.count(new InventoryCommands.Count(request.branchId(), request.reason(), request.notes(),
                 lines(request.lines())), key);
+    }
+
+    /** Baja de vencidos o averiados con acta (Fase 13-3). */
+    @PostMapping("/disposals")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasAuthority('inventory:adjust')")
+    public DocumentView disposal(@Valid @RequestBody DisposalRequest request,
+                                 @RequestHeader(name = "Idempotency-Key", required = false) String key) {
+        return documents.disposal(new InventoryCommands.Disposal(request.branchId(), request.reason(),
+                request.disposalMethod(), request.witnessName(), request.notes(), lines(request.lines())), key);
     }
 
     private ZoneId zone() {

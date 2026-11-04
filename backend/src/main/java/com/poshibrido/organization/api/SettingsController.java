@@ -41,7 +41,9 @@ public class SettingsController {
             @Min(1) @Max(365) Integer quoteValidityDays,
             @Size(max = 1000) String quoteTerms,
             /** Propina sugerida al cobrar una mesa (Fase 12b-5), 0 a 20 %. Sin dato se conserva. */
-            @Min(0) @Max(20) Integer tipPercent) {
+            @Min(0) @Max(20) Integer tipPercent,
+            /** Meses de aviso antes del vencimiento de un lote (Fase 13-3), 1 a 12. Sin dato se conserva. */
+            @Min(1) @Max(12) Integer expiryAlertMonths) {
     }
 
     @GetMapping
@@ -60,8 +62,11 @@ public class SettingsController {
                 ? current.quoteValidityDays() : request.quoteValidityDays();
         String quoteTerms = request.quoteTerms() == null ? current.quoteTerms() : request.quoteTerms();
         int tipPercent = request.tipPercent() == null ? current.tipPercent() : request.tipPercent();
+        int expiryAlertMonths = request.expiryAlertMonths() == null ? current.expiryAlertMonths()
+                : request.expiryAlertMonths();
         return service.update(new BusinessSettings(request.allowNegativeStock(), request.pricesIncludeTax(),
                 request.timezone().trim(), request.currency().trim(), request.receiptFooter(),
-                request.maxDiscountPercent(), cashCloseEmail, quoteValidityDays, quoteTerms, tipPercent));
+                request.maxDiscountPercent(), cashCloseEmail, quoteValidityDays, quoteTerms, tipPercent,
+                expiryAlertMonths));
     }
 }

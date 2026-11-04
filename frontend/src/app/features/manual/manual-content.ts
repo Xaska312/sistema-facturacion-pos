@@ -666,6 +666,68 @@ export const MANUAL: readonly ManualChapter[] = [
         who: 'Propietario, Administrador y Contador.',
       },
       {
+        id: 'lotes-vencimientos',
+        title: 'Lotes y vencimientos (droguerías)',
+        summary: 'Los medicamentos, fitoterapéuticos y dispositivos médicos (y lo que marques) se manejan por lote. '
+          + 'Al vender sale solo el lote que vence primero, nunca uno vencido, y queda registrado qué lote se vendió.',
+        steps: [
+          'Los lotes entran con la compra (Recibir mercancía), el saldo inicial, un ajuste de entrada o un conteo: '
+            + 'escribe el lote y el vencimiento como vienen en el empaque.',
+          'Al vender no haces nada distinto: el sistema descuenta primero lo que no tiene lote (lo de antes) y luego el '
+            + 'lote que vence primero. Si solo queda producto vencido, no deja venderlo.',
+          'Si anulas una venta, las unidades vuelven a los mismos lotes de los que salieron.',
+          'En un ajuste de salida, un traslado o una baja puedes elegir el lote; si no lo eliges sale el que vence '
+            + 'primero. Lo vencido no se traslada.',
+          'Entra a Inventario → Vencimientos para ver lo vencido, lo que vence en los próximos meses (se cambia en '
+            + 'Ajustes → Vencimientos; por defecto 3) y lo que aún no tiene lote.',
+        ],
+        tips: [
+          'Lo que tenías antes de controlar lotes queda como "Sin lote": se vende primero. Para cargarle el lote haz un '
+            + 'conteo físico: cuenta cada lote (con "+ Lote nuevo") y deja "Sin lote" en 0.',
+          'En la lista de productos y al vender, la marca "Vence pronto" avisa que el lote que sale primero vence '
+            + 'dentro del aviso.',
+          'El kardex de cada producto muestra el lote de cada movimiento.',
+        ],
+        who: 'Todos los que venden (automático). Ver Vencimientos: quien consulta inventario.',
+      },
+      {
+        id: 'baja-vencidos',
+        title: 'Dar de baja vencidos o averiados (acta)',
+        summary: 'Lo vencido, averiado o retirado del mercado se saca del inventario con una baja que deja el acta: '
+          + 'motivo, lote, cantidad, valor, cómo se dispuso y testigo.',
+        steps: [
+          'En Vencimientos toca "Dar de baja" en el lote (o en Movimientos → Baja).',
+          'Elige el motivo y escribe cómo se dispuso: el gestor de residuos que lo recogió y el número de su acta. Si '
+            + 'alguien lo presenció, escribe su nombre.',
+          'Revisa el lote y la cantidad de cada producto y toca "Registrar".',
+          'En Movimientos abre la baja y toca "Ver e imprimir acta": imprímela, fírmala y guárdala con el certificado '
+            + 'del gestor de residuos.',
+        ],
+        tips: [
+          'Los medicamentos vencidos son residuos peligrosos: no van a la basura común; entrégalos a un gestor autorizado '
+            + 'o al programa posconsumo.',
+          'Si el proveedor recibe la devolución, mejor usa "Devolver al proveedor" en la compra: así se descuenta de lo '
+            + 'que le debes.',
+        ],
+        who: 'Propietario, Administrador y Bodega (permiso de ajustar inventario).',
+      },
+      {
+        id: 'devolucion-proveedor',
+        title: 'Devolver mercancía al proveedor',
+        summary: 'Desde una compra puedes devolver lo que llegó mal, vence pronto o fue retirado del mercado. Sale del '
+          + 'lote recibido y se descuenta de lo que le debes al proveedor.',
+        steps: [
+          'Entra a Compras y abre la recepción.',
+          'Toca "Devolver al proveedor", escribe cuánto devuelves de cada producto (en la unidad en que llegó) y el motivo.',
+          'Toca "Registrar devolución": el saldo de la factura baja en ese valor (con IVA).',
+        ],
+        tips: [
+          'No puedes devolver más de lo que recibiste menos lo ya devuelto.',
+          'Si la factura ya estaba pagada, el valor queda a tu favor: pídele al proveedor la nota crédito.',
+        ],
+        who: 'Propietario, Administrador y Bodega.',
+      },
+      {
         id: 'tallas-colores',
         title: 'Productos con tallas y colores (calzado y ropa)',
         summary: 'Un modelo (p. ej. "Tenis Runner") con un solo precio crea un producto por cada talla y color, cada uno con su código de barras y su propia existencia.',

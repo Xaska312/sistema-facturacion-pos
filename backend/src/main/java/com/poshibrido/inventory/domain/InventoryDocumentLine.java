@@ -60,10 +60,13 @@ public class InventoryDocumentLine {
     @Column(name = "counted_quantity", precision = 14, scale = 4)
     private BigDecimal countedQuantity;
 
+    @Column(name = "lot_id")
+    private UUID lotId;
+
     public static InventoryDocumentLine of(UUID documentId, int lineNo, UUID productId, UUID unitId,
                                            BigDecimal quantity, BigDecimal factor, BigDecimal baseQuantity,
                                            String direction, BigDecimal unitCost, BigDecimal expectedQuantity,
-                                           BigDecimal countedQuantity) {
+                                           BigDecimal countedQuantity, UUID lotId) {
         InventoryDocumentLine l = new InventoryDocumentLine();
         l.id = Ids.newId();
         l.documentId = documentId;
@@ -77,6 +80,7 @@ public class InventoryDocumentLine {
         l.unitCost = unitCost;
         l.expectedQuantity = expectedQuantity;
         l.countedQuantity = countedQuantity;
+        l.lotId = lotId;
         return l;
     }
 }

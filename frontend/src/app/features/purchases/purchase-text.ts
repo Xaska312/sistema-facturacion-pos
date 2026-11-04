@@ -1,5 +1,5 @@
 import { Product } from '../../core/api/api.models';
-import { PurchaseLineInput, PurchaseSummary } from '../../core/api/purchases.api';
+import { PurchaseLine, PurchaseLineInput, PurchaseSummary } from '../../core/api/purchases.api';
 import { StatusKey } from '../../shared/status';
 
 /**
@@ -223,4 +223,61 @@ export function dueLabel(dueDate: string | null, today: string): string {
 /** Número de la recepción: REC-000123. */
 export function receiptNumber(n: number): string {
   return 'REC-' + String(n).padStart(6, '0');
+}
+
+/** Una línea de la devolución al proveedor (Fase 13-3): cuánto se devuelve, hasta lo recibido menos lo ya devuelto. */
+export interface ReturnDraft {
+  lineNo: number;
+  productName: string;
+  unitCode: string | null;
+  lotNumber: string | null;
+  unitCost: number;
+  taxRate: number;
+  max: number;
+  quantity: number | null;
+}
+
+/** Las líneas aceptadas que aún se pueden devolver. */
+export function returnDrafts(lines: readonly PurchaseLine[]): ReturnDraft[] {
+  return lines
+    .filter((l) => l.status === 'ACCEPTED' && l.quantity - (l.returnedQuantity ?? 0) > 0)
+    .map((l) => ({
+      lineNo: l.lineNo,
+      productName: l.productName,
+      unitCode: l.unitCode,
+      lotNumber: l.lotNumber,
+      unitCost: l.unitCost,
+      taxRate: l.taxRate,
+      max: Math.round((l.quantity - (l.returnedQuantity ?? 0)) * 10_000) / 10_000,
+      quantity: null,
+    }));
+}
+
+/** Valor que se descuenta al proveedor: costo de la factura más IVA, como el servidor. */
+export function returnTotal(drafts: readonly ReturnDraft[]): number {
+  return round2(drafts.reduce((sum, d) => {
+    const q = Number(d.quantity);
+    if (!(q > 0)) {
+      return sum;
+    }
+    const net = round2(q * d.unitCost);
+    return sum + net + round2(net * d.taxRate / 100);
+  }, 0));
+}
+
+export function returnProblem(drafts: readonly ReturnDraft[], reason: string): string | null {
+  const chosen = drafts.filter((d) => d.quantity !== null && String(d.quantity) !== '' && Number(d.quantity) !== 0);
+  if (chosen.length === 0) {
+    return 'Escribe cuánto devuelves de al menos un producto.';
+  }
+  for (const d of chosen) {
+    const q = Number(d.quantity);
+    if (!(q > 0)) {
+      return `Revisa la cantidad de ${d.productName}.`;
+    }
+    if (q > d.max) {
+      return `De ${d.productName} solo puedes devolver ${d.max}.`;
+    }
+  }
+  return reason.trim() ? null : 'Escribe el motivo de la devolución.';
 }

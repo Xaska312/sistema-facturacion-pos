@@ -8,5 +8,7 @@ public enum InventoryDocumentType {
     /** Traslado inmediato entre sucursales. */
     TRANSFER,
     /** Toma de inventario físico: genera ajustes por la diferencia. */
-    COUNT
+    COUNT,
+    /** Baja de vencidos, averiados o retirados del mercado, con acta (Fase 13-3). */
+    DISPOSAL
 }

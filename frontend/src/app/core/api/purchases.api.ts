@@ -27,6 +27,8 @@ export interface PurchaseSummary {
   receivedAt: string;
   receivedByName: string | null;
   lineCount: number;
+  /** Devuelto al proveedor (Fase 13-3): baja el saldo; si ya estaba pagado queda a favor. */
+  returnedTotal: number;
 }
 
 export interface PurchaseLine {
@@ -45,6 +47,8 @@ export interface PurchaseLine {
   status: PurchaseLineStatus;
   rejectReason: string | null;
   baseQuantity: number;
+  /** Ya devuelto al proveedor, en la unidad de la línea. */
+  returnedQuantity: number;
 }
 
 export interface SupplierPayment {
@@ -66,6 +70,25 @@ export interface PurchaseReceipt {
   checksConfirmed: boolean;
   lines: PurchaseLine[];
   payments: SupplierPayment[];
+  returns: PurchaseReturn[];
+}
+
+export interface PurchaseReturn {
+  id: string;
+  number: number;
+  reason: string;
+  subtotal: number;
+  taxTotal: number;
+  total: number;
+  createdAt: string;
+  createdByName: string | null;
+  lines: { receiptLineNo: number; productId: string; productName: string; unitCode: string | null; quantity: number;
+    lotNumber: string | null; lineTotal: number }[];
+}
+
+export interface PurchaseReturnInput {
+  reason: string;
+  lines: { receiptLineNo: number; quantity: number }[];
 }
 
 /** Cuentas por pagar: lo que se debe, lo vencido, lo que vence en 7 días y las facturas con saldo. */
@@ -130,6 +153,13 @@ export class PurchasesApi {
   /** La clave evita registrar dos veces la misma recepción si se reintenta. */
   receive(input: PurchaseInput, idempotencyKey: string): Observable<PurchaseReceipt> {
     return this.http.post<PurchaseReceipt>('/api/v1/purchases', input, {
+      headers: new HttpHeaders({ 'Idempotency-Key': idempotencyKey }),
+    });
+  }
+
+  /** Devolución al proveedor (Fase 13-3): sale del lote recibido y baja lo que se le debe. */
+  returnGoods(id: string, input: PurchaseReturnInput, idempotencyKey: string): Observable<PurchaseReceipt> {
+    return this.http.post<PurchaseReceipt>(`/api/v1/purchases/${id}/returns`, input, {
       headers: new HttpHeaders({ 'Idempotency-Key': idempotencyKey }),
     });
   }

@@ -6,6 +6,7 @@ import com.poshibrido.inventory.domain.MovementType;
 import com.poshibrido.inventory.domain.StockBalance;
 import com.poshibrido.inventory.domain.StockMovement;
 import com.poshibrido.inventory.infrastructure.StockBalanceRepository;
+import com.poshibrido.organization.application.BusinessSettingsApi;
 import com.poshibrido.shared.error.BusinessRuleException;
 import com.poshibrido.shared.error.NotFoundException;
 import com.poshibrido.shared.security.CurrentActor;
@@ -17,6 +18,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.sql.Date;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -46,10 +50,21 @@ public class StockLedger {
 
     private final StockBalanceRepository balances;
     private final InventoryCatalogApi catalog;
+    private final BusinessSettingsApi settings;
 
-    public StockLedger(StockBalanceRepository balances, InventoryCatalogApi catalog) {
+    public StockLedger(StockBalanceRepository balances, InventoryCatalogApi catalog, BusinessSettingsApi settings) {
         this.balances = balances;
         this.catalog = catalog;
+        this.settings = settings;
+    }
+
+    /** Hoy en la zona horaria del negocio (para saber qué lote está vencido). */
+    public LocalDate today() {
+        return LocalDate.now(ZoneId.of(settings.current().timezone()));
+    }
+
+    /** Parte de una salida: de un lote o sin lote ({@code lotId} nulo). */
+    public record Portion(UUID lotId, BigDecimal quantity) {
     }
 
     /**
@@ -214,6 +229,13 @@ public class StockLedger {
                     throw new BusinessRuleException("No hay suficiente de " + name + " en ese lote: disponible "
                             + available.stripTrailingZeros().toPlainString() + ".");
                 }
+                // Salida: UPDATE (un INSERT con cantidad negativa violaría el CHECK antes del ON CONFLICT).
+                em.createNativeQuery("""
+                        UPDATE lot_balances SET quantity = quantity + ?3, updated_at = now()
+                        WHERE branch_id = ?1 AND lot_id = ?2""")
+                        .setParameter(1, branchId).setParameter(2, lotId).setParameter(3, signedQuantity)
+                        .executeUpdate();
+                return;
             }
             em.createNativeQuery("""
                     INSERT INTO lot_balances (branch_id, product_id, lot_id, quantity, updated_at)
@@ -222,6 +244,95 @@ public class StockLedger {
                     SET quantity = lot_balances.quantity + excluded.quantity, updated_at = now()""")
                     .setParameter(1, branchId).setParameter(2, productId).setParameter(3, lotId)
                     .setParameter(4, signedQuantity).executeUpdate();
+        }
+
+        /**
+         * Salida de un producto (Fase 13-3, decisión 281). Si controla lotes, reparte con FEFO: primero lo que no tiene
+         * lote (existencias de antes de controlar lotes), luego el lote que vence primero. Un lote vencido nunca sale
+         * por aquí salvo {@code allowExpired} (bajas y ajustes). Un movimiento por cada parte.
+         *
+         * @param quantity cantidad positiva en unidad base
+         */
+        public List<StockMovement> postOut(UUID branchId, UUID productId, MovementType type, BigDecimal quantity,
+                                           boolean allowNegative, boolean allowExpired, String referenceType,
+                                           UUID referenceId, String reason) {
+            List<StockMovement> result = new ArrayList<>();
+            for (Portion p : allocate(branchId, productId, quantity, allowExpired)) {
+                result.add(post(branchId, productId, p.lotId(), type, p.quantity().negate(), null, allowNegative,
+                        referenceType, referenceId, reason));
+            }
+            return result;
+        }
+
+        /** Cómo se repartiría una salida entre "sin lote" y los lotes, sin mover nada (FEFO). */
+        public List<Portion> allocate(UUID branchId, UUID productId, BigDecimal quantity, boolean allowExpired) {
+            StockProduct product = product(productId);
+            if (!product.tracksLots()) {
+                return List.of(new Portion(null, quantity));
+            }
+            List<?> rows = em.createNativeQuery("""
+                    SELECT b.lot_id, b.quantity, l.expiration_date, l.lot_number
+                    FROM lot_balances b JOIN lots l ON l.id = b.lot_id
+                    WHERE b.branch_id = ?1 AND b.product_id = ?2 AND b.quantity > 0
+                    ORDER BY l.expiration_date NULLS LAST, l.lot_number
+                    FOR UPDATE OF b""").setParameter(1, branchId).setParameter(2, productId).getResultList();
+            BigDecimal inLots = BigDecimal.ZERO;
+            for (Object row : rows) {
+                inLots = inLots.add((BigDecimal) ((Object[]) row)[1]);
+            }
+            List<Portion> portions = new ArrayList<>();
+            BigDecimal remaining = quantity;
+            BigDecimal unlotted = balance(branchId, productId).subtract(inLots).max(BigDecimal.ZERO);
+            if (unlotted.signum() > 0) {
+                BigDecimal take = unlotted.min(remaining);
+                portions.add(new Portion(null, take));
+                remaining = remaining.subtract(take);
+            }
+            LocalDate today = today();
+            BigDecimal expired = BigDecimal.ZERO;
+            String expiredLot = null;
+            for (Object o : rows) {
+                if (remaining.signum() <= 0) {
+                    break;
+                }
+                Object[] row = (Object[]) o;
+                BigDecimal available = (BigDecimal) row[1];
+                LocalDate expiration = toDate(row[2]);
+                if (!allowExpired && expiration != null && !expiration.isAfter(today)) {
+                    expired = expired.add(available);
+                    expiredLot = expiredLot == null ? (String) row[3] : expiredLot;
+                    continue;
+                }
+                BigDecimal take = available.min(remaining);
+                portions.add(new Portion((UUID) row[0], take));
+                remaining = remaining.subtract(take);
+            }
+            if (remaining.signum() > 0) {
+                if (expired.signum() > 0) {
+                    throw new BusinessRuleException("Lo que queda de " + product.name() + " está vencido (lote "
+                            + expiredLot + "): no se puede vender ni trasladar. Dale de baja en Vencimientos.");
+                }
+                // Sin lotes disponibles: lo que falta sale "sin lote" (el saldo decide si alcanza o queda negativo).
+                portions.add(new Portion(null, remaining));
+            }
+            return mergeUnlotted(portions);
+        }
+
+        /** Saldo de un lote en la sucursal (0 si no tiene). */
+        public BigDecimal lotBalance(UUID branchId, UUID lotId) {
+            List<?> rows = em.createNativeQuery(
+                    "SELECT quantity FROM lot_balances WHERE branch_id = ?1 AND lot_id = ?2")
+                    .setParameter(1, branchId).setParameter(2, lotId).getResultList();
+            return rows.isEmpty() ? BigDecimal.ZERO : ((BigDecimal) rows.getFirst()).setScale(4, RoundingMode.HALF_UP);
+        }
+
+        /** Existencia sin lote: el saldo del producto menos lo que está en lotes (nunca negativa). */
+        public BigDecimal unlottedBalance(UUID branchId, UUID productId) {
+            Object inLots = em.createNativeQuery(
+                    "SELECT coalesce(sum(quantity), 0) FROM lot_balances WHERE branch_id = ?1 AND product_id = ?2")
+                    .setParameter(1, branchId).setParameter(2, productId).getSingleResult();
+            return balance(branchId, productId).subtract((BigDecimal) inLots).max(BigDecimal.ZERO)
+                    .setScale(4, RoundingMode.HALF_UP);
         }
 
         public List<StockMovement> movements() {
@@ -248,5 +359,27 @@ public class StockLedger {
         }
         BigDecimal value = totalQuantity.multiply(currentCost).add(entryQuantity.multiply(entryCost));
         return value.divide(totalQuantity.add(entryQuantity), 2, RoundingMode.HALF_UP);
+    }
+
+    private static List<Portion> mergeUnlotted(List<Portion> portions) {
+        BigDecimal unlotted = BigDecimal.ZERO;
+        List<Portion> lots = new ArrayList<>();
+        for (Portion p : portions) {
+            if (p.lotId() == null) {
+                unlotted = unlotted.add(p.quantity());
+            } else {
+                lots.add(p);
+            }
+        }
+        List<Portion> result = new ArrayList<>();
+        if (unlotted.signum() > 0) {
+            result.add(new Portion(null, unlotted));
+        }
+        result.addAll(lots);
+        return result;
+    }
+
+    static LocalDate toDate(Object value) {
+        return value == null ? null : value instanceof Date d ? d.toLocalDate() : (LocalDate) value;
     }
 }

@@ -5,6 +5,7 @@ import com.poshibrido.inventory.domain.MovementType;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -33,18 +34,19 @@ public final class InventoryViews {
 
     public record KardexRow(long entryNo, Instant createdAt, UUID branchId, String branchName, MovementType type,
                             BigDecimal quantity, BigDecimal unitCost, BigDecimal balanceAfter, String referenceType,
-                            UUID referenceId, Long documentNumber, String reason, String createdByName) {
+                            UUID referenceId, Long documentNumber, String reason, String createdByName,
+                            String lotNumber) {
     }
 
     public record DocumentLineView(int lineNo, UUID productId, String sku, String name, UUID unitId, String unitCode,
                                    BigDecimal quantity, BigDecimal factor, BigDecimal baseQuantity, String direction,
                                    BigDecimal unitCost, BigDecimal expectedQuantity, BigDecimal countedQuantity,
-                                   BigDecimal difference) {
+                                   BigDecimal difference, String lotNumber, LocalDate expirationDate) {
     }
 
     public record DocumentView(UUID id, long number, InventoryDocumentType type, UUID branchId, String branchName,
                                UUID targetBranchId, String targetBranchName, String reason, String notes,
                                UUID createdBy, String createdByName, Instant createdAt, int lineCount,
-                               List<DocumentLineView> lines) {
+                               List<DocumentLineView> lines, String disposalMethod, String witnessName) {
     }
 }

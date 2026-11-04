@@ -64,6 +64,7 @@ public class ProductService {
     private final StockPresence stock;
     private final ProductModelRepository models;
     private final ProductMedicineRepository medicines;
+    private final MedicineService medicineService;
 
     /** {@code includeVariants}: falso en la lista de productos (las tallas se ven en su modelo); verdadero en el POS. */
     @Transactional(readOnly = true)
@@ -75,9 +76,7 @@ public class ProductService {
                 categoryId == null, categoryId == null ? NO_CATEGORY : categoryId, includeInactive, includeVariants,
                 pageable);
         References refs = references();
-        Map<UUID, ProductView.MedicineBadge> badges = new HashMap<>();
-        medicines.findAllById(page.map(Product::getId).getContent())
-                .forEach(m -> badges.put(m.getProductId(), MedicineService.badge(m)));
+        Map<UUID, ProductView.MedicineBadge> badges = medicineService.badges(page.map(Product::getId).getContent());
         return page.map(p -> toView(p, refs, List.of(), badges.get(p.getId())));
     }
 
@@ -289,7 +288,7 @@ public class ProductService {
     }
 
     ProductView toView(Product p, References refs, List<PriceListItem> items) {
-        return toView(p, refs, items, medicines.findById(p.getId()).map(MedicineService::badge).orElse(null));
+        return toView(p, refs, items, medicineService.badges(List.of(p.getId())).get(p.getId()));
     }
 
     ProductView toView(Product p, References refs, List<PriceListItem> items, ProductView.MedicineBadge medicine) {

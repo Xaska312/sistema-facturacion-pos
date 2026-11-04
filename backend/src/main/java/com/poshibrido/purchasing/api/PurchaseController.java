@@ -53,6 +53,13 @@ public class PurchaseController {
                                  @NotEmpty @Size(max = 300) List<@Valid LineRequest> lines) {
     }
 
+    public record ReturnLineRequest(@NotNull Integer receiptLineNo, @NotNull BigDecimal quantity) {
+    }
+
+    public record ReturnRequest(@NotNull @Size(max = 255) String reason,
+                                @NotEmpty @Size(max = 300) List<@Valid ReturnLineRequest> lines) {
+    }
+
     public record PaymentRequest(@NotNull BigDecimal amount, @NotNull UUID paymentMethodId,
                                  @Size(max = 100) String reference) {
     }
@@ -87,6 +94,16 @@ public class PurchaseController {
     @PreAuthorize("hasAuthority('purchases:read')")
     public ReceiptView get(@PathVariable UUID id) {
         return purchases.get(id);
+    }
+
+    /** Devolución al proveedor (Fase 13-3). */
+    @PostMapping("/{id}/returns")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasAuthority('purchases:receive')")
+    public ReceiptView returnGoods(@PathVariable UUID id, @Valid @RequestBody ReturnRequest r,
+                                   @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        return purchases.returnGoods(id, new PurchaseService.ReturnCommand(r.reason(), r.lines().stream()
+                .map(l -> new PurchaseService.ReturnLine(l.receiptLineNo(), l.quantity())).toList()), key);
     }
 
     @PostMapping("/{id}/payments")

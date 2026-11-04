@@ -9,6 +9,9 @@ import {
   receiptLine,
   receiptNumber,
   receiptTotals,
+  returnDrafts,
+  returnProblem,
+  returnTotal,
   temperatureProblem,
   toLineInputs,
   withUnit,
@@ -97,5 +100,24 @@ describe('recepción de compras (Fase 13-2, decisión 280)', () => {
     expect(dueLabel('2026-11-01', TODAY)).toBe('Venció ayer');
     expect(dueLabel(null, TODAY)).toBe('');
     expect(receiptNumber(42)).toBe('REC-000042');
+  });
+
+  it('devolución: solo lo aceptado y no devuelto; valor con IVA (Fase 13-3)', () => {
+    const base = { productId: 'p', productName: 'Amox', sku: 'A', unitCode: 'UND', unitCost: 1000, taxRate: 19,
+      lineTotal: 0, lotNumber: 'L-1', expirationDate: null, sanitaryRegistration: null, rejectReason: null,
+      baseQuantity: 10 };
+    const drafts = returnDrafts([
+      { ...base, lineNo: 1, quantity: 10, status: 'ACCEPTED', returnedQuantity: 4 },
+      { ...base, lineNo: 2, quantity: 5, status: 'REJECTED', returnedQuantity: 0 },
+      { ...base, lineNo: 3, quantity: 2, status: 'ACCEPTED', returnedQuantity: 2 },
+    ]);
+    expect(drafts.map((d) => [d.lineNo, d.max])).toEqual([[1, 6]]);
+    expect(returnProblem(drafts, 'Vencido')).toContain('al menos un producto');
+    drafts[0].quantity = 7;
+    expect(returnProblem(drafts, 'Vencido')).toContain('solo puedes devolver 6');
+    drafts[0].quantity = 2;
+    expect(returnProblem(drafts, '')).toContain('motivo');
+    expect(returnProblem(drafts, 'Vencido')).toBeNull();
+    expect(returnTotal(drafts)).toBe(2380);
   });
 });

@@ -318,6 +318,27 @@ export const routes: Routes = [
           import('./features/inventory/documents.component').then((m) => m.InventoryDocumentsComponent),
       },
       {
+        path: 'inventario/vencimientos',
+        title: 'Vencimientos',
+        canActivate: [permissionGuard],
+        data: { permission: 'inventory:read', module: 'module:medicines' },
+        loadComponent: () => import('./features/inventory/expiry.component').then((m) => m.ExpiryComponent),
+      },
+      {
+        path: 'inventario/trazabilidad',
+        title: 'Trazabilidad de un lote',
+        canActivate: [permissionGuard],
+        data: { permission: 'inventory:read' },
+        loadComponent: () => import('./features/inventory/lot-trace.component').then((m) => m.LotTraceComponent),
+      },
+      {
+        path: 'inventario/acta/:id',
+        title: 'Acta de baja',
+        canActivate: [permissionGuard],
+        data: { permission: 'inventory:read' },
+        loadComponent: () => import('./features/inventory/disposal-act.component').then((m) => m.DisposalActComponent),
+      },
+      {
         path: 'inventario/kardex/:productId',
         title: 'Kardex',
         canActivate: [permissionGuard],

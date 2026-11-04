@@ -10,7 +10,11 @@ public enum MovementType {
     ADJUSTMENT_OUT(false),
     TRANSFER_OUT(false),
     TRANSFER_IN(true),
-    RETURN(true);
+    RETURN(true),
+    /** Baja de vencidos o averiados (Fase 13-3). */
+    DISPOSAL(false),
+    /** Devolución al proveedor de lo comprado (Fase 13-3). */
+    SUPPLIER_RETURN(false);
 
     private final boolean entry;
 

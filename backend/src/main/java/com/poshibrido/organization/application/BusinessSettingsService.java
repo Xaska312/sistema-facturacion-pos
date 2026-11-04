@@ -36,13 +36,14 @@ public class BusinessSettingsService implements BusinessSettingsApi {
     static final String QUOTE_TERMS = "quote_terms";
     static final String TIP_PERCENT = "tip_percent";
     static final int MAX_TIP_PERCENT = 20;
+    static final String EXPIRY_ALERT_MONTHS = "expiry_alert_months";
 
     /** Monedas soportadas. En el MVP solo pesos colombianos. */
     private static final Set<String> CURRENCIES = Set.of("COP");
 
     private static final BusinessSettings DEFAULTS = new BusinessSettings(false, true, "America/Bogota", "COP",
             "Gracias por su compra", BigDecimal.ZERO.setScale(2), true, 15,
-            "Precios sujetos a cambio después de la fecha de validez.", 10);
+            "Precios sujetos a cambio después de la fecha de validez.", 10, 3);
 
     private final BusinessSettingRepository repository;
     private final AuditLogger audit;
@@ -62,7 +63,8 @@ public class BusinessSettingsService implements BusinessSettingsApi {
                 bool(values, CASH_CLOSE_EMAIL, DEFAULTS.cashCloseEmail()),
                 integer(values, QUOTE_VALIDITY_DAYS, DEFAULTS.quoteValidityDays()),
                 values.getOrDefault(QUOTE_TERMS, DEFAULTS.quoteTerms()),
-                integer(values, TIP_PERCENT, DEFAULTS.tipPercent()));
+                integer(values, TIP_PERCENT, DEFAULTS.tipPercent()),
+                integer(values, EXPIRY_ALERT_MONTHS, DEFAULTS.expiryAlertMonths()));
     }
 
     @Transactional
@@ -85,6 +87,7 @@ public class BusinessSettingsService implements BusinessSettingsApi {
         put(rows, QUOTE_TERMS, ValueType.STRING, requested.quoteTerms() == null ? "" : requested.quoteTerms().trim(),
                 actor);
         put(rows, TIP_PERCENT, ValueType.INTEGER, Integer.toString(requested.tipPercent()), actor);
+        put(rows, EXPIRY_ALERT_MONTHS, ValueType.INTEGER, Integer.toString(requested.expiryAlertMonths()), actor);
 
         BusinessSettings after = current();
         audit.log("SETTINGS_UPDATED", "business_settings", null, asMap(before), asMap(after));
@@ -123,6 +126,9 @@ public class BusinessSettingsService implements BusinessSettingsApi {
         }
         if (s.tipPercent() < 0 || s.tipPercent() > MAX_TIP_PERCENT) {
             throw new BusinessRuleException("La propina sugerida va de 0 a " + MAX_TIP_PERCENT + " %.");
+        }
+        if (s.expiryAlertMonths() < 1 || s.expiryAlertMonths() > 12) {
+            throw new BusinessRuleException("El aviso de vencimiento va de 1 a 12 meses.");
         }
         if (s.quoteTerms() != null && s.quoteTerms().length() > 1000) {
             throw new BusinessRuleException("Las condiciones de las cotizaciones superan 1.000 caracteres.");
@@ -164,6 +170,7 @@ public class BusinessSettingsService implements BusinessSettingsApi {
         map.put(QUOTE_VALIDITY_DAYS, s.quoteValidityDays());
         map.put(QUOTE_TERMS, s.quoteTerms());
         map.put(TIP_PERCENT, s.tipPercent());
+        map.put(EXPIRY_ALERT_MONTHS, s.expiryAlertMonths());
         return map;
     }
 }
