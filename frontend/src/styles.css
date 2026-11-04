@@ -133,6 +133,26 @@
  * :root y .app-dark (por defecto, decisión 249); turquesa, el de antes, quedó como un bloque más.
  * Las muestras de Ajustes están en src/app/core/theme/brand-palettes.ts.
  */
+/* Estados de las mesas en el mapa (decisión 284). Fondo suave, borde y texto con contraste AA, en claro y oscuro. */
+:root {
+  --table-free-bg: #ecfdf3; --table-free-border: #16a34a; --table-free-text: #14532d;
+  --table-ordering-bg: #f1f5f9; --table-ordering-border: #64748b; --table-ordering-text: #1e293b;
+  --table-kitchen-bg: #fef9c3; --table-kitchen-border: #ca8a04; --table-kitchen-text: #713f12;
+  --table-ready-bg: #dbeafe; --table-ready-border: #2563eb; --table-ready-text: #1e3a8a;
+  --table-eating-bg: #ede9fe; --table-eating-border: #7c3aed; --table-eating-text: #4c1d95;
+  --table-bill-bg: #fee2e2; --table-bill-border: #dc2626; --table-bill-text: #7f1d1d;
+  --plan-bg: #f8fafc; --plan-grid: #e2e8f0;
+}
+.app-dark {
+  --table-free-bg: #052e1a; --table-free-border: #22c55e; --table-free-text: #bbf7d0;
+  --table-ordering-bg: #1e293b; --table-ordering-border: #94a3b8; --table-ordering-text: #e2e8f0;
+  --table-kitchen-bg: #3b2f05; --table-kitchen-border: #eab308; --table-kitchen-text: #fef08a;
+  --table-ready-bg: #172554; --table-ready-border: #60a5fa; --table-ready-text: #bfdbfe;
+  --table-eating-bg: #2e1065; --table-eating-border: #a78bfa; --table-eating-text: #ddd6fe;
+  --table-bill-bg: #450a0a; --table-bill-border: #f87171; --table-bill-text: #fecaca;
+  --plan-bg: #0f1a1c; --plan-grid: #1f2c2f;
+}
+
 :root[data-brand="azul"] {
   --brand: #1d4ed8;
   --brand-hover: #1e40af;

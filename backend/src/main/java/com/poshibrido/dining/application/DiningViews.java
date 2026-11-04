@@ -18,16 +18,24 @@ public final class DiningViews {
     public record ZoneView(UUID id, UUID branchId, String name, int position, boolean active, List<TableView> tables) {
     }
 
-    public record TableView(UUID id, UUID zoneId, String name, Integer seats, int position, boolean active) {
+    /** {@code map}: su lugar en el plano de la zona (decisión 284). */
+    public record TableView(UUID id, UUID zoneId, String name, Integer seats, int position, boolean active, MapSpot map) {
+    }
+
+    /**
+     * Lugar de una mesa en el plano (unidades de un plano de 100 × 70): {@code x}/{@code y} nulos = sin ubicar (la
+     * pantalla la acomoda); {@code shape}: SQUARE, ROUND o RECT.
+     */
+    public record MapSpot(BigDecimal x, BigDecimal y, BigDecimal w, BigDecimal h, String shape) {
     }
 
     /** Resumen de una cuenta abierta para las baldosas. {@code total}: con los precios del momento de agregar. */
     public record TabSummary(UUID id, long number, String kind, String label, UUID tableId, Instant openedAt,
                              Integer guests, String customerName, BigDecimal total, int items, String openedByName,
-                             int ready) {
+                             int ready, String state, Instant billRequestedAt) {
     }
 
-    public record FloorTable(UUID id, String name, Integer seats, TabSummary tab) {
+    public record FloorTable(UUID id, String name, Integer seats, TabSummary tab, MapSpot map) {
     }
 
     public record FloorZone(UUID id, String name, List<FloorTable> tables) {
@@ -59,6 +67,7 @@ public final class DiningViews {
                           UUID tableId, String tableName, String zoneName, Integer guests, String customerName,
                           String phone, String address, String notes, Instant openedAt, String openedByName,
                           Instant closedAt, UUID saleId, BigDecimal total, List<TabItemView> items,
-                          List<KitchenViews.TicketSummary> tickets, BigDecimal chargedTotal, List<UUID> saleIds) {
+                          List<KitchenViews.TicketSummary> tickets, BigDecimal chargedTotal, List<UUID> saleIds,
+                          Instant billRequestedAt) {
     }
 }

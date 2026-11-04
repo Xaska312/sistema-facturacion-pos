@@ -65,7 +65,7 @@ class KitchenDisplayIT extends IntegrationTest {
         api.getWith(cook, "/api/v1/dining/floor").andExpect(status().isForbidden());
         api.getWith(cook, "/api/v1/sales").andExpect(status().isForbidden());
 
-        // El mesero no mueve la comanda en la cocina; la cocina sí, y no se salta de Nueva a Entregada.
+        // El mesero no mueve la comanda en la cocina (solo la marca entregada); la cocina sí, y no se salta de Nueva a Entregada.
         move(waiter, ticket, "PREPARING").andExpect(status().isForbidden());
         move(cook, ticket, "DELIVERED").andExpect(status().is(422));
         move(cook, ticket, "PREPARING").andExpect(status().isOk()).andExpect(jsonPath("$.preparingAt").exists());

@@ -28,6 +28,21 @@ export interface TabSummary {
   openedByName: string | null;
   /** Comandas listas para llevar a la mesa (Fase 12b-4). */
   ready: number;
+  /** En qué va la mesa (decisión 284), para su color en el mapa. */
+  state: TabState;
+  billRequestedAt: string | null;
+}
+
+export type TabState = 'ORDERING' | 'KITCHEN' | 'READY' | 'EATING' | 'BILL';
+export type TableShape = 'SQUARE' | 'ROUND' | 'RECT';
+
+/** Lugar de una mesa en el plano de su zona (unidades de un plano de 100 × 70). x/y nulos = sin ubicar. */
+export interface MapSpot {
+  x: number | null;
+  y: number | null;
+  w: number;
+  h: number;
+  shape: TableShape;
 }
 
 export interface FloorTable {
@@ -35,6 +50,7 @@ export interface FloorTable {
   name: string;
   seats: number | null;
   tab: TabSummary | null;
+  map: MapSpot;
 }
 
 export interface FloorZone {
@@ -58,6 +74,7 @@ export interface DiningTable {
   seats: number | null;
   position: number;
   active: boolean;
+  map: MapSpot;
 }
 
 export interface DiningZone {
@@ -131,6 +148,8 @@ export interface Tab {
   /** Lo ya cobrado por partes (con los precios de cuando se pidió) y sus ventas (Fase 12b-5). */
   chargedTotal: number;
   saleIds: string[];
+  /** La mesa pidió la cuenta (decisión 284). */
+  billRequestedAt: string | null;
 }
 
 /** Comanda vista desde la cuenta. */
@@ -223,6 +242,16 @@ export class DiningApi {
   updateTable(id: string, input: { zoneId: string; name: string; seats: number | null; position: number; active: boolean }):
     Observable<DiningTable> {
     return this.http.put<DiningTable>(`/api/v1/dining/tables/${id}`, input);
+  }
+
+  /** Plano de una zona (decisión 284). */
+  saveLayout(zoneId: string, tables: ({ tableId: string } & MapSpot)[]): Observable<DiningZone> {
+    return this.http.put<DiningZone>(`/api/v1/dining/zones/${zoneId}/layout`, { tables });
+  }
+
+  /** La mesa pidió la cuenta (o se desmarca). */
+  requestBill(id: string, requested: boolean): Observable<Tab> {
+    return this.http.post<Tab>(`/api/v1/tabs/${id}/bill-request`, { requested });
   }
 
   open(input: OpenTabInput): Observable<Tab> {

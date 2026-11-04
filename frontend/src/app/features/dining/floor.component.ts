@@ -13,7 +13,11 @@ import { XIconComponent } from '../../shared/icons/xicon.component';
 import { formatCop } from '../../shared/money';
 import { PageHeaderComponent } from '../../shared/page-header.component';
 import { liveRefresh } from '../../core/realtime/live-refresh';
-import { kindGlyph, minutesOpen, openFor } from './dining-labels';
+import { kindGlyph, openFor } from './dining-labels';
+import { TablePlanComponent } from './table-plan.component';
+import { MAP_STATES, MapState, stateLabel } from './table-map';
+
+const VIEW_KEY = 'xaska.floor.view';
 
 /** Respaldo: cada cuánto se actualiza el salón si no hay conexión en tiempo real (Fase 12b-4). */
 const REFRESH_MS = 15_000;
@@ -25,7 +29,7 @@ const REFRESH_MS = 15_000;
 @Component({
   selector: 'app-floor',
   imports: [FormsModule, RouterLink, ButtonModule, InputTextModule, SkeletonModule, PageHeaderComponent,
-    FormDialogComponent, EmptyStateComponent, XIconComponent],
+    FormDialogComponent, EmptyStateComponent, XIconComponent, TablePlanComponent],
   template: `
     <app-page-header title="Mesas" description="Toca una mesa libre para abrir su cuenta o una ocupada para pedir y cobrar.">
       <p-button label="Para llevar" icon="pi pi-shopping-bag" severity="secondary" [outlined]="true" (onClick)="openOther('TAKEAWAY')" />
@@ -63,33 +67,47 @@ const REFRESH_MS = 15_000;
                          [actionLabel]="canManage() ? 'Configurar mesas' : null" (action)="router.navigate(['/app/mesas/configurar'])" />
       }
 
+      @if (f.zones.length > 0) {
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <ul class="flex flex-wrap gap-x-3 gap-y-1 text-xs" aria-label="Colores de las mesas">
+            @for (m of states; track m.state) {
+              <li class="flex items-center gap-1.5" [title]="m.hint"><span class="dot" [attr.data-state]="m.state"></span>{{ m.label }}</li>
+            }
+          </ul>
+          <div class="flex gap-1" role="group" aria-label="Cómo ver el salón">
+            <button type="button" class="chip" [attr.aria-pressed]="view() === 'plan'" (click)="setView('plan')">
+              <i class="pi pi-map mr-2" aria-hidden="true"></i>Plano</button>
+            <button type="button" class="chip" [attr.aria-pressed]="view() === 'list'" (click)="setView('list')">
+              <i class="pi pi-th-large mr-2" aria-hidden="true"></i>Lista</button>
+          </div>
+        </div>
+      }
+
       @for (z of shownZones(); track z.id) {
         <section class="mb-6" [attr.aria-labelledby]="'zone-' + z.id">
           <h2 [id]="'zone-' + z.id" class="text-base font-bold tracking-tight mb-3">
             {{ z.name }} <span class="text-sm font-normal text-muted">· {{ busy(z.tables) }} de {{ z.tables.length }} ocupadas</span>
           </h2>
+          @if (view() === 'plan') {
+            <app-table-plan [tables]="z.tables" [zoneName]="z.name" [now]="clock()" (pick)="pickTable($event)" />
+          } @else {
           <ul class="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6" [attr.aria-label]="'Mesas de ' + z.name">
             @for (t of z.tables; track t.id) {
               <li>
                 @if (t.tab; as tab) {
-                  <a [routerLink]="['/app/mesas/cuenta', tab.id]" class="table-tile table-tile--busy"
-                     [class.table-tile--late]="late(tab.openedAt)"
+                  <a [routerLink]="['/app/mesas/cuenta', tab.id]" class="table-tile table-tile--busy" [attr.data-state]="tab.state"
                      [attr.aria-label]="'Mesa ' + t.name + ', ocupada, ' + cop(tab.total) + ', ' + since(tab.openedAt) + (tab.ready ? ', con platos listos para llevar' : '')">
                     <span class="flex items-start justify-between gap-2">
                       <span class="text-2xl font-extrabold tracking-tight">{{ t.name }}</span>
-                      @if (tab.ready > 0) {
-                        <span class="pill pill--ready">{{ tab.ready === 1 ? 'Lista' : tab.ready + ' listas' }}</span>
-                      } @else {
-                        <span class="pill">{{ since(tab.openedAt) }}</span>
-                      }
+                      <span class="pill">{{ tab.state === 'READY' ? (tab.ready === 1 ? '1 lista' : tab.ready + ' listas') : label(tab.state) }}</span>
                     </span>
                     <span>
                       <span class="block text-lg font-extrabold tabular-nums">{{ cop(tab.total) }}</span>
-                      <span class="block text-xs">{{ tab.guests ? tab.guests + ' pers. · ' : '' }}{{ tab.items }} prod.</span>
+                      <span class="block text-xs">{{ since(tab.openedAt) }} · {{ tab.guests ? tab.guests + ' pers. · ' : '' }}{{ tab.items }} prod.</span>
                     </span>
                   </a>
                 } @else {
-                  <button type="button" class="table-tile" (click)="askOpen(t)"
+                  <button type="button" class="table-tile" data-state="FREE" (click)="askOpen(t)"
                           [attr.aria-label]="'Mesa ' + t.name + ', libre. Abrir cuenta'">
                     <span class="text-2xl font-extrabold tracking-tight">{{ t.name }}</span>
                     <span class="text-xs text-muted">Libre{{ t.seats ? ' · ' + t.seats + ' puestos' : '' }}</span>
@@ -98,6 +116,7 @@ const REFRESH_MS = 15_000;
               </li>
             }
           </ul>
+          }
         </section>
       }
 
@@ -192,7 +211,18 @@ const REFRESH_MS = 15_000;
       background: var(--brand-soft);
       color: var(--brand-soft-text);
     }
-    .table-tile--late { border-color: var(--warning); background: var(--warning-soft); color: var(--warning-soft-text); }
+    .table-tile[data-state='FREE'] { border: 2px dashed var(--table-free-border); background: var(--table-free-bg); color: var(--table-free-text); }
+    .table-tile[data-state='ORDERING'] { border-color: var(--table-ordering-border); background: var(--table-ordering-bg); color: var(--table-ordering-text); }
+    .table-tile[data-state='KITCHEN'] { border-color: var(--table-kitchen-border); background: var(--table-kitchen-bg); color: var(--table-kitchen-text); }
+    .table-tile[data-state='READY'] { border-color: var(--table-ready-border); background: var(--table-ready-bg); color: var(--table-ready-text); }
+    .table-tile[data-state='EATING'] { border-color: var(--table-eating-border); background: var(--table-eating-bg); color: var(--table-eating-text); }
+    .table-tile[data-state='BILL'] { border-color: var(--table-bill-border); background: var(--table-bill-bg); color: var(--table-bill-text); }
+    .dot { width: 0.75rem; height: 0.75rem; border-radius: 9999px; border: 2px solid var(--table-free-border); background: var(--table-free-bg); }
+    .dot[data-state='ORDERING'] { border-color: var(--table-ordering-border); background: var(--table-ordering-bg); }
+    .dot[data-state='KITCHEN'] { border-color: var(--table-kitchen-border); background: var(--table-kitchen-bg); }
+    .dot[data-state='READY'] { border-color: var(--table-ready-border); background: var(--table-ready-bg); }
+    .dot[data-state='EATING'] { border-color: var(--table-eating-border); background: var(--table-eating-bg); }
+    .dot[data-state='BILL'] { border-color: var(--table-bill-border); background: var(--table-bill-bg); }
     .pill {
       padding: 0.125rem 0.5rem;
       border-radius: 9999px;
@@ -218,6 +248,11 @@ export class FloorComponent implements OnInit {
   });
   protected readonly cop = formatCop;
   protected readonly glyph = kindGlyph;
+  protected readonly states = MAP_STATES;
+  protected readonly label = (state: MapState) => stateLabel(state);
+  /** Plano o lista (decisión 284); se recuerda en este equipo. */
+  protected readonly view = signal<'plan' | 'list'>(readView());
+  protected readonly clock = signal(new Date());
 
   protected openDialog = false;
   protected readonly openKind = signal<TabKind>('TABLE');
@@ -245,6 +280,7 @@ export class FloorComponent implements OnInit {
     this.api.floor(this.branchId).subscribe({
       next: (f) => {
         this.now = new Date();
+        this.clock.set(this.now);
         this.branchId = f.branchId;
         this.floor.set(f);
         if (this.zone() && !f.zones.some((z) => z.id === this.zone())) {
@@ -253,6 +289,24 @@ export class FloorComponent implements OnInit {
       },
       error: () => this.floor.update((f) => f ?? { branchId: '', branches: [], zones: [], others: [] }),
     });
+  }
+
+  protected setView(view: 'plan' | 'list'): void {
+    this.view.set(view);
+    try {
+      localStorage.setItem(VIEW_KEY, view);
+    } catch {
+      // Sin almacenamiento (modo privado): solo para esta visita.
+    }
+  }
+
+  /** Mesa tocada en el plano: libre abre la cuenta; ocupada va a su cuenta. */
+  protected pickTable(table: FloorTable): void {
+    if (table.tab) {
+      void this.router.navigate(['/app/mesas/cuenta', table.tab.id]);
+    } else {
+      this.askOpen(table);
+    }
   }
 
   protected changeBranch(id: string): void {
@@ -267,11 +321,6 @@ export class FloorComponent implements OnInit {
 
   protected since(openedAt: string): string {
     return openFor(openedAt, this.now);
-  }
-
-  /** Más de una hora abierta: la baldosa cambia de color para que no se olvide. */
-  protected late(openedAt: string): boolean {
-    return minutesOpen(openedAt, this.now) >= 60;
   }
 
   protected openTitle(): string {
@@ -315,5 +364,13 @@ export class FloorComponent implements OnInit {
 
   protected opened(tab: unknown): void {
     void this.router.navigate(['/app/mesas/cuenta', (tab as Tab).id]);
+  }
+}
+
+function readView(): 'plan' | 'list' {
+  try {
+    return localStorage.getItem(VIEW_KEY) === 'list' ? 'list' : 'plan';
+  } catch {
+    return 'plan';
   }
 }

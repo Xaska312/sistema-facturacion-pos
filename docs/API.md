@@ -525,3 +525,14 @@ Con el módulo `MEDICINES`. Permisos nuevos `pharmacy:dispense` y `pharmacy:reco
 | GET | `/pharmacy/dispensations?from=&to=&antibioticOnly=&search=&page=&size=` | `pharmacy:records` | Libro: venta, fecha, sucursal, quién dispensó, datos de la fórmula, paciente, `voided`, líneas con sus lotes. Por defecto los últimos 30 días |
 | GET | `/pharmacy/technical-director` | `settings:read`, `pharmacy:records` o `inventory:read` | `{name, profession: PHARMACIST\|PHARMACY_REGENT\|PHARMACY_TECHNICIAN, license}` |
 | PUT | `/pharmacy/technical-director` | `settings:manage` | Con nombre exige profesión y tarjeta profesional. Auditoría `TECHNICAL_DIRECTOR_UPDATED` |
+
+## Mapa de mesas (decisión 284)
+
+`TableView` y `FloorTable` traen `map: {x, y, w, h, shape}` (plano de 100 × 70 unidades; `x`/`y` nulos = sin ubicar; `shape` SQUARE, ROUND o RECT). `TabSummary` trae `state` (ORDERING, KITCHEN, READY, EATING, BILL) y `billRequestedAt`; `TabView`, `billRequestedAt`.
+
+| Método | Ruta | Permiso | Notas |
+|---|---|---|---|
+| PUT | `/dining/zones/{id}/layout` | `tables:manage` | `{tables: [{tableId, x, y, w, h, shape}]}`. La mesa se acomoda dentro del plano; redonda y cuadrada quedan igual de anchas que altas; tamaño 4 a 40. 422 si una mesa no es de la zona o la forma no existe. Auditoría `DINING_LAYOUT_UPDATED` |
+| POST | `/tabs/{id}/bill-request` | `tables:operate` | `{requested}`: marca o desmarca que la mesa pidió la cuenta. Agregar productos lo desmarca. Auditoría `TAB_BILL_REQUESTED` / `TAB_BILL_REQUEST_CLEARED` |
+
+`POST /kitchen/tickets/{id}/status` con `DELIVERED`: quien tiene `kitchen:send` (el mesero) la marca entregada desde cualquier estado (antes solo desde Lista), para las cocinas que solo imprimen la comanda.

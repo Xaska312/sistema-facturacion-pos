@@ -131,9 +131,9 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     manual: 'mesas',
     title: 'Mesas',
     tips: [
-      'Toca una mesa libre para abrir su cuenta; una ocupada para pedir, mover, unir o cobrar.',
+      'Toca una mesa libre (verde) para abrir su cuenta; una ocupada para pedir, mover, unir o cobrar.',
+      'Los colores dicen en qué va cada mesa: gris pidiendo, amarillo en cocina, azul platos listos, morado comiendo y rojo pidió la cuenta.',
       'Lo que pides queda pendiente hasta tocar "Agregar a la cuenta" (o "Enviar a cocina" si tienes cocina).',
-      'Para llevar y domicilios se abren con los botones de arriba.',
       'Cobrar abre Vender con los productos de la cuenta; al terminar, la mesa queda libre.',
     ],
   },
@@ -144,6 +144,7 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
       'Crea una zona por cada parte del local (Salón, Terraza, Barra).',
       'Con "Agregar mesas" creas varias numeradas de una vez.',
       'Toca una mesa para renombrarla, cambiarle los puestos o la zona.',
+      'Con "Plano" arrastras cada mesa a su lugar del local y eliges su forma y tamaño.',
     ],
   },
   '/app/comandas': {

@@ -6,6 +6,7 @@ import com.poshibrido.dining.application.DiningViews.BranchOption;
 import com.poshibrido.dining.application.DiningViews.Floor;
 import com.poshibrido.dining.application.DiningViews.FloorTable;
 import com.poshibrido.dining.application.DiningViews.FloorZone;
+import com.poshibrido.dining.application.DiningViews.MapSpot;
 import com.poshibrido.dining.application.DiningViews.TabSummary;
 import com.poshibrido.dining.application.DiningViews.TableView;
 import com.poshibrido.dining.application.DiningViews.ZoneView;
@@ -15,6 +16,7 @@ import com.poshibrido.shared.error.ForbiddenException;
 import com.poshibrido.shared.error.NotFoundException;
 import com.poshibrido.shared.id.Ids;
 import com.poshibrido.shared.security.CurrentActor;
+import com.poshibrido.tenancy.domain.BusinessModule;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
@@ -98,11 +100,11 @@ public class DiningService {
         }
         Map<UUID, List<FloorTable>> tables = new LinkedHashMap<>();
         for (Object[] r : rows("""
-                SELECT t.zone_id, t.id, t.name, t.seats FROM dining_tables t
+                SELECT t.zone_id, t.id, t.name, t.seats, t.map_x, t.map_y, t.map_w, t.map_h, t.shape FROM dining_tables t
                 WHERE t.branch_id = :b AND t.active ORDER BY t.position, lower(t.name)""", Map.of("b", branchId))) {
             UUID tableId = (UUID) r[1];
             tables.computeIfAbsent((UUID) r[0], k -> new ArrayList<>())
-                    .add(new FloorTable(tableId, (String) r[2], Rows.integer(r[3]), byTable.get(tableId)));
+                    .add(new FloorTable(tableId, (String) r[2], Rows.integer(r[3]), byTable.get(tableId), spot(r, 4)));
         }
         List<FloorZone> zones = new ArrayList<>();
         for (Object[] r : rows("""
@@ -123,7 +125,12 @@ public class DiningService {
                        coalesce(sum(i.quantity * i.unit_price) FILTER (WHERE i.voided_at IS NULL AND i.sale_id IS NULL), 0),
                        coalesce(sum(i.quantity) FILTER (WHERE i.voided_at IS NULL AND i.sale_id IS NULL), 0),
                        (SELECT count(DISTINCT k.id) FROM kitchen_tickets k JOIN tab_items ki ON ki.ticket_id = k.id
-                        WHERE ki.tab_id = t.id AND k.status = 'READY')
+                        WHERE ki.tab_id = t.id AND k.status = 'READY'),
+                       (SELECT count(DISTINCT k.id) FROM kitchen_tickets k JOIN tab_items ki ON ki.ticket_id = k.id
+                        WHERE ki.tab_id = t.id AND k.status IN ('NEW', 'PREPARING')),
+                       count(i.id) FILTER (WHERE i.voided_at IS NULL AND i.sale_id IS NULL),
+                       count(i.id) FILTER (WHERE i.voided_at IS NULL AND i.sale_id IS NULL AND i.sent_at IS NOT NULL),
+                       t.bill_requested_at
                 FROM tabs t
                 LEFT JOIN dining_tables dt ON dt.id = t.table_id
                 LEFT JOIN tab_items i ON i.tab_id = t.id
@@ -133,6 +140,7 @@ public class DiningService {
         Set<UUID> people = new HashSet<>();
         data.forEach(r -> people.add((UUID) r[8]));
         Map<UUID, String> names = members.displayNames(people);
+        boolean kitchenOn = CurrentActor.permissions().contains(BusinessModule.KITCHEN.authority());
         List<TabSummary> result = new ArrayList<>();
         for (Object[] r : data) {
             String kind = (String) r[2];
@@ -140,7 +148,9 @@ public class DiningService {
             result.add(new TabSummary((UUID) r[0], number, kind,
                     TabLabels.label(kind, number, (String) r[4], (String) r[7]), (UUID) r[3], Rows.instant(r[5]),
                     Rows.integer(r[6]), (String) r[7], money(r[9]), ((Number) r[10]).intValue(), names.get((UUID) r[8]),
-                    ((Number) r[11]).intValue()));
+                    ((Number) r[11]).intValue(), TabState.of(r[15] != null, ((Number) r[11]).intValue(),
+                            ((Number) r[12]).intValue(), ((Number) r[13]).intValue(), ((Number) r[14]).intValue(),
+                            kitchenOn), Rows.instant(r[15])));
         }
         return result;
     }
@@ -151,11 +161,9 @@ public class DiningService {
     public List<ZoneView> zones(UUID requestedBranch) {
         UUID branchId = resolveBranch(requestedBranch);
         Map<UUID, List<TableView>> tables = new LinkedHashMap<>();
-        for (Object[] r : rows("""
-                SELECT id, zone_id, name, seats, position, active FROM dining_tables WHERE branch_id = :b
-                ORDER BY position, lower(name)""", Map.of("b", branchId))) {
-            tables.computeIfAbsent((UUID) r[1], k -> new ArrayList<>()).add(new TableView((UUID) r[0], (UUID) r[1],
-                    (String) r[2], Rows.integer(r[3]), ((Number) r[4]).intValue(), (Boolean) r[5]));
+        for (Object[] r : rows("SELECT " + TABLE_COLUMNS + " FROM dining_tables WHERE branch_id = :b "
+                + "ORDER BY position, lower(name)", Map.of("b", branchId))) {
+            tables.computeIfAbsent((UUID) r[1], k -> new ArrayList<>()).add(tableView(r));
         }
         List<ZoneView> result = new ArrayList<>();
         for (Object[] r : rows("""
@@ -273,24 +281,83 @@ public class DiningService {
         }
         Object[] r = found.getFirst();
         List<TableView> tables = new ArrayList<>();
-        for (Object[] t : rows("""
-                SELECT id, zone_id, name, seats, position, active FROM dining_tables WHERE zone_id = :z
-                ORDER BY position, lower(name)""", Map.of("z", id))) {
-            tables.add(new TableView((UUID) t[0], (UUID) t[1], (String) t[2], Rows.integer(t[3]), ((Number) t[4]).intValue(),
-                    (Boolean) t[5]));
+        for (Object[] t : rows("SELECT " + TABLE_COLUMNS + " FROM dining_tables WHERE zone_id = :z "
+                + "ORDER BY position, lower(name)", Map.of("z", id))) {
+            tables.add(tableView(t));
         }
         return new ZoneView((UUID) r[0], (UUID) r[1], (String) r[2], ((Number) r[3]).intValue(), (Boolean) r[4], tables);
     }
 
     TableView table(UUID id) {
-        List<Object[]> found = rows("SELECT id, zone_id, name, seats, position, active FROM dining_tables WHERE id = :t",
-                Map.of("t", id));
+        List<Object[]> found = rows("SELECT " + TABLE_COLUMNS + " FROM dining_tables WHERE id = :t", Map.of("t", id));
         if (found.isEmpty()) {
             throw new NotFoundException("Mesa no encontrada.");
         }
-        Object[] t = found.getFirst();
+        return tableView(found.getFirst());
+    }
+
+    private static final String TABLE_COLUMNS = "id, zone_id, name, seats, position, active, map_x, map_y, map_w, map_h, shape";
+
+    private static TableView tableView(Object[] t) {
         return new TableView((UUID) t[0], (UUID) t[1], (String) t[2], Rows.integer(t[3]), ((Number) t[4]).intValue(),
-                (Boolean) t[5]);
+                (Boolean) t[5], spot(t, 6));
+    }
+
+    private static MapSpot spot(Object[] r, int from) {
+        return new MapSpot((BigDecimal) r[from], (BigDecimal) r[from + 1], (BigDecimal) r[from + 2],
+                (BigDecimal) r[from + 3], (String) r[from + 4]);
+    }
+
+    // ------------------------------------------------------------------ plano (decisión 284)
+
+    /** Lugar de una mesa en el plano. */
+    public record SpotInput(UUID tableId, BigDecimal x, BigDecimal y, BigDecimal w, BigDecimal h, String shape) {
+    }
+
+    static final java.util.Set<String> SHAPES = java.util.Set.of("SQUARE", "ROUND", "RECT");
+    static final BigDecimal PLAN_W = new BigDecimal("100");
+    static final BigDecimal PLAN_H = new BigDecimal("70");
+    static final BigDecimal MIN_SIZE = new BigDecimal("4");
+    static final BigDecimal MAX_SIZE = new BigDecimal("40");
+
+    /**
+     * Guarda el plano de una zona: lugar, tamaño y forma de sus mesas. La mesa queda dentro del plano (si se sale,
+     * se acomoda en el borde). Solo mesas de esa zona.
+     */
+    @Transactional
+    public ZoneView saveLayout(UUID zoneId, List<SpotInput> spots) {
+        ZoneView zone = zone(zoneId);
+        requireBranch(zone.branchId());
+        if (spots == null || spots.size() > MAX_TABLES) {
+            throw new BusinessRuleException("El plano no es válido.");
+        }
+        java.util.Set<UUID> ofZone = new HashSet<>();
+        zone.tables().forEach(t -> ofZone.add(t.id()));
+        java.util.Set<UUID> seen = new HashSet<>();
+        for (SpotInput s : spots) {
+            if (s.tableId() == null || !ofZone.contains(s.tableId()) || !seen.add(s.tableId())) {
+                throw new BusinessRuleException("Una mesa del plano no es de la zona " + zone.name() + ".");
+            }
+            String shape = s.shape() == null ? "SQUARE" : s.shape();
+            if (!SHAPES.contains(shape)) {
+                throw new BusinessRuleException("Forma de mesa no válida.");
+            }
+            BigDecimal w = clamp(s.w() == null ? new BigDecimal("12") : s.w(), MIN_SIZE, MAX_SIZE);
+            BigDecimal h = "RECT".equals(shape) ? clamp(s.h() == null ? w : s.h(), MIN_SIZE, MAX_SIZE) : w;
+            BigDecimal x = s.x() == null ? null : clamp(s.x(), BigDecimal.ZERO, PLAN_W.subtract(w));
+            BigDecimal y = s.x() == null || s.y() == null ? null : clamp(s.y(), BigDecimal.ZERO, PLAN_H.subtract(h));
+            em.createNativeQuery("""
+                    UPDATE dining_tables SET map_x = ?2, map_y = ?3, map_w = ?4, map_h = ?5, shape = ?6
+                    WHERE id = ?1""")
+                    .setParameter(1, s.tableId()).setParameter(2, y == null ? null : x).setParameter(3, y)
+                    .setParameter(4, w).setParameter(5, h).setParameter(6, shape).executeUpdate();
+        }
+        audit.log("DINING_LAYOUT_UPDATED", "dining_zone", zoneId, null, Map.of("zone", zone.name(), "tables", seen.size()));
+        return zone(zoneId);
+    }
+
+    private static BigDecimal clamp(BigDecimal v, BigDecimal min, BigDecimal max) {
+        return v.max(min).min(max).setScale(2, java.math.RoundingMode.HALF_UP);
     }
 
     private void requireUniqueZone(UUID branchId, String name, UUID except) {

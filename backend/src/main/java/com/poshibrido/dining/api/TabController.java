@@ -162,6 +162,15 @@ public class TabController {
         return service.merge(id, r.fromTabId());
     }
 
+    public record BillRequest(boolean requested) {
+    }
+
+    /** La mesa pidió la cuenta (decisión 284): rojo en el mapa hasta cobrarla. */
+    @PostMapping("/{id}/bill-request")
+    public TabView requestBill(@PathVariable UUID id, @RequestBody BillRequest request) {
+        return service.requestBill(id, request.requested());
+    }
+
     @PostMapping("/{id}/cancel")
     public TabView cancel(@PathVariable UUID id, @Valid @RequestBody ReasonRequest r) {
         return service.cancel(id, r.reason());

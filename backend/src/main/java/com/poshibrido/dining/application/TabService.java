@@ -101,7 +101,8 @@ public class TabService {
     public TabView get(UUID id) {
         List<Object[]> found = dining.rows("""
                 SELECT t.id, t.number, t.kind, t.status, t.branch_id, t.table_id, dt.name, dz.name, t.guests,
-                       t.customer_name, t.phone, t.address, t.notes, t.opened_at, t.opened_by, t.closed_at, t.sale_id
+                       t.customer_name, t.phone, t.address, t.notes, t.opened_at, t.opened_by, t.closed_at, t.sale_id,
+                       t.bill_requested_at
                 FROM tabs t
                 LEFT JOIN dining_tables dt ON dt.id = t.table_id
                 LEFT JOIN dining_zones dz ON dz.id = dt.zone_id
@@ -162,7 +163,8 @@ public class TabService {
         return new TabView((UUID) r[0], number, kind, (String) r[3], TabLabels.label(kind, number, (String) r[6],
                 (String) r[9]), (UUID) r[4], (UUID) r[5], (String) r[6], (String) r[7], Rows.integer(r[8]), (String) r[9],
                 (String) r[10], (String) r[11], (String) r[12], Rows.instant(r[13]), names.get((UUID) r[14]),
-                Rows.instant(r[15]), (UUID) r[16], total, items, kitchen.ticketsOfTab(id), charged, List.copyOf(saleIds));
+                Rows.instant(r[15]), (UUID) r[16], total, items, kitchen.ticketsOfTab(id), charged, List.copyOf(saleIds),
+                Rows.instant(r[17]));
     }
 
     // ------------------------------------------------------------------ abrir y datos
@@ -209,6 +211,23 @@ public class TabService {
         return get(id);
     }
 
+    /**
+     * La mesa pidió la cuenta (decisión 284): se marca en el mapa (rojo) hasta cobrarla. {@code requested = false} la
+     * desmarca. Si la mesa pide algo más, se desmarca sola.
+     */
+    @Transactional
+    public TabView requestBill(UUID id, boolean requested) {
+        Tab tab = lockOpen(id);
+        em.createNativeQuery("""
+                UPDATE tabs SET bill_requested_at = ?2, bill_requested_by = ?3, version = version + 1 WHERE id = ?1""")
+                .setParameter(1, id).setParameter(2, requested ? java.sql.Timestamp.from(java.time.Instant.now()) : null)
+                .setParameter(3, requested ? CurrentActor.requireUserId() : null).executeUpdate();
+        audit.log(requested ? "TAB_BILL_REQUESTED" : "TAB_BILL_REQUEST_CLEARED", "tab", id, null,
+                Map.of("label", tab.label()));
+        notifier.tabChanged(tab.branchId(), id);
+        return get(id);
+    }
+
     @Transactional
     public TabView update(UUID id, Details input) {
         Tab tab = lockOpen(id);
@@ -243,6 +262,9 @@ public class TabService {
         if (current + inputs.size() > MAX_ITEMS_PER_TAB) {
             throw new BusinessRuleException("Máximo " + MAX_ITEMS_PER_TAB + " productos por cuenta.");
         }
+        // Pidió algo más: ya no está esperando la cuenta (decisión 284).
+        em.createNativeQuery("UPDATE tabs SET bill_requested_at = NULL, bill_requested_by = NULL WHERE id = ?1 "
+                + "AND bill_requested_at IS NOT NULL").setParameter(1, id).executeUpdate();
         boolean modifiersOn = CurrentActor.permissions().contains(BusinessModule.MODIFIERS.authority());
         Set<UUID> productIds = new LinkedHashSet<>();
         inputs.forEach(i -> productIds.add(i.productId()));
