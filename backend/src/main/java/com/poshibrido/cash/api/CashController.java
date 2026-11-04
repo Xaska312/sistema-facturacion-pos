@@ -115,6 +115,17 @@ public class CashController {
         service.leave();
     }
 
+    public record DrawerRequest(@jakarta.validation.constraints.Size(max = 200) String reason) {
+    }
+
+    /** Abrir el cajón sin una venta (decisión 286): solo deja el registro; el cajón lo abre XASKA Impresora. 204. */
+    @PostMapping("/cash/drawer-openings")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasAuthority('cash:drawer')")
+    public void drawerOpened(@Valid @RequestBody(required = false) DrawerRequest request) {
+        service.drawerOpened(request == null ? null : request.reason());
+    }
+
     @PostMapping("/cash/sessions/{id}/close")
     @PreAuthorize("hasAuthority('cash:operate')")
     public SessionReport close(@PathVariable UUID id, @Valid @RequestBody CloseRequest request) {

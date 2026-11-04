@@ -538,3 +538,19 @@ Con el módulo `MEDICINES`. Permisos nuevos `pharmacy:dispense` y `pharmacy:reco
 | POST | `/tabs/{id}/bill-request` | `tables:operate` | `{requested}`: marca o desmarca que la mesa pidió la cuenta. Agregar productos lo desmarca. Auditoría `TAB_BILL_REQUESTED` / `TAB_BILL_REQUEST_CLEARED` |
 
 `POST /kitchen/tickets/{id}/status` con `DELIVERED`: quien tiene `kitchen:send` (el mesero) la marca entregada desde cualquier estado (antes solo desde Lista), para las cocinas que solo imprimen la comanda.
+
+## Cajón monedero (decisión 286)
+
+| Método | Ruta | Permiso | Notas |
+|---|---|---|---|
+| POST | `/cash/drawer-openings` | `cash:drawer` | `{reason?}` (máx. 200). Exige caja abierta (422 si no). Solo registra `CASH_DRAWER_OPENED` en la auditoría; el cajón lo abre XASKA Impresora. 204 |
+
+### XASKA Impresora (programa local, `http://127.0.0.1:17777`)
+
+Solo atiende orígenes de XASKA (`https://app.xaska.co`, `https://xaska.co`, `http://localhost:4200`; otros con `-origins`).
+
+| Método | Ruta | Cuerpo | Respuesta |
+|---|---|---|---|
+| GET | `/status` | — | `{app:"xaska-impresora", version, printers:[...], default}` |
+| POST | `/print` | `{printer, data (base64 ESC/POS, máx. 1 MB), doc}` | `{ok, printer}`; 422 si la impresora no existe, 502 si Windows no recibió el trabajo |
+| POST | `/drawer` | `{printer}` | Manda solo el pulso al cajón (ESC p 0 25 250) |

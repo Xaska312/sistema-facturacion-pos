@@ -1,4 +1,4 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpContext, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import {
@@ -12,6 +12,7 @@ import {
   RegisterOption,
 } from './api.models';
 import { pageParams } from './organization.api';
+import { SILENT_CLIENT_ERRORS } from '../errors/error.interceptor';
 
 export interface CashSessionFilters {
   status: CashSessionStatus | null;
@@ -31,6 +32,12 @@ export class CashApi {
 
   registers(): Observable<RegisterOption[]> {
     return this.http.get<RegisterOption[]>('/api/v1/cash/registers');
+  }
+
+  /** Deja en la auditoría que se abrió el cajón sin una venta (decisión 286); el cajón lo abre XASKA Impresora. */
+  drawerOpened(reason: string | null): Observable<void> {
+    return this.http.post<void>('/api/v1/cash/drawer-openings', { reason },
+      { context: new HttpContext().set(SILENT_CLIENT_ERRORS, true) });
   }
 
   /** Vender en una caja compartida que abrió otra persona (decisión 256). */

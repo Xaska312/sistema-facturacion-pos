@@ -212,6 +212,28 @@ export const MANUAL: readonly ManualChapter[] = [
         ],
       },
       {
+        id: 'impresora-cajon',
+        title: 'Imprimir directo y abrir el cajón',
+        summary: 'Con el programa XASKA Impresora en el computador de la caja, el tiquete sale directo en la impresora '
+          + 'térmica (sin la ventana de impresión) y el cajón monedero se abre solo al cobrar en efectivo.',
+        steps: [
+          'En el computador de la caja entra a Configuración → Ajustes → "Impresora de este equipo" y toca "Descargar '
+            + 'XASKA Impresora". Ábrelo con doble clic: se instala solo y arranca con Windows.',
+          'Vuelve a Ajustes y toca "Buscar de nuevo". Si el navegador pregunta si XASKA puede usar los dispositivos '
+            + 'de este equipo, toca "Permitir".',
+          'Elige tu impresora y el ancho del papel, y toca "Imprimir prueba".',
+          'Prende "Imprimir el tiquete solo al cobrar" y deja "Abrir el cajón al cobrar en efectivo" como prefieras.',
+          'Para abrir el cajón sin una venta (dar cambio, revisar el efectivo), toca "Abrir cajón" en Vender.',
+        ],
+        tips: [
+          'Volver a imprimir un tiquete nunca abre el cajón. Con tarjeta o transferencia tampoco se abre.',
+          '"Abrir cajón" pide el permiso "Abrir el cajón monedero sin una venta" y la caja abierta; cada vez queda en la auditoría.',
+          'Si las tildes salen como símbolos raros, prende "Imprimir sin tildes".',
+          'Funciona en Windows con Chrome o Edge. El cajón va conectado a la impresora (el cable tipo teléfono).',
+        ],
+        who: 'Lo configura el dueño o el administrador en cada computador de caja.',
+      },
+      {
         id: 'anular-venta',
         title: 'Anular una venta',
         summary: 'Anular no borra la venta: la marca como anulada, devuelve las existencias y el efectivo, y queda registrada con el motivo.',
