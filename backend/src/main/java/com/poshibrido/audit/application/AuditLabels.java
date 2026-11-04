@@ -85,6 +85,7 @@ public final class AuditLabels {
             Map.entry("TAB_BILL_REQUESTED", "Marcó que una mesa pidió la cuenta"),
             Map.entry("TAB_BILL_REQUEST_CLEARED", "Desmarcó que una mesa pidió la cuenta"),
             Map.entry("DINING_LAYOUT_UPDATED", "Cambió el plano de mesas de una zona"),
+            Map.entry("CASH_DRAWER_OPENED", "Abrió el cajón monedero sin una venta"),
             Map.entry("DINING_ZONE_CASH_REGISTER_UPDATED", "Cambió la caja de una zona de mesas"),
             Map.entry("QUOTE_REJECTED", "Rechazó una cotización"),
             Map.entry("QUOTE_UPDATED", "Modificó una cotización"),

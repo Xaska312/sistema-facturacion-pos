@@ -25,7 +25,8 @@
 		Cross-Origin-Opener-Policy "same-origin"
 		# style-src necesita 'unsafe-inline': PrimeNG y Angular insertan <style> en tiempo de ejecución.
 		# Scripts: solo archivos propios (por eso el modo oscuro inicial está en theme-init.js).
-		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+		# connect-src 127.0.0.1:17777: el programa XASKA Impresora del computador de la caja (decisión 286).
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' http://127.0.0.1:17777; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 	}
 
 	# API: solo /api. Actuator y Swagger del backend no quedan expuestos a internet.

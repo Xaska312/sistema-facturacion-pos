@@ -166,6 +166,22 @@ public class CashSessionService {
         }
     }
 
+    /**
+     * Abrir el cajón sin una venta (decisión 286): lo hace la impresora (XASKA Impresora) en el computador; aquí queda
+     * en la auditoría, con la caja abierta de quien lo abre.
+     */
+    @Transactional
+    public void drawerOpened(String reason) {
+        UUID actor = CurrentActor.requireUserId();
+        List<UUID> open = sessions.lockOpenOf(actor);
+        if (open.isEmpty()) {
+            throw new BusinessRuleException("Abre la caja antes de abrir el cajón.");
+        }
+        Map<String, Object> data = new java.util.LinkedHashMap<>();
+        data.put("reason", reason == null || reason.isBlank() ? null : reason.strip());
+        audit.log("CASH_DRAWER_OPENED", "cash_session", open.getFirst(), null, data);
+    }
+
     @Transactional
     public SessionView open(UUID registerId, BigDecimal openingAmount, String notes) {
         UUID actor = CurrentActor.requireUserId();

@@ -17,6 +17,7 @@ const RULES: readonly CapabilityRule[] = [
   { permission: 'kitchen:view', text: 'usar la pantalla de cocina y marcar los platos listos' },
   { permission: 'tables:void', text: 'anular lo que ya salió a cocina y cancelar cuentas' },
   { permission: 'cash:operate', text: 'abrir, mover y cerrar caja' },
+  { permission: 'cash:drawer', text: 'abrir el cajón monedero sin una venta' },
   { permission: 'sales:read', text: 'consultar las ventas' },
   { permission: 'sales:void', text: 'anular ventas' },
   { permission: 'sales:discount', text: 'dar descuentos por encima del límite' },

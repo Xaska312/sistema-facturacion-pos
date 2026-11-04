@@ -16,6 +16,7 @@ import { formatCop } from '../../shared/money';
 import { FormDialogComponent } from '../../shared/forms/form-dialog.component';
 import { PageHeaderComponent } from '../../shared/page-header.component';
 import { BrandingSectionComponent } from './branding-section.component';
+import { PrinterSectionComponent } from './printer-section.component';
 import { BusinessProfileSectionComponent } from './business-profile-section.component';
 
 /** Zonas horarias de Colombia y vecinas más usadas; el backend acepta cualquier zona IANA válida. */
@@ -38,7 +39,7 @@ const TIMEZONE_LABEL: Record<string, string> = {
 @Component({
   selector: 'app-settings',
   imports: [ConsumptionTaxSectionComponent, TechnicalDirectorSectionComponent, ReactiveFormsModule, FormsModule, ButtonModule, InputTextModule, PageHeaderComponent, FormDialogComponent,
-    BrandingSectionComponent, BusinessProfileSectionComponent],
+    BrandingSectionComponent, PrinterSectionComponent, BusinessProfileSectionComponent],
   template: `
     <app-page-header title="Ajustes del negocio" description="Cómo funciona tu negocio: tipo y módulos, inventario, impuestos, zona horaria, moneda, tiquete y marca." />
 
@@ -234,6 +235,8 @@ const TIMEZONE_LABEL: Record<string, string> = {
     }
 
     <app-branding-section />
+
+    <app-printer-section />
 
     @if (isOwner()) {
       <section class="card p-4 md:p-6 mt-6 max-w-2xl border border-danger" aria-labelledby="danger-title">
