@@ -209,6 +209,9 @@ export const MANUAL: readonly ManualChapter[] = [
         tips: [
           'El texto del pie del tiquete (horarios, redes sociales…) se cambia en Configuración → Ajustes.',
           'El tiquete es un comprobante de venta; por ahora el sistema no emite factura electrónica de la DIAN.',
+          'Si el tiquete sale cortado a la derecha o muy claro: en la ventana de impresión pon Márgenes en "Ninguno" y '
+            + 'Escala en "Predeterminado"; en las preferencias de la impresora en Windows sube la densidad u oscuridad. '
+            + 'Lo más nítido es imprimir directo con XASKA Impresora.',
         ],
       },
       {

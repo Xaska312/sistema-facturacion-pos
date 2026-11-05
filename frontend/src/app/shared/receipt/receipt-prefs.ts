@@ -3,6 +3,14 @@ export type ReceiptWidth = 58 | 80;
 
 const KEY = 'pos.receiptWidth';
 
+/**
+ * Ancho que de verdad imprime la cabeza térmica: 72 mm en papel de 80 mm y 48 mm en papel de 58 mm (decisión 289).
+ * Algunos drivers (p. ej. DigitalPOS "80(76) mm") no reducen la página y cortan lo que pase de su área imprimible.
+ */
+export function printableMm(width: ReceiptWidth): number {
+  return width === 58 ? 48 : 72;
+}
+
 export function loadReceiptWidth(): ReceiptWidth {
   try {
     return globalThis.localStorage?.getItem(KEY) === '58' ? 58 : 80;
