@@ -4,7 +4,8 @@
  * texto, sube su versión aquí Y en LegalConsentService.java (backend): la app vuelve a pedir la aceptación a todos.
  * Al constituir la S.A.S., la persona natural y la cédula se cambian por la razón social y el NIT.
  */
-export const TERMS_VERSION = '1.1';
+/** 1.2 (decisión 288): planes Emprende, Negocio y Empresa, extras, mejoras y precios. */
+export const TERMS_VERSION = '1.2';
 /** 1.2 (decisión 287): los datos de salud que registran las droguerías. */
 export const PRIVACY_VERSION = '1.2';
 
@@ -19,6 +20,8 @@ export const LEGAL_OWNER = {
   publishedOn: '31 de octubre de 2026',
   /** La política 1.2 (datos de salud de las droguerías). */
   privacyPublishedOn: '4 de noviembre de 2026',
+  /** Los términos 1.2 (planes nuevos). */
+  termsPublishedOn: '4 de noviembre de 2026',
   hosting: 'Contabo, con servidores en Estados Unidos',
 } as const;
 
@@ -234,7 +237,7 @@ export const TERMS: LegalDocument = {
   kind: 'terminos',
   title: 'Términos y Condiciones de Uso',
   version: TERMS_VERSION,
-  intro: `Versión ${TERMS_VERSION} · vigentes desde ${O.publishedOn}. Al crear una cuenta o usar XASKA POS aceptas `
+  intro: `Versión ${TERMS_VERSION} · vigentes desde ${O.termsPublishedOn}. Al crear una cuenta o usar XASKA POS aceptas `
     + 'estos términos y la Política de Tratamiento de Datos Personales.',
   sections: [
     {
@@ -263,9 +266,21 @@ export const TERMS: LegalDocument = {
       title: '3. Planes, prueba y pagos',
       blocks: [{
         list: [
-          'Hay planes Básico y Pro, mensuales o anuales. Precios vigentes: Básico $49.900 al mes o $499.000 al año; '
-            + 'Pro $99.900 al mes o $999.000 al año (pesos colombianos). Los cambios de precio se avisan '
-            + 'con al menos 30 días y aplican desde el siguiente periodo.',
+          'Hay tres planes, mensuales o anuales (el año vale 10 meses), en pesos colombianos: Emprende $34.900 al mes '
+            + 'o $349.000 al año (lo esencial: vender, caja, inventario, fiado y reportes; 1 sede, 1 caja y 2 usuarios); '
+            + 'Negocio $69.900 al mes o $699.000 al año (además pedidos, cotizaciones, tallas y colores, báscula, compras, '
+            + 'impresión directa y el módulo de su sector, como mesas y cocina o droguería; 1 sede, 3 cajas y 6 '
+            + 'usuarios); y Empresa $129.900 al mes o $1.299.000 al año (todo, con auditoría, caja por zona y traslados; '
+            + 'hasta 5 sedes, con cajas y usuarios sin límite). La app muestra lo que incluye tu plan.',
+          'XASKA puede darle a un negocio, por acuerdo, módulos, funciones, sedes, cajas o usuarios de más que su plan '
+            + 'no incluye, por un tiempo o sin fecha de fin.',
+          'XASKA POS mejora todo el tiempo. Las funciones nuevas pueden llegar a todos los planes, solo a un plan '
+            + 'superior o como un módulo con costo aparte. Nunca te quitamos lo que ya incluye tu plan durante el '
+            + 'periodo que pagaste.',
+          'Si pagas un año, tu precio y lo que incluye tu plan quedan garantizados durante ese año. En los planes '
+            + 'mensuales, los cambios de precio se avisan con al menos 30 días y aplican desde el siguiente periodo.',
+          'Los negocios que ya tenían plan Básico o Pro antes de estos planes conservan lo que tienen y su precio '
+            + 'durante 12 meses; después eligen el plan nuevo que les sirva.',
           'Todo negocio nuevo tiene una prueba gratis de 14 días. Con un código promocional que entrega XASKA (cupos '
             + 'limitados) la prueba dura lo que diga el código.',
           'El pago se hace por adelantado, con las instrucciones que muestra la app. El prestador no es responsable de '

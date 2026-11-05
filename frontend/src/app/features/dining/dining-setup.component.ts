@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
@@ -9,6 +9,7 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { Observable, catchError, concatMap, from, last, of } from 'rxjs';
 import { BranchOption, DiningApi, DiningTable, DiningZone, RegisterOption } from '../../core/api/dining.api';
 import { problemMessage } from '../../core/errors/problem';
+import { AuthService } from '../../core/auth/auth.service';
 import { LayoutEditorComponent } from './layout-editor.component';
 import { EmptyStateComponent } from '../../shared/empty-state.component';
 import { FormDialogComponent } from '../../shared/forms/form-dialog.component';
@@ -120,7 +121,7 @@ export function nextTableNames(existing: readonly string[], fromNumber: number, 
           <input type="checkbox" class="size-4" [(ngModel)]="zoneActive" />Activa (sale en el salón)
         </label>
       }
-      @if (registers().length > 1) {
+      @if (registers().length > 1 && zoneRegisters()) {
         <div class="flex flex-col gap-1">
           <label for="zone-register" class="text-sm font-semibold">Caja de esta zona</label>
           <select id="zone-register" class="border rounded-[10px] px-3 min-h-11" [(ngModel)]="zoneRegister">
@@ -204,12 +205,15 @@ export function nextTableNames(existing: readonly string[], fromNumber: number, 
 export class DiningSetupComponent implements OnInit {
   private readonly api = inject(DiningApi);
   private readonly messages = inject(MessageService);
+  private readonly auth = inject(AuthService);
 
   protected readonly branches = signal<BranchOption[]>([]);
   protected readonly branchId = signal<string | null>(null);
   protected readonly zones = signal<DiningZone[] | null>(null);
   /** Cajas de la sucursal; con dos o más se puede elegir la de cada zona (decisión 285). */
   protected readonly registers = signal<RegisterOption[]>([]);
+  /** Caja por zona incluida en el plan (decisión 288). */
+  protected readonly zoneRegisters = computed(() => this.auth.hasPermission('plan:zone-registers'));
   /** Zona cuyo plano se está editando (decisión 284). */
   protected readonly layoutZone = signal<DiningZone | null>(null);
   protected readonly editingZone = signal<DiningZone | null>(null);

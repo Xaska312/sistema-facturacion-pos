@@ -6,8 +6,10 @@ import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { Observable, tap } from 'rxjs';
 import {
-  BillingCycle, PageResponse, PaymentInput, Plan, Subscription, SubscriptionRow, SubscriptionStatus,
+  BillingCycle, PageResponse, PaymentInput, Plan, PlanFeature, Subscription, SubscriptionRow, SubscriptionStatus,
 } from '../../core/api/api.models';
+import { BUSINESS_MODULES } from '../../shared/business-types';
+import { PLAN_FEATURES, includedText, toggle } from './plan-features';
 import { PlatformApi } from '../../core/api/platform.api';
 import { ConfirmService } from '../../shared/confirm';
 import { formatDate } from '../../shared/format';
@@ -21,6 +23,17 @@ import { CellTemplateDirective } from '../../shared/table/cell-template.directiv
 import { DataTableComponent } from '../../shared/table/data-table.component';
 import { ColumnDef, TableQuery, initialQuery } from '../../shared/table/table';
 import { SUBSCRIPTION_STATUS_LABEL, daysLeftText, limitText, subscriptionStatusKey } from './platform-labels';
+
+interface ExtrasDraft {
+  modules: string[];
+  features: PlanFeature[];
+  branches: number | null;
+  registers: number | null;
+  users: number | null;
+  note: string;
+  /** AAAA-MM-DD o vacío (sin fin). */
+  until: string;
+}
 
 interface PaymentDraft {
   planCode: string;
@@ -95,12 +108,25 @@ export const PAYMENT_METHODS: readonly string[] = ['Transferencia', 'Nequi', 'Da
             <dd><app-status-badge [status]="statusKey(s.status)" [label]="statusLabel[s.status]" /></dd></div>
           <div><dt class="text-muted">Vence</dt><dd>{{ date(s.endsAt) }} · {{ daysLeft(s.daysLeft) }}</dd></div>
           <div><dt class="text-muted">Desde</dt><dd>{{ date(s.startedAt) }}</dd></div>
-          <div><dt class="text-muted">Sucursales</dt><dd>{{ s.usage.branches }} de {{ limit(s.plan.maxBranches) }}</dd></div>
-          <div><dt class="text-muted">Usuarios</dt><dd>{{ s.usage.users }} de {{ limit(s.plan.maxUsers) }}</dd></div>
+          <div><dt class="text-muted">Sucursales</dt><dd>{{ s.usage.branches }} de {{ limit(s.entitled.maxBranches) }}</dd></div>
+          <div><dt class="text-muted">Usuarios</dt><dd>{{ s.usage.users }} de {{ limit(s.entitled.maxUsers) }}</dd></div>
+          <div><dt class="text-muted">Cajas</dt><dd>{{ s.usage.registers }} de {{ limit(s.entitled.maxRegisters) }}</dd></div>
+          <div class="col-span-2 sm:col-span-3"><dt class="text-muted">Incluye (plan + extras)</dt>
+            <dd>{{ included(s.entitled.modules, s.entitled.features) }}</dd></div>
+          @if (s.priceLockedUntil) {
+            <div class="col-span-2 sm:col-span-3"><dt class="text-muted">Precio congelado</dt>
+              <dd>Hasta el {{ date(s.priceLockedUntil) }} (cliente de antes de los planes nuevos)</dd></div>
+          }
+          @if (hasExtras(s)) {
+            <div class="col-span-2 sm:col-span-3"><dt class="text-muted">Extras{{ s.extras.active ? '' : ' (vencidos)' }}</dt>
+              <dd>{{ extrasText(s) }}{{ s.extras.until ? ' · hasta el ' + date(s.extras.until) : '' }}
+                {{ s.extras.note ? '· ' + s.extras.note : '' }}</dd></div>
+          }
         </dl>
 
         <div class="flex flex-wrap gap-2 mt-4">
           <p-button label="Registrar pago" icon="pi pi-dollar" (onClick)="openPayment(s)" />
+          <p-button label="Dar extras" icon="pi pi-gift" severity="secondary" [outlined]="true" (onClick)="openExtras(s)" />
           <span class="flex items-center gap-2 text-sm">
             <label for="sub-plan" class="sr-only">Cambiar plan</label>
             <select id="sub-plan" class="border rounded-[10px] px-3 min-h-11" [(ngModel)]="newPlan">
@@ -145,6 +171,63 @@ export const PAYMENT_METHODS: readonly string[] = ['Transferencia', 'Nequi', 'Da
         }
       }
     </p-dialog>
+
+    <app-form-dialog [(visible)]="extrasOpen" [header]="'Extras de ' + (detail()?.tradeName ?? '')" width="36rem"
+                     submitLabel="Guardar extras" submitIcon="pi pi-gift" [dirty]="extrasDirty()"
+                     [invalidMessage]="extrasProblem()" [save]="extrasRequest" successMessage="Extras guardados"
+                     (saved)="onPaid($event)"
+                     description="Lo que le das de más a este negocio aunque su plan no lo incluya. Se suma a su plan; queda en los eventos de seguridad. El negocio lo ve en su próximo inicio de sesión (o en máximo 15 minutos).">
+      <div class="flex flex-col gap-3">
+        <fieldset class="flex flex-col gap-1">
+          <legend class="text-sm font-medium mb-1">Módulos de más</legend>
+          <div class="grid grid-cols-2 gap-1">
+            @for (m of moduleOptions; track m.code) {
+              <label class="flex items-center gap-2 text-sm">
+                <input type="checkbox" [ngModel]="extras.modules.includes(m.code)" [disabled]="inPlan(m.code)"
+                       (ngModelChange)="extras.modules = toggleIn(extras.modules, m.code, $event)" />
+                {{ m.label }}{{ inPlan(m.code) ? ' (ya en su plan)' : '' }}
+              </label>
+            }
+          </div>
+        </fieldset>
+        <fieldset class="flex flex-col gap-1">
+          <legend class="text-sm font-medium mb-1">Funciones de más</legend>
+          <div class="grid grid-cols-2 gap-1">
+            @for (f of featureOptions; track f.code) {
+              <label class="flex items-center gap-2 text-sm" [title]="f.description">
+                <input type="checkbox" [ngModel]="extras.features.includes(f.code)" [disabled]="inPlan(f.code)"
+                       (ngModelChange)="extras.features = toggleIn(extras.features, f.code, $event)" />
+                {{ f.label }}{{ inPlan(f.code) ? ' (ya en su plan)' : '' }}
+              </label>
+            }
+          </div>
+        </fieldset>
+        <div class="grid grid-cols-3 gap-3">
+          <div class="flex flex-col gap-1">
+            <label for="ex-branches" class="text-sm font-medium">Sedes de más</label>
+            <input pInputText id="ex-branches" type="number" min="0" max="100" [(ngModel)]="extras.branches" />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label for="ex-registers" class="text-sm font-medium">Cajas de más</label>
+            <input pInputText id="ex-registers" type="number" min="0" max="100" [(ngModel)]="extras.registers" />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label for="ex-users" class="text-sm font-medium">Usuarios de más</label>
+            <input pInputText id="ex-users" type="number" min="0" max="500" [(ngModel)]="extras.users" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="flex flex-col gap-1">
+            <label for="ex-until" class="text-sm font-medium">Hasta <span class="font-normal text-muted">(vacío = sin fin)</span></label>
+            <input pInputText id="ex-until" type="date" [min]="tomorrow" [(ngModel)]="extras.until" />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label for="ex-note" class="text-sm font-medium">Nota interna</label>
+            <input pInputText id="ex-note" maxlength="300" placeholder="Por qué se lo das" [(ngModel)]="extras.note" />
+          </div>
+        </div>
+      </div>
+    </app-form-dialog>
 
     <app-form-dialog [(visible)]="paymentOpen" [header]="'Registrar pago de ' + (detail()?.tradeName ?? '')"
                      width="32rem" submitLabel="Registrar pago" submitIcon="pi pi-dollar" [dirty]="paymentDirty()"
@@ -219,6 +302,14 @@ export class PlatformSubscriptionsComponent implements OnInit {
   protected query: TableQuery = initialQuery();
   protected detailOpen = false;
   protected paymentOpen = false;
+  protected extrasOpen = false;
+  protected extras: ExtrasDraft = emptyExtras();
+  private extrasSnapshot = '';
+  protected readonly moduleOptions = BUSINESS_MODULES;
+  protected readonly featureOptions = PLAN_FEATURES;
+  protected readonly toggleIn = toggle;
+  protected readonly included = includedText;
+  protected readonly tomorrow = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
   protected newPlan = '';
   protected payment: PaymentDraft = emptyPayment('');
   private paymentSnapshot = '';
@@ -268,6 +359,66 @@ export class PlatformSubscriptionsComponent implements OnInit {
   open(row: SubscriptionRow): void {
     this.platform.subscription(row.tenantId).subscribe((s) => this.showDetail(s));
   }
+
+  protected hasExtras(s: Subscription): boolean {
+    const x = s.extras;
+    return x.modules.length + x.features.length + x.branches + x.registers + x.users > 0;
+  }
+
+  protected extrasText(s: Subscription): string {
+    const x = s.extras;
+    const counts = [x.branches ? `${x.branches} sede(s)` : '', x.registers ? `${x.registers} caja(s)` : '',
+      x.users ? `${x.users} usuario(s)` : ''].filter((t) => t);
+    const items = x.modules.length + x.features.length ? includedText(x.modules, x.features) : '';
+    return [items, ...counts].filter((t) => t).join(' · ');
+  }
+
+  /** Ya lo incluye su plan (no hace falta darlo de más). */
+  protected inPlan(code: string): boolean {
+    const plan = this.detail()?.plan;
+    return !!plan && (plan.modules.includes(code) || (plan.features as string[]).includes(code));
+  }
+
+  openExtras(s: Subscription): void {
+    const x = s.extras;
+    this.extras = { modules: [...x.modules], features: [...x.features], branches: x.branches, registers: x.registers,
+      users: x.users, note: x.note ?? '', until: x.until ? x.until.slice(0, 10) : '' };
+    this.extrasSnapshot = JSON.stringify(this.extras);
+    this.extrasOpen = true;
+  }
+
+  protected extrasDirty(): boolean {
+    return JSON.stringify(this.extras) !== this.extrasSnapshot;
+  }
+
+  protected extrasProblem(): string | null {
+    const n = (v: number | null, max: number) => {
+      const x = Number(v ?? 0);
+      return Number.isInteger(x) && x >= 0 && x <= max;
+    };
+    if (!n(this.extras.branches, 100) || !n(this.extras.registers, 100) || !n(this.extras.users, 500)) {
+      return 'Sedes y cajas de 0 a 100; usuarios de 0 a 500.';
+    }
+    if (this.extras.until && this.extras.until < this.tomorrow) {
+      return 'La fecha de fin debe ser futura (o vacía, sin fin).';
+    }
+    return null;
+  }
+
+  protected readonly extrasRequest = (): Observable<Subscription> => {
+    const s = this.detail();
+    if (!s) {
+      throw new Error('Sin suscripción seleccionada');
+    }
+    const x = this.extras;
+    return this.platform.setExtras(s.tenantId, {
+      modules: x.modules.filter((m) => !this.inPlan(m)), features: x.features.filter((f) => !this.inPlan(f)),
+      branches: Number(x.branches ?? 0), registers: Number(x.registers ?? 0), users: Number(x.users ?? 0),
+      note: x.note.trim() || null,
+      // Fin del día en Bogotá.
+      until: x.until ? `${x.until}T23:59:59-05:00` : null,
+    });
+  };
 
   openPayment(s: Subscription): void {
     this.payment = emptyPayment(s.plan.active ? s.plan.code : (this.plans()[0]?.code ?? ''));
@@ -341,6 +492,10 @@ export class PlatformSubscriptionsComponent implements OnInit {
     this.newPlan = s.plan.code;
     this.detailOpen = true;
   }
+}
+
+function emptyExtras(): ExtrasDraft {
+  return { modules: [], features: [], branches: 0, registers: 0, users: 0, note: '', until: '' };
 }
 
 function emptyPayment(planCode: string): PaymentDraft {

@@ -55,13 +55,16 @@ import { XIconComponent } from '../../shared/icons/xicon.component';
             <ul class="flex flex-col gap-2" aria-labelledby="modules-title">
               @for (m of modules; track m.code) {
                 <li>
-                  <label class="module-row">
+                  <label class="module-row" [class.opacity-60]="locked(m.code)">
                     <input type="checkbox" class="size-5 shrink-0" [checked]="enabled().has(m.code)"
-                           (change)="toggle(m.code)" />
+                           [disabled]="locked(m.code)" (change)="toggle(m.code)" />
                     <app-xicon [name]="m.glyph" [size]="26" />
                     <span class="min-w-0">
                       <span class="block font-semibold">{{ m.label }}</span>
                       <span class="block text-xs text-muted">{{ m.description }}@if (m.requires) { Necesita {{ label(m.requires) }}.}</span>
+                      @if (!allowed(m.code)) {
+                        <span class="block text-xs font-semibold text-warning">No está en tu plan {{ p.planName }}{{ enabled().has(m.code) ? ': no funciona hasta cambiar de plan' : '' }}.</span>
+                      }
                     </span>
                   </label>
                 </li>
@@ -133,6 +136,17 @@ export class BusinessProfileSectionComponent {
     });
   }
 
+  /** Lo incluye el plan (con extras). */
+  protected allowed(module: BusinessModule): boolean {
+    const list = this.profile()?.allowedModules;
+    return !list || list.includes(module);
+  }
+
+  /** No se puede prender: el plan no lo incluye y no estaba prendido (uno prendido sí se puede apagar). */
+  protected locked(module: BusinessModule): boolean {
+    return !this.allowed(module) && !this.enabled().has(module);
+  }
+
   protected reset(p: BusinessProfile): void {
     this.profile.set(p);
     this.type.set(p.businessType);
@@ -151,7 +165,8 @@ export class BusinessProfileSectionComponent {
       this.enabled.set(new Set(p.modules));
       this.proposed.set(null);
     } else {
-      this.enabled.set(new Set(t.defaultModules));
+      // Solo los que incluye el plan (decisión 288); los que ya estaban prendidos se quedan.
+      this.enabled.set(new Set(t.defaultModules.filter((m) => this.allowed(m) || (p?.modules ?? []).includes(m))));
       this.proposed.set(t.label);
     }
   }

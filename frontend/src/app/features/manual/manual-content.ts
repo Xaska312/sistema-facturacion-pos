@@ -1135,6 +1135,24 @@ export const MANUAL: readonly ManualChapter[] = [
         who: 'Para cambiarlos: Propietario y Administrador.',
       },
       {
+        id: 'planes',
+        title: 'Tu plan y lo que incluye',
+        summary: 'Emprende, Negocio o Empresa. En Ajustes → Suscripción ves tu plan, lo que incluye, cuántas sedes, cajas '
+          + 'y usuarios usas y cómo pagar.',
+        steps: [
+          'Emprende: vender, caja, inventario, fiado y reportes; 1 sede, 1 caja y 2 usuarios.',
+          'Negocio: además pedidos, cotizaciones, tallas, báscula, compras, impresión directa y el módulo de tu sector '
+            + '(mesas y cocina o droguería); 1 sede, 3 cajas y 6 usuarios.',
+          'Empresa: todo, con auditoría, caja por zona y traslados; hasta 5 sedes, cajas y usuarios sin límite.',
+        ],
+        tips: [
+          'Lo que no incluye tu plan sale en gris en "Tipo de negocio y módulos". Para tenerlo, escríbenos.',
+          'XASKA te puede dar, por acuerdo, un módulo, una caja o un usuario de más sin cambiar de plan.',
+          'Si ya eras cliente antes de estos planes, conservas lo que tienes y tu precio por 12 meses.',
+        ],
+        who: 'Lo ve el dueño y quien tiene acceso a Ajustes.',
+      },
+      {
         id: 'eliminar-negocio',
         title: 'Eliminar o suspender el negocio',
         summary: 'Si dejas de usar el sistema, el propietario puede eliminar el negocio desde Ajustes. Los datos no se borran.',

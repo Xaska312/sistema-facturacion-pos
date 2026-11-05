@@ -18,6 +18,7 @@ import com.poshibrido.shared.error.NotFoundException;
 import com.poshibrido.shared.id.Ids;
 import com.poshibrido.shared.security.CurrentActor;
 import com.poshibrido.tenancy.domain.BusinessModule;
+import com.poshibrido.tenancy.domain.PlanFeature;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
@@ -248,6 +249,9 @@ public class DiningService {
     public ZoneView setZoneCashRegister(UUID zoneId, UUID registerId) {
         ZoneView before = zone(zoneId);
         requireBranch(before.branchId());
+        if (registerId != null && !CurrentActor.permissions().contains(PlanFeature.ZONE_REGISTERS.authority())) {
+            throw new BusinessRuleException("La caja por zona está en el plan Empresa. Escríbenos para activarla.");
+        }
         if (registerId != null) {
             List<Object[]> reg = rows("SELECT branch_id, active FROM cash_registers WHERE id = :r", Map.of("r", registerId));
             if (reg.isEmpty()) {

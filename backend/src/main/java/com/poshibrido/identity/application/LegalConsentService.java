@@ -20,7 +20,7 @@ public class LegalConsentService {
      * Versiones vigentes. Deben coincidir con {@code frontend/src/app/features/legal/legal-content.ts}: si cambia el
      * fondo de un texto, se sube la versión en los dos lados y la app vuelve a pedir la aceptación.
      */
-    public static final String TERMS_VERSION = "1.1";
+    public static final String TERMS_VERSION = "1.2";
     public static final String PRIVACY_VERSION = "1.2";
 
     /** @param accepted si la persona ya aceptó las versiones vigentes */

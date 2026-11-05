@@ -1,6 +1,9 @@
 package com.poshibrido.tenancy.api;
 
+import com.poshibrido.shared.error.BusinessRuleException;
 import com.poshibrido.shared.security.CurrentActor;
+import com.poshibrido.subscription.application.SubscriptionApi;
+import com.poshibrido.subscription.application.SubscriptionApi.Entitlements;
 import com.poshibrido.tenancy.application.BusinessProfileService;
 import com.poshibrido.tenancy.application.BusinessProfileService.BusinessProfile;
 import com.poshibrido.tenancy.application.CurrentTenant;
@@ -29,19 +32,44 @@ import java.util.List;
 public class BusinessProfileController {
 
     private final BusinessProfileService service;
+    private final SubscriptionApi subscriptions;
+
+    /**
+     * El perfil con lo que permite el plan (decisión 288): {@code allowedModules}, los módulos que su plan (y sus extras)
+     * incluyen; un módulo encendido fuera de esa lista no funciona hasta cambiar de plan.
+     */
+    public record ProfileResponse(BusinessType businessType, List<BusinessModule> modules, boolean canEdit,
+                                  List<BusinessModule> allowedModules, String planName) {
+    }
 
     public record ChangeRequest(@NotNull BusinessType businessType,
                                 @NotNull @Size(max = 20) List<@NotNull BusinessModule> modules) {
     }
 
     @GetMapping
-    public BusinessProfile get() {
-        return service.profile(CurrentTenant.require().id(), CurrentActor.requireUserId());
+    public ProfileResponse get() {
+        return withPlan(service.profile(CurrentTenant.require().id(), CurrentActor.requireUserId()));
     }
 
+    /** No deja prender un módulo que el plan no incluye; uno que ya estaba encendido se puede dejar. */
     @PutMapping
-    public BusinessProfile change(@Valid @RequestBody ChangeRequest request) {
-        return service.change(CurrentTenant.require().id(), CurrentActor.requireUserId(), request.businessType(),
-                request.modules());
+    public ProfileResponse change(@Valid @RequestBody ChangeRequest request) {
+        java.util.UUID tenantId = CurrentTenant.require().id();
+        Entitlements plan = subscriptions.entitlements(tenantId);
+        List<BusinessModule> current = service.profile(tenantId, CurrentActor.requireUserId()).modules();
+        for (BusinessModule m : request.modules()) {
+            if (!plan.modules().contains(m) && !current.contains(m)) {
+                throw new BusinessRuleException("Ese módulo no está incluido en tu plan " + plan.planName()
+                        + ". Escríbenos para pasarte a un plan que lo incluya.");
+            }
+        }
+        return withPlan(service.change(tenantId, CurrentActor.requireUserId(), request.businessType(),
+                request.modules()));
+    }
+
+    private ProfileResponse withPlan(BusinessProfile p) {
+        Entitlements plan = subscriptions.entitlements(CurrentTenant.require().id());
+        return new ProfileResponse(p.businessType(), p.modules(), p.canEdit(),
+                plan.modules().stream().sorted().toList(), plan.planName());
     }
 }
