@@ -1,7 +1,11 @@
-# Despliegue en producción (Hetzner + Docker)
+# Despliegue en producción (VPS + Docker)
 
 Guía paso a paso para poner el POS en un servidor propio con HTTPS, respaldos diarios cifrados en Google Drive y
 prueba de restauración automática. Tiempo estimado la primera vez: 1–2 horas.
+
+> **Hoy XASKA POS corre en Contabo** (app.xaska.co). La guía se escribió con Hetzner, pero los pasos dentro del
+> servidor son los mismos en cualquier VPS con Ubuntu; lo que cambia es la consola del proveedor (crear el servidor,
+> su firewall y los snapshots). Antes de cada actualización: **snapshot en Contabo** y `backup.sh`.
 
 ## Cómo queda armado
 
@@ -254,9 +258,23 @@ docker compose pull && docker compose up -d       # 30–60 s sin servicio mient
 docker compose ps && docker image prune -f
 ```
 
-Las migraciones de la base (Flyway) corren solas al arrancar el backend. **Volver atrás**: pon la versión anterior
+Las migraciones de la base (Flyway) corren solas al arrancar el backend. **Nunca** `docker compose down -v` (borra
+los volúmenes con la base). **Volver atrás**: pon la versión anterior
 en `APP_VERSION` y `docker compose up -d`; si la versión nueva ya cambió la base, restaura el respaldo de antes de
 actualizar (paso 11).
+
+### Lo que pide cada versión al actualizar
+
+| Desde | Qué hacer además de lo de arriba |
+|---|---|
+| Correcciones de seguridad (277) | El cambio de `max_connections` recrea el contenedor de Postgres (los datos quedan en el volumen). Revisa `DB_POOL_SIZE` y `SUBSCRIPTION_TRIAL_WITHOUT_CODE` en el `.env` |
+| Farmacia 13-1 (279) | Consola de plataforma → **CUM** → cargar el CSV del catálogo del INVIMA (datos.gov.co). Repetirlo cada mes o cuando el INVIMA lo actualice |
+| Impresión directa (286) | Reconstruir la imagen **web**: compila XASKA Impresora (Go) y la sirve en `/descargas/XASKA-Impresora.exe`; el Caddyfile permite `connect-src http://127.0.0.1:17777` |
+| Calidad 13-6 (287) | Política de datos 1.2: todos los usuarios la aceptan de nuevo al entrar |
+| Planes (288) | Plataforma V16: planes Emprende, Negocio y Empresa; Básico y Pro quedan como anteriores con precio congelado 12 meses. Revisa precios y lo que incluye cada plan en la consola → Planes antes de vender. Términos 1.2 (se aceptan de nuevo) |
+
+Prueba rápida después de actualizar: entrar (aceptar lo que pida), una venta, una mesa, descargar XASKA Impresora
+desde Ajustes, crear una droguería de prueba y revisar en los logs del backend que las migraciones se aplicaron.
 
 ## 11. Restaurar un respaldo (emergencia)
 

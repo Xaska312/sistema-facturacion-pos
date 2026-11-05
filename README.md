@@ -1,13 +1,13 @@
 # POS SaaS Híbrido — Monorepo
 
-POS web multi-negocio para comercios en Colombia. Backend Spring Boot 4.1 (Java 21) + PostgreSQL 16, frontend Angular 19 + PrimeNG 19.
+**XASKA POS**: POS web multi-negocio para comercios, restaurantes y droguerías en Colombia. Backend Spring Boot 4.1 (Java 21) + PostgreSQL 16, frontend Angular 19 + PrimeNG 19 + Tailwind 4, y un programa pequeño de Windows (Go) para imprimir directo en la térmica. En producción en https://app.xaska.co.
 
 - Arquitectura: [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md)
 - API: [`docs/API.md`](docs/API.md)
 - Decisiones: [`docs/DECISIONES.md`](docs/DECISIONES.md)
 - QA: informe final [`docs/QA.md`](docs/QA.md) y lista de pruebas manuales [`docs/PRUEBAS-MANUALES.md`](docs/PRUEBAS-MANUALES.md)
 - Manual de uso para los clientes: en la app, `/manual` (contenido en `frontend/src/app/features/manual/manual-content.ts`)
-- Despliegue en producción (Hetzner, HTTPS, respaldos en Google Drive): [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md)
+- Despliegue en producción (VPS con Docker, HTTPS, respaldos en Google Drive; hoy en Contabo): [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md)
 - Ver la app por dentro (consola de plataforma, pgAdmin, logs, Swagger): [`docs/GUIA-DESARROLLO.md`](docs/GUIA-DESARROLLO.md)
 - Mejora de interfaz (UX): [`docs/UX-1.md`](docs/UX-1.md), [`docs/UX-2.md`](docs/UX-2.md), [`docs/UX-3.md`](docs/UX-3.md), [`docs/UX-4.md`](docs/UX-4.md), [`docs/UX-5.md`](docs/UX-5.md) (auditoría: [`docs/UX-5-AUDITORIA.md`](docs/UX-5-AUDITORIA.md))
 
@@ -24,7 +24,15 @@ POS web multi-negocio para comercios en Colombia. Backend Spring Boot 4.1 (Java 
 | Mejora de UX (UX-1 a UX-5) | ✅ Completada (validada el 2026-10-05) |
 | 7 — Endurecimiento para producción | ✅ Completada (2026-10-11): producción y respaldos, auditoría, consola de plataforma, correos, CI con lint y e2e, manual de uso y QA completo |
 | 8 — Antes de lanzar | ✅ Completada (2026-10-12): 8a tipos de documento ✅, 8b suscripciones ✅, 8d tallas y colores ✅, 8c marca del negocio ✅, 8e báscula ✅ |
-| 9 — Despliegue acompañado | ⏳ Pendiente: servidor de pruebas → prueba de carga y lista manual → producción |
+| 9 — Despliegue acompañado | ✅ En producción (Contabo, app.xaska.co) con clientes piloto |
+| 10 — Ventas a crédito y por encargo | ✅ Fiado con cupo, caja compartida, pedidos por encargo, ticket del cierre, cotizaciones, ajustes de campo (decisiones 255–261) |
+| 11 — Consola de plataforma | ✅ Eliminar un negocio (decisión 262) |
+| Identidad XASKA | ✅ Dock, inicio en baldosas, íconos y tipografía propios, Vender en baldosas (decisiones 263–266) |
+| 12 — Tipos de negocio y Restaurante | ✅ Tipos y módulos, adiciones, mesas, comandas, cocina en tiempo real, cobro por partes y propinas; Restaurante abierto (267–273). Después: mapa de mesas, dos pisos con caja por zona, impresión directa y cajón (284–286) |
+| Seguridad y carga | ✅ Pruebas de seguridad, carga y uso real y sus correcciones (276–277) |
+| 13 — Farmacia | ✅ 13-1 ficha del medicamento y catálogo CUM, 13-2 compras, 13-3 lotes y vencimientos, 13-4 dispensación, 13-6 temperatura, eventos adversos e informe; Droguería abierta (279–282, 287). ⏳ 13-5 control especial |
+| Planes | ✅ Emprende, Negocio y Empresa con extras desde la consola; Términos 1.2 y Política 1.2 (decisión 288) |
+| Facturación electrónica | ⏳ Pendiente (espera al contador) |
 
 ## Requisitos
 - **Docker Desktop** (o Docker Engine + Compose). Debe estar en estado *Engine running* antes de levantar el proyecto o correr los tests.
@@ -365,3 +373,40 @@ valor ($)" en la línea del carrito.
 
 **Probar a mano:** *Productos → Con tallas → Nuevo modelo* (tallas 38–42, colores Negro y Blanco), saldo inicial con
 "Por tallas", vender eligiendo la talla; *Ajustes → Marca*: subir logo, probar colores y revisar el tiquete.
+
+## Después de la Fase 8 (resumen)
+
+El detalle de cada cambio, con sus reglas y por qué, está en [`docs/DECISIONES.md`](docs/DECISIONES.md) (números
+entre paréntesis), los endpoints en [`docs/API.md`](docs/API.md) y el uso para los clientes en el manual de la app.
+
+**Ventas (Fase 10).** Fiado con cupo por cliente y abonos (255), caja compartida (256), pedidos por encargo con
+anticipo y entregas parciales (258), ticket del cierre de caja (259), cotizaciones que se vuelven pedido o venta
+(260) y ajustes de campo (261).
+
+**Tipos de negocio y módulos (12a, 267).** Comercio, Servicios, Restaurante y Droguería; cada tipo propone sus módulos
+(fiados, pedidos, cotizaciones, tallas, báscula, adiciones, mesas, cocina, medicamentos) y el dueño los prende o apaga
+en Ajustes, dentro de lo que incluye su plan.
+
+**Restaurante (12b, 284–286).** Adiciones (268), mesas y cuentas abiertas (269), mesero y comandas (270), pantalla de
+cocina en tiempo real por SSE (271), cobro por partes y propinas (272), mapa de mesas con colores por estado (284),
+caja por zona para locales de varios pisos (285) e impresión directa en la térmica con XASKA Impresora y botón "Abrir
+cajón" (286; el programa está en `frontend/print-agent` y la imagen web lo sirve en `/descargas/XASKA-Impresora.exe`).
+
+**Droguería (13, 279–287).** Ficha del medicamento con el catálogo CUM del INVIMA (279), compras con recepción técnica
+y cuentas por pagar (280), lotes y vencimientos con FEFO, bajas y devoluciones (281), dispensación con fórmula, libro
+y Director técnico (282), temperatura y humedad, eventos adversos e informe para la visita de la Secretaría (287).
+Pendiente: 13-5 control especial (necesita una muestra del Anexo 13).
+
+**Planes (288).** Emprende, Negocio y Empresa deciden módulos, funciones (compras, impresión directa, auditoría,
+traslados, caja por zona) y límites de sedes, cajas y usuarios; el administrador le da extras a un negocio desde la
+consola. Básico y Pro quedan como planes anteriores para los clientes de antes.
+
+| Qué | Test |
+|---|---|
+| Fiado, caja compartida, pedidos, cotizaciones | `CreditIT`, `CashIT`, `OrdersIT`, `QuotesIT` |
+| Tipos y módulos | `BusinessModulesIT`, `BusinessModuleTest`, `BusinessProfileServiceTest` |
+| Restaurante | `ModifiersIT`, `TablesIT`, `KitchenIT`, `TabSplitIT`, `TableMapIT`, `ZoneCashRegisterIT`, `CashDrawerIT` |
+| Droguería | `MedicinesIT`, `PurchasesIT`, `LotsIT`, `DispensationIT`, `QualityIT` |
+| Planes y extras | `PlansIT`, `SubscriptionIT` |
+| XASKA Impresora | `frontend/print-agent` (`go test ./...`) y `escpos.spec` |
+

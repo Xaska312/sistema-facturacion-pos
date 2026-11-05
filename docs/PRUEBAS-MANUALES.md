@@ -152,6 +152,39 @@ _Tú, al desplegar_
 | ☐ | 64 | JWT_SECRET y contraseñas de producción nuevas. | Ninguna es la de desarrollo ni se compartió por chat. |
 | ☐ | 65 | https y dominio. | El candado aparece; http redirige a https. |
 
+## 11. Restaurante (Fase 12 y decisiones 284–286)
+
+_Dueño, mesero, cocina y cajero · computador de caja con Windows, impresora térmica y cajón_
+
+| OK | # | Prueba | Resultado esperado |
+|---|---|---|---|
+| ☐ | 66 | Configurar zonas y mesas, y el **Plano** de una zona (arrastrar, forma y tamaño). | En Mesas se ven en su lugar en el computador, la tablet y el celular. |
+| ☐ | 67 | Una mesa de principio a fin: pedir, enviar a cocina, listo, entregada, "Pidió la cuenta", cobrar por partes con propina. | Los colores cambian solos en todos los equipos; cada cobro es una venta con su tiquete. |
+| ☐ | 68 | Dos pisos: zona Piso 2 con su caja; cobrar una mesa del Piso 2 desde la caja del Piso 1. | La venta queda en la caja del Piso 2; con esa caja cerrada no deja cobrar. |
+| ☐ | 69 | Instalar XASKA Impresora, imprimir la prueba, cobrar en efectivo y con tarjeta, reimprimir y "Abrir cajón". | Imprime sin la ventana; el cajón abre solo con efectivo o con el botón; el antivirus no lo bloquea. |
+
+## 12. Droguería (Fase 13)
+
+_Dueño, Director técnico y Auxiliar de farmacia_
+
+| OK | # | Prueba | Resultado esperado |
+|---|---|---|---|
+| ☐ | 70 | Ficha de un medicamento buscándolo en el catálogo CUM. | Se llenan registro INVIMA, principio activo, forma y condición de venta. |
+| ☐ | 71 | Recepción de una compra con lote, vencimiento y nevera; devolución al proveedor. | Entra al inventario por lote; lo rechazado no entra; la devolución sale del lote correcto. |
+| ☐ | 72 | Vender un antibiótico. | Pide la fórmula y sus datos; sale del lote que vence primero; queda en el libro de dispensación. |
+| ☐ | 73 | Dar de baja un vencido e imprimir el acta. | El acta trae lote, vencimiento, disposición final y el Director técnico. |
+| ☐ | 74 | Temperatura mañana y tarde (una fuera de rango), un evento adverso y el informe para la visita. | La fuera de rango pide la acción; el informe trae todo y se guarda en PDF. |
+
+## 13. Planes (decisión 288)
+
+_Administrador de plataforma y un dueño de prueba_
+
+| OK | # | Prueba | Resultado esperado |
+|---|---|---|---|
+| ☐ | 75 | Pasar un negocio a Emprende y entrar con el dueño. | Sin Auditoría ni Compras; Mesas en gris en Ajustes; no deja crear una segunda caja. |
+| ☐ | 76 | Darle extras desde la consola (un módulo, una función y una caja) y volver a entrar. | Aparece lo dado; el negocio ve los extras en Ajustes → Suscripción, sin la nota interna. |
+| ☐ | 77 | Un negocio con plan Básico o Pro (anterior). | Tiene todo y en Ajustes dice hasta cuándo se mantiene su precio. |
+
 ## Hallazgos
 
 Anota aquí lo que no salió como se esperaba (número de prueba, qué pasó, captura) y compártelo para corregirlo antes de abrir.

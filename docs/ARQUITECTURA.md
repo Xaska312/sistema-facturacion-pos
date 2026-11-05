@@ -148,6 +148,43 @@ salidas del negocio, exportaciones; pantalla **Auditoría** con `audit:read`) y 
 plataforma). Los eventos de error se guardan en la transacción del caso de uso, que no se revierte con ese error
 (sin una segunda conexión por intento). Decisiones 168–178.
 
+## Módulos del negocio, funciones del plan y token (decisiones 267 y 288)
+
+El token de negocio lleva los permisos de los roles del usuario **filtrados** por dos cosas:
+
+- **Módulos** (`BusinessModule`: fiados, pedidos, cotizaciones, tallas, báscula, adiciones, mesas, cocina,
+  medicamentos): el dueño los prende en Ajustes; solo cuentan los que su plan incluye. Cada módulo encendido agrega la
+  autoridad `module:<código>` y sus permisos solo llegan al token si está encendido.
+- **Funciones del plan** (`PlanFeature`: compras, impresión directa, auditoría, traslados, caja por zona): las decide
+  el plan más los extras que da el administrador (`SubscriptionApi.entitlements`). Agregan `plan:<código>` y, sin
+  ellas, sus permisos salen del token.
+
+`BusinessModule.effectivePermissions` arma la lista al entrar y al renovar la sesión (máx. 15 min). `PrivilegeGuard`
+deja asignar roles con permisos de módulos o funciones apagados sin que nadie gane permisos. Los límites del plan
+(sedes, usuarios, cajas) se revisan al crear o activar.
+
+## Restaurante: cuentas, cocina y tiempo real
+
+Las cuentas abiertas (`tabs`, `tab_items`) se vuelven ventas normales al cobrar (`SaleService.createForTab`), en la
+caja de quien cobra o en la de la zona de la mesa (decisión 285). Las comandas (`kitchen_tickets`) van por estación.
+Los cambios se avisan a las pantallas por **SSE** (`/api/v1/dining/events`, sin compresión en Caddy) y en memoria
+(`InMemoryDiningEvents`); cada pantalla vuelve a pedir lo que cambió.
+
+## Droguería: lotes y FEFO
+
+`lots` y `lot_balances` llevan el saldo por lote (la suma nunca pasa de `stock_balances`; lo demás es "sin lote").
+Las salidas toman primero lo que no tiene lote y luego el lote que vence antes (FEFO, `StockLedger.allocate`); los
+vencidos no se venden. Compras, devoluciones, bajas, ventas y anulaciones mueven el lote correcto, y la trazabilidad
+de un lote sale del libro de movimientos. La dispensación (`DispensationRules`) se valida dentro de la transacción de
+la venta. Las lecturas de temperatura (`quality_readings`) son inmutables (trigger).
+
+## XASKA Impresora (decisión 286)
+
+Programa de Windows en Go (`frontend/print-agent`, sin dependencias) que escucha en `127.0.0.1:17777` solo para los
+orígenes de XASKA y manda los bytes ESC/POS en RAW a la cola de Windows. La app arma el tiquete
+(`core/printing/escpos.ts`) y le habla con `fetch` (nunca con `HttpClient`, para que el token no salga del navegador).
+"Abrir cajón" primero queda en la auditoría (`POST /cash/drawer-openings`) y luego manda el pulso.
+
 ## Producción
 Un servidor con `docker compose` (`deploy/docker-compose.prod.yml`): **web** (Caddy con la app Angular compilada:
 HTTPS automático, cabeceras de seguridad y `/api/*` → backend en el mismo dominio), **backend**, **postgres-db** y
