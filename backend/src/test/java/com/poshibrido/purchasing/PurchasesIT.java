@@ -32,7 +32,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 class PurchasesIT extends IntegrationTest {
 
-    private static final LocalDate TODAY = LocalDate.now();
+    /** Hoy en la zona del negocio (Bogotá): GitHub corre en UTC y de 7 p. m. a medianoche ya es mañana. */
+    private static final LocalDate TODAY = LocalDate.now(java.time.ZoneId.of("America/Bogota"));
     private static final String FUTURE = TODAY.plusYears(2).toString();
 
     @Test
