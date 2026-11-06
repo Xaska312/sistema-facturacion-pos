@@ -17,7 +17,7 @@ public record SubscriptionProperties(int trialDays, String trialPlan, int graceD
 
     public SubscriptionProperties {
         trialDays = trialDays <= 0 ? 14 : trialDays;
-        trialPlan = trialPlan == null || trialPlan.isBlank() ? "PRO" : trialPlan.trim();
+        trialPlan = trialPlan == null || trialPlan.isBlank() ? "EMPRESA" : trialPlan.trim();
         graceDays = Math.max(0, graceDays);
         paymentInstructions = paymentInstructions == null || paymentInstructions.isBlank()
                 ? "Comunícate con soporte para renovar." : paymentInstructions.trim();

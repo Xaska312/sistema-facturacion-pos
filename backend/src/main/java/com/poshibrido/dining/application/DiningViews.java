@@ -14,8 +14,16 @@ public final class DiningViews {
     public record BranchOption(UUID id, String name) {
     }
 
-    /** Configuración: zona con todas sus mesas (también las inactivas). */
-    public record ZoneView(UUID id, UUID branchId, String name, int position, boolean active, List<TableView> tables) {
+    /**
+     * Configuración: zona con todas sus mesas (también las inactivas). {@code cashRegister}: la caja donde quedan las
+     * ventas de sus mesas (decisión 285); nula = la caja de quien cobra (lo normal).
+     */
+    public record ZoneView(UUID id, UUID branchId, String name, int position, boolean active, List<TableView> tables,
+                           RegisterOption cashRegister) {
+    }
+
+    /** Una caja de la sucursal. {@code open}: tiene un turno abierto ahora. */
+    public record RegisterOption(UUID id, String name, boolean open) {
     }
 
     /** {@code map}: su lugar en el plano de la zona (decisión 284). */
@@ -38,7 +46,8 @@ public final class DiningViews {
     public record FloorTable(UUID id, String name, Integer seats, TabSummary tab, MapSpot map) {
     }
 
-    public record FloorZone(UUID id, String name, List<FloorTable> tables) {
+    /** {@code cashRegister}: la caja de la zona (decisión 285), o nula. */
+    public record FloorZone(UUID id, String name, List<FloorTable> tables, RegisterOption cashRegister) {
     }
 
     /**
@@ -68,6 +77,6 @@ public final class DiningViews {
                           String phone, String address, String notes, Instant openedAt, String openedByName,
                           Instant closedAt, UUID saleId, BigDecimal total, List<TabItemView> items,
                           List<KitchenViews.TicketSummary> tickets, BigDecimal chargedTotal, List<UUID> saleIds,
-                          Instant billRequestedAt) {
+                          Instant billRequestedAt, RegisterOption chargeRegister) {
     }
 }

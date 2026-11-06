@@ -1,18 +1,20 @@
 import { Component, computed, input } from '@angular/core';
 import { Sale } from '../../core/api/api.models';
 import { formatCop, formatQuantity } from '../money';
-import { ReceiptWidth } from './receipt-prefs';
+import { ReceiptWidth, printableMm } from './receipt-prefs';
 import { documentShortLabel } from '../document-types';
 
 /**
  * Tiquete de venta para impresora térmica de 58 u 80 mm. El mismo componente sirve de vista previa y, con la
- * clase {@code receipt-print-root}, de área de impresión (@media print en styles.css).
+ * clase {@code receipt-print-root}, de área de impresión (@media print en styles.css). Se arma al ancho imprimible
+ * (72 o 48 mm) y con letra sin serifas gruesa: el driver convierte la página en puntos y una letra delgada sale
+ * gris claro en algunas impresoras (decisión 289).
  */
 @Component({
   selector: 'app-receipt',
   template: `
     @let s = sale();
-    <div class="receipt" [class.receipt-58]="width() === 58" [style.width.mm]="width()">
+    <div class="receipt" [class.receipt-58]="width() === 58" [style.width.mm]="printable()">
       @if (logo(); as src) {
         <img [src]="src" alt="" class="logo" />
       }
@@ -84,26 +86,28 @@ import { documentShortLabel } from '../document-types';
     </div>
   `,
   styles: `
-    .receipt { font-family: ui-monospace, 'Courier New', monospace; font-size: 12px; line-height: 1.3; color: #000;
-      background: #fff; padding: 3mm; box-sizing: border-box; }
-    .receipt-58 { font-size: 10px; }
+    .receipt { font-family: Arial, Helvetica, sans-serif; font-size: 13px; font-weight: 600; line-height: 1.3;
+      color: #000; background: #fff; padding: 1mm 0; box-sizing: border-box; }
+    .receipt-58 { font-size: 11px; }
     p { margin: 0; overflow-wrap: anywhere; }
     .row { display: flex; justify-content: space-between; gap: 6px; }
     .row span:last-child { white-space: nowrap; }
     .sub { padding-left: 0.75em; }
     .center { text-align: center; }
     /* Logo del negocio (fase 8c): en gris, porque la impresora térmica imprime solo negro. */
-    .logo { display: block; margin: 0 auto 4px; max-width: 70%; max-height: 18mm; object-fit: contain; filter: grayscale(1); }
-    .bold { font-weight: 700; }
+    .logo { display: block; margin: 0 auto 4px; max-width: 70%; max-height: 18mm; object-fit: contain;
+      filter: grayscale(1) contrast(1.6); }
+    .bold { font-weight: 800; }
     .big { font-size: 1.15em; }
     .small { font-size: 0.85em; }
     .mt { margin-top: 4px; }
-    hr { border: none; border-top: 1px dashed #000; margin: 4px 0; }
+    hr { border: none; border-top: 1.5px dashed #000; margin: 4px 0; }
   `,
 })
 export class ReceiptComponent {
   readonly sale = input.required<Sale>();
   readonly width = input<ReceiptWidth>(80);
+  protected readonly printable = computed(() => printableMm(this.width()));
   /** Logo del negocio (data URL) o null (fase 8c). */
   readonly logo = input<string | null>(null);
 

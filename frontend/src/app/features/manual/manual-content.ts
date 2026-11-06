@@ -58,7 +58,7 @@ export const MANUAL: readonly ManualChapter[] = [
           'En "Elige el negocio con el que vas a trabajar", toca "Crear un negocio".',
           'Escribe el nombre comercial (el que ven tus clientes) y la razón social.',
           'Revisa el identificador que se propone: solo minúsculas, números y "_". No se puede cambiar después.',
-          'Elige el tipo de negocio: Comercio, Servicios o Restaurante (Farmacia llega pronto).',
+          'Elige el tipo de negocio: Comercio, Servicios, Restaurante o Droguería.',
           'Toca "Continuar" y luego "Crear negocio". En unos segundos entras al negocio.',
         ],
         tips: [
@@ -209,7 +209,33 @@ export const MANUAL: readonly ManualChapter[] = [
         tips: [
           'El texto del pie del tiquete (horarios, redes sociales…) se cambia en Configuración → Ajustes.',
           'El tiquete es un comprobante de venta; por ahora el sistema no emite factura electrónica de la DIAN.',
+          'Si el tiquete sale cortado a la derecha o muy claro: en la ventana de impresión pon Márgenes en "Ninguno" y '
+            + 'Escala en "Predeterminado"; en las preferencias de la impresora en Windows sube la densidad u oscuridad. '
+            + 'Lo más nítido es imprimir directo con XASKA Impresora.',
         ],
+      },
+      {
+        id: 'impresora-cajon',
+        title: 'Imprimir directo y abrir el cajón',
+        summary: 'Con el programa XASKA Impresora en el computador de la caja, el tiquete sale directo en la impresora '
+          + 'térmica (sin la ventana de impresión) y el cajón monedero se abre solo al cobrar en efectivo.',
+        steps: [
+          'En el computador de la caja entra a Configuración → Ajustes → "Impresora de este equipo" y toca "Descargar '
+            + 'XASKA Impresora". Guárdalo en una carpeta fija (por ejemplo Documentos) y ábrelo con doble clic. Cuando '
+            + 'pregunte si arranca con Windows, di que sí.',
+          'Vuelve a Ajustes y toca "Buscar de nuevo". Si el navegador pregunta si XASKA puede usar los dispositivos '
+            + 'de este equipo, toca "Permitir".',
+          'Elige tu impresora y el ancho del papel, y toca "Imprimir prueba".',
+          'Prende "Imprimir el tiquete solo al cobrar" y deja "Abrir el cajón al cobrar en efectivo" como prefieras.',
+          'Para abrir el cajón sin una venta (dar cambio, revisar el efectivo), toca "Abrir cajón" en Vender.',
+        ],
+        tips: [
+          'Volver a imprimir un tiquete nunca abre el cajón. Con tarjeta o transferencia tampoco se abre.',
+          '"Abrir cajón" pide el permiso "Abrir el cajón monedero sin una venta" y la caja abierta; cada vez queda en la auditoría.',
+          'Si las tildes salen como símbolos raros, prende "Imprimir sin tildes".',
+          'Funciona en Windows con Chrome o Edge. El cajón va conectado a la impresora (el cable tipo teléfono).',
+        ],
+        who: 'Lo configura el dueño o el administrador en cada computador de caja.',
       },
       {
         id: 'anular-venta',
@@ -318,6 +344,9 @@ export const MANUAL: readonly ManualChapter[] = [
           'Toca una mesa para cambiarle el nombre (Barra 2), los puestos, la zona o desactivarla.',
           'Toca "Plano" en la zona y arrastra cada mesa a donde está en tu local. Tócala para elegir si es cuadrada, '
             + 'redonda o rectangular y su tamaño. Toca "Guardar plano".',
+          'Si cada piso tiene su caja (y tienes dos cajas o más), edita la zona con el lápiz y elige su "Caja de esta '
+            + 'zona". Las ventas de esas mesas quedan en esa caja aunque se cobren en otra; al cerrar, las dos cajas '
+            + 'cuadran el efectivo juntas.',
         ],
         tips: [
           'El nombre de la mesa no se repite en la sucursal, para que el mesero no se confunda.',
@@ -778,6 +807,58 @@ export const MANUAL: readonly ManualChapter[] = [
         who: 'Propietario, Administrador y Bodega.',
       },
       {
+        id: 'temperatura-humedad',
+        title: 'Temperatura y humedad',
+        summary: 'La planilla que pide la Secretaría de Salud: el local (termohigrómetro) y la nevera de cadena de frío, '
+          + 'mañana y tarde. Con el módulo Medicamentos, en Inventario → "Temperatura y calidad".',
+        steps: [
+          'La primera vez toca "Crear local y nevera" (local de 15 a 30 °C y humedad de 35 a 70 %; nevera de 2 a 8 °C). '
+            + 'Los rangos y otros puntos, en "Puntos de control".',
+          'Cada mañana escribe la temperatura y la humedad del local y la temperatura de la nevera, y toca "Guardar lectura". '
+            + 'Desde las 12 se registra la de la tarde.',
+          'Si una lectura sale del rango, escribe qué se hizo (se prendió el aire, se revisó la nevera).',
+          'En "Planilla del mes" ves todas las lecturas por día; lo que salió del rango va en rojo con su acción.',
+        ],
+        tips: [
+          'Si falta la lectura de la mañana, o la de la tarde después de las 2, el inicio te lo recuerda.',
+          'Las lecturas no se cambian ni se borran. Si anotaste mal, acláralo en la lectura siguiente.',
+          'Lo pueden registrar el dueño, el administrador, el director técnico y el auxiliar de farmacia.',
+        ],
+        who: 'Propietario, Administrador, Director técnico y Auxiliar de farmacia.',
+      },
+      {
+        id: 'eventos-adversos',
+        title: 'Eventos adversos',
+        summary: 'Cuando un medicamento le hace daño a un paciente, la droguería lo reporta al INVIMA (formato FOREAM). '
+          + 'Aquí queda el registro y el seguimiento.',
+        steps: [
+          'En "Temperatura y calidad" → "Eventos adversos" toca "Registrar evento".',
+          'Escribe la fecha, el medicamento (y su lote si lo sabes), el paciente y qué le pasó; marca si es grave.',
+          'Repórtalo en la página del INVIMA y después toca "Anotar reporte" con la fecha y el número que te dieron.',
+        ],
+        tips: [
+          'Los que faltan por reportar salen en rojo, aquí y en el informe para la visita.',
+          'Son datos de salud: solo los ven quienes tienen el permiso de calidad.',
+        ],
+        who: 'Propietario, Administrador, Director técnico y Auxiliar de farmacia.',
+      },
+      {
+        id: 'informe-visita',
+        title: 'Informe para la visita de la Secretaría',
+        summary: 'Un documento en hoja carta con lo que la inspección revisa de un periodo, listo para imprimir o guardar en PDF.',
+        steps: [
+          'En "Temperatura y calidad" toca "Informe para la visita".',
+          'Elige las fechas (por defecto el mes actual).',
+          'Toca "Imprimir o guardar PDF". Para el PDF, elige "Guardar como PDF" como impresora.',
+        ],
+        tips: [
+          'Trae el director técnico, la planilla de temperatura (lo que faltó y lo que salió del rango), vencidos y por '
+            + 'vencer, actas de baja, recepciones técnicas, antibióticos dispensados y eventos adversos.',
+          'Revísalo unos días antes de la visita: lo que falta sale resaltado para corregirlo a tiempo.',
+        ],
+        who: 'Propietario, Administrador, Director técnico y Auxiliar de farmacia.',
+      },
+      {
         id: 'tallas-colores',
         title: 'Productos con tallas y colores (calzado y ropa)',
         summary: 'Un modelo (p. ej. "Tenis Runner") con un solo precio crea un producto por cada talla y color, cada uno con su código de barras y su propia existencia.',
@@ -1058,6 +1139,24 @@ export const MANUAL: readonly ManualChapter[] = [
           'Marca: sube tu logo (sale en el encabezado y en el tiquete) y elige el color de la app entre los de la paleta; toca un color para verlo antes de guardarlo.',
         ],
         who: 'Para cambiarlos: Propietario y Administrador.',
+      },
+      {
+        id: 'planes',
+        title: 'Tu plan y lo que incluye',
+        summary: 'Emprende, Negocio o Empresa. En Ajustes → Suscripción ves tu plan, lo que incluye, cuántas sedes, cajas '
+          + 'y usuarios usas y cómo pagar.',
+        steps: [
+          'Emprende: vender, caja, inventario, fiado y reportes; 1 sede, 1 caja y 2 usuarios.',
+          'Negocio: además pedidos, cotizaciones, tallas, báscula, compras, impresión directa y el módulo de tu sector '
+            + '(mesas y cocina o droguería); 1 sede, 3 cajas y 6 usuarios.',
+          'Empresa: todo, con auditoría, caja por zona y traslados; hasta 5 sedes, cajas y usuarios sin límite.',
+        ],
+        tips: [
+          'Lo que no incluye tu plan sale en gris en "Tipo de negocio y módulos". Para tenerlo, escríbenos.',
+          'XASKA te puede dar, por acuerdo, un módulo, una caja o un usuario de más sin cambiar de plan.',
+          'Si ya eras cliente antes de estos planes, conservas lo que tienes y tu precio por 12 meses.',
+        ],
+        who: 'Lo ve el dueño y quien tiene acceso a Ajustes.',
       },
       {
         id: 'eliminar-negocio',

@@ -12,6 +12,8 @@ import com.poshibrido.shared.error.AccountLockedException;
 import com.poshibrido.shared.error.ConflictException;
 import com.poshibrido.shared.error.ForbiddenException;
 import com.poshibrido.shared.error.UnauthorizedException;
+import com.poshibrido.subscription.application.SubscriptionApi;
+import com.poshibrido.subscription.application.SubscriptionApi.Entitlements;
 import com.poshibrido.tenancy.application.TenantApi;
 import com.poshibrido.tenancy.application.TenantRef;
 import com.poshibrido.tenancy.domain.BusinessModule;
@@ -21,9 +23,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -53,6 +57,7 @@ public class AuthService {
     private final AccountService accounts;
     private final LoginAttemptStore loginAttempts;
     private final LegalConsentService legalConsents;
+    private final SubscriptionApi subscriptions;
     /** Hash señuelo para igualar tiempos cuando el correo no existe (evita enumeración de cuentas). */
     private final String dummyHash;
 
@@ -60,7 +65,8 @@ public class AuthService {
                        TokenService tokens, PasswordEncoder passwordEncoder, TenantApi tenantApi,
                        AccessApi accessApi, AuthProperties properties, SecurityEventLogger securityEvents,
                        AuditLogger audit, PlatformAdmins platformAdmins, AccountService accounts,
-                       LoginAttemptStore loginAttempts, LegalConsentService legalConsents) {
+                       LoginAttemptStore loginAttempts, LegalConsentService legalConsents,
+                       SubscriptionApi subscriptions) {
         this.users = users;
         this.memberships = memberships;
         this.refreshTokens = refreshTokens;
@@ -75,6 +81,7 @@ public class AuthService {
         this.accounts = accounts;
         this.loginAttempts = loginAttempts;
         this.legalConsents = legalConsents;
+        this.subscriptions = subscriptions;
         this.dummyHash = passwordEncoder.encode("dummy-password-" + UUID.randomUUID());
     }
 
@@ -222,8 +229,15 @@ public class AuthService {
         return tenantApi.findActive(tenantId)
                 .filter(tenant -> accessApi.isMemberActive(tenant.schema(), user.getId()))
                 // Fase 12a: sin los permisos de los módulos apagados y con la autoridad de cada módulo encendido.
-                .map(tenant -> new TenantAccess(tenant, BusinessModule.effectivePermissions(
-                        accessApi.permissionsOf(tenant.schema(), user.getId()), tenantApi.modulesOf(tenant.id()))));
+                // Decisión 288: solo los módulos y funciones que incluye su plan (más los extras del administrador).
+                .map(tenant -> {
+                    Entitlements plan = subscriptions.entitlements(tenant.id());
+                    Set<BusinessModule> modules = EnumSet.noneOf(BusinessModule.class);
+                    modules.addAll(tenantApi.modulesOf(tenant.id()));
+                    modules.retainAll(plan.modules());
+                    return new TenantAccess(tenant, BusinessModule.effectivePermissions(
+                            accessApi.permissionsOf(tenant.schema(), user.getId()), modules, plan.features()));
+                });
     }
 
     private record TenantAccess(TenantRef tenant, List<String> permissions) {

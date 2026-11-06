@@ -49,7 +49,9 @@ public class PlatformSubscriptionController {
     private final ActivationCodeService codes;
 
     public record PlanRequest(@NotBlank @Size(max = 60) String name, @Min(1) Integer maxBranches,
-                              @Min(1) Integer maxUsers,
+                              @Min(1) Integer maxUsers, @Min(1) Integer maxRegisters,
+                              @Size(max = 20) List<@Size(max = 20) String> modules,
+                              @Size(max = 20) List<@Size(max = 20) String> features,
                               @DecimalMin("0") @Digits(integer = 12, fraction = 2) BigDecimal monthlyPrice,
                               @DecimalMin("0") @Digits(integer = 12, fraction = 2) BigDecimal annualPrice,
                               @NotNull Boolean active) {
@@ -63,6 +65,13 @@ public class PlatformSubscriptionController {
     }
 
     public record ChangePlanRequest(@NotBlank @Size(max = 20) String planCode) {
+    }
+
+    /** Extras de un negocio (decisión 288); {@code until} nulo = sin fecha de fin. */
+    public record ExtrasRequest(@Size(max = 20) List<@Size(max = 20) String> modules,
+                                @Size(max = 20) List<@Size(max = 20) String> features,
+                                @Min(0) @Max(100) int branches, @Min(0) @Max(100) int registers,
+                                @Min(0) @Max(500) int users, @Size(max = 300) String note, java.time.Instant until) {
     }
 
     public record CodeRequest(@NotBlank @Size(max = 20) String planCode, @Min(1) @Max(36) int months,
@@ -80,7 +89,8 @@ public class PlatformSubscriptionController {
     @PutMapping("/plans/{code}")
     public PlanView updatePlan(@PathVariable String code, @Valid @RequestBody PlanRequest request) {
         return subscriptions.updatePlan(code, request.name(), request.maxBranches(), request.maxUsers(),
-                request.monthlyPrice(), request.annualPrice(), request.active());
+                request.maxRegisters(), request.monthlyPrice(), request.annualPrice(), request.active(),
+                request.modules(), request.features());
     }
 
     // ---------------------------------------------------------------- suscripciones
@@ -109,6 +119,12 @@ public class PlatformSubscriptionController {
     @PutMapping("/tenants/{tenantId}/subscription/plan")
     public SubscriptionView changePlan(@PathVariable UUID tenantId, @Valid @RequestBody ChangePlanRequest request) {
         return subscriptions.changePlan(tenantId, request.planCode());
+    }
+
+    @PutMapping("/tenants/{tenantId}/subscription/extras")
+    public SubscriptionView setExtras(@PathVariable UUID tenantId, @Valid @RequestBody ExtrasRequest request) {
+        return subscriptions.setExtras(tenantId, request.modules(), request.features(), request.branches(),
+                request.registers(), request.users(), request.note(), request.until(), CurrentActor.requireUserId());
     }
 
     // ---------------------------------------------------------------- códigos de activación

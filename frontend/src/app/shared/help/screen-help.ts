@@ -246,6 +246,25 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     ],
     terms: ['saldo-inicial', 'costo-promedio'],
   },
+  '/app/farmacia/calidad': {
+    manual: 'temperatura-humedad',
+    title: 'Temperatura y calidad',
+    tips: [
+      'Registra mañana y tarde la temperatura y la humedad del local y la temperatura de la nevera.',
+      'Si una lectura sale del rango, anota qué se hizo; las lecturas no se cambian ni se borran.',
+      'En "Eventos adversos" anotas la reacción de un paciente y luego la fecha del reporte al INVIMA.',
+      'El "Informe para la visita" junta la planilla, los vencimientos, las bajas y la dispensación.',
+    ],
+  },
+  '/app/farmacia/informe': {
+    manual: 'informe-visita',
+    title: 'Informe para la visita',
+    tips: [
+      'Elige las fechas (por defecto, el mes actual) y toca "Imprimir o guardar PDF".',
+      'Trae la planilla de temperatura, vencimientos, actas de baja, recepciones, antibióticos y eventos adversos.',
+      'Lo que falta o sale del rango aparece resaltado, para corregirlo antes de la visita.',
+    ],
+  },
   '/app/farmacia/dispensaciones': {
     manual: 'dispensar-formula',
     title: 'Libro de dispensación',

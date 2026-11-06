@@ -200,7 +200,15 @@ public class SaleService {
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public UUID createForTab(Create command, String idempotencyKey) {
-        return register(command, requireKey(idempotencyKey), CurrentActor.requireUserId(), Options.TAB);
+        return createForTab(command, idempotencyKey, null);
+    }
+
+    /**
+     * Cobro de una cuenta de mesa en una sesión concreta (decisión 285): la de la caja de la zona de la mesa, aunque se
+     * cobre desde otra caja. {@code sessionId} nulo = la caja de quien cobra.
+     */
+    public UUID createForTab(Create command, String idempotencyKey, UUID sessionId) {
+        return register(command, requireKey(idempotencyKey), CurrentActor.requireUserId(), Options.TAB, sessionId);
     }
 
     /** Venta ya registrada con esa clave por el usuario actual (para reintentos de la entrega de un pedido). */
@@ -225,9 +233,13 @@ public class SaleService {
     }
 
     private UUID register(Create c, String key, UUID actor, Options options) {
+        return register(c, key, actor, options, null);
+    }
+
+    private UUID register(Create c, String key, UUID actor, Options options, UUID sessionId) {
         BusinessSettings cfg = settings.current();
         List<ItemLine> lines = requireItems(c.items());
-        OpenSession session = cash.lockOpenSessionOf(actor)
+        OpenSession session = (sessionId == null ? cash.lockOpenSessionOf(actor) : cash.lockIfOpen(sessionId))
                 .orElseThrow(() -> new BusinessRuleException("Abre la caja antes de registrar ventas."));
         CustomerRef customer = customers.find(c.customerId() == null ? CustomerApi.FINAL_CONSUMER_ID : c.customerId())
                 .orElseThrow(() -> new NotFoundException("Cliente no encontrado."));

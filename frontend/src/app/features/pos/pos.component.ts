@@ -40,6 +40,9 @@ import { formatCop, formatQuantity } from '../../shared/money';
 import { BrandingService } from '../../core/theme/branding.service';
 import { ReceiptComponent } from '../../shared/receipt/receipt.component';
 import { ReceiptWidth, loadReceiptWidth, printReceipt, saveReceiptWidth } from '../../shared/receipt/receipt-prefs';
+import { CashDrawerService } from '../../core/printing/cash-drawer.service';
+import { receiptBytes, saleDate } from '../../core/printing/escpos';
+import { PrintAgentService } from '../../core/printing/print-agent.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { saleWhatsAppLink } from '../sales/sale-text';
 import { TourService } from '../../shared/tour/tour.service';
@@ -149,6 +152,13 @@ const STOCK_PAGES = 5;
           <div class="tab-banner" role="status">
             <span class="font-bold">Cobrando {{ t.label }}{{ tabParts() ? ' · una parte' : '' }}</span>
             <span class="text-sm">{{ tabParts() ? 'Solo los productos que eligió esta persona.' : 'Los productos se cambian en la cuenta.' }}</span>
+            @if (otherRegister(); as cr) {
+              <span class="text-sm font-semibold">
+                <i class="pi pi-wallet" aria-hidden="true"></i>
+                {{ cr.open ? 'La venta queda en ' + cr.name + ', la caja de ' + (t.zoneName ?? 'esa zona') + '.'
+                  : cr.name + ' (la caja de ' + (t.zoneName ?? 'esa zona') + ') está cerrada: ábrela para cobrar esta mesa.' }}
+              </span>
+            }
             <span class="flex-1"></span>
             <button type="button" class="tool-btn" (click)="leaveTab()">
               <i class="pi pi-arrow-left" aria-hidden="true"></i>Volver a la cuenta
@@ -210,7 +220,8 @@ const STOCK_PAGES = 5;
                           (noteChange)="setNote($event)"
                           (removeLine)="removeLine($event)" (restoreLine)="restoreLine($event)"
                           (charge)="openPayment()" (cancelSale)="cancelSale()" (customer)="openCustomers()"
-                          (hold)="openHold()" (reprint)="receiptOpen = true" [locked]="tab() !== null" />
+                          (hold)="openHold()" (reprint)="receiptOpen = true" [locked]="tab() !== null"
+                          [drawer]="canOpenDrawer()" (openDrawer)="openDrawer()" />
         </div>
 
         <!-- Celular: el carrito queda debajo de los productos; el total y Cobrar siempre a la mano. -->
@@ -813,6 +824,19 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   private readonly router = inject(Router);
   /** Cuenta de mesa que se está cobrando (Fase 12b-2, /pos?cuenta=…); null en una venta normal. */
   protected readonly tab = signal<Tab | null>(null);
+  /** XASKA Impresora (decisión 286): tiquete directo en la térmica y el cajón. */
+  private readonly printer = inject(PrintAgentService);
+  private readonly drawerService = inject(CashDrawerService);
+  protected readonly canOpenDrawer = computed(() => this.printer.ready() && this.auth.hasPermission('cash:drawer'));
+  /** Impresión directa incluida en el plan (decisión 288). */
+  private directPrint(): boolean {
+    return this.auth.hasPermission('plan:direct-print');
+  }
+  /** La caja de la zona de la mesa, si no es esta (decisión 285: la venta queda en esa caja). */
+  protected readonly otherRegister = computed(() => {
+    const cr = this.tab()?.chargeRegister;
+    return cr && cr.id !== this.session()?.cashRegisterId ? cr : null;
+  });
   /** Cobro por productos (Fase 12b-5): las líneas y cantidades de esta parte; null = todo lo pendiente. */
   protected readonly tabParts = signal<ChargePart[] | null>(null);
   protected readonly tipChoice = signal<TipChoice>('none');
@@ -947,6 +971,10 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   private idempotencyKey: string | null = null;
 
   ngOnInit(): void {
+    // Con XASKA Impresora en este equipo (decisión 286): saber ya si está, para el botón "Abrir cajón".
+    if (this.directPrint()) {
+      void this.printer.ensure();
+    }
     this.sales.config().subscribe((config) => {
       this.config.set(config);
       this.customer.update((c) => (c.id ? c : { ...c, id: config.finalConsumerId }));
@@ -1935,6 +1963,7 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
           void this.router.navigate(['/pos'], { replaceUrl: true });
         }
         this.receiptOpen = true;
+        void this.afterSale(sale);
         const session = this.session();
         if (session) {
           this.loadStock(session.branchId);
@@ -1985,8 +2014,61 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
     setTimeout(() => document.querySelector<HTMLButtonElement>('#new-sale button, button#new-sale')?.focus(), 0);
   }
 
-  print(): void {
+  /** Con XASKA Impresora: directo a la térmica (volver a imprimir nunca abre el cajón); si no, la ventana del navegador. */
+  async print(): Promise<void> {
+    const sale = this.lastSale();
+    if (sale && this.directPrint() && (await this.printer.ensure())) {
+      await this.sendReceipt(sale, false);
+      return;
+    }
     printReceipt();
+  }
+
+  /**
+   * Al cobrar (decisión 286): con "Imprimir solo" sale el tiquete; con "Abrir el cajón al cobrar en efectivo" y algo
+   * pagado en efectivo, se abre el cajón (con el tiquete o solo). Sin el programa no hace nada (se imprime a mano).
+   */
+  private async afterSale(sale: Sale): Promise<void> {
+    const prefs = this.printer.prefs();
+    const cash = prefs.drawerOnCash && sale.payments.some((p) => this.payMethods().find((m) => m.id === p.paymentMethodId)?.affectsCash);
+    if ((!prefs.autoPrint && !cash) || !this.directPrint()) {
+      return;
+    }
+    if (!(await this.printer.ensure())) {
+      return;
+    }
+    if (prefs.autoPrint) {
+      await this.sendReceipt(sale, cash);
+    } else {
+      try {
+        await this.printer.openDrawer();
+      } catch (e: unknown) {
+        this.printerFailed('No se abrió el cajón', e);
+      }
+    }
+  }
+
+  private async sendReceipt(sale: Sale, openDrawer: boolean): Promise<void> {
+    try {
+      await this.printer.print(receiptBytes(sale, { width: this.width(), plain: this.printer.prefs().plain, openDrawer,
+        date: saleDate(sale) }), 'Tiquete ' + sale.documentNumber);
+    } catch (e: unknown) {
+      this.printerFailed('No se imprimió el tiquete', e);
+    }
+  }
+
+  protected async openDrawer(): Promise<void> {
+    try {
+      await this.drawerService.open(null);
+      this.messages.add({ severity: 'success', summary: 'Cajón abierto', life: 2000 });
+    } catch (e: unknown) {
+      this.printerFailed('No se abrió el cajón', e);
+    }
+    this.focusScanner();
+  }
+
+  private printerFailed(summary: string, e: unknown): void {
+    this.messages.add({ severity: 'error', summary, detail: e instanceof Error ? e.message : String(e), life: 7000 });
   }
 
   /** Recibo en texto para enviarlo por WhatsApp (decisión 261). */

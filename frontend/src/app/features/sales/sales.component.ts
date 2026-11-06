@@ -17,6 +17,9 @@ import { ColumnDef, TableQuery, initialQuery } from '../../shared/table/table';
 import { BrandingService } from '../../core/theme/branding.service';
 import { ReceiptComponent } from '../../shared/receipt/receipt.component';
 import { ReceiptWidth, loadReceiptWidth, printReceipt } from '../../shared/receipt/receipt-prefs';
+import { receiptBytes, saleDate } from '../../core/printing/escpos';
+import { PrintAgentService } from '../../core/printing/print-agent.service';
+import { AuthService } from '../../core/auth/auth.service';
 import { saleWhatsAppLink } from './sale-text';
 import { permissionFlag } from '../../core/auth/permission-flag';
 import { LatestRequest } from '../../shared/latest-request';
@@ -125,6 +128,8 @@ export class SalesComponent implements OnInit {
   private readonly sales = inject(SalesApi);
   private readonly messages = inject(MessageService);
   private readonly router = inject(Router);
+  private readonly printer = inject(PrintAgentService);
+  private readonly auth = inject(AuthService);
   protected readonly canSell = permissionFlag('sales:create');
 
   protected readonly page = signal<PageResponse<SaleRow> | null>(null);
@@ -180,7 +185,20 @@ export class SalesComponent implements OnInit {
     });
   }
 
-  print(): void {
+  /** Con XASKA Impresora en este equipo, directo a la térmica (sin abrir el cajón; decisión 286). */
+  async print(): Promise<void> {
+    const sale = this.detail();
+    if (sale && this.auth.hasPermission('plan:direct-print') && (await this.printer.ensure())) {
+      try {
+        await this.printer.print(receiptBytes(sale, { width: this.width, plain: this.printer.prefs().plain,
+          date: saleDate(sale) }), 'Tiquete ' + sale.documentNumber);
+        this.messages.add({ severity: 'success', summary: 'Tiquete enviado a la impresora', life: 2500 });
+      } catch (e: unknown) {
+        this.messages.add({ severity: 'error', summary: 'No se imprimió el tiquete',
+          detail: e instanceof Error ? e.message : String(e), life: 7000 });
+      }
+      return;
+    }
     printReceipt();
   }
 

@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
@@ -6,9 +6,10 @@ import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { SkeletonModule } from 'primeng/skeleton';
-import { Observable, concatMap, from, last } from 'rxjs';
-import { BranchOption, DiningApi, DiningTable, DiningZone } from '../../core/api/dining.api';
+import { Observable, catchError, concatMap, from, last, of } from 'rxjs';
+import { BranchOption, DiningApi, DiningTable, DiningZone, RegisterOption } from '../../core/api/dining.api';
 import { problemMessage } from '../../core/errors/problem';
+import { AuthService } from '../../core/auth/auth.service';
 import { LayoutEditorComponent } from './layout-editor.component';
 import { EmptyStateComponent } from '../../shared/empty-state.component';
 import { FormDialogComponent } from '../../shared/forms/form-dialog.component';
@@ -61,7 +62,12 @@ export function nextTableNames(existing: readonly string[], fromNumber: number, 
         @for (z of list; track z.id) {
           <section class="card p-5 flex flex-col gap-3" [class.opacity-60]="!z.active" [attr.aria-labelledby]="'z-' + z.id">
             <div class="flex flex-wrap items-center justify-between gap-2">
-              <h2 [id]="'z-' + z.id" class="text-lg font-extrabold tracking-tight">{{ z.name }}{{ z.active ? '' : ' · Inactiva' }}</h2>
+              <div class="flex flex-wrap items-center gap-2">
+                <h2 [id]="'z-' + z.id" class="text-lg font-extrabold tracking-tight">{{ z.name }}{{ z.active ? '' : ' · Inactiva' }}</h2>
+                @if (z.cashRegister; as cr) {
+                  <span class="zone-register"><i class="pi pi-wallet" aria-hidden="true"></i>Se cobra en {{ cr.name }}</span>
+                }
+              </div>
               <div class="flex flex-wrap gap-2">
                 <p-button label="Agregar mesas" icon="pi pi-plus" size="small" [outlined]="true" (onClick)="openBulk(z)" />
                 @if (z.tables.length > 0) {
@@ -114,6 +120,19 @@ export function nextTableNames(existing: readonly string[], fromNumber: number, 
         <label class="flex items-center gap-2 text-sm">
           <input type="checkbox" class="size-4" [(ngModel)]="zoneActive" />Activa (sale en el salón)
         </label>
+      }
+      @if (registers().length > 1 && zoneRegisters()) {
+        <div class="flex flex-col gap-1">
+          <label for="zone-register" class="text-sm font-semibold">Caja de esta zona</label>
+          <select id="zone-register" class="border rounded-[10px] px-3 min-h-11" [(ngModel)]="zoneRegister">
+            <option value="">La de quien cobra (lo normal)</option>
+            @for (r of registers(); track r.id) {
+              <option [value]="r.id">{{ r.name }}</option>
+            }
+          </select>
+          <p class="text-xs text-muted">Para locales con varios pisos, cada uno con su caja: las ventas de estas mesas
+            quedan en esa caja aunque se cobren en otra.</p>
+        </div>
       }
     </app-form-dialog>
 
@@ -177,15 +196,24 @@ export function nextTableNames(existing: readonly string[], fromNumber: number, 
       background: var(--surface-alt);
     }
     .table-chip:hover { border-color: var(--brand); }
+    .zone-register {
+      display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.125rem 0.625rem; border-radius: 9999px;
+      background: var(--brand-soft); color: var(--brand-soft-text); font-size: 0.75rem; font-weight: 700;
+    }
   `,
 })
 export class DiningSetupComponent implements OnInit {
   private readonly api = inject(DiningApi);
   private readonly messages = inject(MessageService);
+  private readonly auth = inject(AuthService);
 
   protected readonly branches = signal<BranchOption[]>([]);
   protected readonly branchId = signal<string | null>(null);
   protected readonly zones = signal<DiningZone[] | null>(null);
+  /** Cajas de la sucursal; con dos o más se puede elegir la de cada zona (decisión 285). */
+  protected readonly registers = signal<RegisterOption[]>([]);
+  /** Caja por zona incluida en el plan (decisión 288). */
+  protected readonly zoneRegisters = computed(() => this.auth.hasPermission('plan:zone-registers'));
   /** Zona cuyo plano se está editando (decisión 284). */
   protected readonly layoutZone = signal<DiningZone | null>(null);
   protected readonly editingZone = signal<DiningZone | null>(null);
@@ -196,6 +224,8 @@ export class DiningSetupComponent implements OnInit {
   protected zoneName = '';
   protected zonePosition = 0;
   protected zoneActive = true;
+  /** '' = la caja de quien cobra. */
+  protected zoneRegister = '';
   protected bulkOpen = false;
   protected bulkFrom = 1;
   protected bulkCount = 10;
@@ -223,6 +253,8 @@ export class DiningSetupComponent implements OnInit {
 
   load(): void {
     this.api.zones(this.branchId()).subscribe((z) => this.zones.set(z));
+    this.api.registers(this.branchId()).pipe(catchError(() => of([] as RegisterOption[])))
+      .subscribe((r) => this.registers.set(r));
   }
 
   protected changeBranch(id: string): void {
@@ -236,14 +268,18 @@ export class DiningSetupComponent implements OnInit {
     this.zoneName = zone?.name ?? '';
     this.zonePosition = zone?.position ?? 0;
     this.zoneActive = zone?.active ?? true;
+    this.zoneRegister = zone?.cashRegister?.id ?? '';
     this.zoneOpen = true;
   }
 
   protected readonly zoneRequest = (): Observable<DiningZone> => {
     const zone = this.editingZone();
-    return zone
+    const saved = zone
       ? this.api.updateZone(zone.id, this.zoneName.trim(), Number(this.zonePosition) || 0, this.zoneActive)
       : this.api.createZone(this.branchId() ?? '', this.zoneName.trim());
+    const register = this.zoneRegister || null;
+    return saved.pipe(concatMap((z) => ((z.cashRegister?.id ?? null) === register ? of(z)
+      : this.api.setZoneCashRegister(z.id, register))));
   };
 
   protected openBulk(zone: DiningZone): void {

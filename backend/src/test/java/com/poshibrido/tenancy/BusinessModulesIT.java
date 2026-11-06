@@ -70,9 +70,9 @@ class BusinessModulesIT extends IntegrationTest {
         api.putWith(cashier.session(), "/api/v1/business-profile",
                 "{\"businessType\":\"RETAIL\",\"modules\":[\"CREDIT\"]}").andExpect(status().isForbidden());
 
-        // Farmacia es "Pronto": el dueño no la puede elegir (Restaurante ya es abierto, decisión 273).
+        // Farmacia ya es abierta (decisión 287): el dueño la elige como cualquier otro tipo.
         api.putWith(off, "/api/v1/business-profile", "{\"businessType\":\"PHARMACY\",\"modules\":[]}")
-                .andExpect(status().is(422));
+                .andExpect(status().isOk());
 
         // Al prender el fiado otra vez, la cuenta de Marta sigue ahí.
         api.ageRefreshRotations();
@@ -84,15 +84,17 @@ class BusinessModulesIT extends IntegrationTest {
 
         // Queda en la auditoría del negocio.
         api.getWith(on, "/api/v1/audit?action=BUSINESS_PROFILE_CHANGED").andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalElements").value(2));
+                .andExpect(jsonPath("$.totalElements").value(3));
     }
 
     @Test
-    void comingSoonTypesAreOnlyForThePlatformAdmin() throws Exception {
+    void everyTypeCanBeChosenWhenCreatingTheBusiness() throws Exception {
         Session platform = api.registerAndLogin("pronto");
-        api.postWith(platform, "/api/v1/tenants", """
-                {"slug":"%s","legalName":"Pronto S.A.S.","tradeName":"Pronto","businessType":"PHARMACY"}
-                """.formatted(TestApi.uniqueSlug("pronto"))).andExpect(status().is(422));
+        // Droguería abierta al público (decisión 287).
+        api.postWith(api.registerAndLogin("drogueria"), "/api/v1/tenants", """
+                {"slug":"%s","legalName":"Drogueria S.A.S.","tradeName":"Drogueria","businessType":"PHARMACY"}
+                """.formatted(TestApi.uniqueSlug("drogueria"))).andExpect(status().isCreated())
+                .andExpect(jsonPath("$.businessType").value("PHARMACY"));
         api.postWith(platform, "/api/v1/tenants", """
                 {"slug":"%s","legalName":"Taller S.A.S.","tradeName":"Taller","businessType":"SERVICES"}
                 """.formatted(TestApi.uniqueSlug("taller"))).andExpect(status().isCreated())

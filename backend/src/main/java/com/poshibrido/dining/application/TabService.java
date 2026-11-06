@@ -102,10 +102,12 @@ public class TabService {
         List<Object[]> found = dining.rows("""
                 SELECT t.id, t.number, t.kind, t.status, t.branch_id, t.table_id, dt.name, dz.name, t.guests,
                        t.customer_name, t.phone, t.address, t.notes, t.opened_at, t.opened_by, t.closed_at, t.sale_id,
-                       t.bill_requested_at
+                       t.bill_requested_at, r.id, r.name,
+                       EXISTS (SELECT 1 FROM cash_sessions s WHERE s.cash_register_id = r.id AND s.status = 'OPEN')
                 FROM tabs t
                 LEFT JOIN dining_tables dt ON dt.id = t.table_id
                 LEFT JOIN dining_zones dz ON dz.id = dt.zone_id
+                LEFT JOIN cash_registers r ON r.id = dz.cash_register_id
                 WHERE t.id = :t""", Map.of("t", id));
         if (found.isEmpty()) {
             throw new NotFoundException("Cuenta no encontrada.");
@@ -164,7 +166,7 @@ public class TabService {
                 (String) r[9]), (UUID) r[4], (UUID) r[5], (String) r[6], (String) r[7], Rows.integer(r[8]), (String) r[9],
                 (String) r[10], (String) r[11], (String) r[12], Rows.instant(r[13]), names.get((UUID) r[14]),
                 Rows.instant(r[15]), (UUID) r[16], total, items, kitchen.ticketsOfTab(id), charged, List.copyOf(saleIds),
-                Rows.instant(r[17]));
+                Rows.instant(r[17]), DiningService.registerOption(r[18], r[19], r[20]));
     }
 
     // ------------------------------------------------------------------ abrir y datos
@@ -529,6 +531,14 @@ public class TabService {
         if (!session.branchId().equals(tab.branchId())) {
             throw new BusinessRuleException("Esta cuenta es de otra sucursal: cóbrala desde una caja de esa sucursal.");
         }
+        // Zona con caja propia (decisión 285): la venta queda en la caja de la zona, aunque se cobre desde otra.
+        ZoneRegister zoneRegister = zoneRegisterOf(id);
+        OpenSession target = session;
+        if (zoneRegister != null && !zoneRegister.id().equals(session.cashRegisterId())) {
+            target = cash.lockOpenSessionOfRegister(zoneRegister.id())
+                    .orElseThrow(() -> new BusinessRuleException("La caja " + zoneRegister.name() + " (de la zona "
+                            + zoneRegister.zone() + ") está cerrada. Ábrela para cobrar las mesas de esa zona."));
+        }
         List<UUID> selected = parts == null || parts.isEmpty() ? pendingItems(id) : splitParts(id, parts);
         if (selected.isEmpty()) {
             throw new BusinessRuleException("La cuenta no tiene productos para cobrar.");
@@ -550,7 +560,7 @@ public class TabService {
                     openPrice ? (BigDecimal) i[4] : null, choices.getOrDefault((UUID) i[0], List.of()), (String) i[6]));
         }
         UUID saleId = sales.createForTab(new SaleCommands.Create(customerId, lines, payments, expectedTotal,
-                tab.label(), tip), idempotencyKey);
+                tab.label(), tip), idempotencyKey, target == session ? null : target.id());
         em.createNativeQuery("UPDATE tab_items SET sale_id = :s WHERE id IN (:ids)")
                 .setParameter("s", saleId).setParameter("ids", selected).executeUpdate();
         boolean closed = closeIfFullyCharged(id, saleId);
@@ -562,12 +572,31 @@ public class TabService {
         data.put("saleId", saleId);
         data.put("items", lines.size());
         data.put("partial", !closed);
+        if (target != session) {
+            data.put("cashRegister", zoneRegister.name());
+            data.put("zone", zoneRegister.zone());
+        }
         if (tip != null && tip.amount() != null && tip.amount().signum() > 0) {
             data.put("tip", tip.amount());
         }
         audit.log("TAB_CHARGED", "tab", id, null, data);
         notifier.tabChanged(tab.branchId(), id);
         return saleId;
+    }
+
+    private record ZoneRegister(UUID id, String name, String zone) {
+    }
+
+    /** La caja de la zona de la mesa de la cuenta, o nula (para llevar, domicilio o zona sin caja). */
+    private ZoneRegister zoneRegisterOf(UUID tabId) {
+        List<Object[]> found = dining.rows("""
+                SELECT r.id, r.name, dz.name FROM tabs t
+                JOIN dining_tables dt ON dt.id = t.table_id
+                JOIN dining_zones dz ON dz.id = dt.zone_id
+                JOIN cash_registers r ON r.id = dz.cash_register_id
+                WHERE t.id = :t""", Map.of("t", tabId));
+        return found.isEmpty() ? null
+                : new ZoneRegister((UUID) found.getFirst()[0], (String) found.getFirst()[1], (String) found.getFirst()[2]);
     }
 
     /** Líneas por cobrar: ni quitadas ni cobradas. */

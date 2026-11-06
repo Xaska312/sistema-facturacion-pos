@@ -2,6 +2,7 @@ package com.poshibrido.dining.api;
 
 import com.poshibrido.dining.application.DiningService;
 import com.poshibrido.dining.application.DiningViews.Floor;
+import com.poshibrido.dining.application.DiningViews.RegisterOption;
 import com.poshibrido.dining.application.DiningViews.TableView;
 import com.poshibrido.dining.application.DiningViews.ZoneView;
 import jakarta.validation.Valid;
@@ -76,6 +77,22 @@ public class DiningController {
     @PreAuthorize("hasAuthority('tables:manage')")
     public ZoneView updateZone(@PathVariable UUID id, @Valid @RequestBody ZoneUpdate request) {
         return service.updateZone(id, request.name(), request.position(), request.active());
+    }
+
+    /** {@code cashRegisterId} nulo = la caja de quien cobra (decisión 285). */
+    public record ZoneCashRegister(UUID cashRegisterId) {
+    }
+
+    @PutMapping("/zones/{id}/cash-register")
+    @PreAuthorize("hasAuthority('tables:manage')")
+    public ZoneView setZoneCashRegister(@PathVariable UUID id, @RequestBody ZoneCashRegister request) {
+        return service.setZoneCashRegister(id, request.cashRegisterId());
+    }
+
+    @GetMapping("/registers")
+    @PreAuthorize("hasAuthority('tables:manage')")
+    public List<RegisterOption> registers(@RequestParam(required = false) UUID branchId) {
+        return service.registers(branchId);
     }
 
     public record SpotRequest(@NotNull UUID tableId, BigDecimal x, BigDecimal y, BigDecimal w, BigDecimal h,

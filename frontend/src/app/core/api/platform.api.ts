@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
-  ActivationCode, BusinessType, CodeInput, CreatedCodes, PageResponse, PaymentInput, Plan, PlanInput, Subscription, SubscriptionRow,
+  ActivationCode, BusinessType, CodeInput, CreatedCodes, PageResponse, PaymentInput, Plan, PlanInput, Subscription, SubscriptionExtras, SubscriptionRow,
   SubscriptionStatus, TenantStatus, TenantSummary,
 } from './api.models';
 
@@ -137,6 +137,11 @@ export class PlatformApi {
 
   changePlan(tenantId: string, planCode: string): Observable<Subscription> {
     return this.http.put<Subscription>(`${this.base}/tenants/${tenantId}/subscription/plan`, { planCode });
+  }
+
+  /** Extras de un negocio (decisión 288). */
+  setExtras(tenantId: string, extras: Omit<SubscriptionExtras, 'active'>): Observable<Subscription> {
+    return this.http.put<Subscription>(`${this.base}/tenants/${tenantId}/subscription/extras`, extras);
   }
 
   codes(): Observable<ActivationCode[]> {

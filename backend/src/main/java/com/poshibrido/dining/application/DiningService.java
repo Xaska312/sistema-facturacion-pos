@@ -7,6 +7,7 @@ import com.poshibrido.dining.application.DiningViews.Floor;
 import com.poshibrido.dining.application.DiningViews.FloorTable;
 import com.poshibrido.dining.application.DiningViews.FloorZone;
 import com.poshibrido.dining.application.DiningViews.MapSpot;
+import com.poshibrido.dining.application.DiningViews.RegisterOption;
 import com.poshibrido.dining.application.DiningViews.TabSummary;
 import com.poshibrido.dining.application.DiningViews.TableView;
 import com.poshibrido.dining.application.DiningViews.ZoneView;
@@ -17,6 +18,7 @@ import com.poshibrido.shared.error.NotFoundException;
 import com.poshibrido.shared.id.Ids;
 import com.poshibrido.shared.security.CurrentActor;
 import com.poshibrido.tenancy.domain.BusinessModule;
+import com.poshibrido.tenancy.domain.PlanFeature;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
@@ -108,9 +110,13 @@ public class DiningService {
         }
         List<FloorZone> zones = new ArrayList<>();
         for (Object[] r : rows("""
-                SELECT id, name FROM dining_zones WHERE branch_id = :b AND active ORDER BY position, lower(name)""",
+                SELECT z.id, z.name, r.id, r.name,
+                       EXISTS (SELECT 1 FROM cash_sessions s WHERE s.cash_register_id = r.id AND s.status = 'OPEN')
+                FROM dining_zones z LEFT JOIN cash_registers r ON r.id = z.cash_register_id
+                WHERE z.branch_id = :b AND z.active ORDER BY z.position, lower(z.name)""",
                 Map.of("b", branchId))) {
-            zones.add(new FloorZone((UUID) r[0], (String) r[1], tables.getOrDefault((UUID) r[0], List.of())));
+            zones.add(new FloorZone((UUID) r[0], (String) r[1], tables.getOrDefault((UUID) r[0], List.of()),
+                    registerOption(r[2], r[3], r[4])));
         }
         return new Floor(branchId, options, zones, others);
     }
@@ -167,11 +173,13 @@ public class DiningService {
         }
         List<ZoneView> result = new ArrayList<>();
         for (Object[] r : rows("""
-                SELECT id, name, position, active FROM dining_zones WHERE branch_id = :b
-                ORDER BY position, lower(name)""", Map.of("b", branchId))) {
+                SELECT z.id, z.name, z.position, z.active, r.id, r.name,
+                       EXISTS (SELECT 1 FROM cash_sessions s WHERE s.cash_register_id = r.id AND s.status = 'OPEN')
+                FROM dining_zones z LEFT JOIN cash_registers r ON r.id = z.cash_register_id
+                WHERE z.branch_id = :b ORDER BY z.position, lower(z.name)""", Map.of("b", branchId))) {
             UUID id = (UUID) r[0];
             result.add(new ZoneView(id, branchId, (String) r[1], ((Number) r[2]).intValue(), (Boolean) r[3],
-                    tables.getOrDefault(id, List.of())));
+                    tables.getOrDefault(id, List.of()), registerOption(r[4], r[5], r[6])));
         }
         return result;
     }
@@ -216,6 +224,59 @@ public class DiningService {
                 .setParameter(5, Instant.now()).setParameter(6, CurrentActor.requireUserId()).executeUpdate();
         ZoneView after = zone(id);
         audit.log("DINING_ZONE_UPDATED", "dining_zone", id, zoneData(before), zoneData(after));
+        return after;
+    }
+
+    /** Cajas activas de la sucursal, para elegir la de una zona (decisión 285). */
+    @Transactional(readOnly = true)
+    public List<RegisterOption> registers(UUID requestedBranch) {
+        UUID branchId = resolveBranch(requestedBranch);
+        List<RegisterOption> result = new ArrayList<>();
+        for (Object[] r : rows("""
+                SELECT r.id, r.name,
+                       EXISTS (SELECT 1 FROM cash_sessions s WHERE s.cash_register_id = r.id AND s.status = 'OPEN')
+                FROM cash_registers r WHERE r.branch_id = :b AND r.active ORDER BY r.code""", Map.of("b", branchId))) {
+            result.add(registerOption(r[0], r[1], r[2]));
+        }
+        return result;
+    }
+
+    /**
+     * Caja de una zona (decisión 285): las cuentas de sus mesas se cobran en esa caja, aunque se cobren desde otra
+     * (dos pisos con su caja cada uno). {@code registerId} nulo = la caja de quien cobra, como siempre.
+     */
+    @Transactional
+    public ZoneView setZoneCashRegister(UUID zoneId, UUID registerId) {
+        ZoneView before = zone(zoneId);
+        requireBranch(before.branchId());
+        if (registerId != null && !CurrentActor.permissions().contains(PlanFeature.ZONE_REGISTERS.authority())) {
+            throw new BusinessRuleException("La caja por zona está en el plan Empresa. Escríbenos para activarla.");
+        }
+        if (registerId != null) {
+            List<Object[]> reg = rows("SELECT branch_id, active FROM cash_registers WHERE id = :r", Map.of("r", registerId));
+            if (reg.isEmpty()) {
+                throw new NotFoundException("Caja no encontrada.");
+            }
+            if (!before.branchId().equals(reg.getFirst()[0])) {
+                throw new BusinessRuleException("Esa caja es de otra sucursal.");
+            }
+            if (!Boolean.TRUE.equals(reg.getFirst()[1])) {
+                throw new BusinessRuleException("Esa caja está inactiva.");
+            }
+        }
+        em.createNativeQuery("""
+                UPDATE dining_zones SET cash_register_id = ?2, updated_at = ?3, updated_by = ?4, version = version + 1
+                WHERE id = ?1""")
+                .setParameter(1, zoneId).setParameter(2, registerId).setParameter(3, Instant.now())
+                .setParameter(4, CurrentActor.requireUserId()).executeUpdate();
+        ZoneView after = zone(zoneId);
+        Map<String, Object> from = new LinkedHashMap<>();
+        from.put("zone", before.name());
+        from.put("cashRegister", before.cashRegister() == null ? null : before.cashRegister().name());
+        Map<String, Object> to = new LinkedHashMap<>();
+        to.put("zone", after.name());
+        to.put("cashRegister", after.cashRegister() == null ? null : after.cashRegister().name());
+        audit.log("DINING_ZONE_CASH_REGISTER_UPDATED", "dining_zone", zoneId, from, to);
         return after;
     }
 
@@ -274,7 +335,10 @@ public class DiningService {
     // ------------------------------------------------------------------ apoyo
 
     ZoneView zone(UUID id) {
-        List<Object[]> found = rows("SELECT id, branch_id, name, position, active FROM dining_zones WHERE id = :z",
+        List<Object[]> found = rows("""
+                SELECT z.id, z.branch_id, z.name, z.position, z.active, r.id, r.name,
+                       EXISTS (SELECT 1 FROM cash_sessions s WHERE s.cash_register_id = r.id AND s.status = 'OPEN')
+                FROM dining_zones z LEFT JOIN cash_registers r ON r.id = z.cash_register_id WHERE z.id = :z""",
                 Map.of("z", id));
         if (found.isEmpty()) {
             throw new NotFoundException("Zona no encontrada.");
@@ -285,7 +349,12 @@ public class DiningService {
                 + "ORDER BY position, lower(name)", Map.of("z", id))) {
             tables.add(tableView(t));
         }
-        return new ZoneView((UUID) r[0], (UUID) r[1], (String) r[2], ((Number) r[3]).intValue(), (Boolean) r[4], tables);
+        return new ZoneView((UUID) r[0], (UUID) r[1], (String) r[2], ((Number) r[3]).intValue(), (Boolean) r[4], tables,
+                registerOption(r[5], r[6], r[7]));
+    }
+
+    static RegisterOption registerOption(Object id, Object name, Object open) {
+        return id == null ? null : new RegisterOption((UUID) id, (String) name, Boolean.TRUE.equals(open));
     }
 
     TableView table(UUID id) {

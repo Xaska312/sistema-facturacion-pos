@@ -4,8 +4,10 @@
  * texto, sube su versión aquí Y en LegalConsentService.java (backend): la app vuelve a pedir la aceptación a todos.
  * Al constituir la S.A.S., la persona natural y la cédula se cambian por la razón social y el NIT.
  */
-export const TERMS_VERSION = '1.1';
-export const PRIVACY_VERSION = '1.1';
+/** 1.2 (decisión 288): planes Emprende, Negocio y Empresa, extras, mejoras y precios. */
+export const TERMS_VERSION = '1.2';
+/** 1.2 (decisión 287): los datos de salud que registran las droguerías. */
+export const PRIVACY_VERSION = '1.2';
 
 /** Datos del responsable (persona natural con la marca XASKA). */
 export const LEGAL_OWNER = {
@@ -16,6 +18,10 @@ export const LEGAL_OWNER = {
   phone: '+57 316 778 4193 (también WhatsApp)',
   email: 'soporte@xaska.co',
   publishedOn: '31 de octubre de 2026',
+  /** La política 1.2 (datos de salud de las droguerías). */
+  privacyPublishedOn: '4 de noviembre de 2026',
+  /** Los términos 1.2 (planes nuevos). */
+  termsPublishedOn: '4 de noviembre de 2026',
   hosting: 'Contabo, con servidores en Estados Unidos',
 } as const;
 
@@ -49,7 +55,7 @@ export const PRIVACY_POLICY: LegalDocument = {
   kind: 'privacidad',
   title: 'Política de Tratamiento de Datos Personales',
   version: PRIVACY_VERSION,
-  intro: `Versión ${PRIVACY_VERSION} · vigente desde ${O.publishedOn}. Esta política cumple la Ley 1581 de 2012 y el `
+  intro: `Versión ${PRIVACY_VERSION} · vigente desde ${O.privacyPublishedOn}. Esta política cumple la Ley 1581 de 2012 y el `
     + 'Decreto 1074 de 2015 (que recoge el Decreto 1377 de 2013).',
   sections: [
     {
@@ -78,7 +84,10 @@ export const PRIVACY_POLICY: LegalDocument = {
           ],
         },
         {
-          p: 'No pedimos datos sensibles ni datos de niños, niñas o adolescentes. El servicio es para mayores de 18 años.',
+          p: 'Para nuestra relación contigo no pedimos datos sensibles ni datos de niños, niñas o adolescentes; el '
+            + 'servicio es para mayores de 18 años. Las droguerías pueden registrar en XASKA POS datos de salud de sus '
+            + 'pacientes (fórmulas médicas, antibióticos dispensados y eventos adversos): son datos sensibles de los que '
+            + 'el responsable es la droguería, y XASKA los trata como encargado (numeral 8).',
         },
       ],
     },
@@ -195,6 +204,12 @@ export const PRIVACY_POLICY: LegalDocument = {
           + 'XASKA frente a cualquier investigación, queja o sanción impuesta por la Superintendencia de Industria y '
           + 'Comercio (SIC) originada por la recolección indebida o falta de autorización previa, expresa e informada '
           + 'de los datos personales de sus propios clientes finales.',
+      }, {
+        p: 'Si el negocio registra datos sensibles, como los datos de salud de los pacientes de una droguería, debe '
+          + 'contar con la autorización expresa del titular o con la norma que lo obliga a llevarlos (dispensación de '
+          + 'medicamentos y farmacovigilancia), y nunca condicionar la venta a que el titular entregue más datos de '
+          + 'los necesarios. XASKA solo los muestra a las personas a las que el negocio les da ese permiso y deja '
+          + 'registro de quién los crea o los cambia.',
       }],
     },
     {
@@ -222,7 +237,7 @@ export const TERMS: LegalDocument = {
   kind: 'terminos',
   title: 'Términos y Condiciones de Uso',
   version: TERMS_VERSION,
-  intro: `Versión ${TERMS_VERSION} · vigentes desde ${O.publishedOn}. Al crear una cuenta o usar XASKA POS aceptas `
+  intro: `Versión ${TERMS_VERSION} · vigentes desde ${O.termsPublishedOn}. Al crear una cuenta o usar XASKA POS aceptas `
     + 'estos términos y la Política de Tratamiento de Datos Personales.',
   sections: [
     {
@@ -251,9 +266,21 @@ export const TERMS: LegalDocument = {
       title: '3. Planes, prueba y pagos',
       blocks: [{
         list: [
-          'Hay planes Básico y Pro, mensuales o anuales. Precios vigentes: Básico $49.900 al mes o $499.000 al año; '
-            + 'Pro $99.900 al mes o $999.000 al año (pesos colombianos). Los cambios de precio se avisan '
-            + 'con al menos 30 días y aplican desde el siguiente periodo.',
+          'Hay tres planes, mensuales o anuales (el año vale 10 meses), en pesos colombianos: Emprende $34.900 al mes '
+            + 'o $349.000 al año (lo esencial: vender, caja, inventario, fiado y reportes; 1 sede, 1 caja y 2 usuarios); '
+            + 'Negocio $69.900 al mes o $699.000 al año (además pedidos, cotizaciones, tallas y colores, báscula, compras, '
+            + 'impresión directa y el módulo de su sector, como mesas y cocina o droguería; 1 sede, 3 cajas y 6 '
+            + 'usuarios); y Empresa $129.900 al mes o $1.299.000 al año (todo, con auditoría, caja por zona y traslados; '
+            + 'hasta 5 sedes, con cajas y usuarios sin límite). La app muestra lo que incluye tu plan.',
+          'XASKA puede darle a un negocio, por acuerdo, módulos, funciones, sedes, cajas o usuarios de más que su plan '
+            + 'no incluye, por un tiempo o sin fecha de fin.',
+          'XASKA POS mejora todo el tiempo. Las funciones nuevas pueden llegar a todos los planes, solo a un plan '
+            + 'superior o como un módulo con costo aparte. Nunca te quitamos lo que ya incluye tu plan durante el '
+            + 'periodo que pagaste.',
+          'Si pagas un año, tu precio y lo que incluye tu plan quedan garantizados durante ese año. En los planes '
+            + 'mensuales, los cambios de precio se avisan con al menos 30 días y aplican desde el siguiente periodo.',
+          'Los negocios que ya tenían plan Básico o Pro antes de estos planes conservan lo que tienen y su precio '
+            + 'durante 12 meses; después eligen el plan nuevo que les sirva.',
           'Todo negocio nuevo tiene una prueba gratis de 14 días. Con un código promocional que entrega XASKA (cupos '
             + 'limitados) la prueba dura lo que diga el código.',
           'El pago se hace por adelantado, con las instrucciones que muestra la app. El prestador no es responsable de '

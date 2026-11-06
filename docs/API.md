@@ -533,6 +533,54 @@ Con el módulo `MEDICINES`. Permisos nuevos `pharmacy:dispense` y `pharmacy:reco
 | Método | Ruta | Permiso | Notas |
 |---|---|---|---|
 | PUT | `/dining/zones/{id}/layout` | `tables:manage` | `{tables: [{tableId, x, y, w, h, shape}]}`. La mesa se acomoda dentro del plano; redonda y cuadrada quedan igual de anchas que altas; tamaño 4 a 40. 422 si una mesa no es de la zona o la forma no existe. Auditoría `DINING_LAYOUT_UPDATED` |
+| GET | `/dining/registers?branchId=` | `tables:manage` | Cajas activas de la sucursal `[{id, name, open}]`, para elegir la de una zona (decisión 285) |
+| PUT | `/dining/zones/{id}/cash-register` | `tables:manage` | `{cashRegisterId}` (null = la caja de quien cobra). Las mesas de la zona se cobran en esa caja aunque se cobre desde otra; si está cerrada, cobrar da 422. La caja debe ser de la sucursal y estar activa. Auditoría `DINING_ZONE_CASH_REGISTER_UPDATED`. Zonas, salón (`zones[].cashRegister`) y cuenta (`chargeRegister`) traen `{id, name, open}` |
 | POST | `/tabs/{id}/bill-request` | `tables:operate` | `{requested}`: marca o desmarca que la mesa pidió la cuenta. Agregar productos lo desmarca. Auditoría `TAB_BILL_REQUESTED` / `TAB_BILL_REQUEST_CLEARED` |
 
 `POST /kitchen/tickets/{id}/status` con `DELIVERED`: quien tiene `kitchen:send` (el mesero) la marca entregada desde cualquier estado (antes solo desde Lista), para las cocinas que solo imprimen la comanda.
+
+## Cajón monedero (decisión 286)
+
+| Método | Ruta | Permiso | Notas |
+|---|---|---|---|
+| POST | `/cash/drawer-openings` | `cash:drawer` | `{reason?}` (máx. 200). Exige caja abierta (422 si no). Solo registra `CASH_DRAWER_OPENED` en la auditoría; el cajón lo abre XASKA Impresora. 204 |
+
+### XASKA Impresora (programa local, `http://127.0.0.1:17777`)
+
+Solo atiende orígenes de XASKA (`https://app.xaska.co`, `https://xaska.co`, `http://localhost:4200`; otros con `-origins`).
+
+| Método | Ruta | Cuerpo | Respuesta |
+|---|---|---|---|
+| GET | `/status` | — | `{app:"xaska-impresora", version, printers:[...], default}` |
+| POST | `/print` | `{printer, data (base64 ESC/POS, máx. 1 MB), doc}` | `{ok, printer}`; 422 si la impresora no existe, 502 si Windows no recibió el trabajo |
+| POST | `/drawer` | `{printer}` | Manda solo el pulso al cajón (ESC p 0 25 250) |
+
+## Calidad de la droguería (decisión 287)
+
+Todo con `pharmacy:quality` y el módulo Medicamentos. `branchId` opcional (la primera sucursal que atiende).
+
+| Método | Ruta | Notas |
+|---|---|---|
+| GET | `/pharmacy/quality/today?branchId=` | `{branchId, branches, date, shift, afternoonOpen, points:[{point, morning, afternoon}], missing:["Nevera · mañana"]}` |
+| GET | `/pharmacy/quality/points?branchId=` | Puntos de control |
+| POST | `/pharmacy/quality/points?branchId=` | `{name, kind: ROOM\|FRIDGE, tempMin, tempMax, humidityMin, humidityMax}` (la nevera no lleva humedad). 409 nombre repetido. Auditoría `QUALITY_POINT_CREATED` |
+| PUT | `/pharmacy/quality/points/{id}` | Nombre, rangos y `active` (el tipo no cambia). `QUALITY_POINT_UPDATED` |
+| POST | `/pharmacy/quality/readings` | `{pointId, shift: MORNING\|AFTERNOON, temperature, humidity, actionTaken}`. Solo hoy; la tarde desde las 12; fuera de rango exige `actionTaken` (422); repetida 409. Inmutable. `QUALITY_READING_RECORDED` |
+| GET | `/pharmacy/quality/readings?branchId=&from=&to=` | Hasta un año (por defecto el mes) |
+| GET | `/pharmacy/adverse-events?branchId=&from=&to=` | Por defecto el último año |
+| POST | `/pharmacy/adverse-events` | `{occurredOn, patientName, patientDocument?, patientAge?, productId?, productName, lotNumber?, description, serious, reportedOn?, invimaReference?}`. `ADVERSE_EVENT_RECORDED` |
+| PUT | `/pharmacy/adverse-events/{id}/report` | `{reportedOn, invimaReference?}` (entre la fecha del evento y hoy). `ADVERSE_EVENT_REPORTED` |
+| GET | `/pharmacy/visit-report?branchId=&from=&to=` | Informe para la visita: establecimiento y director técnico, `quality{points, readings, expected, missing, outOfRange}`, `expired`, `expiring`, `disposals`, `receipts`, `dispensations{total, antibiotics, controlled, voided}`, `antibiotics`, `adverseEvents` |
+
+`PHARMACY` ya se elige al crear el negocio y en `PUT /business-profile`. Política de datos 1.2.
+
+## Planes y extras (decisión 288)
+
+| Método | Ruta | Permiso | Notas |
+|---|---|---|---|
+| PUT | `/platform/plans/{code}` | Administrador de plataforma | Además `maxRegisters`, `modules[]` y `features[]` (nulos = no cambian) |
+| PUT | `/platform/tenants/{tenantId}/subscription/extras` | Administrador de plataforma | `{modules[], features[], branches, registers, users, note?, until?}`. Se suman al plan; `until` futuro o nulo (sin fin). Evento `SUBSCRIPTION_EXTRAS_CHANGED` |
+| GET | `/subscription` y `/platform/tenants/{id}/subscription` | — | Traen `entitled{maxBranches, maxUsers, maxRegisters, modules, features}`, `extras` (sin `note` para el negocio), `usage.registers` y `priceLockedUntil` |
+| GET/PUT | `/business-profile` | — | Traen `allowedModules` y `planName`; PUT da 422 si se prende un módulo que el plan no incluye |
+
+Funciones (`features`): `PURCHASES`, `DIRECT_PRINT`, `AUDIT`, `TRANSFERS`, `ZONE_REGISTERS`; en el token, `plan:purchases`, `plan:direct-print`… `POST /cash-registers` y activar una caja dan 422 al pasar el límite de cajas.

@@ -90,6 +90,9 @@ const REFRESH_MS = 15_000;
         <section class="mb-6" [attr.aria-labelledby]="'zone-' + z.id">
           <h2 [id]="'zone-' + z.id" class="text-base font-bold tracking-tight mb-3">
             {{ z.name }} <span class="text-sm font-normal text-muted">· {{ busy(z.tables) }} de {{ z.tables.length }} ocupadas</span>
+            @if (z.cashRegister; as cr) {
+              <span class="text-sm font-normal text-muted">· se cobra en {{ cr.name }}{{ cr.open ? '' : ' (cerrada)' }}</span>
+            }
           </h2>
           @if (view() === 'plan') {
             <app-table-plan [tables]="z.tables" [zoneName]="z.name" [now]="clock()" (pick)="pickTable($event)" />

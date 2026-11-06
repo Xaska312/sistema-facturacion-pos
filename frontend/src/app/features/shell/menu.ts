@@ -64,6 +64,15 @@ export const MENU: MenuItem[] = [
     module: 'module:medicines',
     section: 'Inventario',
   },
+  {
+    label: 'Temperatura y calidad',
+    route: '/app/farmacia/calidad',
+    icon: 'pi pi-sun',
+    glyph: 'quality',
+    permission: 'pharmacy:quality',
+    module: 'module:medicines',
+    section: 'Inventario',
+  },
   { label: 'Compras', route: '/app/compras', icon: 'pi pi-truck', glyph: 'purchases', permission: 'purchases:read', section: 'Inventario' },
   {
     label: 'Cuentas por pagar',

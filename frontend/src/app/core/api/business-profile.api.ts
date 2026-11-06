@@ -10,6 +10,9 @@ export interface BusinessProfile {
   modules: BusinessModule[];
   /** Solo el dueño los cambia. */
   canEdit: boolean;
+  /** Módulos que incluye su plan con los extras (decisión 288); sin el dato, todos. */
+  allowedModules?: BusinessModule[];
+  planName?: string | null;
 }
 
 @Injectable({ providedIn: 'root' })

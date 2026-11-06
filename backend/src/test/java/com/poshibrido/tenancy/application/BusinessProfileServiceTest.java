@@ -76,10 +76,7 @@ class BusinessProfileServiceTest {
     }
 
     @Test
-    void ownerCannotPickAComingSoonTypeButKeepsAPilotOne() {
-        assertThatThrownBy(() -> service.change(tenant.getId(), owner, BusinessType.PHARMACY, List.of()))
-                .isInstanceOf(BusinessRuleException.class);
-
+    void pharmacyIsOpenAndTheOwnerPicksItsModules() {
         service.assignByPlatform(tenant.getId(), UUID.randomUUID(), BusinessType.PHARMACY);
         assertThat(tenant.getModules()).containsExactlyInAnyOrder(BusinessModule.CREDIT, BusinessModule.ORDERS,
                 BusinessModule.QUOTES, BusinessModule.MEDICINES);

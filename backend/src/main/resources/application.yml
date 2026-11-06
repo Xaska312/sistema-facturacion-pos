@@ -83,7 +83,7 @@ app:
   subscription:
     # Prueba gratis del primer negocio de cada cuenta (días y plan cuyos límites aplica).
     trial-days: ${SUBSCRIPTION_TRIAL_DAYS:14}
-    trial-plan: PRO
+    trial-plan: EMPRESA
     # Prueba gratis sin código para el primer negocio de cada cuenta. Por defecto no: todo negocio nuevo necesita un
     # código de activación (la prueba se da con un código de 1 mes desde la consola de plataforma).
     trial-without-code: ${SUBSCRIPTION_TRIAL_WITHOUT_CODE:false}

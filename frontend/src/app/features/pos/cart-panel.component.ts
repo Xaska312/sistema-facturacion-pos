@@ -152,6 +152,12 @@ const UNDO_MS = 6000;
               <i class="pi pi-pause" aria-hidden="true"></i>Pausar venta
             </button>
           }
+          @if (drawer()) {
+            <button type="button" class="pos-btn on-brand" title="Abre el cajón monedero sin una venta (queda en la auditoría)"
+                    (click)="openDrawer.emit()">
+              <i class="pi pi-inbox" aria-hidden="true"></i>Abrir cajón
+            </button>
+          }
           @if (lastSaleNumber(); as number) {
             <button type="button" class="pos-btn on-brand" (click)="reprint.emit()">
               <i class="pi pi-print" aria-hidden="true"></i>Reimprimir {{ number }}
@@ -342,6 +348,9 @@ export class CartPanelComponent {
   readonly hold = output<void>();
   readonly customer = output<void>();
   readonly reprint = output<void>();
+  /** Botón "Abrir cajón" (decisión 286): con XASKA Impresora y el permiso cash:drawer. */
+  readonly drawer = input(false);
+  readonly openDrawer = output<void>();
 
   private readonly editor = viewChild.required<Popover>('editor');
   protected readonly cop = formatCop;
