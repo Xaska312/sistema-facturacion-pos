@@ -88,11 +88,17 @@ public class PurchaseService {
     public record ReceiveCommand(UUID branchId, UUID supplierId, String supplierInvoice, LocalDate invoiceDate,
                                  String paymentType, UUID paymentMethodId, LocalDate dueDate, String paymentReference,
                                  boolean checksConfirmed, BigDecimal coldChainTemperature, String notes,
-                                 List<LineCommand> lines) {
+                                 List<LineCommand> lines, UUID documentId) {
     }
 
+    /** {@code supplierCode}: el código de la línea en la factura del proveedor (decisión 290), para recordarlo. */
     public record LineCommand(UUID productId, UUID unitId, BigDecimal quantity, BigDecimal unitCost, BigDecimal taxRate,
-                              String lotNumber, LocalDate expirationDate, String status, String rejectReason) {
+                              String lotNumber, LocalDate expirationDate, String status, String rejectReason,
+                              String supplierCode) {
+        public LineCommand(UUID productId, UUID unitId, BigDecimal quantity, BigDecimal unitCost, BigDecimal taxRate,
+                           String lotNumber, LocalDate expirationDate, String status, String rejectReason) {
+            this(productId, unitId, quantity, unitCost, taxRate, lotNumber, expirationDate, status, rejectReason, null);
+        }
     }
 
     public record PaymentCommand(BigDecimal amount, UUID paymentMethodId, String reference) {
@@ -138,6 +144,18 @@ public class PurchaseService {
         if (!em.createNativeQuery("SELECT 1 FROM purchase_receipts WHERE supplier_id = ?1 AND supplier_invoice = ?2")
                 .setParameter(1, c.supplierId()).setParameter(2, invoice).getResultList().isEmpty()) {
             throw new ConflictException("La factura " + invoice + " de " + supplierName + " ya está registrada.");
+        }
+        if (c.documentId() != null) {
+            // La factura cargada (decisión 290) queda como soporte de una sola compra.
+            List<?> doc = em.createNativeQuery("""
+                    SELECT EXISTS (SELECT 1 FROM purchase_receipts r WHERE r.document_id = d.id)
+                    FROM purchase_documents d WHERE d.id = ?1""").setParameter(1, c.documentId()).getResultList();
+            if (doc.isEmpty()) {
+                throw new BusinessRuleException("La factura cargada ya no está: vuelve a cargarla.");
+            }
+            if (Boolean.TRUE.equals(doc.getFirst())) {
+                throw new ConflictException("Esa factura cargada ya es el soporte de otra compra.");
+            }
         }
         List<LineCommand> lines = c.lines() == null ? List.of() : c.lines();
         if (lines.isEmpty() || lines.size() > MAX_LINES) {
@@ -284,15 +302,16 @@ public class PurchaseService {
         em.createNativeQuery("""
                 INSERT INTO purchase_receipts (id, number, branch_id, supplier_id, supplier_invoice, invoice_date,
                     payment_type, due_date, subtotal, tax_total, total, rejected_total, checks_confirmed,
-                    cold_chain_temperature, notes, idempotency_key, received_by, received_at)
-                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, TRUE, ?13, ?14, ?15, ?16, ?17)""")
+                    cold_chain_temperature, notes, idempotency_key, received_by, received_at, document_id)
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, TRUE, ?13, ?14, ?15, ?16, ?17, ?18)""")
                 .setParameter(1, id).setParameter(2, number).setParameter(3, c.branchId())
                 .setParameter(4, c.supplierId()).setParameter(5, invoice).setParameter(6, Date.valueOf(c.invoiceDate()))
                 .setParameter(7, credit ? "CREDIT" : "PAID")
                 .setParameter(8, credit ? Date.valueOf(c.dueDate()) : null).setParameter(9, subtotal)
                 .setParameter(10, tax).setParameter(11, total).setParameter(12, rejected)
                 .setParameter(13, temperature).setParameter(14, notes).setParameter(15, key)
-                .setParameter(16, actor).setParameter(17, Timestamp.from(now)).executeUpdate();
+                .setParameter(16, actor).setParameter(17, Timestamp.from(now)).setParameter(18, c.documentId())
+                .executeUpdate();
         String label = "Compra #" + number + " · " + supplierName + " · factura " + invoice;
         for (Object[] r : rows) {
             em.createNativeQuery("""
@@ -311,6 +330,7 @@ public class PurchaseService {
                         baseCost, false, REFERENCE_TYPE, id, label);
             }
         }
+        rememberSupplierCodes(c.supplierId(), lines, actor, now);
         if (!credit && total.signum() > 0) {
             pay(id, total, method, c.paymentReference(), null, actor, label);
         }
@@ -322,8 +342,32 @@ public class PurchaseService {
         data.put("rejectedTotal", rejected);
         data.put("payment", credit ? "CREDIT" : method.name());
         data.put("lines", auditLines);
+        if (c.documentId() != null) {
+            data.put("document", c.documentId());
+        }
         audit.log("PURCHASE_RECEIVED", "purchase_receipt", id, null, data);
         return get(id);
+    }
+
+    /**
+     * Recuerda "código del proveedor → nuestro producto y presentación" de lo aceptado (decisión 290): la próxima factura
+     * de ese proveedor ya trae esas líneas emparejadas. Si cambia, gana lo último que confirmó una persona.
+     */
+    private void rememberSupplierCodes(UUID supplierId, List<LineCommand> lines, UUID actor, Instant now) {
+        for (LineCommand l : lines) {
+            String code = InvoiceDocumentService.norm(l.supplierCode());
+            if (code == null || "REJECTED".equals(l.status())) {
+                continue;
+            }
+            em.createNativeQuery("""
+                    INSERT INTO supplier_product_codes (supplier_id, supplier_code, product_id, unit_id, updated_at, updated_by)
+                    VALUES (?1, ?2, ?3, coalesce(?4, (SELECT base_unit_id FROM products WHERE id = ?3)), ?5, ?6)
+                    ON CONFLICT (supplier_id, supplier_code) DO UPDATE SET product_id = EXCLUDED.product_id,
+                        unit_id = EXCLUDED.unit_id, updated_at = EXCLUDED.updated_at, updated_by = EXCLUDED.updated_by""")
+                    .setParameter(1, supplierId).setParameter(2, code).setParameter(3, l.productId())
+                    .setParameter(4, l.unitId()).setParameter(5, Timestamp.from(now)).setParameter(6, actor)
+                    .executeUpdate();
+        }
     }
 
     // ------------------------------------------------------------------ devoluciones (Fase 13-3)
@@ -574,8 +618,10 @@ public class PurchaseService {
         }
         ReceiptSummary s = found.getFirst();
         Object[] extra = (Object[]) query("""
-                SELECT subtotal, tax_total, cold_chain_temperature, notes, checks_confirmed
-                FROM purchase_receipts WHERE id = :id""", params).getSingleResult();
+                SELECT r.subtotal, r.tax_total, r.cold_chain_temperature, r.notes, r.checks_confirmed, d.id, d.file_name,
+                       d.kind
+                FROM purchase_receipts r LEFT JOIN purchase_documents d ON d.id = r.document_id
+                WHERE r.id = :id""", params).getSingleResult();
         List<LineView> lines = new ArrayList<>();
         for (Object row : query("""
                 SELECT l.line_no, l.product_id, p.name, p.sku, u.code, l.quantity, l.unit_cost, l.tax_rate,
@@ -591,7 +637,8 @@ public class PurchaseService {
                     (String) r[12], (String) r[13], (BigDecimal) r[14], (BigDecimal) r[15]));
         }
         return new ReceiptView(s, (BigDecimal) extra[0], (BigDecimal) extra[1], (BigDecimal) extra[2],
-                (String) extra[3], (Boolean) extra[4], lines, payments(id), returns(id));
+                (String) extra[3], (Boolean) extra[4], lines, payments(id), returns(id),
+                extra[5] == null ? null : new PurchaseViews.DocumentRef((UUID) extra[5], (String) extra[6], (String) extra[7]));
     }
 
     private static final String SUMMARY_SQL = """

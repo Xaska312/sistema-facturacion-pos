@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
  */
 public enum PlanFeature {
     /** Compras, recepción técnica y cuentas por pagar (Fase 13-2). */
-    PURCHASES("purchases:read", "purchases:receive", "purchases:pay"),
+    PURCHASES("purchases:read", "purchases:receive", "purchases:pay", "purchases:import"),
     /** XASKA Impresora: tiquete directo en la térmica y "Abrir cajón" (decisión 286). */
     DIRECT_PRINT("cash:drawer"),
     /** Auditoría del negocio. */

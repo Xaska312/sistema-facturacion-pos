@@ -1,8 +1,12 @@
 import { Product } from '../../core/api/api.models';
+import { InvoiceDraftLine } from '../../core/api/purchases.api';
 import {
   ReceiptDraftLine,
   dueLabel,
   expiresSoon,
+  invoiceLine,
+  invoiceLineNotice,
+  invoiceTotalNotice,
   linesProblem,
   normalizeLot,
   purchaseBadge,
@@ -119,5 +123,46 @@ describe('recepción de compras (Fase 13-2, decisión 280)', () => {
     expect(returnProblem(drafts, '')).toContain('motivo');
     expect(returnProblem(drafts, 'Vencido')).toBeNull();
     expect(returnTotal(drafts)).toBe(2380);
+  });
+
+  describe('factura cargada (decisión 290)', () => {
+    function draftLine(over: Partial<InvoiceDraftLine> = {}): InvoiceDraftLine {
+      return { lineNo: 1, description: 'AMOXICILINA 500 MG', supplierCode: 'A-1', barcode: null, unitCode: '94',
+        packageUnit: false, quantity: 5, unitCost: 1100, taxRate: 0, discount: 0, lotNumber: 'X9', expirationDate: '2028-05-31',
+        match: { productId: 'p1', unitId: 'cj', by: 'MEMORY', lastCost: 1000 }, candidates: [], ...over };
+    }
+
+    it('llena la línea con lo de la factura, la presentación aprendida y el código del proveedor', () => {
+      const l = invoiceLine(product(), draftLine(), 3, 'MEMORY');
+      expect(l.unitId).toBe('cj');
+      expect(l.quantity).toBe(5);
+      expect(l.unitCost).toBe(1100);
+      expect(l.taxRate).toBe(0);
+      expect(l.lotNumber).toBe('X9');
+      expect(toLineInputs([l])[0].supplierCode).toBe('A-1');
+    });
+
+    it('resalta lo que hay que revisar: nombre parecido, caja como unidad y costo muy distinto', () => {
+      // 1.100 por caja de 10 = 110 por unidad frente a 1.000: bajó 89 %.
+      expect(invoiceLineNotice(invoiceLine(product(), draftLine(), 1, 'MEMORY'))).toContain('bajó 89 %');
+      const sameCost = draftLine({ unitCost: 10500 });
+      expect(invoiceLineNotice(invoiceLine(product(), sameCost, 1, 'MEMORY'))).toBeNull();
+      const byName = invoiceLine(product(), draftLine({ unitCost: 10500 }), 1, 'NAME');
+      expect(invoiceLineNotice(byName)).toContain('Se eligió por el nombre');
+      const box = invoiceLine(product(), draftLine({ packageUnit: true, unitCode: 'BX', unitCost: 1000,
+        match: { productId: 'p1', unitId: null, by: 'BARCODE', lastCost: 1000 } }), 1, 'BARCODE');
+      expect(invoiceLineNotice(box)).toContain('viene por caja');
+      expect(invoiceLineNotice({ ...box, rejected: true })).toBeNull();
+    });
+
+    it('avisa si lo cargado no cuadra con el total de la factura (lo rechazado cuenta)', () => {
+      const a = invoiceLine(product(), draftLine({ unitCost: 1000, quantity: 10 }), 1, 'MEMORY');
+      const total = 10 * 1000;
+      expect(invoiceTotalNotice([a], total, 0)).toBeNull();
+      expect(invoiceTotalNotice([{ ...a, rejected: true, rejectReason: 'Roto' }], total, 0)).toBeNull();
+      expect(invoiceTotalNotice([a], 12000, 0)).toContain('la factura dice');
+      expect(invoiceTotalNotice([a], 12000, 1)).toBeNull();
+      expect(invoiceTotalNotice([a], null, 0)).toBeNull();
+    });
   });
 });

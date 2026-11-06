@@ -32,7 +32,12 @@ public final class PurchaseViews {
 
     public record ReceiptView(ReceiptSummary summary, BigDecimal subtotal, BigDecimal taxTotal,
                               BigDecimal coldChainTemperature, String notes, boolean checksConfirmed,
-                              List<LineView> lines, List<PaymentView> payments, List<ReturnView> returns) {
+                              List<LineView> lines, List<PaymentView> payments, List<ReturnView> returns,
+                              DocumentRef document) {
+    }
+
+    /** La factura del proveedor guardada como soporte de la compra (decisión 290). */
+    public record DocumentRef(UUID id, String fileName, String kind) {
     }
 
     /** Devolución al proveedor (Fase 13-3): lo devuelto baja lo que se le debe. */

@@ -42,7 +42,7 @@ public class PurchaseController {
     public record LineRequest(@NotNull UUID productId, UUID unitId, @NotNull BigDecimal quantity,
                               @NotNull BigDecimal unitCost, BigDecimal taxRate, @Size(max = 40) String lotNumber,
                               LocalDate expirationDate, @Size(max = 10) String status,
-                              @Size(max = 200) String rejectReason) {
+                              @Size(max = 200) String rejectReason, @Size(max = 60) String supplierCode) {
     }
 
     public record ReceiveRequest(@NotNull UUID branchId, @NotNull UUID supplierId,
@@ -50,7 +50,7 @@ public class PurchaseController {
                                  @NotNull @Size(max = 10) String paymentType, UUID paymentMethodId, LocalDate dueDate,
                                  @Size(max = 100) String paymentReference, Boolean checksConfirmed,
                                  BigDecimal coldChainTemperature, @Size(max = 500) String notes,
-                                 @NotEmpty @Size(max = 300) List<@Valid LineRequest> lines) {
+                                 @NotEmpty @Size(max = 300) List<@Valid LineRequest> lines, UUID documentId) {
     }
 
     public record ReturnLineRequest(@NotNull Integer receiptLineNo, @NotNull BigDecimal quantity) {
@@ -70,10 +70,11 @@ public class PurchaseController {
     public ReceiptView receive(@Valid @RequestBody ReceiveRequest r,
                                @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         List<LineCommand> lines = r.lines().stream().map(l -> new LineCommand(l.productId(), l.unitId(), l.quantity(),
-                l.unitCost(), l.taxRate(), l.lotNumber(), l.expirationDate(), l.status(), l.rejectReason())).toList();
+                l.unitCost(), l.taxRate(), l.lotNumber(), l.expirationDate(), l.status(), l.rejectReason(),
+                l.supplierCode())).toList();
         return purchases.receive(new ReceiveCommand(r.branchId(), r.supplierId(), r.supplierInvoice(), r.invoiceDate(),
                 r.paymentType(), r.paymentMethodId(), r.dueDate(), r.paymentReference(),
-                Boolean.TRUE.equals(r.checksConfirmed()), r.coldChainTemperature(), r.notes(), lines), key);
+                Boolean.TRUE.equals(r.checksConfirmed()), r.coldChainTemperature(), r.notes(), lines, r.documentId()), key);
     }
 
     @GetMapping

@@ -99,6 +99,16 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     ],
     terms: ['costo-promedio'],
   },
+  '/app/compras/nueva': {
+    manual: 'cargar-factura',
+    title: 'Recibir mercancía',
+    tips: [
+      'Con "Cargar factura" subes el XML o el ZIP de la factura electrónica y XASKA llena proveedor, número y productos.',
+      'Lo que se encontró por nombre parecido, lo que viene por caja y los costos muy distintos salen resaltados.',
+      'Revisa cada producto, anota lote y vencimiento y rechaza lo que llegó mal: nada se guarda hasta registrar.',
+    ],
+    terms: ['costo-promedio'],
+  },
   '/app/cuentas-por-pagar': {
     manual: 'cuentas-por-pagar',
     title: 'Cuentas por pagar',

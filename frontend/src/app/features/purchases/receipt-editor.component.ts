@@ -1,4 +1,5 @@
 import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
+import { forkJoin } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
@@ -10,14 +11,16 @@ import { CatalogApi } from '../../core/api/catalog.api';
 import { InventoryApi } from '../../core/api/inventory.api';
 import { OrganizationApi } from '../../core/api/organization.api';
 import { PartiesApi } from '../../core/api/parties.api';
-import { PurchasePaymentType, PurchasesApi } from '../../core/api/purchases.api';
+import { InvoiceDraft, InvoiceDraftLine, PurchasePaymentType, PurchasesApi } from '../../core/api/purchases.api';
 import { newIdempotencyKey } from '../../core/api/sales.api';
 import { permissionFlag } from '../../core/auth/permission-flag';
 import { documentShortLabel } from '../../shared/document-types';
 import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
-import { formatCop } from '../../shared/money';
+import { formatCop, formatQuantity } from '../../shared/money';
+import { nitVerificationDigit } from '../../shared/nit';
 import { PageHeaderComponent } from '../../shared/page-header.component';
 import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
+import { ConfirmService } from '../../shared/confirm';
 import { addDays } from '../quotes/quote-text';
 import { isoDay } from '../orders/order-text';
 import { methodLabel } from '../pos/pos-labels';
@@ -27,6 +30,9 @@ import {
   ReceiptDraftLine,
   TECHNICAL_CHECKS,
   expiresSoon,
+  invoiceLine,
+  invoiceLineNotice,
+  invoiceTotalNotice,
   lineAmounts,
   linesProblem,
   needsTemperature,
@@ -50,6 +56,49 @@ import {
   template: `
     <app-page-header title="Recibir mercancía"
                      description="Registra lo que llegó contra la factura del proveedor. Revisa cada producto antes de aceptarlo." />
+
+    @if (canImport()) {
+      <section class="card p-4 mb-4 max-w-5xl flex flex-col gap-3" aria-label="Cargar la factura del proveedor">
+        <div class="flex flex-wrap items-center gap-3">
+          <div class="flex-1 min-w-56">
+            <h2 class="font-bold tracking-tight">Cargar la factura del proveedor</h2>
+            <p class="text-xs text-muted">Sube el XML o el ZIP de la factura electrónica que te llegó al correo. XASKA
+              llena lo que llegó para que lo revises; nada se guarda hasta que tú registres la recepción.</p>
+          </div>
+          <input #invoiceFile type="file" class="hidden" aria-label="Archivo de la factura"
+                 accept=".xml,.zip,application/xml,text/xml,application/zip,application/x-zip-compressed"
+                 (change)="importInvoice($event)" />
+          <p-button [label]="draft() ? 'Cargar otra' : 'Cargar factura'" icon="pi pi-upload" [loading]="importing()"
+                    [outlined]="draft() !== null" (onClick)="invoiceFile.click()" />
+        </div>
+        @if (draft(); as d) {
+          <div class="text-sm flex flex-wrap gap-x-4 gap-y-1">
+            <span><span class="text-muted">Factura</span> {{ d.invoiceNumber }}</span>
+            @if (d.total !== null) {
+              <span><span class="text-muted">Total</span> {{ cop(d.total) }}</span>
+            }
+            <span>{{ matchedCount() }} de {{ d.lines.length }} productos encontrados en XASKA</span>
+          </div>
+          @if (!supplier() && d.supplier.documentNumber) {
+            <div class="flex flex-wrap items-center gap-3 rounded-lg px-3 py-2 bg-warning-soft text-warning-soft-fg text-sm">
+              <span class="flex-1 min-w-48">{{ d.supplier.name || 'El proveedor' }} (NIT {{ d.supplier.documentNumber }})
+                no está en tus proveedores.</span>
+              @if (canManageParties()) {
+                <p-button label="Crear proveedor" size="small" [loading]="creatingSupplier()" (onClick)="createSupplier()" />
+              } @else {
+                <span>Pídele a quien maneja los proveedores que lo registre.</span>
+              }
+            </div>
+          }
+          @for (w of draftWarnings(); track $index) {
+            <p class="text-sm text-warning" role="status">{{ w }}</p>
+          }
+          @if (totalNotice(); as notice) {
+            <p class="text-sm text-warning" role="status">{{ notice }}</p>
+          }
+        }
+      </section>
+    }
 
     <section class="card p-4 grid gap-4 md:grid-cols-3 max-w-5xl">
       <fieldset class="flex flex-col gap-2 md:col-span-3">
@@ -120,12 +169,49 @@ import {
         </ul>
       }
 
+      @if (assigningLine(); as target) {
+        <p class="text-sm rounded-lg px-3 py-2 bg-info-soft text-info-soft-fg" role="status">
+          Busca arriba el producto para "{{ target.description }}" y tócalo.
+          <button type="button" class="underline ml-1" (click)="assigning.set(null)">Cancelar</button>
+        </p>
+      }
+      @if (pending().length > 0) {
+        <div class="border rounded-lg border-warning p-3 flex flex-col gap-2">
+          <h3 class="text-sm font-semibold">Sin producto en XASKA ({{ pending().length }})</h3>
+          <p class="text-xs text-muted">Elige a qué producto corresponde cada uno o créalo. XASKA lo recordará para la
+            próxima factura de este proveedor.</p>
+          @for (p of pending(); track p.lineNo; let i = $index) {
+            <article class="border-t pt-2 flex flex-col gap-2 text-sm" [attr.aria-label]="p.description">
+              <div class="flex flex-wrap justify-between gap-2">
+                <span class="font-medium">{{ p.description }}
+                  @if (p.supplierCode) { <span class="font-mono text-xs text-muted">· {{ p.supplierCode }}</span> }</span>
+                <span class="tabular-nums text-muted">{{ qty(p.quantity) }} × {{ cop(p.unitCost) }}{{ p.taxRate ? ' + IVA ' + p.taxRate + ' %' : '' }}</span>
+              </div>
+              <div class="flex flex-wrap gap-2 items-center">
+                @for (c of p.candidates; track c.productId) {
+                  <p-button size="small" [outlined]="true" [label]="'¿Es ' + c.name + '?'" (onClick)="assignCandidate(i, c.productId)" />
+                }
+                <p-button size="small" [text]="true" label="Buscar otro" icon="pi pi-search" (onClick)="startAssign(i)" />
+                @if (canCreateProducts()) {
+                  <a pButton class="p-button-sm" [text]="true" label="Crear producto" icon="pi pi-plus" target="_blank" rel="noopener"
+                     routerLink="/app/productos/nuevo" [queryParams]="newProductParams(p)"></a>
+                }
+                <p-button size="small" [text]="true" severity="danger" label="No lo recibo" (onClick)="dropPending(i)" />
+              </div>
+            </article>
+          }
+        </div>
+      }
+
       @for (line of lines(); track line.key; let i = $index) {
         <article class="border rounded-lg p-3 grid gap-3 md:grid-cols-12 items-end" [class.opacity-75]="line.rejected"
                  [attr.aria-label]="line.name">
           <div class="md:col-span-12 flex flex-wrap items-center justify-between gap-2">
             <span class="font-medium">
               <span class="font-mono text-sm text-muted">{{ line.sku }}</span> {{ line.name }}
+              @if (line.invoice; as inv) {
+                <span class="block text-xs text-muted font-normal">En la factura: {{ inv.description }}</span>
+              }
               @if (line.tracksLots) {
                 <span class="ml-1 text-xs rounded-full px-2 py-0.5 bg-info-soft text-info-soft-fg">Lote y vencimiento</span>
               }
@@ -182,6 +268,9 @@ import {
           </div>
           @if (!line.rejected && soon(line)) {
             <small class="md:col-span-12 text-xs text-warning">Vence en menos de 6 meses: confirma que lo aceptas así.</small>
+          }
+          @if (notice(line); as n) {
+            <small class="md:col-span-12 text-xs text-warning" role="status">{{ n }}</small>
           }
         </article>
       } @empty {
@@ -282,13 +371,18 @@ export class ReceiptEditorComponent implements OnInit, HasUnsavedChanges {
   private readonly cash = inject(CashApi);
   private readonly messages = inject(MessageService);
   private readonly router = inject(Router);
+  private readonly confirm = inject(ConfirmService);
   protected readonly canPay = permissionFlag('purchases:pay');
+  protected readonly canImport = permissionFlag('purchases:import');
+  protected readonly canManageParties = permissionFlag('parties:manage');
+  protected readonly canCreateProducts = permissionFlag('products:manage');
 
   protected readonly checks = TECHNICAL_CHECKS;
   protected readonly coldMin = COLD_MIN;
   protected readonly coldMax = COLD_MAX;
   protected readonly cop = formatCop;
   protected readonly docShort = documentShortLabel;
+  protected readonly qty = formatQuantity;
   protected readonly today = isoDay(new Date());
 
   protected readonly branches = signal<Branch[]>([]);
@@ -301,6 +395,13 @@ export class ReceiptEditorComponent implements OnInit, HasUnsavedChanges {
   protected readonly lines = signal<ReceiptDraftLine[]>([]);
   protected readonly methods = signal<PaymentMethod[]>([]);
   protected readonly saving = signal(false);
+  /** Factura cargada (decisión 290): el borrador y las líneas que aún no tienen producto. */
+  protected readonly draft = signal<InvoiceDraft | null>(null);
+  protected readonly pending = signal<InvoiceDraftLine[]>([]);
+  protected readonly importing = signal(false);
+  protected readonly creatingSupplier = signal(false);
+  /** Línea sin producto a la que se le está buscando uno (el buscador de arriba la completa). */
+  protected readonly assigning = signal<number | null>(null);
   /** Cambia con cada edición de los campos de las líneas (que no son señales) para recalcular totales y avisos. */
   private readonly version = signal(0);
 
@@ -323,6 +424,19 @@ export class ReceiptEditorComponent implements OnInit, HasUnsavedChanges {
 
   protected readonly totals = computed(() => (this.version(), receiptTotals(this.lines())));
   protected readonly coldNeeded = computed(() => (this.version(), needsTemperature(this.lines())));
+  protected readonly assigningLine = computed(() => {
+    const index = this.assigning();
+    return index === null ? null : this.pending()[index] ?? null;
+  });
+  protected readonly matchedCount = computed(() => {
+    const d = this.draft();
+    return d ? d.lines.length - this.pending().length : 0;
+  });
+  /** Los avisos del servidor, sin el del proveedor sin registrar (tiene su propio aviso con el botón). */
+  protected readonly draftWarnings = computed(() => (this.draft()?.warnings ?? [])
+    .filter((w) => !w.startsWith('El proveedor ') || !w.includes('no está registrado')));
+  protected readonly totalNotice = computed(() => (this.version(),
+  invoiceTotalNotice(this.lines(), this.draft()?.total ?? null, this.pending().length)));
 
   ngOnInit(): void {
     if (this.canPay()) {
@@ -411,7 +525,8 @@ export class ReceiptEditorComponent implements OnInit, HasUnsavedChanges {
       error: () => this.catalog.products({ page: 0, size: 10, search: code }).subscribe({
         next: (page) => {
           const tracked = page.content.filter((p) => p.trackInventory && p.active);
-          if (tracked.length === 1) {
+          // Al buscar el producto de una línea de la factura siempre se muestra la lista para elegir.
+          if (tracked.length === 1 && this.assigning() === null) {
             this.addProduct(tracked[0], null);
           } else if (tracked.length === 0) {
             this.messages.add({ severity: 'warn', summary: 'Sin resultados', detail: `No hay productos con "${code}".` });
@@ -427,11 +542,21 @@ export class ReceiptEditorComponent implements OnInit, HasUnsavedChanges {
 
   pick(product: Product): void {
     this.results.set([]);
+    const assigning = this.assigning();
+    if (assigning !== null) {
+      this.assign(assigning, product);
+      return;
+    }
     this.addProduct(product, null);
   }
 
   /** Un producto puede ir en varias líneas: un lote por línea. */
   private addProduct(product: Product, unitId: string | null): void {
+    const assigning = this.assigning();
+    if (assigning !== null) {
+      this.assign(assigning, product);
+      return;
+    }
     if (!product.trackInventory) {
       this.messages.add({ severity: 'warn', summary: 'No controla inventario', detail: product.name });
       return;
@@ -459,6 +584,157 @@ export class ReceiptEditorComponent implements OnInit, HasUnsavedChanges {
     this.touch();
   }
 
+  protected notice(line: ReceiptDraftLine): string | null {
+    this.version();
+    return invoiceLineNotice(line);
+  }
+
+  // ------------------------------------------------------------------ factura cargada (decisión 290)
+
+  importInvoice(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file || this.importing()) {
+      return;
+    }
+    if (this.lines().length > 0) {
+      this.confirm.ask({
+        header: 'Cargar la factura',
+        message: 'Lo que ya agregaste se reemplaza por lo que trae la factura.',
+        acceptLabel: 'Cargar factura',
+        accept: () => this.upload(file),
+      });
+      return;
+    }
+    this.upload(file);
+  }
+
+  private upload(file: File): void {
+    this.importing.set(true);
+    this.api.importInvoice(file).subscribe({
+      next: (draft) => this.applyDraft(draft),
+      error: () => this.importing.set(false),
+    });
+  }
+
+  /** Llena la recepción con la factura: proveedor, número, fecha, pago y las líneas emparejadas. */
+  private applyDraft(draft: InvoiceDraft): void {
+    const matched = draft.lines.filter((l) => l.match);
+    const ids = [...new Set(matched.map((l) => l.match!.productId))];
+    const products = ids.length === 0 ? null : forkJoin(ids.map((id) => this.catalog.product(id)));
+    const finish = (list: Product[]): void => {
+      const byId = new Map(list.map((p) => [p.id, p]));
+      const lines: ReceiptDraftLine[] = [];
+      const pending: InvoiceDraftLine[] = [];
+      for (const l of draft.lines) {
+        const product = l.match ? byId.get(l.match.productId) : undefined;
+        if (product && product.trackInventory) {
+          lines.push(invoiceLine(product, l, this.nextKey++, l.match!.by));
+        } else {
+          pending.push(l);
+        }
+      }
+      this.draft.set(draft);
+      this.lines.set(lines);
+      this.pending.set(pending);
+      this.assigning.set(null);
+      this.invoice = draft.invoiceNumber;
+      if (draft.invoiceDate && draft.invoiceDate <= this.today) {
+        this.invoiceDate = draft.invoiceDate;
+      }
+      if (draft.paymentType === 'CREDIT' || !this.canPay()) {
+        this.paymentType = 'CREDIT';
+        this.dueDate = draft.dueDate && draft.dueDate >= this.invoiceDate ? draft.dueDate : addDays(this.invoiceDate, 30);
+      } else if (draft.paymentType === 'PAID') {
+        this.paymentType = 'PAID';
+      }
+      if (draft.supplier.id && draft.supplier.active) {
+        this.parties.search('suppliers', { page: 0, size: 5 }, draft.supplier.documentNumber, false).subscribe((page) => {
+          const found = page.content.find((p) => p.id === draft.supplier.id);
+          if (found) {
+            this.supplier.set(found);
+          }
+        });
+      } else {
+        this.supplier.set(null);
+      }
+      this.importing.set(false);
+      this.touch();
+      this.messages.add({ severity: 'success', summary: 'Factura cargada',
+        detail: `${lines.length} de ${draft.lines.length} productos listos para revisar.`, life: 4000 });
+    };
+    if (products) {
+      products.subscribe({ next: finish, error: () => this.importing.set(false) });
+    } else {
+      finish([]);
+    }
+  }
+
+  createSupplier(): void {
+    const s = this.draft()?.supplier;
+    if (!s?.documentNumber || this.creatingSupplier()) {
+      return;
+    }
+    this.creatingSupplier.set(true);
+    this.parties.save('suppliers', null, {
+      personType: 'LEGAL', documentType: 'NIT', documentNumber: s.documentNumber,
+      verificationDigit: s.verificationDigit ?? nitVerificationDigit(s.documentNumber),
+      firstNames: null, lastNames: null, businessName: s.name?.trim() || 'Proveedor ' + s.documentNumber,
+      email: null, phone: null, address: null, cityCode: null,
+    }).subscribe({
+      next: (party) => {
+        this.creatingSupplier.set(false);
+        this.supplier.set(party);
+        this.messages.add({ severity: 'success', summary: 'Proveedor creado', detail: party.displayName, life: 3000 });
+      },
+      error: () => this.creatingSupplier.set(false),
+    });
+  }
+
+  startAssign(index: number): void {
+    this.assigning.set(index);
+    // Se busca por la palabra más larga de la descripción; si no aparece, se escribe otra en el buscador.
+    const words = (this.pending()[index]?.description ?? '').split(/[^\p{L}\p{N}]+/u).filter((w) => w.length >= 3);
+    this.code = words.sort((a, b) => b.length - a.length)[0] ?? '';
+    this.add();
+  }
+
+  assignCandidate(index: number, productId: string): void {
+    this.catalog.product(productId).subscribe((p) => this.assign(index, p));
+  }
+
+  /** La línea de la factura queda con el producto elegido; al registrar, XASKA recuerda el código del proveedor. */
+  private assign(index: number, product: Product): void {
+    const draftLine = this.pending()[index];
+    if (!draftLine) {
+      return;
+    }
+    if (!product.trackInventory) {
+      this.messages.add({ severity: 'warn', summary: 'No controla inventario', detail: product.name });
+      return;
+    }
+    this.lines.update((list) => [...list, invoiceLine(product, draftLine, this.nextKey++, 'MANUAL')]);
+    this.pending.update((list) => list.filter((_, i) => i !== index));
+    this.assigning.set(null);
+    this.touch();
+  }
+
+  dropPending(index: number): void {
+    this.pending.update((list) => list.filter((_, i) => i !== index));
+    if (this.assigning() === index) {
+      this.assigning.set(null);
+    }
+  }
+
+  protected newProductParams(line: InvoiceDraftLine): Record<string, string> {
+    const params: Record<string, string> = { nombre: line.description, costo: String(line.unitCost) };
+    if (line.barcode) {
+      params['codigo'] = line.barcode;
+    }
+    return params;
+  }
+
   // ------------------------------------------------------------------ guardar
 
   protected problem(): string | null {
@@ -474,6 +750,9 @@ export class ReceiptEditorComponent implements OnInit, HasUnsavedChanges {
     }
     if (!this.branchId) {
       return 'Elige la sucursal que recibe.';
+    }
+    if (this.pending().length > 0) {
+      return 'Elige el producto de las líneas de la factura que no están en XASKA (o márcalas como no recibidas).';
     }
     const lines = linesProblem(this.lines(), this.today) ?? temperatureProblem(this.lines(), this.temperature);
     if (lines) {
@@ -492,7 +771,8 @@ export class ReceiptEditorComponent implements OnInit, HasUnsavedChanges {
   }
 
   hasUnsavedChanges(): boolean {
-    return !this.saved && (this.lines().length > 0 || this.invoice.trim() !== '' || this.supplier() !== null);
+    return !this.saved && (this.lines().length > 0 || this.invoice.trim() !== '' || this.supplier() !== null
+      || this.draft() !== null);
   }
 
   @HostListener('window:beforeunload', ['$event'])
@@ -519,6 +799,7 @@ export class ReceiptEditorComponent implements OnInit, HasUnsavedChanges {
       coldChainTemperature: this.coldNeeded() && this.temperature !== null ? Number(this.temperature) : null,
       notes: this.notes.trim() || null,
       lines: toLineInputs(this.lines()),
+      documentId: this.draft()?.documentId ?? null,
     };
     // Reintentar lo mismo no duplica; si el borrador cambió, es otra recepción.
     const fingerprint = JSON.stringify(body);
