@@ -11,10 +11,12 @@ import com.poshibrido.dining.application.DiningViews.ItemModifier;
 import com.poshibrido.dining.application.DiningViews.TabItemView;
 import com.poshibrido.dining.application.DiningViews.TabView;
 import com.poshibrido.sales.application.ModifierChoices;
+import com.poshibrido.sales.application.PriceChangedException;
 import com.poshibrido.sales.application.SaleCommands;
 import com.poshibrido.sales.application.SaleCommands.ItemLine;
 import com.poshibrido.sales.application.SaleCommands.PaymentLine;
 import com.poshibrido.sales.application.SaleService;
+import com.poshibrido.sales.domain.SaleCalculator;
 import com.poshibrido.shared.error.BusinessRuleException;
 import com.poshibrido.shared.error.ConflictException;
 import com.poshibrido.shared.error.ForbiddenException;
@@ -65,6 +67,7 @@ public class TabService {
     private final PricingApi pricing;
     private final ModifierApi modifiers;
     private final SaleService sales;
+    private final DiningMenuService menus;
     private final CashApi cash;
     private final MemberDirectory members;
     private final AuditLogger audit;
@@ -531,14 +534,6 @@ public class TabService {
         if (!session.branchId().equals(tab.branchId())) {
             throw new BusinessRuleException("Esta cuenta es de otra sucursal: cóbrala desde una caja de esa sucursal.");
         }
-        // Zona con caja propia (decisión 285): la venta queda en la caja de la zona, aunque se cobre desde otra.
-        ZoneRegister zoneRegister = zoneRegisterOf(id);
-        OpenSession target = session;
-        if (zoneRegister != null && !zoneRegister.id().equals(session.cashRegisterId())) {
-            target = cash.lockOpenSessionOfRegister(zoneRegister.id())
-                    .orElseThrow(() -> new BusinessRuleException("La caja " + zoneRegister.name() + " (de la zona "
-                            + zoneRegister.zone() + ") está cerrada. Ábrela para cobrar las mesas de esa zona."));
-        }
         List<UUID> selected = parts == null || parts.isEmpty() ? pendingItems(id) : splitParts(id, parts);
         if (selected.isEmpty()) {
             throw new BusinessRuleException("La cuenta no tiene productos para cobrar.");
@@ -550,38 +545,233 @@ public class TabService {
             choices.computeIfAbsent((UUID) m[0], k -> new ArrayList<>())
                     .add(new ModifierChoices.Choice((UUID) m[1], ((Number) m[2]).intValue()));
         }
+        List<UUID> lineItems = new ArrayList<>();
         List<ItemLine> lines = new ArrayList<>();
         for (Object[] i : dining.rows("""
                 SELECT id, product_id, unit_id, quantity, base_price, open_price, note FROM tab_items
                 WHERE id IN (:ids) ORDER BY position, added_at""", Map.of("ids", selected))) {
             boolean openPrice = (Boolean) i[5];
             // El precio que manda es el vigente (decisión del usuario); en precio libre, el que se escribió.
+            lineItems.add((UUID) i[0]);
             lines.add(new ItemLine((UUID) i[1], (UUID) i[2], (BigDecimal) i[3], null,
                     openPrice ? (BigDecimal) i[4] : null, choices.getOrDefault((UUID) i[0], List.of()), (String) i[6]));
         }
-        UUID saleId = sales.createForTab(new SaleCommands.Create(customerId, lines, payments, expectedTotal,
-                tab.label(), tip), idempotencyKey, target == session ? null : target.id());
-        em.createNativeQuery("UPDATE tab_items SET sale_id = :s WHERE id IN (:ids)")
-                .setParameter("s", saleId).setParameter("ids", selected).executeUpdate();
+
+        // A qué caja va cada línea: la de su carta (decisión 294), si no la de la zona de la mesa (decisión 285), si
+        // no la de quien cobra. Una venta por caja.
+        List<ChargeGroup> groups = chargeGroups(tab, session, lines, lineItems);
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("label", tab.label());
+        data.put("items", lines.size());
+        if (tip != null && tip.amount() != null && tip.amount().signum() > 0) {
+            data.put("tip", tip.amount());
+        }
+        UUID saleId;
+        if (groups.size() == 1) {
+            ChargeGroup g = groups.getFirst();
+            saleId = sales.createForTab(new SaleCommands.Create(customerId, g.lines(), payments, expectedTotal,
+                    tab.label(), tip), idempotencyKey, g.session() == session ? null : g.session().id());
+            markCharged(g.items(), saleId);
+            if (g.session() != session) {
+                data.put("cashRegister", g.registerName());
+                data.put(g.menu() ? "menu" : "zone", g.label());
+            }
+        } else {
+            saleId = chargeSplit(tab, customerId, payments, expectedTotal, idempotencyKey, tip, session, groups);
+            data.put("split", groups.stream().map(g -> Map.of("label", g.label(), "cashRegister", g.registerName()))
+                    .toList());
+        }
         boolean closed = closeIfFullyCharged(id, saleId);
         if (!closed) {
             touch(id);
         }
-        Map<String, Object> data = new LinkedHashMap<>();
-        data.put("label", tab.label());
         data.put("saleId", saleId);
-        data.put("items", lines.size());
         data.put("partial", !closed);
-        if (target != session) {
-            data.put("cashRegister", zoneRegister.name());
-            data.put("zone", zoneRegister.zone());
-        }
-        if (tip != null && tip.amount() != null && tip.amount().signum() > 0) {
-            data.put("tip", tip.amount());
-        }
         audit.log("TAB_CHARGED", "tab", id, null, data);
         notifier.tabChanged(tab.branchId(), id);
         return saleId;
+    }
+
+    /**
+     * Las líneas que van a una caja. {@code label}: la carta o la zona ("Piso 2"), o la caja de quien cobra; {@code menu}:
+     * si la caja la puso una carta.
+     */
+    private record ChargeGroup(UUID registerId, String registerName, String label, boolean menu, OpenSession session,
+                               List<ItemLine> lines, List<UUID> items) {
+    }
+
+    private List<ChargeGroup> chargeGroups(Tab tab, OpenSession session, List<ItemLine> lines, List<UUID> items) {
+        ZoneRegister zone = zoneRegisterOf(tab.id());
+        Map<UUID, DiningMenuService.Route> routes = menus.routes(tab.branchId(),
+                lines.stream().map(ItemLine::productId).collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new)));
+        record Target(UUID registerId, String registerName, String label, boolean menu) {
+        }
+        Map<UUID, Target> targets = new LinkedHashMap<>();
+        Map<UUID, List<Integer>> byRegister = new LinkedHashMap<>();
+        for (int k = 0; k < lines.size(); k++) {
+            DiningMenuService.Route route = routes.get(lines.get(k).productId());
+            Target t = route != null ? new Target(route.cashRegisterId(), route.cashRegisterName(), route.menuName(), true)
+                    : zone != null ? new Target(zone.id(), zone.name(), zone.zone(), false)
+                    : new Target(session.cashRegisterId(), null, null, false);
+            Target known = targets.get(t.registerId());
+            if (known == null) {
+                targets.put(t.registerId(), t);
+            } else if (t.label() != null && known.label() != null && !known.label().contains(t.label())) {
+                // Dos cartas con la misma caja: una sola venta, con los dos nombres.
+                targets.put(t.registerId(), new Target(known.registerId(), known.registerName(),
+                        known.label() + " y " + t.label(), known.menu() || t.menu()));
+            } else if (known.label() == null && t.label() != null) {
+                targets.put(t.registerId(), t);
+            }
+            byRegister.computeIfAbsent(t.registerId(), r -> new ArrayList<>()).add(k);
+        }
+        // Las cajas de las demás cartas se bloquean en orden fijo (dos cobros a la vez no se bloquean entre sí).
+        Map<UUID, OpenSession> sessions = new LinkedHashMap<>();
+        sessions.put(session.cashRegisterId(), session);
+        for (UUID registerId : byRegister.keySet().stream().sorted().toList()) {
+            if (sessions.containsKey(registerId)) {
+                continue;
+            }
+            Target t = targets.get(registerId);
+            OpenSession other = cash.lockOpenSessionOfRegister(registerId)
+                    .orElseThrow(() -> new BusinessRuleException(t.menu()
+                            ? "La caja " + t.registerName() + " (de la carta " + t.label() + ") está cerrada. Ábrela "
+                              + "para cobrar lo de esa carta."
+                            : "La caja " + t.registerName() + " (de la zona " + t.label() + ") está cerrada. Ábrela "
+                              + "para cobrar las mesas de esa zona."));
+            sessions.put(registerId, other);
+        }
+        String ownName = null;
+        List<ChargeGroup> groups = new ArrayList<>();
+        for (Map.Entry<UUID, List<Integer>> e : byRegister.entrySet()) {
+            Target t = targets.get(e.getKey());
+            String registerName = t.registerName();
+            String label = t.label();
+            if (registerName == null || label == null) {
+                if (ownName == null) {
+                    ownName = dining.rows("SELECT name, id FROM cash_registers WHERE id = :r",
+                            Map.of("r", e.getKey())).stream().map(r -> (String) r[0]).findFirst().orElse("Caja");
+                }
+                registerName = registerName == null ? ownName : registerName;
+                label = label == null ? registerName : label;
+            }
+            groups.add(new ChargeGroup(e.getKey(), registerName, label, t.menu(), sessions.get(e.getKey()),
+                    e.getValue().stream().map(lines::get).toList(), e.getValue().stream().map(items::get).toList()));
+        }
+        return groups;
+    }
+
+    /**
+     * Cobro partido entre cajas (decisión 294): una venta por caja, cada una con sus productos. El pago se reparte en
+     * proporción a lo que debe cada venta; la propina y el cambio quedan en la venta principal, la de la caja que cobra
+     * (o, si nada es de esa caja, la más grande). Las ventas quedan unidas en {@code sale_split_parts} para el tiquete
+     * con las partes. Devuelve la venta principal.
+     */
+    private UUID chargeSplit(Tab tab, UUID customerId, List<PaymentLine> payments, BigDecimal expectedTotal,
+                             String idempotencyKey, SaleCommands.Tip tip, OpenSession session,
+                             List<ChargeGroup> unordered) {
+        List<BigDecimal> dues = new ArrayList<>();
+        for (ChargeGroup g : unordered) {
+            dues.add(sales.quoteTab(customerId, g.lines()));
+        }
+        BigDecimal total = dues.stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+        if (expectedTotal != null && expectedTotal.setScale(2, RoundingMode.HALF_UP).compareTo(total) != 0) {
+            throw new PriceChangedException(List.of(), expectedTotal, total);
+        }
+        // La principal va primero: la de quien cobra o, si no hay, la que más debe.
+        int primary = -1;
+        for (int g = 0; g < unordered.size(); g++) {
+            if (unordered.get(g).session() == session) {
+                primary = g;
+            }
+        }
+        if (primary < 0) {
+            primary = 0;
+            for (int g = 1; g < dues.size(); g++) {
+                if (dues.get(g).compareTo(dues.get(primary)) > 0) {
+                    primary = g;
+                }
+            }
+        }
+        List<ChargeGroup> groups = new ArrayList<>(unordered);
+        List<BigDecimal> owed = new ArrayList<>(dues);
+        groups.addFirst(groups.remove(primary));
+        owed.addFirst(owed.remove(primary));
+
+        // Pagos de toda la cuenta: los mismos controles que una venta (cubren el total, cambio solo en efectivo).
+        Map<UUID, CashApi.PaymentMethodRef> methods = cash.paymentMethods();
+        List<SaleCalculator.PaymentInput> inputs = new ArrayList<>();
+        List<PaymentLine> paid = payments == null ? List.of() : payments;
+        for (PaymentLine p : paid) {
+            CashApi.PaymentMethodRef method = p.paymentMethodId() == null ? null : methods.get(p.paymentMethodId());
+            if (method == null || !method.active()) {
+                throw new BusinessRuleException("Medio de pago no válido.");
+            }
+            inputs.add(new SaleCalculator.PaymentInput(method.affectsCash(), p.amount()));
+        }
+        BigDecimal tipAmount = tip != null && tip.amount() != null && tip.amount().signum() > 0
+                ? SaleCalculator.money(tip.amount()) : BigDecimal.ZERO;
+        SaleCalculator.Settlement settlement;
+        try {
+            settlement = SaleCalculator.settle(total.add(tipAmount), inputs);
+        } catch (IllegalArgumentException ex) {
+            throw new BusinessRuleException(ex.getMessage());
+        }
+        List<BigDecimal> applied = new ArrayList<>(settlement.applied());
+        int tipIndex = -1;
+        if (tipAmount.signum() > 0) {
+            for (int j = paid.size() - 1; j >= 0; j--) {
+                if (paid.get(j).paymentMethodId().equals(tip.paymentMethodId()) && applied.get(j).compareTo(tipAmount) >= 0) {
+                    tipIndex = j;
+                    applied.set(j, applied.get(j).subtract(tipAmount));
+                    break;
+                }
+            }
+            if (tipIndex < 0) {
+                throw new BusinessRuleException("La propina se paga con uno de los medios de pago de la cuenta y no "
+                        + "puede superar lo pagado con ese medio.");
+            }
+        }
+        List<List<BigDecimal>> shares = SplitPayments.allocate(applied, owed);
+
+        String base = idempotencyKey == null ? null
+                : idempotencyKey.length() > 96 ? idempotencyKey.substring(0, 96) : idempotencyKey;
+        UUID primarySale = null;
+        for (int g = 0; g < groups.size(); g++) {
+            ChargeGroup group = groups.get(g);
+            List<PaymentLine> mine = new ArrayList<>();
+            for (int j = 0; j < paid.size(); j++) {
+                BigDecimal amount = shares.get(g).get(j);
+                if (g == 0) {
+                    // La principal lleva la propina y lo entregado de más (el cambio sale de su efectivo).
+                    if (j == tipIndex) {
+                        amount = amount.add(tipAmount);
+                    }
+                    amount = amount.add(SaleCalculator.money(paid.get(j).amount()).subtract(settlement.applied().get(j)));
+                }
+                if (amount.signum() > 0) {
+                    mine.add(new PaymentLine(paid.get(j).paymentMethodId(), amount, paid.get(j).reference()));
+                }
+            }
+            String key = g == 0 ? idempotencyKey : base == null ? null : base + "-p" + (g + 1);
+            UUID saleId = sales.createForTab(new SaleCommands.Create(customerId, group.lines(), mine, null, tab.label(),
+                    g == 0 ? tip : null), key, group.session() == session ? null : group.session().id());
+            markCharged(group.items(), saleId);
+            if (g == 0) {
+                primarySale = saleId;
+            }
+            em.createNativeQuery("""
+                    INSERT INTO sale_split_parts (sale_id, charge_id, position, label) VALUES (?1, ?2, ?3, ?4)""")
+                    .setParameter(1, saleId).setParameter(2, primarySale).setParameter(3, g + 1)
+                    .setParameter(4, group.label().length() > 80 ? group.label().substring(0, 80) : group.label())
+                    .executeUpdate();
+        }
+        return primarySale;
+    }
+
+    private void markCharged(List<UUID> items, UUID saleId) {
+        em.createNativeQuery("UPDATE tab_items SET sale_id = :s WHERE id IN (:ids)")
+                .setParameter("s", saleId).setParameter("ids", items).executeUpdate();
     }
 
     private record ZoneRegister(UUID id, String name, String zone) {

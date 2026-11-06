@@ -95,6 +95,21 @@ describe('tiquete ESC/POS (decisión 286)', () => {
     expect(indexOf(testPageBytes(58, false, 'POS-58', logo), [0x1d, 0x76, 0x30, 0x00])).toBeGreaterThan(0);
   });
 
+  it('cobro partido entre cajas: un solo tiquete con cada carta y el total de todo (decisión 294)', () => {
+    const piso1 = { ...sale, documentNumber: 'POS-20', splitLabel: 'Piso 1', total: 18000, changeAmount: 2000 } as Sale;
+    const piso2 = { ...sale, documentNumber: 'POS-21', splitLabel: 'Piso 2', total: 22000, changeAmount: 0,
+      items: [{ ...sale.items[0], name: 'Margarita', unitPrice: 22000, grossAmount: 22000, modifiers: [] }],
+      payments: [{ ...sale.payments[0], tendered: 22000 }] } as Sale;
+    const t = text(receiptBytes({ ...piso1, notes: 'Mesa 4', together: [piso1, piso2] } as Sale, { width: 80, date: 'x' }));
+    expect(t).toContain('Mesa 4');
+    expect(t).toContain('Piso 1 · Tiquete POS-20');
+    expect(t).toContain('Piso 2 · Tiquete POS-21');
+    expect(t).toContain('Margarita');
+    expect(t).toMatch(/TOTAL +\$ ?40\.000/);
+    expect(t).toMatch(/Efectivo +\$ ?42\.000/);
+    expect(t).not.toContain('Tiquete POS-15');
+  });
+
   it('base64 para el programa y preferencias por defecto', () => {
     expect(toBase64(Uint8Array.from([0x1b, 0x70, 0x00]))).toBe('G3AA');
     localStorage.removeItem('xaska.printer');

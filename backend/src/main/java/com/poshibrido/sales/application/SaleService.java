@@ -248,87 +248,10 @@ public class SaleService {
         }
 
         // 1. Precios, impuestos y descuentos: siempre los del servidor.
-        Set<UUID> productIds = new LinkedHashSet<>();
-        lines.forEach(l -> productIds.add(l.productId()));
-        Map<UUID, StockProduct> products = catalog.stockProducts(productIds);
-        // Adiciones (Fase 12b-1): solo en el POS (no en pedidos ni cotizaciones) y con el módulo encendido.
-        boolean modifiersOn = !options.agreedPrices()
-                && CurrentActor.permissions().contains(BusinessModule.MODIFIERS.authority());
-        if (!modifiersOn && lines.stream().anyMatch(l -> l.modifiers() != null && !l.modifiers().isEmpty())) {
-            throw new BusinessRuleException("Las adiciones están apagadas en este negocio. El dueño las prende en "
-                    + "Ajustes → Tipo y módulos.");
-        }
-        Map<UUID, List<ModifierApi.Group>> groups = modifiersOn ? modifiers.activeGroupsFor(productIds) : Map.of();
-        List<PricedLine> priced = new ArrayList<>();
-        List<PriceChangedException.Change> changes = new ArrayList<>();
-        BigDecimal maxDiscount = BigDecimal.ZERO;
-        int lineNo = 0;
-        for (ItemLine line : lines) {
-            lineNo++;
-            StockProduct product = products.get(line.productId());
-            if (product == null) {
-                throw new NotFoundException("Producto no encontrado.");
-            }
-            ResolvedPrice price = pricing.price(line.productId(), line.unitId(), customer.priceListId());
-            if (options.agreedPrices()) {
-                // Pedido por encargo o cotización: manda el precio acordado.
-                BigDecimal agreed = line.expectedUnitPrice();
-                if (agreed == null || agreed.signum() <= 0) {
-                    throw new BusinessRuleException("Falta el precio de " + price.name() + ".");
-                }
-                price = price.withTypedPrice(agreed.setScale(2, RoundingMode.HALF_UP));
-            } else if (price.openPrice()) {
-                // Precio libre (decisión 253): manda el precio que escribió el cajero (queda en la línea de la venta).
-                if (!CurrentActor.permissions().contains(OPEN_PRICE_PERMISSION)) {
-                    throw new ForbiddenException("Tu usuario no puede vender productos de precio libre ("
-                            + price.name() + "). Pídele el permiso al dueño del negocio.");
-                }
-                BigDecimal typed = line.expectedUnitPrice();
-                if (typed == null || typed.signum() <= 0) {
-                    throw new BusinessRuleException("Escribe el precio de " + price.name() + ".");
-                }
-                price = price.withTypedPrice(typed.setScale(2, RoundingMode.HALF_UP));
-            }
-            BigDecimal quantity = line.quantity().setScale(4, RoundingMode.HALF_UP);
-            if (quantity.signum() <= 0) {
-                throw new BusinessRuleException("La cantidad de " + product.name() + " debe ser mayor que cero.");
-            }
-            BigDecimal baseQuantity = quantity.multiply(price.factor()).setScale(4, RoundingMode.HALF_UP);
-            if (baseQuantity.signum() <= 0 || baseQuantity.compareTo(MAX_BASE_QUANTITY) > 0) {
-                // Cero por redondeo (0,0001 × 0,0001) o más de lo que cabe en la columna: antes daba 500 (QA INV-8).
-                throw new BusinessRuleException("La cantidad de " + product.name() + " no es válida.");
-            }
-            if (!product.baseUnitAllowsDecimals() && baseQuantity.stripTrailingZeros().scale() > 0) {
-                throw new BusinessRuleException(product.name() + " se vende en unidades enteras de "
-                        + product.baseUnitCode() + ".");
-            }
-            BigDecimal discount = line.discountPercent() == null
-                    ? BigDecimal.ZERO.setScale(2)
-                    : line.discountPercent().setScale(2, RoundingMode.HALF_UP);
-            if (discount.signum() < 0 || discount.compareTo(HUNDRED) > 0) {
-                throw new BusinessRuleException("El descuento debe estar entre 0 % y 100 %.");
-            }
-            maxDiscount = maxDiscount.max(discount);
-            ModifierChoices.Result chosen = modifiersOn
-                    ? ModifierChoices.resolve(product.name(), groups.get(line.productId()), line.modifiers(), true)
-                    : ModifierChoices.Result.NONE;
-            // El precio de la línea incluye las adiciones; nunca baja de cero ("Sin licor" en un producto barato).
-            BigDecimal unitPrice = price.price().add(chosen.perUnit()).max(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP);
-            String note = blankToNull(line.note());
-            if (note != null && note.length() > MAX_NOTE) {
-                throw new BusinessRuleException("La nota de " + product.name() + " admite hasta " + MAX_NOTE
-                        + " caracteres.");
-            }
-            LineAmounts amounts = SaleCalculator.line(unitPrice, quantity, discount, price.taxRate(),
-                    cfg.pricesIncludeTax());
-            if (!options.agreedPrices() && !price.openPrice() && line.expectedUnitPrice() != null
-                    && line.expectedUnitPrice().compareTo(price.price()) != 0) {
-                changes.add(new PriceChangedException.Change(lineNo, price.sku(), price.name(),
-                        line.expectedUnitPrice(), price.price()));
-            }
-            priced.add(new PricedLine(lineNo, line, product, price, quantity, baseQuantity, discount, amounts, unitPrice,
-                    chosen, note));
-        }
+        Priced pricedAll = priceLines(lines, options, customer, cfg);
+        List<PricedLine> priced = pricedAll.lines();
+        List<PriceChangedException.Change> changes = pricedAll.changes();
+        BigDecimal maxDiscount = pricedAll.maxDiscount();
         if (maxDiscount.compareTo(cfg.maxDiscountPercent()) > 0
                 && !CurrentActor.permissions().contains(DISCOUNT_PERMISSION)) {
             throw new ForbiddenException("Necesitas el permiso de descuentos para dar más del "
@@ -526,6 +449,106 @@ public class SaleService {
         events.publishEvent(new SaleCompleted(CurrentTenant.require().id(), saleId, next.prefix(), next.number(),
                 customer.id(), sale.getTotal(), Instant.now()));
         return saleId;
+    }
+
+    /** Precios de las líneas con los del servidor (precio vigente o acordado, adiciones, descuento e impuesto). */
+    private record Priced(List<PricedLine> lines, List<PriceChangedException.Change> changes, BigDecimal maxDiscount) {
+    }
+
+    private Priced priceLines(List<ItemLine> lines, Options options, CustomerRef customer, BusinessSettings cfg) {
+        Set<UUID> productIds = new LinkedHashSet<>();
+        lines.forEach(l -> productIds.add(l.productId()));
+        Map<UUID, StockProduct> products = catalog.stockProducts(productIds);
+        // Adiciones (Fase 12b-1): solo en el POS (no en pedidos ni cotizaciones) y con el módulo encendido.
+        boolean modifiersOn = !options.agreedPrices()
+                && CurrentActor.permissions().contains(BusinessModule.MODIFIERS.authority());
+        if (!modifiersOn && lines.stream().anyMatch(l -> l.modifiers() != null && !l.modifiers().isEmpty())) {
+            throw new BusinessRuleException("Las adiciones están apagadas en este negocio. El dueño las prende en "
+                    + "Ajustes → Tipo y módulos.");
+        }
+        Map<UUID, List<ModifierApi.Group>> groups = modifiersOn ? modifiers.activeGroupsFor(productIds) : Map.of();
+        List<PricedLine> priced = new ArrayList<>();
+        List<PriceChangedException.Change> changes = new ArrayList<>();
+        BigDecimal maxDiscount = BigDecimal.ZERO;
+        int lineNo = 0;
+        for (ItemLine line : lines) {
+            lineNo++;
+            StockProduct product = products.get(line.productId());
+            if (product == null) {
+                throw new NotFoundException("Producto no encontrado.");
+            }
+            ResolvedPrice price = pricing.price(line.productId(), line.unitId(), customer.priceListId());
+            if (options.agreedPrices()) {
+                // Pedido por encargo o cotización: manda el precio acordado.
+                BigDecimal agreed = line.expectedUnitPrice();
+                if (agreed == null || agreed.signum() <= 0) {
+                    throw new BusinessRuleException("Falta el precio de " + price.name() + ".");
+                }
+                price = price.withTypedPrice(agreed.setScale(2, RoundingMode.HALF_UP));
+            } else if (price.openPrice()) {
+                // Precio libre (decisión 253): manda el precio que escribió el cajero (queda en la línea de la venta).
+                if (!CurrentActor.permissions().contains(OPEN_PRICE_PERMISSION)) {
+                    throw new ForbiddenException("Tu usuario no puede vender productos de precio libre ("
+                            + price.name() + "). Pídele el permiso al dueño del negocio.");
+                }
+                BigDecimal typed = line.expectedUnitPrice();
+                if (typed == null || typed.signum() <= 0) {
+                    throw new BusinessRuleException("Escribe el precio de " + price.name() + ".");
+                }
+                price = price.withTypedPrice(typed.setScale(2, RoundingMode.HALF_UP));
+            }
+            BigDecimal quantity = line.quantity().setScale(4, RoundingMode.HALF_UP);
+            if (quantity.signum() <= 0) {
+                throw new BusinessRuleException("La cantidad de " + product.name() + " debe ser mayor que cero.");
+            }
+            BigDecimal baseQuantity = quantity.multiply(price.factor()).setScale(4, RoundingMode.HALF_UP);
+            if (baseQuantity.signum() <= 0 || baseQuantity.compareTo(MAX_BASE_QUANTITY) > 0) {
+                // Cero por redondeo (0,0001 × 0,0001) o más de lo que cabe en la columna: antes daba 500 (QA INV-8).
+                throw new BusinessRuleException("La cantidad de " + product.name() + " no es válida.");
+            }
+            if (!product.baseUnitAllowsDecimals() && baseQuantity.stripTrailingZeros().scale() > 0) {
+                throw new BusinessRuleException(product.name() + " se vende en unidades enteras de "
+                        + product.baseUnitCode() + ".");
+            }
+            BigDecimal discount = line.discountPercent() == null
+                    ? BigDecimal.ZERO.setScale(2)
+                    : line.discountPercent().setScale(2, RoundingMode.HALF_UP);
+            if (discount.signum() < 0 || discount.compareTo(HUNDRED) > 0) {
+                throw new BusinessRuleException("El descuento debe estar entre 0 % y 100 %.");
+            }
+            maxDiscount = maxDiscount.max(discount);
+            ModifierChoices.Result chosen = modifiersOn
+                    ? ModifierChoices.resolve(product.name(), groups.get(line.productId()), line.modifiers(), true)
+                    : ModifierChoices.Result.NONE;
+            // El precio de la línea incluye las adiciones; nunca baja de cero ("Sin licor" en un producto barato).
+            BigDecimal unitPrice = price.price().add(chosen.perUnit()).max(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP);
+            String note = blankToNull(line.note());
+            if (note != null && note.length() > MAX_NOTE) {
+                throw new BusinessRuleException("La nota de " + product.name() + " admite hasta " + MAX_NOTE
+                        + " caracteres.");
+            }
+            LineAmounts amounts = SaleCalculator.line(unitPrice, quantity, discount, price.taxRate(),
+                    cfg.pricesIncludeTax());
+            if (!options.agreedPrices() && !price.openPrice() && line.expectedUnitPrice() != null
+                    && line.expectedUnitPrice().compareTo(price.price()) != 0) {
+                changes.add(new PriceChangedException.Change(lineNo, price.sku(), price.name(),
+                        line.expectedUnitPrice(), price.price()));
+            }
+            priced.add(new PricedLine(lineNo, line, product, price, quantity, baseQuantity, discount, amounts, unitPrice,
+                    chosen, note));
+        }
+        return new Priced(priced, changes, maxDiscount);
+    }
+
+    /**
+     * Total de la venta del cobro de una cuenta de mesa, sin registrarla (decisión 294): para repartir el pago entre las
+     * cajas de cada carta antes de registrar una venta por caja. Mismos precios que {@link #createForTab}.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public BigDecimal quoteTab(UUID customerId, List<ItemLine> items) {
+        CustomerRef customer = customers.find(customerId == null ? CustomerApi.FINAL_CONSUMER_ID : customerId)
+                .orElseThrow(() -> new NotFoundException("Cliente no encontrado."));
+        return Totals.of(priceLines(requireItems(items), Options.TAB, customer, settings.current()).lines()).total();
     }
 
     // ------------------------------------------------------------------ anulación

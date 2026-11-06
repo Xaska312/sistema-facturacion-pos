@@ -769,6 +769,10 @@ export interface Sale {
   receipt: ReceiptHeader;
   /** Propina voluntaria (Fase 12b-5): aparte del total, sin impuestos. */
   tip?: SaleTip | null;
+  /** Cobro de una mesa partido entre cajas (decisión 294): la carta de esta parte ("Piso 2"). */
+  splitLabel?: string | null;
+  /** Todas las partes del mismo cobro, en orden (también esta); null si no se partió. */
+  together?: Sale[] | null;
 }
 
 export interface SaleTip {

@@ -363,6 +363,31 @@ export const MANUAL: readonly ManualChapter[] = [
         who: 'Propietario y Administrador.',
       },
       {
+        id: 'cartas-por-piso',
+        title: 'Cartas por piso',
+        summary: 'Para un local con dos pisos y una carta en cada uno (comida rápida abajo, cócteles arriba): lo de cada '
+          + 'carta se cobra en la caja de su piso, aunque la mesa esté en el otro piso o el cliente pague en la otra caja. '
+          + 'Plan Empresa.',
+        steps: [
+          'Necesitas una caja por piso (Configuración → Cajas). Luego entra a Mesas → "Configurar" → "Cartas por piso".',
+          'Toca "Nueva carta", escribe su nombre (Piso 2), elige en qué caja se cobra y marca sus categorías (Cócteles, '
+            + 'Cervezas). Si un producto suelto es de esa carta, búscalo y agrégalo.',
+          'Al pedir en una mesa, arriba de los productos elige la carta ("Piso 1", "Piso 2" o "Todas las cartas"). El '
+            + 'equipo recuerda la última que usaste.',
+          'Al cobrar una cuenta con productos de las dos cartas, XASKA registra una venta por caja (la hamburguesa en la '
+            + 'Caja 1 y la margarita en la Caja 2) y reparte el pago en proporción. El cliente recibe un solo tiquete con '
+            + 'las dos partes y el total.',
+        ],
+        tips: [
+          'Las dos cajas deben estar abiertas: si la de una carta está cerrada, XASKA dice cuál abrir.',
+          'La propina y el cambio quedan en la caja donde se cobró. Al cerrar, cada caja ve lo vendido de su carta; el '
+            + 'efectivo se cuadra entre las dos.',
+          'Lo que no está en ninguna carta se cobra en la caja de la zona de la mesa o, si no tiene, en la de quien cobra.',
+          'Una carta inactiva deja de mandar: lo suyo vuelve a cobrarse como antes.',
+        ],
+        who: 'La configura el Propietario o el Administrador; la caja cobra como siempre.',
+      },
+      {
         id: 'mapa-mesas',
         title: 'El mapa de mesas y sus colores',
         summary: 'En Mesas ves el plano de cada zona con las mesas donde están en el local, y cada una del color de en qué va.',

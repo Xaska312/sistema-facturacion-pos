@@ -1,4 +1,4 @@
-import { Component, DestroyRef, OnInit, computed, inject, input, output, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SkeletonModule } from 'primeng/skeleton';
 import { Observable, catchError, forkJoin, map, of } from 'rxjs';
@@ -29,8 +29,10 @@ const EMPTY_MODELS: PageResponse<ProductModelRow> = { content: [], page: 0, size
       <button type="button" class="chip" [attr.aria-pressed]="tab() === 'favorites'" (click)="select('favorites')">
         <i class="pi pi-star-fill text-xs" aria-hidden="true"></i>Favoritos
       </button>
-      <button type="button" class="chip" [attr.aria-pressed]="tab() === 'all'" (click)="select('all')">Todos</button>
-      @for (c of categories(); track c.id) {
+      @if (onlyCategories() === null) {
+        <button type="button" class="chip" [attr.aria-pressed]="tab() === 'all'" (click)="select('all')">Todos</button>
+      }
+      @for (c of visibleCategories(); track c.id) {
         <button type="button" class="chip" [attr.aria-pressed]="tab() === c.id" (click)="select(c.id)">{{ c.name }}</button>
       }
     </nav>
@@ -208,6 +210,11 @@ export class ProductGridComponent implements OnInit {
   /** Existencia por producto en la sucursal de la caja (unidad base); sin dato, no se muestra. */
   readonly stock = input<ReadonlyMap<string, number>>(new Map());
   readonly disabled = input(false);
+  /**
+   * Solo estas categorías (una carta por piso, decisión 294); null = todas. Con una carta elegida no hay "Todos": se
+   * abre en su primera categoría.
+   */
+  readonly onlyCategories = input<readonly string[] | null>(null);
   readonly pick = output<Product>();
   /** Un modelo con tallas: el POS pregunta cuál. */
   readonly pickModel = output<ProductModelRow>();
@@ -217,6 +224,10 @@ export class ProductGridComponent implements OnInit {
   protected readonly initial = initial;
   protected readonly placeholders = [0, 1, 2, 3, 4, 5, 6, 7];
   protected readonly categories = signal<Category[]>([]);
+  protected readonly visibleCategories = computed(() => {
+    const only = this.onlyCategories();
+    return only === null ? this.categories() : this.categories().filter((c) => only.includes(c.id));
+  });
   protected readonly tab = signal<GridTab>('all');
   protected readonly loading = signal(false);
   private readonly loaded = signal<Product[]>([]);
@@ -244,6 +255,35 @@ export class ProductGridComponent implements OnInit {
   });
 
   private readonly favoriteSet = computed(() => new Set(this.favoriteIds()));
+
+  constructor() {
+    // Al cambiar de carta: su primera categoría (o Favoritos si no tiene); sin carta, Todos. También cuando las
+    // categorías llegan con una carta ya elegida.
+    let lastOnly: string | undefined;
+    let lastLoaded = false;
+    effect(() => {
+      const only = this.onlyCategories();
+      const loaded = this.categories().length > 0;
+      const key = only === null ? '*' : only.join(',');
+      const changed = lastOnly !== undefined && key !== lastOnly;
+      const arrived = loaded && !lastLoaded && only !== null;
+      lastOnly = key;
+      lastLoaded = loaded;
+      if (!changed && !arrived) {
+        return;
+      }
+      untracked(() => {
+        const visible = this.visibleCategories();
+        if (only === null) {
+          this.select('all');
+        } else if (visible.length > 0) {
+          this.select(visible[0].id);
+        } else {
+          this.select('favorites');
+        }
+      });
+    });
+  }
 
   ngOnInit(): void {
     this.catalog.categories().pipe(takeUntilDestroyed(this.destroyRef))

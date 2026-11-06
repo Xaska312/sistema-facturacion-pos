@@ -46,6 +46,7 @@ import { printableLogo } from '../../core/printing/printable-logo';
 import { PrintAgentService } from '../../core/printing/print-agent.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { saleWhatsAppLink } from '../sales/sale-text';
+import { grandChange, grandTotal } from '../../shared/receipt/split-receipt';
 import { TourService } from '../../shared/tour/tour.service';
 import {
   CartPanelComponent, LineDiscountChange, LineNoteChange, LinePriceChange, LineQuantityChange, RemovedLine,
@@ -607,9 +608,12 @@ const STOCK_PAGES = 5;
             <i class="pi pi-check text-3xl" aria-hidden="true"></i>
           </span>
           <p class="text-lg font-semibold" role="status">Venta registrada</p>
-          <p class="text-muted">Total {{ cop(sale.total) }} · {{ sale.customerName }}</p>
-          @if (sale.changeAmount > 0) {
-            <p class="text-3xl font-bold rounded-xl bg-success-soft text-success-soft-fg px-4 py-2 tabular-nums">Cambio: {{ cop(sale.changeAmount) }}</p>
+          <p class="text-muted">Total {{ cop(grandTotal(sale)) }} · {{ sale.customerName }}</p>
+          @if (sale.together && sale.together.length > 1) {
+            <p class="text-sm text-muted">Se registró en {{ sale.together.length }} cajas: {{ splitText(sale) }}</p>
+          }
+          @if (grandChange(sale) > 0) {
+            <p class="text-3xl font-bold rounded-xl bg-success-soft text-success-soft-fg px-4 py-2 tabular-nums">Cambio: {{ cop(grandChange(sale)) }}</p>
           }
         </div>
         <details class="mt-4">
@@ -2093,6 +2097,13 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   }
 
   /** Recibo en texto para enviarlo por WhatsApp (decisión 261). */
+  /** Cobro de una mesa partido entre cajas (decisión 294): el total y el cambio de todo. */
+  protected readonly grandTotal = grandTotal;
+  protected readonly grandChange = grandChange;
+  protected splitText(sale: Sale): string {
+    return (sale.together ?? []).map((p) => `${p.splitLabel} ${this.cop(p.total)}`).join(' · ');
+  }
+
   protected saleWhatsApp(sale: Sale): string {
     return saleWhatsAppLink(sale);
   }

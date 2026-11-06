@@ -272,6 +272,11 @@ actualizar (paso 11).
 | Impresión directa (286) | Reconstruir la imagen **web**: compila XASKA Impresora (Go) y la sirve en `/descargas/XASKA-Impresora.exe`; el Caddyfile permite `connect-src http://127.0.0.1:17777` |
 | Calidad 13-6 (287) | Política de datos 1.2: todos los usuarios la aceptan de nuevo al entrar |
 | Planes (288) | Plataforma V16: planes Emprende, Negocio y Empresa; Básico y Pro quedan como anteriores con precio congelado 12 meses. Revisa precios y lo que incluye cada plan en la consola → Planes antes de vender. Términos 1.2 (se aceptan de nuevo) |
+| Factura del proveedor (290) | Negocio V36 (soportes de compras en la base de cada negocio). Nada que configurar |
+| Avisos sin bucle (291) | `RATE_LIMIT_EVENTS` es opcional (30 por defecto). Nada más |
+| Logo en la impresión directa (292) | Solo la imagen **web**. XASKA Impresora no cambia |
+| Mesero solo mesas (293) | Negocio V37: el rol Mesero deja de cobrar (solo si nadie lo había editado). Avísales a los restaurantes cuyos meseros cobran |
+| Cartas por piso (294) | Negocio V38. Se configuran en Mesas → Configurar → Cartas por piso (plan Empresa) |
 
 Prueba rápida después de actualizar: entrar (aceptar lo que pida), una venta, una mesa, descargar XASKA Impresora
 desde Ajustes, crear una droguería de prueba y revisar en los logs del backend que las migraciones se aplicaron.

@@ -248,6 +248,13 @@ export const routes: Routes = [
         loadComponent: () => import('./features/dining/dining-setup.component').then((m) => m.DiningSetupComponent),
       },
       {
+        path: 'mesas/cartas',
+        title: 'Cartas por piso',
+        canActivate: [permissionGuard],
+        data: { permission: 'tables:manage', module: 'module:tables' },
+        loadComponent: () => import('./features/dining/menus.component').then((m) => m.MenusComponent),
+      },
+      {
         path: 'mesas/cuenta/:id',
         title: 'Cuenta',
         canActivate: [permissionGuard],

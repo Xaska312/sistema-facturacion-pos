@@ -54,6 +54,26 @@ export interface FloorTable {
 }
 
 /** Una caja de la sucursal; open: tiene un turno abierto ahora. */
+/** Carta por piso (decisión 294): su caja, sus categorías y productos sueltos. */
+export interface DiningMenu {
+  id: string;
+  branchId: string;
+  name: string;
+  cashRegister: { id: string; name: string };
+  position: number;
+  active: boolean;
+  categories: { id: string; name: string }[];
+  products: { id: string; name: string }[];
+}
+
+export interface DiningMenuInput {
+  name: string;
+  cashRegisterId: string;
+  active: boolean;
+  categoryIds: string[];
+  productIds: string[];
+}
+
 export interface RegisterOption {
   id: string;
   name: string;
@@ -245,6 +265,19 @@ export class DiningApi {
   }
 
   /** Cajas activas de la sucursal (para elegir la de una zona). */
+  /** Cartas de la sucursal (decisión 294). */
+  menus(branchId: string | null): Observable<DiningMenu[]> {
+    return this.http.get<DiningMenu[]>('/api/v1/dining/menus', { params: branchId ? { branchId } : {} });
+  }
+
+  createMenu(branchId: string, input: DiningMenuInput): Observable<DiningMenu> {
+    return this.http.post<DiningMenu>('/api/v1/dining/menus', { branchId, ...input });
+  }
+
+  updateMenu(id: string, input: DiningMenuInput): Observable<DiningMenu> {
+    return this.http.put<DiningMenu>(`/api/v1/dining/menus/${id}`, input);
+  }
+
   registers(branchId: string | null): Observable<RegisterOption[]> {
     const params = branchId ? new HttpParams().set('branchId', branchId) : undefined;
     return this.http.get<RegisterOption[]>('/api/v1/dining/registers', { params });
