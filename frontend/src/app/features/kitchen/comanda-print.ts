@@ -1,6 +1,6 @@
 import { KitchenTicket, TicketItem } from '../../core/api/kitchen.api';
 import { formatQuantity } from '../../shared/money';
-import { ReceiptWidth } from '../../shared/receipt/receipt-prefs';
+import { ReceiptWidth, printableMm } from '../../shared/receipt/receipt-prefs';
 
 /**
  * Comanda impresa (Fase 12b-3, decisión 270) para impresora térmica de 58 u 80 mm: letra grande, en blanco y negro,
@@ -50,7 +50,7 @@ export function comandaHtml(ticket: KitchenTicket, width: ReceiptWidth = 80): st
   const notes = ticket.notes
     ? `<div style="border-top:2px dashed #000;margin-top:6px;padding-top:4px;font-size:16px;font-weight:700">Nota: ${esc(ticket.notes)}</div>`
     : '';
-  return `<div style="width:${width}mm;padding:2mm 3mm;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif;color:#000;`
+  return `<div class="comanda" style="width:${printableMm(width)}mm;padding:2mm 0;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif;color:#000;`
     + `background:#fff;page-break-after:always;break-after:page">`
     + `<div style="display:flex;justify-content:space-between;align-items:baseline;font-size:22px;font-weight:800">`
     + `<span>${esc(ticket.stationName.toUpperCase())}</span><span>#${ticket.number}</span></div>`

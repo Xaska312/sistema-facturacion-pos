@@ -51,6 +51,7 @@ describe('comanda impresa (Fase 12b-3)', () => {
     expect(html).toContain('* sin &lt;cebolla&gt;');
     expect(html).toContain('ANULADO');
     expect(html).toContain('COPIA 2');
-    expect(html).toContain('width:58mm');
+    // Papel de 58 mm: se arma al ancho que imprime la cabeza (48 mm) para que ningún driver lo corte.
+    expect(html).toContain('width:48mm');
   });
 });

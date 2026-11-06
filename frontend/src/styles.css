@@ -465,6 +465,14 @@
   .receipt-print-copy {
     display: block !important;
   }
+
+  /* Centrado en el papel: el tiquete mide lo que imprime la cabeza (72 o 48 mm) y el driver deja su margen a
+     ambos lados, así no corta ni a la izquierda ni a la derecha (decisión 289). */
+  .receipt-print-copy .receipt,
+  .receipt-print-copy .comanda {
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
 }
 
 /* Nombre de la opción junto al menú lateral contraído (SideTipDirective). */
