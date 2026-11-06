@@ -294,6 +294,10 @@ import { MedicineSectionComponent } from './medicine-section.component';
 export class ProductEditorComponent implements OnInit, HasUnsavedChanges {
   /** Parámetro de ruta :id (ausente en /nuevo). */
   readonly id = input<string>();
+  /** Datos para empezar el producto desde la factura de un proveedor (decisión 290): ?nombre=…&codigo=…&costo=… */
+  readonly nombre = input<string>();
+  readonly codigo = input<string>();
+  readonly costo = input<string>();
 
   private readonly fb = inject(FormBuilder);
   private readonly api = inject(CatalogApi);
@@ -331,6 +335,22 @@ export class ProductEditorComponent implements OnInit, HasUnsavedChanges {
   /** Ya se guardó: salir hacia la lista no debe preguntar. */
   private saved = false;
 
+  /** Lo que trae la factura: nombre, código de barras (si parece uno) y costo sin IVA. Lo demás lo completa la persona. */
+  private prefillFromInvoice(): void {
+    const name = this.nombre()?.trim().slice(0, 200);
+    if (name) {
+      this.form.patchValue({ name });
+    }
+    const cost = Number(this.costo());
+    if (cost > 0) {
+      this.form.patchValue({ cost: Math.round(cost * 100) / 100 });
+    }
+    const code = this.codigo()?.trim();
+    if (code && /^[0-9]{8,14}$/.test(code)) {
+      this.form.controls.barcodes.push(barcodeGroup(this.fb, code, '', false));
+    }
+  }
+
   ngOnInit(): void {
     forkJoin({
       categories: this.api.categories(),
@@ -356,6 +376,7 @@ export class ProductEditorComponent implements OnInit, HasUnsavedChanges {
         const und = refs.units.find((u) => u.code === 'UND');
         const iva = refs.taxes.find((t) => t.code === 'IVA19');
         this.form.patchValue({ baseUnitId: und?.id ?? '', taxId: iva?.id ?? '' });
+        this.prefillFromInvoice();
       }
     });
   }

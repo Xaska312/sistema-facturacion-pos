@@ -5,6 +5,8 @@ import { ButtonModule } from 'primeng/button';
 import { AuthService } from '../../core/auth/auth.service';
 import { CashDrawerService } from '../../core/printing/cash-drawer.service';
 import { testPageBytes } from '../../core/printing/escpos';
+import { printableLogo } from '../../core/printing/printable-logo';
+import { BrandingService } from '../../core/theme/branding.service';
 import { AGENT_DOWNLOAD, PrintAgentService } from '../../core/printing/print-agent.service';
 import { ReceiptWidth, loadReceiptWidth, saveReceiptWidth } from '../../shared/receipt/receipt-prefs';
 
@@ -76,7 +78,8 @@ import { ReceiptWidth, loadReceiptWidth, saveReceiptWidth } from '../../shared/r
           <label class="flex items-start gap-2">
             <input type="checkbox" class="size-4 mt-0.5" [ngModel]="agent.prefs().autoPrint"
                    (ngModelChange)="agent.update({ autoPrint: $event })" />
-            <span>Imprimir el tiquete solo al cobrar <span class="text-muted">(sin tocar "Imprimir")</span></span>
+            <span>Imprimir el tiquete solo al cobrar <span class="text-muted">(sin tocar "Imprimir"; también se cambia en
+              el cobro de Vender con "Tiquete al cobrar")</span></span>
           </label>
           <label class="flex items-start gap-2">
             <input type="checkbox" class="size-4 mt-0.5" [ngModel]="agent.prefs().drawerOnCash"
@@ -113,6 +116,7 @@ export class PrinterSectionComponent implements OnInit {
   private readonly drawerService = inject(CashDrawerService);
   private readonly auth = inject(AuthService);
   private readonly messages = inject(MessageService);
+  private readonly brandLogo = inject(BrandingService).logo;
 
   protected readonly download = AGENT_DOWNLOAD;
   protected readonly width = signal<ReceiptWidth>(loadReceiptWidth());
@@ -132,7 +136,8 @@ export class PrinterSectionComponent implements OnInit {
   protected async test(): Promise<void> {
     this.busy.set('test');
     try {
-      await this.agent.print(testPageBytes(this.width(), this.agent.prefs().plain, this.agent.printerName() ?? ''),
+      const logo = await printableLogo(this.brandLogo(), this.width());
+      await this.agent.print(testPageBytes(this.width(), this.agent.prefs().plain, this.agent.printerName() ?? '', logo),
         'Prueba XASKA');
       this.messages.add({ severity: 'success', summary: 'Prueba enviada', detail: this.agent.printerName() ?? '', life: 3000 });
     } catch (e: unknown) {

@@ -226,13 +226,19 @@ export const MANUAL: readonly ManualChapter[] = [
           'Vuelve a Ajustes y toca "Buscar de nuevo". Si el navegador pregunta si XASKA puede usar los dispositivos '
             + 'de este equipo, toca "Permitir".',
           'Elige tu impresora y el ancho del papel, y toca "Imprimir prueba".',
-          'Prende "Imprimir el tiquete solo al cobrar" y deja "Abrir el cajón al cobrar en efectivo" como prefieras.',
+          'Prende "Imprimir el tiquete solo al cobrar" si quieres el tiquete en cada venta, y deja "Abrir el cajón al '
+            + 'cobrar en efectivo" como prefieras. Si casi nunca lo piden (una tienda que vende un dulce), déjalo apagado: '
+            + 'sale solo cuando tocas "Imprimir tiquete" después de la venta.',
+          'También lo cambias al cobrar: en la ventana de Cobrar, abajo a la izquierda, "Tiquete al cobrar". Se recuerda '
+            + 'en ese computador.',
           'Para abrir el cajón sin una venta (dar cambio, revisar el efectivo), toca "Abrir cajón" en Vender.',
         ],
         tips: [
           'Volver a imprimir un tiquete nunca abre el cajón. Con tarjeta o transferencia tampoco se abre.',
           '"Abrir cajón" pide el permiso "Abrir el cajón monedero sin una venta" y la caja abierta; cada vez queda en la auditoría.',
           'Si las tildes salen como símbolos raros, prende "Imprimir sin tildes".',
+          'El logo de Ajustes → Marca sale arriba del tiquete en blanco y negro. Se ve mejor un logo de colores fuertes '
+            + 'sobre fondo blanco; los colores claros salen punteados.',
           'Funciona en Windows con Chrome o Edge. El cajón va conectado a la impresora (el cable tipo teléfono).',
         ],
         who: 'Lo configura el dueño o el administrador en cada computador de caja.',
@@ -697,6 +703,32 @@ export const MANUAL: readonly ManualChapter[] = [
           'El costo del producto se recalcula solo (costo promedio) con cada compra.',
         ],
         who: 'Propietario, Administrador y Bodega. Pagar de contado necesita además el permiso de pagar a proveedores.',
+      },
+      {
+        id: 'cargar-factura',
+        title: 'Cargar la factura electrónica del proveedor',
+        summary: 'En vez de digitar producto por producto, subes el XML o el ZIP de la factura electrónica que te llegó '
+          + 'al correo y XASKA llena la recepción para que la revises. Nada se guarda hasta que tú la registras.',
+        steps: [
+          'Descarga del correo el ZIP de la factura del proveedor (trae el PDF y el XML).',
+          'Entra a Compras → Recibir mercancía y toca "Cargar factura". Elige el ZIP o el XML.',
+          'Si el proveedor no está en XASKA te lo dice con su NIT: toca "Crear proveedor".',
+          'Revisa cada producto. XASKA los encuentra por lo que aprendió de ese proveedor, por el código de barras o por '
+            + 'un nombre parecido. Lo que dice "Se eligió por el nombre" confírmalo o cámbialo.',
+          'En "Sin producto en XASKA" elige a qué producto corresponde cada línea ("¿Es…?" o "Buscar otro"), créalo con '
+            + '"Crear producto" (abre en otra pestaña con el nombre y el costo) o márcala como "No lo recibo".',
+          'Revisa la presentación si la factura viene por caja, anota lote y vencimiento si faltan, rechaza lo que '
+            + 'llegó mal y termina como siempre con la revisión técnica y el pago.',
+        ],
+        tips: [
+          'La próxima factura de ese proveedor sale casi sola: XASKA recuerda su código para cada producto.',
+          'Si el costo subió o bajó más de un 25 % frente a la última compra, o si lo cargado no suma lo mismo que la '
+            + 'factura, sale un aviso para que lo revises.',
+          'La factura queda guardada con la compra: en el detalle toca "Factura del proveedor" para descargarla.',
+          'Si la factura trae lote y vencimiento (en su campo o en la descripción), se llenan solos.',
+          'Por ahora se carga el XML o el ZIP. Pronto también la foto de una factura en papel.',
+        ],
+        who: 'Quien recibe mercancía, con el permiso "Cargar la factura del proveedor". Requiere el plan Negocio o superior.',
       },
       {
         id: 'cuentas-por-pagar',

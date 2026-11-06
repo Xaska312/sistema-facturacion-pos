@@ -1,5 +1,6 @@
 import { Product } from '../../core/api/api.models';
-import { PurchaseLine, PurchaseLineInput, PurchaseSummary } from '../../core/api/purchases.api';
+import { InvoiceDraftLine, InvoiceMatchBy, PurchaseLine, PurchaseLineInput, PurchaseSummary } from '../../core/api/purchases.api';
+import { formatCop } from '../../shared/money';
 import { StatusKey } from '../../shared/status';
 
 /**
@@ -26,6 +27,21 @@ export interface ReceiptDraftLine {
   expirationDate: string;
   rejected: boolean;
   rejectReason: string;
+  /** Lo que viene de la factura cargada (decisión 290). */
+  invoice?: InvoiceLineInfo;
+}
+
+/** De dónde salió la línea cuando se cargó la factura: para resaltar lo que hay que revisar y recordar el código. */
+export interface InvoiceLineInfo {
+  description: string;
+  supplierCode: string | null;
+  /** MANUAL: lo eligió la persona en la pantalla. */
+  matchedBy: InvoiceMatchBy | 'MANUAL';
+  /** Costo por unidad base de la última compra (o el promedio). */
+  lastCost: number | null;
+  /** La factura viene por caja o paquete. */
+  unitCode: string | null;
+  packageUnit: boolean;
 }
 
 /** Revisión técnica al recibir (Resolución 1403 de 2007): se confirma cada punto antes de registrar. */
@@ -180,6 +196,95 @@ export function expiresSoon(expiration: string, today: string): boolean {
   return expiration < limit.toISOString().slice(0, 10);
 }
 
+// ------------------------------------------------------------------ factura cargada (decisión 290)
+
+/** Diferencia de costo que se resalta: más de un 25 % frente a la última compra. */
+export const COST_CHANGE = 0.25;
+
+/** Línea de la recepción a partir de una línea de la factura ya emparejada con su producto. */
+export function invoiceLine(product: Product, draft: InvoiceDraftLine, key: number,
+                            by: InvoiceMatchBy | 'MANUAL'): ReceiptDraftLine {
+  let line = receiptLine(product, key);
+  const unitId = draft.match?.productId === product.id ? draft.match.unitId : null;
+  if (unitId && line.units.some((u) => u.id === unitId)) {
+    line = { ...line, unitId };
+  }
+  return {
+    ...line,
+    quantity: draft.quantity,
+    unitCost: draft.unitCost,
+    taxRate: draft.taxRate,
+    lotNumber: draft.lotNumber ?? '',
+    expirationDate: draft.expirationDate ?? '',
+    invoice: {
+      description: draft.description,
+      supplierCode: draft.supplierCode,
+      matchedBy: by,
+      lastCost: draft.match?.productId === product.id ? draft.match.lastCost : (product.cost > 0 ? product.cost : null),
+      unitCode: draft.unitCode,
+      packageUnit: draft.packageUnit,
+    },
+  };
+}
+
+/**
+ * Lo que hay que revisar de una línea cargada de la factura, o null: el producto se eligió por nombre parecido, la
+ * factura viene por caja y la presentación es la unidad, o el costo cambió mucho frente a la última compra.
+ */
+export function invoiceLineNotice(line: ReceiptDraftLine): string | null {
+  const info = line.invoice;
+  if (!info || line.rejected) {
+    return null;
+  }
+  const notes: string[] = [];
+  if (info.matchedBy === 'NAME') {
+    notes.push(`Se eligió por el nombre "${info.description}": confirma que es este producto`);
+  }
+  const factor = line.units.find((u) => u.id === line.unitId)?.factor ?? 1;
+  if (info.packageUnit && factor === 1 && line.units.length > 1) {
+    notes.push(`la factura viene por ${unitName(info.unitCode)}: elige la presentación`);
+  }
+  const cost = num(line.unitCost);
+  if (info.lastCost && info.lastCost > 0 && cost >= 0) {
+    const perBase = cost / factor;
+    const change = (perBase - info.lastCost) / info.lastCost;
+    if (Math.abs(change) > COST_CHANGE) {
+      notes.push(`el costo ${change > 0 ? 'subió' : 'bajó'} ${Math.round(Math.abs(change) * 100)} % frente a la última `
+        + `compra (${formatCop(info.lastCost)} por ${line.units[0]?.code || 'unidad'})`);
+    }
+  }
+  if (notes.length === 0) {
+    return null;
+  }
+  const text = notes.join('; ');
+  return text.charAt(0).toUpperCase() + text.slice(1) + '.';
+}
+
+function unitName(code: string | null): string {
+  const names: Record<string, string> = { BX: 'caja', PK: 'paquete', CS: 'caja', CT: 'cartón', CA: 'lata', DZN: 'docena',
+    PA: 'paquete', BG: 'bolsa', BO: 'botella', SET: 'juego', PR: 'par', TU: 'tubo', BL: 'blíster' };
+  return (code && names[code.replace(/^X/, '')]) || 'empaque';
+}
+
+/**
+ * Lo cargado frente al total de la factura: null si cuadra (hasta $100 o el 0,5 %) o si falta emparejar líneas.
+ * Lo rechazado cuenta, porque también está en la factura.
+ */
+export function invoiceTotalNotice(lines: readonly ReceiptDraftLine[], invoiceTotal: number | null,
+                                   pendingLines: number): string | null {
+  if (invoiceTotal === null || invoiceTotal <= 0 || pendingLines > 0 || lines.length === 0) {
+    return null;
+  }
+  const t = receiptTotals(lines);
+  const loaded = round2(t.total + t.rejected);
+  const diff = Math.abs(loaded - invoiceTotal);
+  if (diff <= Math.max(100, invoiceTotal * 0.005)) {
+    return null;
+  }
+  return `Lo cargado suma ${formatCop(loaded)} y la factura dice ${formatCop(invoiceTotal)}: revisa cantidades, `
+    + 'costos e IVA.';
+}
+
 export function toLineInputs(lines: readonly ReceiptDraftLine[]): PurchaseLineInput[] {
   return lines.map((l) => ({
     productId: l.productId,
@@ -191,6 +296,7 @@ export function toLineInputs(lines: readonly ReceiptDraftLine[]): PurchaseLineIn
     expirationDate: l.expirationDate || null,
     status: l.rejected ? 'REJECTED' : 'ACCEPTED',
     rejectReason: l.rejected ? l.rejectReason.trim() : null,
+    supplierCode: l.invoice?.supplierCode ?? null,
   }));
 }
 

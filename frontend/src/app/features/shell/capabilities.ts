@@ -43,6 +43,7 @@ const RULES: readonly CapabilityRule[] = [
   { permission: 'inventory:transfer', text: 'trasladar mercancía entre sucursales' },
   { permission: 'inventory:read', text: 'consultar existencias y kardex' },
   { permission: 'purchases:receive', text: 'recibir mercancía de los proveedores (revisión técnica, lotes y vencimientos)' },
+  { permission: 'purchases:import', text: 'cargar la factura del proveedor para llenar la recepción' },
   { permission: 'purchases:pay', text: 'pagar a proveedores' },
   { permission: 'purchases:read', text: 'consultar compras y cuentas por pagar', coveredBy: 'purchases:pay' },
   { permission: 'parties:manage', text: 'registrar clientes y proveedores' },

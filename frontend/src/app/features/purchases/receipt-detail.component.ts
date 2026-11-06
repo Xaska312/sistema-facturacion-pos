@@ -6,6 +6,7 @@ import { PurchaseReceipt, PurchasesApi, SupplierPayment } from '../../core/api/p
 import { permissionFlag } from '../../core/auth/permission-flag';
 import { formatDateTime } from '../../shared/format';
 import { formatCop, formatQuantity } from '../../shared/money';
+import { saveDownload } from '../../shared/download';
 import { PageHeaderComponent } from '../../shared/page-header.component';
 import { StatusBadgeComponent } from '../../shared/status-badge.component';
 import { formatDay, isoDay } from '../orders/order-text';
@@ -30,6 +31,10 @@ import { SupplierPaymentDialogComponent } from './supplier-payment-dialog.compon
         <a pButton routerLink="/app/compras" label="Compras" icon="pi pi-arrow-left" [text]="true" severity="secondary"></a>
         @if (canPay() && s.balance > 0) {
           <p-button label="Registrar pago" icon="pi pi-wallet" (onClick)="payDialog()?.open(s)" />
+        }
+        @if (r.document; as doc) {
+          <p-button label="Factura del proveedor" icon="pi pi-download" severity="secondary" [outlined]="true"
+                    [loading]="downloading()" (onClick)="downloadDocument(doc.id, doc.fileName)" />
         }
         @if (canReturn() && returnable()) {
           <p-button label="Devolver al proveedor" icon="pi pi-replay" severity="secondary" [outlined]="true"
@@ -180,6 +185,7 @@ export class ReceiptDetailComponent implements OnInit {
   protected readonly returnDialog = viewChild(PurchaseReturnDialogComponent);
   protected readonly canReturn = permissionFlag('purchases:receive');
   protected readonly receipt = signal<PurchaseReceipt | null>(null);
+  protected readonly downloading = signal(false);
 
   protected readonly cop = formatCop;
   protected readonly q = formatQuantity;
@@ -200,6 +206,18 @@ export class ReceiptDetailComponent implements OnInit {
     this.api.get(this.id()).subscribe({
       next: (r) => this.receipt.set(r),
       error: () => void this.router.navigate(['/app/compras']),
+    });
+  }
+
+  /** La factura que se cargó al recibir (decisión 290), tal como la mandó el proveedor. */
+  protected downloadDocument(id: string, fileName: string): void {
+    this.downloading.set(true);
+    this.api.documentFile(id).subscribe({
+      next: (response) => {
+        this.downloading.set(false);
+        saveDownload(response, fileName);
+      },
+      error: () => this.downloading.set(false),
     });
   }
 

@@ -1,4 +1,4 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { PageResponse } from './api.models';
@@ -71,6 +71,56 @@ export interface PurchaseReceipt {
   lines: PurchaseLine[];
   payments: SupplierPayment[];
   returns: PurchaseReturn[];
+  /** La factura del proveedor guardada como soporte (decisión 290). */
+  document: PurchaseDocumentRef | null;
+}
+
+export interface PurchaseDocumentRef {
+  id: string;
+  fileName: string;
+  kind: 'XML' | 'ZIP' | 'PDF' | 'IMAGE';
+}
+
+/** Cómo se encontró el producto de una línea de la factura: MEMORY (aprendido), BARCODE, SKU o NAME (revisar). */
+export type InvoiceMatchBy = 'MEMORY' | 'BARCODE' | 'SKU' | 'NAME';
+
+export interface InvoiceDraftLine {
+  lineNo: number;
+  description: string;
+  supplierCode: string | null;
+  barcode: string | null;
+  unitCode: string | null;
+  /** La factura viene por caja, paquete…: hay que elegir la presentación. */
+  packageUnit: boolean;
+  quantity: number;
+  /** Sin IVA y con el descuento de la línea. */
+  unitCost: number;
+  taxRate: number;
+  discount: number;
+  lotNumber: string | null;
+  expirationDate: string | null;
+  match: { productId: string; unitId: string | null; by: InvoiceMatchBy; lastCost: number | null } | null;
+  candidates: { productId: string; name: string; sku: string }[];
+}
+
+/** Borrador que sale de la factura cargada: nada queda registrado hasta confirmar la recepción. */
+export interface InvoiceDraft {
+  documentId: string;
+  kind: PurchaseDocumentRef['kind'];
+  fileName: string;
+  supplier: { id: string | null; name: string | null; documentNumber: string | null; verificationDigit: number | null;
+    active: boolean };
+  invoiceNumber: string;
+  invoiceDate: string | null;
+  dueDate: string | null;
+  paymentType: PurchasePaymentType | null;
+  cufe: string | null;
+  subtotal: number | null;
+  taxTotal: number | null;
+  total: number | null;
+  alreadyRegistered: boolean;
+  lines: InvoiceDraftLine[];
+  warnings: string[];
 }
 
 export interface PurchaseReturn {
@@ -110,6 +160,8 @@ export interface PurchaseLineInput {
   expirationDate: string | null;
   status: PurchaseLineStatus;
   rejectReason: string | null;
+  /** Código de la línea en la factura del proveedor: se recuerda para la próxima (decisión 290). */
+  supplierCode?: string | null;
 }
 
 export interface PurchaseInput {
@@ -125,6 +177,7 @@ export interface PurchaseInput {
   coldChainTemperature: number | null;
   notes: string | null;
   lines: PurchaseLineInput[];
+  documentId?: string | null;
 }
 
 export interface SupplierPaymentInput {
@@ -162,6 +215,18 @@ export class PurchasesApi {
     return this.http.post<PurchaseReceipt>(`/api/v1/purchases/${id}/returns`, input, {
       headers: new HttpHeaders({ 'Idempotency-Key': idempotencyKey }),
     });
+  }
+
+  /** Carga la factura del proveedor (XML o ZIP de la factura electrónica) y devuelve el borrador para revisar. */
+  importInvoice(file: File): Observable<InvoiceDraft> {
+    const form = new FormData();
+    form.append('file', file, file.name);
+    return this.http.post<InvoiceDraft>('/api/v1/purchases/documents', form);
+  }
+
+  /** El archivo de soporte (para descargarlo). */
+  documentFile(id: string): Observable<HttpResponse<Blob>> {
+    return this.http.get(`/api/v1/purchases/documents/${id}/file`, { responseType: 'blob', observe: 'response' });
   }
 
   pay(id: string, input: SupplierPaymentInput, idempotencyKey: string): Observable<SupplierPayment> {

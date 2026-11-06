@@ -10,6 +10,62 @@ import { formatCop, formatQuantity } from '../../shared/money';
 /** Pulso al cajón conectado a la impresora: ESC p 0 25 250 (pin 2, 50 ms). */
 export const DRAWER_KICK = [0x1b, 0x70, 0x00, 0x19, 0xfa] as const;
 
+/** Puntos que imprime la cabeza: 576 en 80 mm (72 mm a 8 puntos por mm), 384 en 58 mm (48 mm). */
+export function paperDots(width: 58 | 80): number {
+  return width === 58 ? 384 : 576;
+}
+
+/**
+ * Imagen en blanco y negro para la térmica (decisión 292): {@code width} es múltiplo de 8 y cada fila ocupa
+ * {@code width / 8} bytes, el bit más alto a la izquierda, 1 = punto negro.
+ */
+export interface MonoImage {
+  width: number;
+  height: number;
+  data: Uint8Array;
+}
+
+/** Filas por comando de imagen: varias térmicas baratas se enredan con imágenes muy altas en un solo comando. */
+const IMAGE_BAND = 128;
+
+/**
+ * Gris (0 negro … 255 blanco, una fila tras otra) a puntos con difusión de error Floyd–Steinberg, centrado en un
+ * ancho de {@code canvasWidth} puntos (así queda en el medio del papel sin depender de que la impresora centre
+ * imágenes). Lo casi blanco queda blanco: el fondo de un logo escaneado no ensucia el papel.
+ */
+export function monoFromGray(gray: ArrayLike<number>, width: number, height: number, canvasWidth: number): MonoImage {
+  const total = Math.max(8, Math.ceil(Math.max(canvasWidth, width) / 8) * 8);
+  const bytesPerRow = total / 8;
+  const left = Math.floor((total - width) / 2);
+  const data = new Uint8Array(bytesPerRow * height);
+  const level = Float32Array.from(gray, (v) => (v >= 235 ? 255 : v));
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const i = y * width + x;
+      const old = level[i];
+      const black = old < 128;
+      const error = old - (black ? 0 : 255);
+      if (black) {
+        const col = left + x;
+        data[y * bytesPerRow + (col >> 3)] |= 0x80 >> (col & 7);
+      }
+      if (x + 1 < width) {
+        level[i + 1] += (error * 7) / 16;
+      }
+      if (y + 1 < height) {
+        if (x > 0) {
+          level[i + width - 1] += (error * 3) / 16;
+        }
+        level[i + width] += (error * 5) / 16;
+        if (x + 1 < width) {
+          level[i + width + 1] += error / 16;
+        }
+      }
+    }
+  }
+  return { width: total, height, data };
+}
+
 /** Columnas de la letra normal: 48 en 80 mm, 32 en 58 mm. */
 export function columns(width: 58 | 80): number {
   return width === 58 ? 32 : 48;
@@ -125,6 +181,20 @@ export class EscPos {
     return this.line('-'.repeat(width));
   }
 
+  /** Imagen en blanco y negro (GS v 0), en franjas de {@link IMAGE_BAND} filas. */
+  image(img: MonoImage): this {
+    const bytesPerRow = img.width / 8;
+    for (let top = 0; top < img.height; top += IMAGE_BAND) {
+      const rows = Math.min(IMAGE_BAND, img.height - top);
+      this.bytes.push(0x1d, 0x76, 0x30, 0x00, bytesPerRow & 0xff, bytesPerRow >> 8, rows & 0xff, rows >> 8);
+      const band = img.data.subarray(top * bytesPerRow, (top + rows) * bytesPerRow);
+      for (const b of band) {
+        this.bytes.push(b);
+      }
+    }
+    return this;
+  }
+
   drawer(): this {
     this.bytes.push(...DRAWER_KICK);
     return this;
@@ -149,6 +219,8 @@ export interface ReceiptOptions {
   openDrawer?: boolean;
   /** Fecha ya formateada (la del tiquete en pantalla). */
   date: string;
+  /** Logo del negocio ya pasado a puntos ({@link printableLogo}); sin logo, el nombre arriba como siempre. */
+  logo?: MonoImage | null;
 }
 
 /** Fecha y hora de la venta como en el tiquete de la pantalla (zona horaria del negocio). */
@@ -161,7 +233,7 @@ export function saleDate(s: Sale): string {
   }
 }
 
-/** El mismo tiquete de la pantalla (shared/receipt), sin el logo. */
+/** El mismo tiquete de la pantalla (shared/receipt), con el logo arriba si el negocio tiene uno (decisión 292). */
 export function receiptBytes(s: Sale, o: ReceiptOptions): Uint8Array {
   const w = columns(o.width);
   const cop = formatCop;
@@ -169,6 +241,9 @@ export function receiptBytes(s: Sale, o: ReceiptOptions): Uint8Array {
   const p = new EscPos(o.plain ?? false);
   if (o.openDrawer) {
     p.drawer();
+  }
+  if (o.logo) {
+    p.align('left').image(o.logo).line();
   }
   p.align('center').bold(true).big(true).lines(wrap(s.receipt.businessName ?? '', w)).big(false).bold(false);
   for (const extra of [s.receipt.branchName, s.receipt.branchAddress, s.receipt.branchPhone ? 'Tel. ' + s.receipt.branchPhone : null]) {
@@ -233,9 +308,13 @@ export function receiptBytes(s: Sale, o: ReceiptOptions): Uint8Array {
 }
 
 /** Hoja de prueba: para saber si la impresora imprime bien las tildes y si corta. */
-export function testPageBytes(width: 58 | 80, plain: boolean, printerName: string): Uint8Array {
+export function testPageBytes(width: 58 | 80, plain: boolean, printerName: string, logo: MonoImage | null = null): Uint8Array {
   const w = columns(width);
-  return new EscPos(plain).align('center').bold(true).big(true).line('XASKA').big(false).line('Prueba de impresión')
+  const p = new EscPos(plain);
+  if (logo) {
+    p.image(logo).line();
+  }
+  return p.align('center').bold(true).big(true).line('XASKA').big(false).line('Prueba de impresión')
     .bold(false).line().align('left').lines(wrap('Impresora: ' + printerName, w)).line(`Papel: ${width} mm (${w} letras)`)
     .rule(w).line('Tildes: á é í ó ú ñ Ñ ¿? ¡!').lines(row('Total', '$ 18.000', w))
     .line('Si las tildes salen raras, activa').line('"Imprimir sin tildes" en Ajustes.').rule(w).cut().build();
