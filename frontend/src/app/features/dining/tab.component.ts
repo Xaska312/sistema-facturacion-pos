@@ -29,6 +29,7 @@ import { activeItems, itemExtras, itemTotal, kindGlyph, openFor } from './dining
 import { KitchenApi } from '../../core/api/kitchen.api';
 import { encodeParts } from '../pos/tab-lines';
 import { liveRefresh } from '../../core/realtime/live-refresh';
+import { LiveReplacedComponent } from '../../core/realtime/live-replaced.component';
 import { KitchenPrinterService } from '../kitchen/kitchen-printer';
 import { ticketStatusLabel } from '../kitchen/ticket-labels';
 import { PendingItem, addPending, pendingPrice, pendingTotal, stepPending, toItemInputs } from './pending-items';
@@ -51,8 +52,10 @@ interface Picking {
 @Component({
   selector: 'app-tab',
   imports: [FormsModule, RouterLink, ButtonModule, DialogModule, InputTextModule, SkeletonModule, FormDialogComponent,
+    LiveReplacedComponent,
     XIconComponent, ProductGridComponent, ModifierPickerComponent, VariantPickerComponent],
   template: `
+    <app-live-replaced />
     @if (tab(); as t) {
       <header class="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div class="flex items-center gap-3 min-w-0">

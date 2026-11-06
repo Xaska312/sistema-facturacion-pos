@@ -28,6 +28,9 @@ import java.util.regex.Pattern;
  *       unas pocas por venta; un script abusivo las supera.</li>
  *   <li>Pesadas: {@code app.rate-limit.heavy-per-minute} (20): descargas CSV, importar productos, cerrar o eliminar un
  *       negocio (pide contraseña). Cuentan además en el límite general.</li>
+ *   <li>Avisos en vivo: {@code app.rate-limit.events-per-minute} (30) conexiones a {@code /api/v1/dining/events}.
+ *       No cuentan en el general (decisión 291): una pantalla que se reconecta de más pierde solo los avisos (y
+ *       sigue consultando), nunca el resto de la app. Aplica a todos, también al administrador.</li>
  * </ul>
  * Va después de la autenticación (necesita el usuario). La primera petición rechazada de cada clave y ventana queda
  * como RATE_LIMITED en los eventos de seguridad.
@@ -39,9 +42,11 @@ public class ApiRateLimitFilter extends OncePerRequestFilter {
     private static final int MAX_TRACKED_KEYS = 50_000;
     private static final Pattern HEAVY = Pattern.compile(
             "^/api/v1/(.*\\.csv|products/import|tenants/[^/]+/close|platform/tenants/[^/]+/delete)$");
+    static final String EVENTS_PATH = "/api/v1/dining/events";
 
     private final int generalLimit;
     private final int heavyLimit;
+    private final int eventsLimit;
     private final HandlerExceptionResolver exceptionResolver;
     private final SecurityEventLogger securityEvents;
     private final ConcurrentHashMap<String, Window> windows = new ConcurrentHashMap<>();
@@ -50,6 +55,7 @@ public class ApiRateLimitFilter extends OncePerRequestFilter {
                               SecurityEventLogger securityEvents) {
         this.generalLimit = properties.apiPerMinute();
         this.heavyLimit = properties.heavyPerMinute();
+        this.eventsLimit = properties.eventsPerMinute();
         this.exceptionResolver = exceptionResolver;
         this.securityEvents = securityEvents;
     }
@@ -72,6 +78,18 @@ public class ApiRateLimitFilter extends OncePerRequestFilter {
         String who = clientKey(request);
         long now = System.currentTimeMillis();
         cleanUpIfNeeded(now);
+
+        if (EVENTS_PATH.equals(path)) {
+            if (eventsLimit > 0) {
+                Window events = hit("events|" + who, now);
+                if (events.count() > eventsLimit) {
+                    reject(request, response, events, eventsLimit, now, "events", path, who);
+                    return;
+                }
+            }
+            chain.doFilter(request, response);
+            return;
+        }
 
         Window general = hit("api|" + who, now);
         if (general.count() > generalLimit) {
@@ -133,9 +151,11 @@ public class ApiRateLimitFilter extends OncePerRequestFilter {
         }
         long retryAfter = Math.max(1, (window.start() + WINDOW_MILLIS - now) / 1000);
         response.setHeader("Retry-After", String.valueOf(retryAfter));
-        String message = "heavy".equals(scope)
-                ? "Demasiadas descargas o importaciones seguidas. Espera un momento e intenta de nuevo."
-                : "Demasiadas solicitudes seguidas. Espera un momento e intenta de nuevo.";
+        String message = switch (scope) {
+            case "heavy" -> "Demasiadas descargas o importaciones seguidas. Espera un momento e intenta de nuevo.";
+            case "events" -> "Demasiadas reconexiones a los avisos en vivo. La pantalla sigue actualizándose sola.";
+            default -> "Demasiadas solicitudes seguidas. Espera un momento e intenta de nuevo.";
+        };
         exceptionResolver.resolveException(request, response, null, new TooManyRequestsException(message));
     }
 
