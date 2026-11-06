@@ -42,6 +42,7 @@ import { ReceiptComponent } from '../../shared/receipt/receipt.component';
 import { ReceiptWidth, loadReceiptWidth, printReceipt, saveReceiptWidth } from '../../shared/receipt/receipt-prefs';
 import { CashDrawerService } from '../../core/printing/cash-drawer.service';
 import { receiptBytes, saleDate } from '../../core/printing/escpos';
+import { printableLogo } from '../../core/printing/printable-logo';
 import { PrintAgentService } from '../../core/printing/print-agent.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { saleWhatsAppLink } from '../sales/sale-text';
@@ -580,6 +581,15 @@ const STOCK_PAGES = 5;
         </p>
       }
       <ng-template #footer>
+        @if (showTicketSwitch()) {
+          <label class="ticket-switch mr-auto flex items-center gap-2 text-sm min-h-11 cursor-pointer select-none">
+            <input type="checkbox" class="size-5" [ngModel]="autoTicket()" (ngModelChange)="setAutoTicket($event)"
+                   aria-describedby="ticket-switch-hint" />
+            <span><span class="font-medium">Tiquete al cobrar</span>
+              <span id="ticket-switch-hint" class="block text-xs text-muted">{{ autoTicket() ? 'Sale solo en la impresora' : 'Solo si tocas Imprimir' }}</span>
+            </span>
+          </label>
+        }
         <p-button label="Volver" [text]="true" severity="secondary" styleClass="min-h-11" [disabled]="saving()"
                   (onClick)="payOpen = false" />
         <p-button label="Registrar venta (Enter)" icon="pi pi-check" size="large" styleClass="min-h-12"
@@ -828,6 +838,16 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   private readonly printer = inject(PrintAgentService);
   private readonly drawerService = inject(CashDrawerService);
   protected readonly canOpenDrawer = computed(() => this.printer.ready() && this.auth.hasPermission('cash:drawer'));
+  /**
+   * "Tiquete al cobrar" en el cobro (decisión 292): con XASKA Impresora en este equipo, a la vista para prenderlo o
+   * apagarlo sin ir a Ajustes (una tienda que vende un dulce no necesita tiquete en cada venta). Se recuerda en el
+   * equipo; es la misma preferencia de Ajustes → Impresora de este equipo.
+   */
+  protected readonly showTicketSwitch = computed(() => this.directPrint() && this.printer.prefs().enabled);
+  protected readonly autoTicket = computed(() => this.printer.prefs().autoPrint);
+  protected setAutoTicket(on: boolean): void {
+    this.printer.update({ autoPrint: on });
+  }
   /** Impresión directa incluida en el plan (decisión 288). */
   private directPrint(): boolean {
     return this.auth.hasPermission('plan:direct-print');
@@ -2050,8 +2070,9 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
 
   private async sendReceipt(sale: Sale, openDrawer: boolean): Promise<void> {
     try {
+      const logo = await printableLogo(this.brandLogo(), this.width());
       await this.printer.print(receiptBytes(sale, { width: this.width(), plain: this.printer.prefs().plain, openDrawer,
-        date: saleDate(sale) }), 'Tiquete ' + sale.documentNumber);
+        date: saleDate(sale), logo }), 'Tiquete ' + sale.documentNumber);
     } catch (e: unknown) {
       this.printerFailed('No se imprimió el tiquete', e);
     }

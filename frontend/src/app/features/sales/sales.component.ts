@@ -18,6 +18,7 @@ import { BrandingService } from '../../core/theme/branding.service';
 import { ReceiptComponent } from '../../shared/receipt/receipt.component';
 import { ReceiptWidth, loadReceiptWidth, printReceipt } from '../../shared/receipt/receipt-prefs';
 import { receiptBytes, saleDate } from '../../core/printing/escpos';
+import { printableLogo } from '../../core/printing/printable-logo';
 import { PrintAgentService } from '../../core/printing/print-agent.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { saleWhatsAppLink } from './sale-text';
@@ -190,8 +191,9 @@ export class SalesComponent implements OnInit {
     const sale = this.detail();
     if (sale && this.auth.hasPermission('plan:direct-print') && (await this.printer.ensure())) {
       try {
+        const logo = await printableLogo(this.brandLogo(), this.width);
         await this.printer.print(receiptBytes(sale, { width: this.width, plain: this.printer.prefs().plain,
-          date: saleDate(sale) }), 'Tiquete ' + sale.documentNumber);
+          date: saleDate(sale), logo }), 'Tiquete ' + sale.documentNumber);
         this.messages.add({ severity: 'success', summary: 'Tiquete enviado a la impresora', life: 2500 });
       } catch (e: unknown) {
         this.messages.add({ severity: 'error', summary: 'No se imprimió el tiquete',
