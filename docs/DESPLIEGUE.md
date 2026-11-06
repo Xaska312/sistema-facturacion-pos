@@ -278,7 +278,7 @@ actualizar (paso 11).
 | Logo en la impresión directa (292) | Solo la imagen **web**. XASKA Impresora no cambia |
 | Mesero solo mesas (293) | Negocio V37: el rol Mesero deja de cobrar (solo si nadie lo había editado). Avísales a los restaurantes cuyos meseros cobran |
 | Cartas por piso (294) | Negocio V38. Se configuran en Mesas → Configurar → Cartas por piso (plan Empresa) |
-| Facturas con foto (295) | Plataforma V17 y negocio V39. Pon `ANTHROPIC_API_KEY` en el `.env` (con un límite de gasto mensual en la consola de Anthropic) y reconstruye también la imagen **web** (el Caddyfile sube el máximo a 12 MB). Política de datos 1.3: todos la aceptan de nuevo. Revisa en la consola → Planes las facturas con IA de cada plan (Emprende 0, Negocio 40, Empresa 150) |
+| Facturas con foto (295) | Plataforma V17 y negocio V39. Pon `ANTHROPIC_API_KEY` en el `.env` (con un límite de gasto mensual en la consola de Anthropic) y reconstruye también la imagen **web** (el Caddyfile sube el máximo a 12 MB). Política de datos 1.3: todos la aceptan de nuevo. XASKA IA es un adicional: dalo a cada negocio en Suscripciones → Dar extras → "XASKA IA"; el tope al mes se ajusta en Planes → XASKA IA (100 facturas por defecto) |
 
 Prueba rápida después de actualizar: entrar (aceptar lo que pida), una venta, una mesa, descargar XASKA Impresora
 desde Ajustes, crear una droguería de prueba y revisar en los logs del backend que las migraciones se aplicaron.

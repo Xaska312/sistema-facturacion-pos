@@ -112,8 +112,10 @@ export const PAYMENT_METHODS: readonly string[] = ['Transferencia', 'Nequi', 'Da
           <div><dt class="text-muted">Sucursales</dt><dd>{{ s.usage.branches }} de {{ limit(s.entitled.maxBranches) }}</dd></div>
           <div><dt class="text-muted">Usuarios</dt><dd>{{ s.usage.users }} de {{ limit(s.entitled.maxUsers) }}</dd></div>
           <div><dt class="text-muted">Cajas</dt><dd>{{ s.usage.registers }} de {{ limit(s.entitled.maxRegisters) }}</dd></div>
-          <div><dt class="text-muted">Facturas con IA este mes</dt>
-            <dd>{{ s.usage.invoiceScans }} de {{ limit(s.entitled.maxInvoiceScans) }}</dd></div>
+          @if (s.entitled.features.includes('AI')) {
+            <div><dt class="text-muted">Facturas con IA este mes</dt>
+              <dd>{{ s.usage.invoiceScans }} de {{ s.entitled.maxInvoiceScans }}</dd></div>
+          }
           <div class="col-span-2 sm:col-span-3"><dt class="text-muted">Incluye (plan + extras)</dt>
             <dd>{{ included(s.entitled.modules, s.entitled.features) }}</dd></div>
           @if (s.priceLockedUntil) {
@@ -219,7 +221,7 @@ export const PAYMENT_METHODS: readonly string[] = ['Transferencia', 'Nequi', 'Da
             <input pInputText id="ex-users" type="number" min="0" max="500" [(ngModel)]="extras.users" />
           </div>
           <div class="flex flex-col gap-1">
-            <label for="ex-scans" class="text-sm font-medium">Facturas IA/mes de más</label>
+            <label for="ex-scans" class="text-sm font-medium" title="Solo cuentan si tiene XASKA IA">Facturas IA/mes de más</label>
             <input pInputText id="ex-scans" type="number" min="0" max="10000" [(ngModel)]="extras.invoiceScans" />
           </div>
         </div>

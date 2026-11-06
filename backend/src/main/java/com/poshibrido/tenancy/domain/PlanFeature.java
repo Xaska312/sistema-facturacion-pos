@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
  */
 public enum PlanFeature {
     /** Compras, recepción técnica y cuentas por pagar (Fase 13-2). */
-    PURCHASES("purchases:read", "purchases:receive", "purchases:pay", "purchases:import", "purchases:scan"),
+    PURCHASES("purchases:read", "purchases:receive", "purchases:pay", "purchases:import"),
     /** XASKA Impresora: tiquete directo en la térmica y "Abrir cajón" (decisión 286). */
     DIRECT_PRINT("cash:drawer"),
     /** Auditoría del negocio. */
@@ -22,7 +22,12 @@ public enum PlanFeature {
     /** Traslados entre sedes. */
     TRANSFERS("inventory:transfer"),
     /** Caja por zona de mesas (decisión 285). */
-    ZONE_REGISTERS;
+    ZONE_REGISTERS,
+    /**
+     * XASKA IA (decisión 295): adicional pagado que no trae ningún plan; lo da el administrador como extra. Cada
+     * función tiene su tope al mes ({@code platform.ai_allowances}). Hoy: leer facturas de compra en foto o PDF.
+     */
+    AI("purchases:scan");
 
     private static final String AUTHORITY_PREFIX = "plan:";
 
@@ -47,6 +52,11 @@ public enum PlanFeature {
 
     public static Set<PlanFeature> all() {
         return EnumSet.allOf(PlanFeature.class);
+    }
+
+    /** Lo que se le deja a un negocio sin datos de suscripción: todo menos los adicionales pagados (XASKA IA). */
+    public static Set<PlanFeature> allButAddOns() {
+        return EnumSet.complementOf(EnumSet.of(AI));
     }
 
     /** "PURCHASES,AUDIT" ↔ conjunto; los códigos desconocidos se ignoran. */

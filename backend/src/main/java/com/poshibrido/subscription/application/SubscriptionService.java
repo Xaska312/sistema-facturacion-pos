@@ -82,7 +82,7 @@ public class SubscriptionService implements SubscriptionApi {
     /** Suscripción con su plan y los datos del negocio y del dueño. */
     record Current(UUID tenantId, String slug, String tradeName, String schema, String tenantStatus, String ownerEmail,
                    String ownerName, PlanView plan, boolean trial, BillingCycle cycle, Instant startedAt,
-                   Instant endsAt, Extras extras, Instant priceLockedUntil) {
+                   Instant endsAt, Extras extras, Instant priceLockedUntil, int aiInvoiceScans) {
 
         SubscriptionStatus status(Duration grace, Instant now) {
             return SubscriptionStatus.of(trial, endsAt, grace, now);
@@ -105,7 +105,7 @@ public class SubscriptionService implements SubscriptionApi {
                     plus(plan.maxUsers(), on ? extras.users() : 0), plus(plan.maxRegisters(), on ? extras.registers() : 0),
                     csvList(BusinessModule.format(BusinessModule.parse(String.join(",", modules)))),
                     csvList(PlanFeature.format(PlanFeature.parse(String.join(",", features)))),
-                    plus(plan.maxInvoiceScans(), on ? extras.invoiceScans() : 0));
+                    features.contains(PlanFeature.AI.name()) ? aiInvoiceScans + (on ? extras.invoiceScans() : 0) : 0);
         }
 
         private static Integer plus(Integer max, int extra) {
@@ -203,7 +203,7 @@ public class SubscriptionService implements SubscriptionApi {
 
     @Override
     public Integer invoiceScansPerMonth(UUID tenantId) {
-        return current(tenantId).map(c -> c.entitled(Instant.now()).maxInvoiceScans()).orElse(null);
+        return current(tenantId).map(c -> c.entitled(Instant.now()).maxInvoiceScans()).orElse(0);
     }
 
     @Override
@@ -311,20 +311,41 @@ public class SubscriptionService implements SubscriptionApi {
 
     // ------------------------------------------------------------------ administración (consola de plataforma)
 
+    /** Topes al mes de las funciones de XASKA IA (decisión 295). */
+    @Transactional(readOnly = true)
+    public List<SubscriptionViews.AiAllowance> aiAllowances() {
+        return jdbc.query("SELECT code, name, monthly_limit FROM platform.ai_allowances ORDER BY code",
+                (rs, i) -> new SubscriptionViews.AiAllowance(rs.getString("code"), rs.getString("name"),
+                        rs.getInt("monthly_limit")));
+    }
+
+    @Transactional
+    public SubscriptionViews.AiAllowance updateAiAllowance(String code, int monthlyLimit) {
+        if (monthlyLimit < 0 || monthlyLimit > 100000) {
+            throw new BusinessRuleException("El tope al mes va de 0 a 100.000.");
+        }
+        int updated = jdbc.update("UPDATE platform.ai_allowances SET monthly_limit = ?, updated_at = now() WHERE code = ?",
+                monthlyLimit, code);
+        if (updated == 0) {
+            throw new NotFoundException("Función de XASKA IA no encontrada.");
+        }
+        afterCommit(cache::clear);
+        return aiAllowances().stream().filter(a -> a.code().equals(code)).findFirst().orElseThrow();
+    }
+
     @Transactional
     public PlanView updatePlan(String code, String name, Integer maxBranches, Integer maxUsers, Integer maxRegisters,
                                BigDecimal monthlyPrice, BigDecimal annualPrice, boolean active,
-                               List<String> modules, List<String> features, Integer maxInvoiceScans) {
-        if (maxInvoiceScans != null && maxInvoiceScans < 0) {
-            throw new BusinessRuleException("Las lecturas con IA por mes no pueden ser negativas (vacío = sin límite).");
+                               List<String> modules, List<String> features) {
+        if (features != null && features.contains(PlanFeature.AI.name())) {
+            throw new BusinessRuleException("XASKA IA es un adicional: dalo desde los extras de cada negocio.");
         }
         int updated = jdbc.update("""
                 UPDATE platform.plans SET name = ?, max_branches = ?, max_users = ?, max_registers = ?,
                        monthly_price = ?, annual_price = ?, active = ?, modules = coalesce(?, modules),
-                       features = coalesce(?, features), max_invoice_scans = ?, updated_at = now()
+                       features = coalesce(?, features), updated_at = now()
                 WHERE code = ?""", name.trim(), maxBranches, maxUsers, maxRegisters, monthlyPrice, annualPrice, active,
-                modules == null ? null : modulesCsv(modules), features == null ? null : featuresCsv(features),
-                maxInvoiceScans, code);
+                modules == null ? null : modulesCsv(modules), features == null ? null : featuresCsv(features), code);
         if (updated == 0) {
             throw new NotFoundException("Plan no encontrado.");
         }
@@ -489,7 +510,7 @@ public class SubscriptionService implements SubscriptionApi {
                        p.max_users AS p_max_users, p.max_registers AS p_max_registers,
                        p.monthly_price AS p_monthly_price, p.annual_price AS p_annual_price, p.active AS p_active,
                        p.modules AS p_modules, p.features AS p_features, p.legacy AS p_legacy,
-                       p.max_invoice_scans AS p_max_invoice_scans
+                       (SELECT monthly_limit FROM platform.ai_allowances WHERE code = 'INVOICE_SCANS') AS ai_invoice_scans
                 FROM platform.subscriptions s
                 JOIN platform.tenants t ON t.id = s.tenant_id
                 JOIN platform.users u ON u.id = t.owner_user_id
@@ -503,7 +524,7 @@ public class SubscriptionService implements SubscriptionApi {
                         rs.getInt("extra_branches"), rs.getInt("extra_registers"), rs.getInt("extra_users"),
                         rs.getString("extras_note"), instantOrNull(rs.getTimestamp("extras_until")), true,
                         rs.getInt("extra_invoice_scans")),
-                instantOrNull(rs.getTimestamp("price_locked_until"))), tenantId)
+                instantOrNull(rs.getTimestamp("price_locked_until")), rs.getInt("ai_invoice_scans")), tenantId)
                 .stream().findFirst();
     }
 
@@ -571,7 +592,7 @@ public class SubscriptionService implements SubscriptionApi {
                 (Integer) rs.getObject(prefix + "max_registers"), rs.getBigDecimal(prefix + "monthly_price"),
                 rs.getBigDecimal(prefix + "annual_price"), rs.getBoolean(prefix + "active"),
                 csvList(rs.getString(prefix + "modules")), csvList(rs.getString(prefix + "features")),
-                rs.getBoolean(prefix + "legacy"), (Integer) rs.getObject(prefix + "max_invoice_scans"));
+                rs.getBoolean(prefix + "legacy"));
     }
 
     private static List<String> csvList(String csv) {

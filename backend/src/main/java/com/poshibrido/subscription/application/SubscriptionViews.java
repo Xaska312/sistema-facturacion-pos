@@ -20,7 +20,7 @@ public final class SubscriptionViews {
      */
     public record PlanView(String code, String name, Integer maxBranches, Integer maxUsers, Integer maxRegisters,
                            BigDecimal monthlyPrice, BigDecimal annualPrice, boolean active, List<String> modules,
-                           List<String> features, boolean legacy, Integer maxInvoiceScans) {
+                           List<String> features, boolean legacy) {
     }
 
     /** Lo que el administrador le dio de más a un negocio; {@code until} nulo = sin fecha de fin. */
@@ -28,9 +28,16 @@ public final class SubscriptionViews {
                          String note, Instant until, boolean active, int invoiceScans) {
     }
 
-    /** Lo que el negocio puede usar hoy: su plan más los extras vigentes. Límites {@code null} = sin límite. */
+    /**
+     * Lo que el negocio puede usar hoy: su plan más los extras vigentes. Límites {@code null} = sin límite.
+     * {@code maxInvoiceScans}: facturas con IA al mes (0 sin el adicional XASKA IA).
+     */
     public record Entitled(Integer maxBranches, Integer maxUsers, Integer maxRegisters, List<String> modules,
-                           List<String> features, Integer maxInvoiceScans) {
+                           List<String> features, int maxInvoiceScans) {
+    }
+
+    /** Tope al mes de una función del adicional XASKA IA (decisión 295), igual para todos los negocios que lo tienen. */
+    public record AiAllowance(String code, String name, int monthlyLimit) {
     }
 
     /**

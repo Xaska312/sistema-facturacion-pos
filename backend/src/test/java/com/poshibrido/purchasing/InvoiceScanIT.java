@@ -42,7 +42,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Ingresar la mercancía con la foto o el PDF de la factura (decisión 295): la IA (aquí simulada) la lee y sale el mismo
  * borrador que con el XML; las fotos se reducen antes de leerlas; la lectura cuenta en el tope del mes solo si se pudo
- * leer; con el tope lleno se avisa, y los extras de la consola dan más.
+ * leer; solo con el adicional XASKA IA; con el tope lleno se avisa, y los extras de la consola dan más.
  */
 class InvoiceScanIT extends IntegrationTest {
 
@@ -59,9 +59,20 @@ class InvoiceScanIT extends IntegrationTest {
         api.postWith(s, "/api/v1/products", CatalogFixturesAccess.simpleProduct("ACE500", "Acetaminofén 500 mg caja",
                 "5000", "7702001001001")).andExpect(status().isCreated());
 
-        // La prueba corre con el plan Empresa: 150 lecturas al mes.
+        // Ningún plan trae XASKA IA: sin el adicional no hay botón ni lectura (el XML sigue para todos).
+        api.getWith(s, "/api/v1/purchases/documents/scan-usage").andExpect(status().isForbidden());
+        scan(s, photo(600, 600)).andExpect(status().isForbidden());
+        Session admin = platformAdmin();
+        api.putWith(admin, "/api/v1/platform/plans/EMPRESA", """
+                {"name":"Empresa","active":true,"features":["PURCHASES","AI"]}""").andExpect(status().is(422));
+        api.getWith(admin, "/api/v1/platform/ai-allowances").andExpect(jsonPath("$[0].code").value("INVOICE_SCANS"))
+                .andExpect(jsonPath("$[0].monthlyLimit").value(100));
+        String extras = "/api/v1/platform/tenants/%s/subscription/extras".formatted(owner.tenantId());
+        api.putWith(admin, extras, "{\"modules\":[],\"features\":[\"AI\"],\"branches\":0,\"registers\":0,\"users\":0}")
+                .andExpect(status().isOk()).andExpect(jsonPath("$.entitled.maxInvoiceScans").value(100));
+        s = renew(s);
         api.getWith(s, "/api/v1/purchases/documents/scan-usage").andExpect(jsonPath("$.available").value(true))
-                .andExpect(jsonPath("$.limit").value(150)).andExpect(jsonPath("$.used").value(0));
+                .andExpect(jsonPath("$.limit").value(100)).andExpect(jsonPath("$.used").value(0));
 
         // Una foto grande: se lee reducida (máximo 1.600 px) y sale el borrador emparejado, con el aviso de revisar.
         when(reader.read(any())).thenReturn(readInvoice());
@@ -101,26 +112,35 @@ class InvoiceScanIT extends IntegrationTest {
         scan(s, photo(10, 10), photo(10, 10), photo(10, 10), photo(10, 10), photo(10, 10), photo(10, 10))
                 .andExpect(status().is(422));
 
-        // Plan Negocio (40) con el mes lleno: se avisa; con 5 lecturas de más desde la consola, vuelve a leer.
-        Session admin = platformAdmin();
-        api.putWith(admin, "/api/v1/platform/tenants/%s/subscription/plan".formatted(owner.tenantId()),
-                "{\"planCode\":\"NEGOCIO\"}").andExpect(status().isOk());
+        // Tope de la consola en 40 y el mes lleno: se avisa; con 5 de más para este negocio, vuelve a leer.
+        api.putWith(admin, "/api/v1/platform/ai-allowances/INVOICE_SCANS", "{\"monthlyLimit\":40}")
+                .andExpect(status().isOk()).andExpect(jsonPath("$.monthlyLimit").value(40));
         String schema = jdbc.queryForObject("SELECT schema_name FROM platform.tenants WHERE id = ?", String.class,
                 owner.tenantId());
         for (int i = 0; i < 38; i++) {
             jdbc.update(("INSERT INTO %s.purchase_invoice_scans (id, status, pages, created_by, created_at) "
                     + "VALUES (?, 'OK', 1, ?, now())").formatted(schema), UUID.randomUUID(), UUID.randomUUID());
         }
-        doReturn(readInvoice()).when(reader).read(any());
-        scan(s, photo(600, 600)).andExpect(status().is(422))
-                .andExpect(jsonPath("$.detail", containsString("Llegaste a las 40 lecturas")));
-        api.putWith(admin, "/api/v1/platform/tenants/%s/subscription/extras".formatted(owner.tenantId()),
-                "{\"modules\":[],\"features\":[],\"branches\":0,\"registers\":0,\"users\":0,\"invoiceScans\":5}")
-                .andExpect(status().isOk()).andExpect(jsonPath("$.entitled.maxInvoiceScans").value(45))
-                .andExpect(jsonPath("$.usage.invoiceScans").value(40));
-        scan(s, photo(600, 600)).andExpect(status().isOk());
-        api.getWith(s, "/api/v1/purchases/documents/scan-usage").andExpect(jsonPath("$.limit").value(45))
-                .andExpect(jsonPath("$.used").value(41));
+        try {
+            doReturn(readInvoice()).when(reader).read(any());
+            scan(s, photo(600, 600)).andExpect(status().is(422))
+                    .andExpect(jsonPath("$.detail", containsString("Llegaste a las 40 lecturas")));
+            api.putWith(admin, extras, "{\"modules\":[],\"features\":[\"AI\"],\"branches\":0,\"registers\":0,"
+                    + "\"users\":0,\"invoiceScans\":5}")
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.entitled.maxInvoiceScans").value(45))
+                    .andExpect(jsonPath("$.usage.invoiceScans").value(40));
+            scan(s, photo(600, 600)).andExpect(status().isOk());
+            api.getWith(s, "/api/v1/purchases/documents/scan-usage").andExpect(jsonPath("$.limit").value(45))
+                    .andExpect(jsonPath("$.used").value(41));
+        } finally {
+            api.putWith(admin, "/api/v1/platform/ai-allowances/INVOICE_SCANS", "{\"monthlyLimit\":100}")
+                    .andExpect(status().isOk());
+        }
+    }
+
+    private Session renew(Session session) throws Exception {
+        return com.poshibrido.support.TestApi.session(api.refreshRaw(session.refreshToken())
+                .andExpect(status().isOk()).andReturn());
     }
 
     private static Result readInvoice() {

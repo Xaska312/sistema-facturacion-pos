@@ -1,11 +1,12 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { Observable } from 'rxjs';
-import { Plan, PlanFeature, PlanInput } from '../../core/api/api.models';
+import { AiAllowance, Plan, PlanFeature, PlanInput } from '../../core/api/api.models';
 import { BUSINESS_MODULES } from '../../shared/business-types';
-import { PLAN_FEATURES, includedText, toggle } from './plan-features';
+import { PLAN_ONLY_FEATURES, includedText, toggle } from './plan-features';
 import { PlatformApi } from '../../core/api/platform.api';
 import { FormDialogComponent } from '../../shared/forms/form-dialog.component';
 import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
@@ -27,7 +28,6 @@ interface PlanDraft {
   monthlyPrice: number | null;
   annualPrice: number | null;
   active: boolean;
-  maxInvoiceScans: number | null;
 }
 
 /** Planes de suscripción: límites y precios (fase 8b). Límite vacío = sin límite; precio vacío = sin definir. */
@@ -50,6 +50,28 @@ interface PlanDraft {
       </ng-template>
     </app-data-table>
 
+    <section class="card p-4 mt-4 flex flex-col gap-3" aria-labelledby="ai-title">
+      <div>
+        <h2 id="ai-title" class="font-bold tracking-tight">XASKA IA (adicional)</h2>
+        <p class="text-xs text-muted">Ningún plan lo trae: se le da a cada negocio en Suscripciones → Dar extras →
+          "XASKA IA". Estos son los topes al mes de cada función, iguales para todos los que lo tienen.</p>
+      </div>
+      @for (a of allowances(); track a.code) {
+        <form class="flex flex-wrap items-end gap-3" (ngSubmit)="saveAllowance(a.code)">
+          <label class="flex flex-col gap-1 flex-1 min-w-56">
+            <span class="text-sm font-medium">{{ a.name }} al mes</span>
+            <input pInputText type="number" min="0" max="100000" [name]="'ai-' + a.code"
+                   [(ngModel)]="allowanceDrafts[a.code]" />
+          </label>
+          <p-button type="submit" label="Guardar" icon="pi pi-check" [outlined]="true"
+                    [loading]="savingAllowance() === a.code"
+                    [disabled]="allowanceDrafts[a.code] === a.monthlyLimit" />
+        </form>
+      } @empty {
+        <p class="text-sm text-muted">Cargando…</p>
+      }
+    </section>
+
     <app-form-dialog [(visible)]="editOpen" [header]="'Editar plan ' + (target()?.name ?? '')" width="36rem"
                      [dirty]="dirty()" [invalidMessage]="problem()" [save]="saveRequest"
                      successMessage="Plan guardado" (saved)="load()">
@@ -71,13 +93,8 @@ interface PlanDraft {
             <label for="plan-registers" class="text-sm font-medium">Máximo de cajas</label>
             <input pInputText id="plan-registers" type="number" min="1" [(ngModel)]="draft.maxRegisters" />
           </div>
-          <div class="flex flex-col gap-1">
-            <label for="plan-scans" class="text-sm font-medium">Facturas leídas con IA al mes</label>
-            <input pInputText id="plan-scans" type="number" min="0" [(ngModel)]="draft.maxInvoiceScans" />
-          </div>
         </div>
-        <small class="text-muted -mt-1">Vacío = sin límite. Los usuarios cuentan las invitaciones pendientes. Facturas
-          con IA en 0 = el plan no la incluye.</small>
+        <small class="text-muted -mt-1">Vacío = sin límite. Los usuarios cuentan las invitaciones pendientes.</small>
         <div class="grid grid-cols-2 gap-3">
           <div class="flex flex-col gap-1">
             <label for="plan-monthly" class="text-sm font-medium">Precio mensual</label>
@@ -120,16 +137,20 @@ interface PlanDraft {
 })
 export class PlatformPlansComponent implements OnInit {
   private readonly platform = inject(PlatformApi);
+  private readonly messages = inject(MessageService);
 
   protected readonly plans = signal<Plan[]>([]);
   protected readonly loading = signal(true);
   protected readonly target = signal<Plan | null>(null);
+  protected readonly allowances = signal<AiAllowance[]>([]);
+  protected readonly savingAllowance = signal<string | null>(null);
+  protected allowanceDrafts: Record<string, number> = {};
   protected editOpen = false;
   protected draft: PlanDraft = emptyDraft();
   private snapshot = '';
 
   protected readonly modules = BUSINESS_MODULES;
-  protected readonly features = PLAN_FEATURES;
+  protected readonly features = PLAN_ONLY_FEATURES;
   protected readonly toggleIn = toggle;
   protected readonly trackByCode = (row: Plan): string => row.code;
   protected readonly columns: ColumnDef<Plan>[] = [
@@ -137,7 +158,6 @@ export class PlatformPlansComponent implements OnInit {
     { header: 'Sucursales', cell: (p) => limitText(p.maxBranches) },
     { header: 'Usuarios', cell: (p) => limitText(p.maxUsers) },
     { header: 'Cajas', cell: (p) => limitText(p.maxRegisters) },
-    { header: 'Facturas IA/mes', cell: (p) => scansText(p.maxInvoiceScans), hideOnMobile: true },
     { header: 'Incluye', cell: (p) => includedText(p.modules, p.features) + (p.legacy ? ' (plan anterior)' : '') },
     { header: 'Precio mensual', cell: (p) => p.monthlyPrice, template: 'monthly' },
     { header: 'Precio anual', cell: (p) => p.annualPrice, template: 'annual' },
@@ -146,6 +166,32 @@ export class PlatformPlansComponent implements OnInit {
 
   ngOnInit(): void {
     this.load();
+    this.loadAllowances();
+  }
+
+  private loadAllowances(): void {
+    this.platform.aiAllowances().subscribe((list) => {
+      this.allowances.set(list);
+      this.allowanceDrafts = Object.fromEntries(list.map((a) => [a.code, a.monthlyLimit]));
+    });
+  }
+
+  saveAllowance(code: string): void {
+    const value = Number(this.allowanceDrafts[code]);
+    if (!Number.isInteger(value) || value < 0 || value > 100000) {
+      this.messages.add({ severity: 'warn', summary: 'XASKA IA', detail: 'El tope al mes va de 0 a 100.000.' });
+      return;
+    }
+    this.savingAllowance.set(code);
+    this.platform.updateAiAllowance(code, value).subscribe({
+      next: (saved) => {
+        this.savingAllowance.set(null);
+        this.allowances.update((list) => list.map((a) => (a.code === code ? saved : a)));
+        this.allowanceDrafts[code] = saved.monthlyLimit;
+        this.messages.add({ severity: 'success', summary: 'Tope guardado', detail: saved.name, life: 3000 });
+      },
+      error: () => this.savingAllowance.set(null),
+    });
   }
 
   load(): void {
@@ -167,8 +213,7 @@ export class PlatformPlansComponent implements OnInit {
     this.target.set(plan);
     this.draft = { name: plan.name, maxBranches: plan.maxBranches, maxUsers: plan.maxUsers,
       maxRegisters: plan.maxRegisters, modules: [...plan.modules], features: [...plan.features],
-      monthlyPrice: plan.monthlyPrice, annualPrice: plan.annualPrice, active: plan.active,
-      maxInvoiceScans: plan.maxInvoiceScans };
+      monthlyPrice: plan.monthlyPrice, annualPrice: plan.annualPrice, active: plan.active };
     this.snapshot = JSON.stringify(this.draft);
     this.editOpen = true;
   }
@@ -183,10 +228,6 @@ export class PlatformPlansComponent implements OnInit {
     }
     if (!validLimit(this.draft.maxBranches) || !validLimit(this.draft.maxUsers) || !validLimit(this.draft.maxRegisters)) {
       return 'Los límites son números enteros desde 1 (o vacíos, sin límite).';
-    }
-    const scans = toLimit(this.draft.maxInvoiceScans);
-    if (scans !== null && (!Number.isInteger(scans) || scans < 0)) {
-      return 'Las facturas con IA son un número entero desde 0 (o vacío, sin límite).';
     }
     return null;
   }
@@ -206,7 +247,6 @@ export class PlatformPlansComponent implements OnInit {
       monthlyPrice: this.draft.monthlyPrice,
       annualPrice: this.draft.annualPrice,
       active: this.draft.active,
-      maxInvoiceScans: toLimit(this.draft.maxInvoiceScans),
     };
     return this.platform.updatePlan(target.code, input);
   };
@@ -214,12 +254,7 @@ export class PlatformPlansComponent implements OnInit {
 
 function emptyDraft(): PlanDraft {
   return { name: '', maxBranches: null, maxUsers: null, maxRegisters: null, modules: [], features: [], monthlyPrice: null,
-    annualPrice: null, active: true, maxInvoiceScans: null };
-}
-
-/** Facturas con IA al mes: 0 = el plan no la incluye. */
-export function scansText(value: number | null): string {
-  return value === 0 ? 'No incluye' : limitText(value);
+    annualPrice: null, active: true };
 }
 
 /** El campo numérico vacío llega como null o ''. */

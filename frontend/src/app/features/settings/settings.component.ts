@@ -78,10 +78,10 @@ const TIMEZONE_LABEL: Record<string, string> = {
             <dt class="text-muted">Uso de cajas</dt>
             <dd>{{ s.usage.registers }} de {{ s.entitled.maxRegisters ?? 'sin límite' }}</dd>
           </div>
-          @if (s.entitled.maxInvoiceScans !== 0) {
+          @if (s.entitled.maxInvoiceScans > 0) {
             <div class="flex flex-col gap-1">
               <dt class="text-muted">Facturas leídas con IA este mes</dt>
-              <dd>{{ s.usage.invoiceScans }} de {{ s.entitled.maxInvoiceScans ?? 'sin límite' }}</dd>
+              <dd>{{ s.usage.invoiceScans }} de {{ s.entitled.maxInvoiceScans }}</dd>
             </div>
           }
           <div class="flex flex-col gap-1 sm:col-span-2">

@@ -763,11 +763,11 @@ export const MANUAL: readonly ManualChapter[] = [
           'Si la factura trae lote y vencimiento (en su campo o en la descripción), se llenan solos.',
           'La foto o el PDF los lee una inteligencia artificial: casi siempre acierta, pero revisa cada cantidad y '
             + 'costo contra el papel. Si una foto sale borrosa, te avisa y no se descuenta.',
-          'Cada factura leída con IA cuenta una vez en las lecturas del mes de tu plan (Negocio 40, Empresa 150), '
-            + 'aunque tenga varias fotos. Las ves en la misma pantalla y en Ajustes → Suscripción.',
+          'La foto y el PDF son parte de XASKA IA, un adicional que se activa aparte del plan. Cada factura leída '
+            + 'cuenta una vez en el tope del mes, aunque tenga varias fotos; lo ves en la misma pantalla.',
         ],
         who: 'Quien recibe mercancía, con los permisos "Cargar la factura del proveedor" (el XML) y "Leer con IA la '
-          + 'foto o el PDF de la factura". Requiere el plan Negocio o superior.',
+          + 'foto o el PDF de la factura". Requiere el plan Negocio o superior y, para la foto o el PDF, XASKA IA.',
       },
       {
         id: 'cuentas-por-pagar',

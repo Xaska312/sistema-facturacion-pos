@@ -4,6 +4,7 @@ import com.poshibrido.shared.api.PageResponse;
 import com.poshibrido.shared.security.CurrentActor;
 import com.poshibrido.subscription.application.ActivationCodeService;
 import com.poshibrido.subscription.application.SubscriptionService;
+import com.poshibrido.subscription.application.SubscriptionViews;
 import com.poshibrido.subscription.application.SubscriptionService.PaymentCommand;
 import com.poshibrido.subscription.application.SubscriptionViews.ActivationCodeView;
 import com.poshibrido.subscription.application.SubscriptionViews.CreatedCodes;
@@ -54,7 +55,7 @@ public class PlatformSubscriptionController {
                               @Size(max = 20) List<@Size(max = 20) String> features,
                               @DecimalMin("0") @Digits(integer = 12, fraction = 2) BigDecimal monthlyPrice,
                               @DecimalMin("0") @Digits(integer = 12, fraction = 2) BigDecimal annualPrice,
-                              @NotNull Boolean active, @Min(0) Integer maxInvoiceScans) {
+                              @NotNull Boolean active) {
     }
 
     public record PaymentRequest(@NotBlank @Size(max = 20) String planCode, @NotNull BillingCycle billingCycle,
@@ -91,7 +92,22 @@ public class PlatformSubscriptionController {
     public PlanView updatePlan(@PathVariable String code, @Valid @RequestBody PlanRequest request) {
         return subscriptions.updatePlan(code, request.name(), request.maxBranches(), request.maxUsers(),
                 request.maxRegisters(), request.monthlyPrice(), request.annualPrice(), request.active(),
-                request.modules(), request.features(), request.maxInvoiceScans());
+                request.modules(), request.features());
+    }
+
+    /** Tope al mes de una función de XASKA IA (decisión 295). */
+    public record AiAllowanceRequest(@Min(0) @Max(100000) int monthlyLimit) {
+    }
+
+    @GetMapping("/ai-allowances")
+    public List<SubscriptionViews.AiAllowance> aiAllowances() {
+        return subscriptions.aiAllowances();
+    }
+
+    @PutMapping("/ai-allowances/{code}")
+    public SubscriptionViews.AiAllowance updateAiAllowance(@PathVariable String code,
+                                                           @Valid @RequestBody AiAllowanceRequest request) {
+        return subscriptions.updateAiAllowance(code, request.monthlyLimit());
     }
 
     // ---------------------------------------------------------------- suscripciones

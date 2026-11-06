@@ -969,7 +969,7 @@ export type SubscriptionStatus = 'TRIAL' | 'ACTIVE' | 'PAST_DUE' | 'EXPIRED';
 export type BillingCycle = 'MONTHLY' | 'ANNUAL';
 
 /** Funciones que dependen del plan (decisión 288). */
-export type PlanFeature = 'PURCHASES' | 'DIRECT_PRINT' | 'AUDIT' | 'TRANSFERS' | 'ZONE_REGISTERS';
+export type PlanFeature = 'PURCHASES' | 'DIRECT_PRINT' | 'AUDIT' | 'TRANSFERS' | 'ZONE_REGISTERS' | 'AI';
 
 export interface Plan {
   code: string;
@@ -985,8 +985,13 @@ export interface Plan {
   features: PlanFeature[];
   /** Plan anterior (Básico, Pro): solo para quienes ya lo tenían. */
   legacy: boolean;
-  /** Facturas de compra leídas con IA al mes (decisión 295): null = sin límite, 0 = no la incluye. */
-  maxInvoiceScans: number | null;
+}
+
+/** Tope al mes de una función del adicional XASKA IA (decisión 295), igual para todos los que lo tienen. */
+export interface AiAllowance {
+  code: string;
+  name: string;
+  monthlyLimit: number;
 }
 
 /** Lo que el administrador le dio de más a un negocio; until null = sin fin. note: solo en la consola. */
@@ -1010,7 +1015,8 @@ export interface Entitled {
   maxRegisters: number | null;
   modules: string[];
   features: PlanFeature[];
-  maxInvoiceScans: number | null;
+  /** Facturas con IA al mes: 0 sin el adicional XASKA IA (decisión 295). */
+  maxInvoiceScans: number;
 }
 
 export interface SubscriptionPayment {
@@ -1106,7 +1112,6 @@ export interface PlanInput {
   monthlyPrice: number | null;
   annualPrice: number | null;
   active: boolean;
-  maxInvoiceScans: number | null;
 }
 
 export interface CodeInput {
