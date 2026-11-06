@@ -447,6 +447,9 @@ export const MANUAL: readonly ManualChapter[] = [
           'El término de la carne sale resaltado; lo anulado sale tachado con una alarma y un aviso arriba.',
           '"Deshacer" devuelve la comanda un paso si se tocó por error.',
           'Si se cae la conexión dice "Reconectando…" y se sigue actualizando cada 15 segundos.',
+          'Una misma cuenta puede tener hasta 10 pantallas con avisos en vivo (Cocina, Mesas, Comandas). Si abres una '
+            + 'más, la más vieja dice "Los avisos en vivo pasaron a otra pantalla" y sigue actualizándose cada pocos '
+            + 'segundos; con "Recibir avisos aquí" los vuelve a tomar. Para muchas pantallas, mejor un usuario por estación.',
         ],
         who: 'Permiso "Usar la pantalla de cocina" (Propietario, Administrador y el rol Cocina).',
       },

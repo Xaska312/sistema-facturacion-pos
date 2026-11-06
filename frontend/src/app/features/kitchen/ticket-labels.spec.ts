@@ -1,6 +1,6 @@
 import { DiningEvent } from '../../core/realtime/dining-events.service';
 import { comandaHtml } from './comanda-print';
-import { isReadyFor } from './restaurant-live.service';
+import { isReadyFor, liveKey } from './restaurant-live.service';
 import { minutesSince, ticketStatusLabel, urgency } from './ticket-labels';
 
 const event = (over: Partial<DiningEvent>): DiningEvent => ({
@@ -36,5 +36,14 @@ describe('pantalla de cocina (Fase 12b-4)', () => {
     expect(html).toContain('ANULACIÓN');
     expect(html).toContain('de la comanda #12');
     expect(html).toContain('NO PREPARAR: 1 HAMBURGUESA');
+  });
+});
+
+describe('liveKey (decisión 291)', () => {
+  it('solo cambia con el negocio o con el acceso a mesas y cocina, no con cada renovación del token', () => {
+    expect(liveKey('t1', true)).toBe(liveKey('t1', true));
+    expect(liveKey('t1', true)).not.toBe(liveKey('t2', true));
+    expect(liveKey('t1', true)).not.toBe(liveKey('t1', false));
+    expect(liveKey(null, false)).toBe('-|off');
   });
 });

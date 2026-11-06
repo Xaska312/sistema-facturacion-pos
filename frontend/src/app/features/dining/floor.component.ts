@@ -13,6 +13,7 @@ import { XIconComponent } from '../../shared/icons/xicon.component';
 import { formatCop } from '../../shared/money';
 import { PageHeaderComponent } from '../../shared/page-header.component';
 import { liveRefresh } from '../../core/realtime/live-refresh';
+import { LiveReplacedComponent } from '../../core/realtime/live-replaced.component';
 import { kindGlyph, openFor } from './dining-labels';
 import { TablePlanComponent } from './table-plan.component';
 import { MAP_STATES, MapState, stateLabel } from './table-map';
@@ -28,7 +29,7 @@ const REFRESH_MS = 15_000;
  */
 @Component({
   selector: 'app-floor',
-  imports: [FormsModule, RouterLink, ButtonModule, InputTextModule, SkeletonModule, PageHeaderComponent,
+  imports: [FormsModule, RouterLink, ButtonModule, InputTextModule, SkeletonModule, PageHeaderComponent, LiveReplacedComponent,
     FormDialogComponent, EmptyStateComponent, XIconComponent, TablePlanComponent],
   template: `
     <app-page-header title="Mesas" description="Toca una mesa libre para abrir su cuenta o una ocupada para pedir y cobrar.">
@@ -39,6 +40,8 @@ const REFRESH_MS = 15_000;
            [text]="true"></a>
       }
     </app-page-header>
+
+    <app-live-replaced />
 
     @if (floor(); as f) {
       @if (f.branches.length > 1) {
