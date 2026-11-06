@@ -587,7 +587,9 @@ Todo con `pharmacy:quality` y el módulo Medicamentos. `branchId` opcional (la p
 |---|---|---|---|
 | PUT | `/platform/plans/{code}` | Administrador de plataforma | Además `maxRegisters`, `modules[]` y `features[]` (nulos = no cambian). Incluir `AI` (XASKA IA) da 422: es un adicional |
 | GET | `/platform/ai-allowances` | Administrador de plataforma | Decisión 295: `[{code, name, monthlyLimit}]`, topes al mes de cada función de XASKA IA (hoy `INVOICE_SCANS`) |
-| PUT | `/platform/ai-allowances/{code}` | Administrador de plataforma | `{monthlyLimit}` de 0 a 100.000 |
+| PUT | `/platform/ai-allowances/{code}` | Administrador de plataforma | `{monthlyLimit}` de 0 a 100.000. Códigos: `INVOICE_SCANS` (295) y `QUESTIONS` (296) |
+| POST | `/ai/ask` | `ai:ask` | Decisión 296, "Pregúntale a tu negocio": `{question (≤500), history?: [{role: user\|assistant, text}] (≤20; se usan las 8 últimas)}` → `{answer, consulted[] (lo que consultó), usage: {available, limit, used}}`. La IA solo usa consultas de solo lectura y solo las que permiten los permisos de quien pregunta. No se guarda el texto. 422: IA apagada, tope del mes, no pudo responder o no respondió ("No se descontó") |
+| GET | `/ai/usage` | `ai:ask` | `{available, limit, used}` de las preguntas del mes |
 | PUT | `/platform/tenants/{tenantId}/subscription/extras` | Administrador de plataforma | `{modules[], features[], branches, registers, users, invoiceScans? (0–10.000, decisión 295), note?, until?}`. Se suman al plan; `until` futuro o nulo (sin fin). Evento `SUBSCRIPTION_EXTRAS_CHANGED` |
 | GET | `/subscription` y `/platform/tenants/{id}/subscription` | — | Traen `entitled{maxBranches, maxUsers, maxRegisters, modules, features, maxInvoiceScans}`, `extras` (sin `note` para el negocio), `usage.registers`, `usage.invoiceScans` (facturas leídas con IA este mes) y `priceLockedUntil` |
 | GET/PUT | `/business-profile` | — | Traen `allowedModules` y `planName`; PUT da 422 si se prende un módulo que el plan no incluye |

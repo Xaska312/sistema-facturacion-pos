@@ -6,7 +6,7 @@
  */
 /** 1.2 (decisión 288): planes Emprende, Negocio y Empresa, extras, mejoras y precios. */
 export const TERMS_VERSION = '1.2';
-/** 1.3 (decisión 295): la lectura de facturas de proveedores con IA (Anthropic, encargado en Estados Unidos). */
+/** 1.3 (decisiones 295 y 296): XASKA IA (Anthropic, encargado en Estados Unidos): facturas y preguntas al negocio. */
 export const PRIVACY_VERSION = '1.3';
 
 /** Datos del responsable (persona natural con la marca XASKA). */
@@ -165,9 +165,11 @@ export const PRIVACY_POLICY: LegalDocument = {
             `Alojamiento del servidor: ${O.hosting}.`,
             'Envío de correos: Resend.',
             'Copias de seguridad cifradas: Google Drive.',
-            'Lectura de facturas de proveedores con inteligencia artificial: Anthropic (Claude). Solo recibe las fotos '
-              + 'o el PDF de la factura que el negocio decide leer, para devolver sus datos; no los usa para entrenar '
-              + 'sus modelos y los borra según sus plazos de retención.',
+            'XASKA IA, el adicional de inteligencia artificial: Anthropic (Claude). Solo recibe lo que el negocio decide '
+              + 'enviar: las fotos o el PDF de las facturas de proveedores que se leen, y las preguntas de "Pregúntale a '
+              + 'tu negocio" con los datos de los reportes necesarios para responderlas (pueden incluir nombres de '
+              + 'clientes, productos y cifras). No los usa para entrenar sus modelos y los borra según sus plazos de '
+              + 'retención.',
           ],
         },
         {

@@ -1133,6 +1133,25 @@ export const MANUAL: readonly ManualChapter[] = [
     icon: 'pi pi-chart-bar',
     sections: [
       {
+        id: 'pregunta-ia',
+        title: 'Pregúntale a tu negocio (XASKA IA)',
+        summary: 'Escribe una pregunta como "¿cuánto vendí hoy?" o "¿qué se me vence este mes?" y XASKA IA la '
+          + 'responde con tus reportes. Solo consulta: nunca cambia nada.',
+        steps: [
+          'Toca "Pregúntale" (el ícono IA) en la barra de arriba, desde cualquier pantalla.',
+          'Escribe tu pregunta o toca uno de los ejemplos, y espera unos segundos.',
+          'Puedes seguir preguntando sobre lo mismo ("¿y la semana pasada?"). Con "Nueva" empiezas otra conversación.',
+        ],
+        tips: [
+          'Responde sobre ventas, productos, inventario y vencimientos, fiados, cuentas por pagar y cajas.',
+          'Cada usuario solo recibe respuestas de lo que su rol le deja ver: un cajero no ve la utilidad del negocio.',
+          'Debajo de cada respuesta dice qué consultó. Revisa en Reportes las cifras importantes antes de decidir.',
+          'La conversación se borra al cerrar el panel: XASKA no guarda lo que preguntas, solo cuenta cuántas preguntas '
+            + 'van en el mes.',
+        ],
+        who: 'Todos los roles menos el Mesero, en negocios con el adicional XASKA IA.',
+      },
+      {
         id: 'tablero',
         title: 'Tablero del inicio',
         summary: 'Ventas, utilidad, medios de pago y productos más vendidos del periodo, con alertas de existencias.',

@@ -207,6 +207,22 @@ public class SubscriptionService implements SubscriptionApi {
     }
 
     @Override
+    public int aiMonthlyLimit(UUID tenantId, String allowanceCode) {
+        return current(tenantId).map(c -> {
+            Entitled e = c.entitled(Instant.now());
+            if (!e.features().contains(PlanFeature.AI.name())) {
+                return 0;
+            }
+            if ("INVOICE_SCANS".equals(allowanceCode)) {
+                return e.maxInvoiceScans();
+            }
+            Integer limit = jdbc.query("SELECT monthly_limit FROM platform.ai_allowances WHERE code = ?",
+                    (rs, i) -> rs.getInt(1), allowanceCode).stream().findFirst().orElse(0);
+            return limit;
+        }).orElse(0);
+    }
+
+    @Override
     public void requireCanAddRegister(TenantRef tenant) {
         current(tenant.id()).ifPresent(c -> {
             Integer max = c.entitled(Instant.now()).maxRegisters();

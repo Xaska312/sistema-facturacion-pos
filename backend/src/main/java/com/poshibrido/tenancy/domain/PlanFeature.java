@@ -25,9 +25,10 @@ public enum PlanFeature {
     ZONE_REGISTERS,
     /**
      * XASKA IA (decisión 295): adicional pagado que no trae ningún plan; lo da el administrador como extra. Cada
-     * función tiene su tope al mes ({@code platform.ai_allowances}). Hoy: leer facturas de compra en foto o PDF.
+     * función tiene su tope al mes ({@code platform.ai_allowances}): leer facturas de compra en foto o PDF y
+     * "Pregúntale a tu negocio" (decisión 296).
      */
-    AI("purchases:scan");
+    AI("purchases:scan", "ai:ask");
 
     private static final String AUTHORITY_PREFIX = "plan:";
 

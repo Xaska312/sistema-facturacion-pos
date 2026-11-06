@@ -39,6 +39,12 @@ public interface SubscriptionApi {
     Integer invoiceScansPerMonth(UUID tenantId);
 
     /**
+     * Tope al mes de una función de XASKA IA ({@code platform.ai_allowances.code}, decisión 296): 0 sin el adicional;
+     * con él, el tope de la consola (las facturas suman además sus extras).
+     */
+    int aiMonthlyLimit(UUID tenantId, String allowanceCode);
+
+    /**
      * Módulos y funciones que el plan del negocio (más sus extras vigentes) incluye (decisión 288). Sin suscripción,
      * todo (no se le quita nada a un negocio por un dato que falta) menos el adicional pagado XASKA IA.
      */
