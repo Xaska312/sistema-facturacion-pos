@@ -80,6 +80,12 @@
   /* "POS" gigante del panel (como en xaska.co): degradado índigo a lavanda. */
   --xaska-pos-from: #6366f1;
   --xaska-pos-to: #c7d2fe;
+  /* Logo del adicional XASKA IA (decisión 295, opción B): monograma IA en el índigo de la marca, igual en oscuro. */
+  --xaska-ia-tile: #4338ca;
+  --xaska-ia-ink: #ffffff;
+  --xaska-ia-spark: #c7d2fe;
+  --xaska-ia-tag-bg: #4338ca;
+  --xaska-ia-tag-text: #ffffff;
 }
 
 .app-dark {

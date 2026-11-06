@@ -1,3 +1,4 @@
+import { XaskaIaLogoComponent } from '../../shared/brand/xaska-ia-logo.component';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
@@ -55,7 +56,7 @@ export const PAYMENT_METHODS: readonly string[] = ['Transferencia', 'Nequi', 'Da
  */
 @Component({
   selector: 'app-platform-subscriptions',
-  imports: [FormsModule, ButtonModule, DialogModule, InputTextModule, FormDialogComponent, PesosInputDirective,
+  imports: [XaskaIaLogoComponent, FormsModule, ButtonModule, DialogModule, InputTextModule, FormDialogComponent, PesosInputDirective,
     PageHeaderComponent, StatusBadgeComponent, DataTableComponent, CellTemplateDirective],
   template: `
     <app-page-header title="Suscripciones"
@@ -113,7 +114,7 @@ export const PAYMENT_METHODS: readonly string[] = ['Transferencia', 'Nequi', 'Da
           <div><dt class="text-muted">Usuarios</dt><dd>{{ s.usage.users }} de {{ limit(s.entitled.maxUsers) }}</dd></div>
           <div><dt class="text-muted">Cajas</dt><dd>{{ s.usage.registers }} de {{ limit(s.entitled.maxRegisters) }}</dd></div>
           @if (s.entitled.features.includes('AI')) {
-            <div><dt class="text-muted">Facturas con IA este mes</dt>
+            <div><dt class="text-muted flex items-center gap-1"><app-xaska-ia-logo size="sm" />Facturas con IA este mes</dt>
               <dd>{{ s.usage.invoiceScans }} de {{ s.entitled.maxInvoiceScans }}</dd></div>
           }
           <div class="col-span-2 sm:col-span-3"><dt class="text-muted">Incluye (plan + extras)</dt>

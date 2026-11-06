@@ -1,3 +1,4 @@
+import { XaskaIaLogoComponent } from '../../shared/brand/xaska-ia-logo.component';
 import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { forkJoin } from 'rxjs';
 import { FormsModule } from '@angular/forms';
@@ -59,7 +60,7 @@ import {
  */
 @Component({
   selector: 'app-receipt-editor',
-  imports: [FormsModule, RouterLink, ButtonModule, InputTextModule, PageHeaderComponent, PesosInputDirective],
+  imports: [XaskaIaLogoComponent, FormsModule, RouterLink, ButtonModule, InputTextModule, PageHeaderComponent, PesosInputDirective],
   template: `
     <app-page-header title="Recibir mercancía"
                      description="Registra lo que llegó contra la factura del proveedor. Revisa cada producto antes de aceptarlo." />
@@ -78,8 +79,9 @@ import {
                 llena lo que llegó para que lo revises; nada se guarda hasta que tú registres la recepción.</p>
             }
             @if (scanUsageText(); as usage) {
-              <p class="text-xs mt-1" [class.text-muted]="!scanLimitReached()" [class.text-warning]="scanLimitReached()">
-                {{ usage }}</p>
+              <p class="text-xs mt-1 flex items-center gap-1.5" [class.text-muted]="!scanLimitReached()"
+                 [class.text-warning]="scanLimitReached()">
+                <app-xaska-ia-logo size="sm" label="XASKA IA" />{{ usage }}</p>
             }
           </div>
           <input #invoiceFile type="file" class="hidden" aria-label="Archivo de la factura"

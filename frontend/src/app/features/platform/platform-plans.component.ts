@@ -1,3 +1,4 @@
+import { XaskaIaLogoComponent } from '../../shared/brand/xaska-ia-logo.component';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
@@ -33,7 +34,7 @@ interface PlanDraft {
 /** Planes de suscripción: límites y precios (fase 8b). Límite vacío = sin límite; precio vacío = sin definir. */
 @Component({
   selector: 'app-platform-plans',
-  imports: [FormsModule, ButtonModule, InputTextModule, FormDialogComponent, PesosInputDirective, PageHeaderComponent,
+  imports: [XaskaIaLogoComponent, FormsModule, ButtonModule, InputTextModule, FormDialogComponent, PesosInputDirective, PageHeaderComponent,
     DataTableComponent, CellTemplateDirective],
   template: `
     <app-page-header title="Planes"
@@ -52,7 +53,8 @@ interface PlanDraft {
 
     <section class="card p-4 mt-4 flex flex-col gap-3" aria-labelledby="ai-title">
       <div>
-        <h2 id="ai-title" class="font-bold tracking-tight">XASKA IA (adicional)</h2>
+        <h2 id="ai-title" class="font-bold tracking-tight flex items-center gap-2">
+          <app-xaska-ia-logo size="sm" />XASKA IA (adicional)</h2>
         <p class="text-xs text-muted">Ningún plan lo trae: se le da a cada negocio en Suscripciones → Dar extras →
           "XASKA IA". Estos son los topes al mes de cada función, iguales para todos los que lo tienen.</p>
       </div>

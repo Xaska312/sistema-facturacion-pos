@@ -1,5 +1,6 @@
 import { ConsumptionTaxSectionComponent } from './consumption-tax-section.component';
 import { TechnicalDirectorSectionComponent } from '../pharmacy/technical-director-section.component';
+import { XaskaIaLogoComponent } from '../../shared/brand/xaska-ia-logo.component';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -39,7 +40,7 @@ const TIMEZONE_LABEL: Record<string, string> = {
 
 @Component({
   selector: 'app-settings',
-  imports: [ConsumptionTaxSectionComponent, TechnicalDirectorSectionComponent, ReactiveFormsModule, FormsModule, ButtonModule, InputTextModule, PageHeaderComponent, FormDialogComponent,
+  imports: [XaskaIaLogoComponent, ConsumptionTaxSectionComponent, TechnicalDirectorSectionComponent, ReactiveFormsModule, FormsModule, ButtonModule, InputTextModule, PageHeaderComponent, FormDialogComponent,
     BrandingSectionComponent, PrinterSectionComponent, BusinessProfileSectionComponent],
   template: `
     <app-page-header title="Ajustes del negocio" description="Cómo funciona tu negocio: tipo y módulos, inventario, impuestos, zona horaria, moneda, tiquete y marca." />
@@ -80,7 +81,7 @@ const TIMEZONE_LABEL: Record<string, string> = {
           </div>
           @if (s.entitled.maxInvoiceScans > 0) {
             <div class="flex flex-col gap-1">
-              <dt class="text-muted">Facturas leídas con IA este mes</dt>
+              <dt class="text-muted flex items-center gap-1"><app-xaska-ia-logo size="sm" />Facturas leídas con IA este mes</dt>
               <dd>{{ s.usage.invoiceScans }} de {{ s.entitled.maxInvoiceScans }}</dd>
             </div>
           }
