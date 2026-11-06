@@ -19,7 +19,7 @@ class RateLimitFilterTest {
         return new ModelAndView();
     };
 
-    private final RateLimitFilter filter = new RateLimitFilter(new RateLimitProperties(2, 1, 100, 10), RESOLVER,
+    private final RateLimitFilter filter = new RateLimitFilter(new RateLimitProperties(2, 1, 100, 10, 30), RESOLVER,
             mock(SecurityEventLogger.class));
 
     private int post(String uri, String ip) throws Exception {

@@ -35,7 +35,7 @@ class ApiRateLimitFilterTest {
 
     private final SecurityEventLogger events = mock(SecurityEventLogger.class);
     private final ApiRateLimitFilter filter = new ApiRateLimitFilter(
-            new RateLimitProperties(10, 5, 3, 1), RESOLVER, events);
+            new RateLimitProperties(10, 5, 3, 1, 2), RESOLVER, events);
 
     @AfterEach
     void clearContext() {
@@ -74,6 +74,27 @@ class ApiRateLimitFilterTest {
         }
         assertThat(call(null, "/api/v1/auth/login")).isEqualTo(429);
         assertThat(call(null, "/actuator/health")).isEqualTo(200);
+    }
+
+    @Test
+    void liveEventsHaveTheirOwnLimitAndNeverBlockTheRestOfTheApp() throws Exception {
+        UUID cook = UUID.randomUUID();
+        // Una pantalla que se reconecta de más (decisión 291): se le cortan solo los avisos.
+        assertThat(call(cook, "/api/v1/dining/events")).isEqualTo(200);
+        assertThat(call(cook, "/api/v1/dining/events")).isEqualTo(200);
+        MockHttpServletResponse rejected = response(cook, "/api/v1/dining/events");
+        assertThat(rejected.getStatus()).isEqualTo(429);
+        assertThat(rejected.getHeader("Retry-After")).isNotNull();
+        verify(events, times(1)).record(eq(SecurityEvent.RATE_LIMITED), eq(cook), isNull(), isNull(),
+                eq(java.util.Map.of("path", "/api/v1/dining/events", "scope", "events")));
+        // Las conexiones a los avisos no gastaron el límite general (3).
+        for (int i = 0; i < 3; i++) {
+            assertThat(call(cook, "/api/v1/kitchen/board")).isEqualTo(200);
+        }
+        assertThat(call(cook, "/api/v1/kitchen/board")).isEqualTo(429);
+        // Y al revés: gastar el general no corta los avisos de otra persona ni los suyos propios.
+        UUID waiter = UUID.randomUUID();
+        assertThat(call(waiter, "/api/v1/dining/events")).isEqualTo(200);
     }
 
     @Test

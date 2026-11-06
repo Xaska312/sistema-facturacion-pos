@@ -13,6 +13,7 @@ import { PageHeaderComponent } from '../../shared/page-header.component';
 import { ReceiptWidth, loadReceiptWidth, saveReceiptWidth } from '../../shared/receipt/receipt-prefs';
 import { openFor } from '../dining/dining-labels';
 import { liveRefresh } from '../../core/realtime/live-refresh';
+import { LiveReplacedComponent } from '../../core/realtime/live-replaced.component';
 import { printComandas } from './comanda-print';
 import { ticketStatusLabel } from './ticket-labels';
 import { KitchenPrinterService } from './kitchen-printer';
@@ -27,7 +28,8 @@ const REFRESH_MS = 10_000;
  */
 @Component({
   selector: 'app-tickets',
-  imports: [FormsModule, RouterLink, ButtonModule, SkeletonModule, PageHeaderComponent, EmptyStateComponent, XIconComponent],
+  imports: [FormsModule, RouterLink, ButtonModule, SkeletonModule, PageHeaderComponent, EmptyStateComponent, XIconComponent,
+    LiveReplacedComponent],
   template: `
     <app-page-header title="Comandas" description="Lo que se ha enviado a cocina y bar en las últimas horas.">
       @if (canDisplay()) {
@@ -39,6 +41,8 @@ const REFRESH_MS = 10_000;
            [outlined]="true"></a>
       }
     </app-page-header>
+
+    <app-live-replaced />
 
     <section class="card p-4 md:p-5 mb-5" aria-labelledby="printer-title">
       <div class="flex flex-wrap items-start gap-3">

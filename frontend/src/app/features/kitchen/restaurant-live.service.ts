@@ -29,11 +29,18 @@ export class RestaurantLiveService {
     }
     this.started = true;
     this.printer.start();
-    // Se reconecta al cambiar de negocio o de permisos (cada renovación del token trae los permisos de nuevo).
+    // Se reconecta solo al cambiar de negocio o al ganar o perder el acceso a mesas o cocina. Cada renovación del token
+    // vuelve a correr este efecto, pero la conexión abierta sigue sirviendo (se renueva sola a los 10 min): reconectar
+    // ahí dejaba conexiones fantasma en el servidor que sacaban a otras pantallas (decisión 291).
+    let lastKey: string | null = null;
     this.watcher = effect(() => {
       const live = this.auth.hasPermission('module:tables')
         && (this.auth.hasPermission('tables:operate') || this.auth.hasPermission('kitchen:view'));
-      this.auth.tenantId();
+      const key = liveKey(this.auth.tenantId(), live);
+      if (key === lastKey) {
+        return;
+      }
+      lastKey = key;
       untracked(() => (live ? this.events.restart() : this.events.stop()));
     }, { injector: this.injector });
     this.alerts = this.events.events$
@@ -58,6 +65,11 @@ export class RestaurantLiveService {
     this.events.stop();
     this.printer.stop();
   }
+}
+
+/** Lo que decide si hay que (re)conectar los avisos: el negocio y si atiende mesas o cocina. */
+export function liveKey(tenantId: string | null, live: boolean): string {
+  return `${tenantId ?? '-'}|${live ? 'live' : 'off'}`;
 }
 
 /** El aviso "Lista" es para quien envió la comanda. */

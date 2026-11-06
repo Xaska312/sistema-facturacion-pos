@@ -7,6 +7,7 @@ import { KitchenApi, KitchenStation, KitchenTicket, TicketStatus } from '../../c
 import { problemMessage } from '../../core/errors/problem';
 import { DiningEventsService } from '../../core/realtime/dining-events.service';
 import { liveRefresh } from '../../core/realtime/live-refresh';
+import { LiveReplacedComponent } from '../../core/realtime/live-replaced.component';
 import { XIconComponent } from '../../shared/icons/xicon.component';
 import { formatQuantity } from '../../shared/money';
 import { alarm, chime, unlockSound } from '../../shared/sound';
@@ -40,7 +41,7 @@ function saveStations(ids: readonly string[]): void {
  */
 @Component({
   selector: 'app-kitchen-display',
-  imports: [ButtonModule, SkeletonModule, XIconComponent],
+  imports: [ButtonModule, SkeletonModule, XIconComponent, LiveReplacedComponent],
   template: `
     <div class="kds" [class.kds--full]="full()">
       <header class="flex flex-wrap items-center justify-between gap-3 mb-4">
@@ -49,7 +50,7 @@ function saveStations(ids: readonly string[]): void {
           <div>
             <h1 class="text-3xl font-extrabold tracking-tight leading-tight">Cocina</h1>
             <p class="text-base font-semibold" [class.text-success]="live()" [class.text-warning]="!live()" role="status">
-              {{ live() ? 'En vivo' : 'Reconectando… se actualiza cada 15 s' }}
+              {{ live() ? 'En vivo' : replaced() ? 'Avisos en otra pantalla · se actualiza cada 15 s' : 'Reconectando… se actualiza cada 15 s' }}
               · {{ counts().fresh }} nuevas · {{ counts().cooking }} preparando · {{ counts().ready }} listas
             </p>
           </div>
@@ -62,6 +63,8 @@ function saveStations(ids: readonly string[]): void {
                     severity="secondary" [outlined]="true" (onClick)="toggleFull()" />
         </div>
       </header>
+
+      <app-live-replaced />
 
       @if (stations().length > 1) {
         <nav class="flex gap-2 overflow-x-auto pb-3" aria-label="Estaciones que ve esta pantalla">
@@ -261,6 +264,7 @@ export class KitchenDisplayComponent implements OnInit {
   protected readonly soundOn = signal(false);
   protected readonly full = signal(false);
   protected readonly live = this.events.connected;
+  protected readonly replaced = this.events.replaced;
   protected readonly q = formatQuantity;
   protected readonly statusLabel = ticketStatusLabel;
   private readonly now = signal(new Date());

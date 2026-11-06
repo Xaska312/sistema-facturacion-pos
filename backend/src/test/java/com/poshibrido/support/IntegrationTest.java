@@ -59,6 +59,7 @@ public abstract class IntegrationTest {
         registry.add("app.rate-limit.register-per-minute", () -> "10000");
         registry.add("app.rate-limit.api-per-minute", () -> "100000");
         registry.add("app.rate-limit.heavy-per-minute", () -> "100000");
+        registry.add("app.rate-limit.events-per-minute", () -> "100000");
         registry.add("app.platform.admin-emails", () -> TestApi.PLATFORM_ADMIN_EMAIL);
         // Los correos se "envían" en la misma petición (después del commit) para poder leerlos en el test.
         registry.add("app.mail.async", () -> "false");

@@ -135,6 +135,7 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
       'Los colores dicen en qué va cada mesa: gris pidiendo, amarillo en cocina, azul platos listos, morado comiendo y rojo pidió la cuenta.',
       'Lo que pides queda pendiente hasta tocar "Agregar a la cuenta" (o "Enviar a cocina" si tienes cocina).',
       'Cobrar abre Vender con los productos de la cuenta; al terminar, la mesa queda libre.',
+      'Si sale "Los avisos en vivo pasaron a otra pantalla", esta se sigue actualizando sola; "Recibir avisos aquí" los trae.',
     ],
   },
   '/app/mesas/configurar': {
@@ -175,6 +176,7 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
       'Toca "Preparando" al empezar y "Lista" al terminar: quien la envió recibe un aviso con sonido.',
       'Toca "Activar sonido" una vez al abrir la pantalla; elige arriba qué estaciones ve esta pantalla.',
       'Si anulan un plato, sale tachado con alarma: no lo prepares.',
+      'Si dice "Avisos en otra pantalla", otra pantalla de esta cuenta los tiene: toca "Recibir avisos aquí".',
     ],
   },
   '/app/comandas/estaciones': {
