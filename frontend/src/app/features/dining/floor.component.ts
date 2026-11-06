@@ -8,6 +8,7 @@ import { Observable } from 'rxjs';
 import { DiningApi, Floor, FloorTable, Tab, TabKind } from '../../core/api/dining.api';
 import { permissionFlag } from '../../core/auth/permission-flag';
 import { EmptyStateComponent } from '../../shared/empty-state.component';
+import { CountStepperComponent } from '../../shared/forms/count-stepper.component';
 import { FormDialogComponent } from '../../shared/forms/form-dialog.component';
 import { XIconComponent } from '../../shared/icons/xicon.component';
 import { formatCop } from '../../shared/money';
@@ -30,7 +31,7 @@ const REFRESH_MS = 15_000;
 @Component({
   selector: 'app-floor',
   imports: [FormsModule, RouterLink, ButtonModule, InputTextModule, SkeletonModule, PageHeaderComponent, LiveReplacedComponent,
-    FormDialogComponent, EmptyStateComponent, XIconComponent, TablePlanComponent],
+    FormDialogComponent, EmptyStateComponent, XIconComponent, TablePlanComponent, CountStepperComponent],
   template: `
     <app-page-header title="Mesas" description="Toca una mesa libre para abrir su cuenta o una ocupada para pedir y cobrar.">
       <p-button label="Para llevar" icon="pi pi-shopping-bag" severity="secondary" [outlined]="true" (onClick)="openOther('TAKEAWAY')" />
@@ -153,13 +154,13 @@ const REFRESH_MS = 15_000;
       </div>
     }
 
-    <app-form-dialog [(visible)]="openDialog" [header]="openTitle()" width="26rem" submitLabel="Abrir cuenta"
+    <app-form-dialog [(visible)]="openDialog" [header]="openTitle()" width="26rem" autofocus="desktop" submitLabel="Abrir cuenta"
                      submitIcon="pi pi-check" [dirty]="false" [invalidMessage]="openProblem()" [save]="openRequest"
                      [successMessage]="null" (saved)="opened($event)">
       @if (openKind() === 'TABLE') {
-        <div class="flex flex-col gap-1">
-          <label for="guests" class="text-sm font-semibold">Personas <span class="font-normal text-muted">(opcional)</span></label>
-          <input pInputText id="guests" type="number" min="1" max="99" inputmode="numeric" [(ngModel)]="guests" />
+        <div class="flex flex-col items-center gap-2">
+          <span class="text-sm font-semibold">Personas</span>
+          <app-count-stepper [(value)]="guests" />
         </div>
       } @else {
         <div class="flex flex-col gap-1">
@@ -337,7 +338,7 @@ export class FloorComponent implements OnInit {
   protected askOpen(table: FloorTable): void {
     this.openKind.set('TABLE');
     this.openTable.set(table);
-    this.guests = null;
+    this.guests = 2;
     this.openDialog = true;
   }
 

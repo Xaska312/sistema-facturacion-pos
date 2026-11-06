@@ -122,8 +122,8 @@ class KitchenIT extends IntegrationTest {
                 .andExpect(status().isOk());
         api.getWith(s, "/api/v1/kitchen/tickets/" + first).andExpect(jsonPath("$.items[0].voided").value(true));
 
-        // El mesero ve sus ventas del día.
-        api.getWith(w, "/api/v1/reports/my-day").andExpect(status().isOk());
+        // El mesero solo atiende mesas (decisión 293): no ve ventas, ni las suyas del día.
+        api.getWith(w, "/api/v1/reports/my-day").andExpect(status().isForbidden());
 
         // Auditoría: envíos y reimpresión.
         String audit = body(api.getWith(s, "/api/v1/audit?size=100").andExpect(status().isOk()));

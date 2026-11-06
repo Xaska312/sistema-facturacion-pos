@@ -78,6 +78,11 @@ export class FormDialogComponent {
   readonly form = input<AbstractControl | null>(null);
   /** Para borradores con ngModel: hay cambios sin guardar. */
   readonly dirty = input(false);
+  /**
+   * Poner el cursor en el primer campo al abrir: 'always' (por defecto) o 'desktop' (no en pantallas táctiles, para que
+   * el teclado del celular no tape la ventana; decisión 293).
+   */
+  readonly autofocus = input<'always' | 'desktop'>('always');
   /** Para borradores con ngModel: motivo por el que aún no se puede guardar (null = se puede). */
   readonly invalidMessage = input<string | null>(null);
   /** Petición de guardado; se llama al enviar el formulario válido. */
@@ -172,6 +177,9 @@ export class FormDialogComponent {
   }
 
   protected focusFirstField(): void {
+    if (this.autofocus() === 'desktop' && globalThis.matchMedia?.('(pointer: coarse)').matches) {
+      return;
+    }
     const field = this.formElement()?.nativeElement.querySelector<HTMLElement>(
       'input:not([type="hidden"]):not([disabled]):not([readonly]), select:not([disabled]), textarea:not([disabled])',
     );

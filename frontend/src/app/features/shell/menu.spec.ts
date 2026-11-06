@@ -1,5 +1,5 @@
 import { XICONS } from '../../shared/icons/xicons';
-import { DOCK_BY_TYPE, DOCK_ROUTES, MENU, dockItems, initials, visibleMenu, withHeadings } from './menu';
+import { DOCK_BY_TYPE, DOCK_ROUTES, MENU, dockItems, initials, isFloorOnly, visibleMenu, withHeadings } from './menu';
 
 describe('visibleMenu', () => {
   it('oculta opciones sin permiso', () => {
@@ -90,5 +90,29 @@ describe('initials', () => {
     expect(initials('  carlos  ')).toBe('C');
     expect(initials('')).toBe('?');
     expect(initials(null)).toBe('?');
+  });
+});
+
+describe('menú del mesero (decisión 293)', () => {
+  const waiter = new Set(['branches:read', 'products:read', 'tables:operate', 'kitchen:send', 'module:tables']);
+  const has = (set: Set<string>) => (p: string) => set.has(p);
+
+  it('quien atiende mesas sin vender ni caja solo ve Mesas', () => {
+    expect(isFloorOnly(has(waiter))).toBeTrue();
+    expect(visibleMenu(has(waiter)).map((m) => m.route)).toEqual(['/app/mesas']);
+    expect(dockItems(visibleMenu(has(waiter)), 'RESTAURANT').map((m) => m.route)).toEqual(['/app/mesas']);
+  });
+
+  it('si el dueño le da Vender o la caja, vuelve el menú completo', () => {
+    const seller = new Set([...waiter, 'sales:create']);
+    expect(isFloorOnly(has(seller))).toBeFalse();
+    expect(visibleMenu(has(seller)).map((m) => m.route)).toContain('/pos');
+    expect(visibleMenu(has(seller)).map((m) => m.route)).toContain('/app/productos');
+    expect(isFloorOnly(has(new Set([...waiter, 'cash:operate'])))).toBeFalse();
+  });
+
+  it('la cocina y quien no atiende mesas no cambian', () => {
+    expect(isFloorOnly(has(new Set(['branches:read', 'kitchen:view'])))).toBeFalse();
+    expect(isFloorOnly(has(new Set(['products:read'])))).toBeFalse();
   });
 });

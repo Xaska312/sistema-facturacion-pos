@@ -243,7 +243,7 @@ Operar: `cash:operate`. Historial: `cash:read` (sin él, cada usuario ve solo su
 | GET | `/sales?from=&to=&branchId=&status=&cashSessionId=&search=&page=&size=` | `sales:read` | `search`: número (`POS-12` o `12`) o nombre/documento del cliente |
 | GET | `/sales/{id}` | `sales:read` | Venta con ítems, pagos, impuestos y encabezado del tiquete |
 | GET | `/sales/config` | `sales:create` | `{pricesIncludeTax, maxDiscountPercent, allowNegativeStock, currency, receiptFooter, businessName, finalConsumerId}` |
-| GET | `/sales/price?productId=&unitId=&customerId=` | `sales:create` | Precio vigente para el cliente |
+| GET | `/sales/price?productId=&unitId=&customerId=` | `sales:create` o `tables:operate` | Precio vigente para el cliente (el mesero lo usa al pedir desde la mesa, decisión 293) |
 
 Cuerpo de venta:
 ```json

@@ -388,7 +388,7 @@ export const MANUAL: readonly ManualChapter[] = [
         summary: 'En Mesas ves el salón: las mesas libres punteadas y las ocupadas de color, con su total y cuánto llevan '
           + 'abiertas (más de una hora cambian de color).',
         steps: [
-          'Toca una mesa libre, escribe cuántas personas son (opcional) y toca "Abrir cuenta".',
+          'Toca una mesa libre, ajusta cuántas personas son con − y + (empieza en 2) y toca "Abrir cuenta".',
           'Toca los productos para pedirlos: si tienen adiciones se abren sus opciones y una nota. Quedan "Por agregar".',
           'Revisa cantidades y toca "Agregar a la cuenta" (con Cocina y comandas el botón dice "Enviar a cocina": agrega y '
             + 'sale la comanda de una vez). Puedes volver a pedir más tarde las veces que quieras.',
@@ -472,15 +472,18 @@ export const MANUAL: readonly ManualChapter[] = [
       {
         id: 'mesero',
         title: 'El rol Mesero',
-        summary: 'Para quien atiende las mesas desde el celular o una tableta: abre cuentas, pide, envía a cocina, mueve y '
-          + 'une mesas, consulta productos y clientes, cobra con su caja y ve sus ventas del día.',
+        summary: 'Para quien atiende las mesas desde el celular o una tableta: abre cuentas con las personas, pide, envía '
+          + 'a cocina, entrega, mueve y une mesas. Al entrar va directo a Mesas y su menú solo tiene eso. No cobra: cobra '
+          + 'la caja.',
         steps: [
           'En Usuarios invita a la persona y elige el rol "Mesero" y su sucursal.',
           'Entra desde el celular: en Mesas toca la mesa, pide en "Pedir" y toca "Enviar a cocina".',
         ],
         tips: [
           'Lo que ya salió a cocina no lo quita el mesero: lo anula caja o el administrador, con motivo.',
-          'Si prefieres que el mesero no cobre, en Roles y permisos quítale "Registrar ventas" y "Abrir, mover y cerrar caja".',
+          'Si quieres que tu mesero cobre, en Roles y permisos dale al rol Mesero "Registrar ventas" y "Abrir, mover y '
+            + 'cerrar caja": vuelve a ver Vender y su caja.',
+          'Si ya habías cambiado los permisos del rol Mesero, XASKA no los tocó: sigue como lo dejaste.',
         ],
         who: 'Lo asigna el Propietario o el Administrador.',
       },

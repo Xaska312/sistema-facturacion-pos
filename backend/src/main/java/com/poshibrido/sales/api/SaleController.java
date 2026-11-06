@@ -153,7 +153,8 @@ public class SaleController {
 
     /** Precio vigente para el cliente (al cambiar de cliente o de presentación en el carrito). */
     @GetMapping("/price")
-    @PreAuthorize("hasAuthority('sales:create')")
+    // El mesero pide desde la cuenta de la mesa sin cobrar (decisión 293): necesita el precio vigente.
+    @PreAuthorize("hasAnyAuthority('sales:create', 'tables:operate')")
     public ResolvedPrice price(@RequestParam UUID productId, @RequestParam(required = false) UUID unitId,
                                @RequestParam(required = false) UUID customerId) {
         return queries.price(productId, unitId, customerId);

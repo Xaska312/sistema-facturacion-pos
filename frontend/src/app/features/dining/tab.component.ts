@@ -15,6 +15,7 @@ import { SalesApi } from '../../core/api/sales.api';
 import { AuthService } from '../../core/auth/auth.service';
 import { permissionFlag } from '../../core/auth/permission-flag';
 import { problemMessage } from '../../core/errors/problem';
+import { CountStepperComponent } from '../../shared/forms/count-stepper.component';
 import { FormDialogComponent } from '../../shared/forms/form-dialog.component';
 import { XIconComponent } from '../../shared/icons/xicon.component';
 import { formatCop, formatQuantity } from '../../shared/money';
@@ -52,7 +53,7 @@ interface Picking {
 @Component({
   selector: 'app-tab',
   imports: [FormsModule, RouterLink, ButtonModule, DialogModule, InputTextModule, SkeletonModule, FormDialogComponent,
-    LiveReplacedComponent,
+    LiveReplacedComponent, CountStepperComponent,
     XIconComponent, ProductGridComponent, ModifierPickerComponent, VariantPickerComponent],
   template: `
     <app-live-replaced />
@@ -386,12 +387,12 @@ interface Picking {
     </p-dialog>
 
     <!-- Datos -->
-    <app-form-dialog [(visible)]="detailsOpen" header="Datos de la cuenta" width="28rem" [dirty]="true"
+    <app-form-dialog [(visible)]="detailsOpen" header="Datos de la cuenta" width="28rem" autofocus="desktop" [dirty]="true"
                      [invalidMessage]="detailsProblem()" [save]="detailsRequest" successMessage="Datos guardados" (saved)="apply($event)">
       @if (tab()?.kind === 'TABLE') {
         <div class="flex flex-col gap-1">
-          <label for="d-guests" class="text-sm font-semibold">Personas</label>
-          <input pInputText id="d-guests" type="number" min="1" max="99" [(ngModel)]="details.guests" />
+          <span class="text-sm font-semibold">Personas</span>
+          <app-count-stepper [(value)]="details.guests" />
         </div>
       }
       <div class="flex flex-col gap-1">

@@ -1,5 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { SkeletonModule } from 'primeng/skeleton';
 import { CreditApi } from '../../core/api/credit.api';
 import { InventoryApi } from '../../core/api/inventory.api';
@@ -16,7 +16,7 @@ import { FirstStepsComponent } from '../onboarding/first-steps.component';
 import { OrdersAlertComponent } from '../orders/orders-alert.component';
 import { QualityAlertComponent } from '../pharmacy/quality-alert.component';
 import { describeCapabilities, firstName, greeting, quickActions } from './capabilities';
-import { MENU } from './menu';
+import { MENU, isFloorOnly } from './menu';
 
 /** Dato de una baldosa del inicio (se llena cuando llega su consulta; si falla, no aparece). */
 interface Tile {
@@ -197,6 +197,11 @@ export class HomeComponent {
 
   constructor() {
     const can = (p: string) => this.auth.hasPermission(p);
+    // El mesero va directo a Mesas (decisión 293): su inicio no tiene nada más que hacer.
+    if (isFloorOnly(can)) {
+      void inject(Router).navigate(['/app/mesas'], { replaceUrl: true });
+      return;
+    }
     if (can('sales:read')) {
       this.reports.myDay().subscribe({ next: (d) => this.today.set({ total: d.total, count: d.salesCount }), error: () => undefined });
     }
