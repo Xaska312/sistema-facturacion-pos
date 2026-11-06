@@ -985,6 +985,8 @@ export interface Plan {
   features: PlanFeature[];
   /** Plan anterior (Básico, Pro): solo para quienes ya lo tenían. */
   legacy: boolean;
+  /** Facturas de compra leídas con IA al mes (decisión 295): null = sin límite, 0 = no la incluye. */
+  maxInvoiceScans: number | null;
 }
 
 /** Lo que el administrador le dio de más a un negocio; until null = sin fin. note: solo en la consola. */
@@ -994,6 +996,8 @@ export interface SubscriptionExtras {
   branches: number;
   registers: number;
   users: number;
+  /** Lecturas con IA de más por mes (decisión 295). */
+  invoiceScans: number;
   note: string | null;
   until: string | null;
   active: boolean;
@@ -1006,6 +1010,7 @@ export interface Entitled {
   maxRegisters: number | null;
   modules: string[];
   features: PlanFeature[];
+  maxInvoiceScans: number | null;
 }
 
 export interface SubscriptionPayment {
@@ -1034,7 +1039,8 @@ export interface Subscription {
   endsAt: string;
   graceEndsAt: string | null;
   daysLeft: number;
-  usage: { branches: number; users: number; registers: number };
+  /** invoiceScans: facturas leídas con IA este mes. */
+  usage: { branches: number; users: number; registers: number; invoiceScans: number };
   /** Instrucciones de pago configuradas en el servidor. */
   paymentInstructions: string;
   payments: SubscriptionPayment[];
@@ -1100,6 +1106,7 @@ export interface PlanInput {
   monthlyPrice: number | null;
   annualPrice: number | null;
   active: boolean;
+  maxInvoiceScans: number | null;
 }
 
 export interface CodeInput {

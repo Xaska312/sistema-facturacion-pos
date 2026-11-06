@@ -123,6 +123,13 @@ export interface InvoiceDraft {
   warnings: string[];
 }
 
+/** Lecturas con IA del mes (decisión 295): {@code limit} nulo = sin límite; {@code available}: la IA está encendida. */
+export interface InvoiceScanUsage {
+  available: boolean;
+  limit: number | null;
+  used: number;
+}
+
 export interface PurchaseReturn {
   id: string;
   number: number;
@@ -222,6 +229,22 @@ export class PurchasesApi {
     const form = new FormData();
     form.append('file', file, file.name);
     return this.http.post<InvoiceDraft>('/api/v1/purchases/documents', form);
+  }
+
+  /**
+   * La factura en fotos (hasta 5) o en PDF leída con IA (decisión 295): el mismo borrador que el XML. Solo cuenta en el
+   * tope del mes si se pudo leer.
+   */
+  scanInvoice(files: File[]): Observable<InvoiceDraft> {
+    const form = new FormData();
+    for (const f of files) {
+      form.append('files', f, f.name);
+    }
+    return this.http.post<InvoiceDraft>('/api/v1/purchases/documents/scan', form);
+  }
+
+  scanUsage(): Observable<InvoiceScanUsage> {
+    return this.http.get<InvoiceScanUsage>('/api/v1/purchases/documents/scan-usage');
   }
 
   /** El archivo de soporte (para descargarlo). */

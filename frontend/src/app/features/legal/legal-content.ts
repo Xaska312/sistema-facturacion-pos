@@ -6,8 +6,8 @@
  */
 /** 1.2 (decisión 288): planes Emprende, Negocio y Empresa, extras, mejoras y precios. */
 export const TERMS_VERSION = '1.2';
-/** 1.2 (decisión 287): los datos de salud que registran las droguerías. */
-export const PRIVACY_VERSION = '1.2';
+/** 1.3 (decisión 295): la lectura de facturas de proveedores con IA (Anthropic, encargado en Estados Unidos). */
+export const PRIVACY_VERSION = '1.3';
 
 /** Datos del responsable (persona natural con la marca XASKA). */
 export const LEGAL_OWNER = {
@@ -18,8 +18,8 @@ export const LEGAL_OWNER = {
   phone: '+57 316 778 4193 (también WhatsApp)',
   email: 'soporte@xaska.co',
   publishedOn: '31 de octubre de 2026',
-  /** La política 1.2 (datos de salud de las droguerías). */
-  privacyPublishedOn: '4 de noviembre de 2026',
+  /** La política 1.3 (lectura de facturas con IA). */
+  privacyPublishedOn: '6 de noviembre de 2026',
   /** Los términos 1.2 (planes nuevos). */
   termsPublishedOn: '4 de noviembre de 2026',
   hosting: 'Contabo, con servidores en Estados Unidos',
@@ -165,6 +165,9 @@ export const PRIVACY_POLICY: LegalDocument = {
             `Alojamiento del servidor: ${O.hosting}.`,
             'Envío de correos: Resend.',
             'Copias de seguridad cifradas: Google Drive.',
+            'Lectura de facturas de proveedores con inteligencia artificial: Anthropic (Claude). Solo recibe las fotos '
+              + 'o el PDF de la factura que el negocio decide leer, para devolver sus datos; no los usa para entrenar '
+              + 'sus modelos y los borra según sus plazos de retención.',
           ],
         },
         {

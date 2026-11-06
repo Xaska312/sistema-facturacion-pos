@@ -737,12 +737,16 @@ export const MANUAL: readonly ManualChapter[] = [
       },
       {
         id: 'cargar-factura',
-        title: 'Cargar la factura electrónica del proveedor',
-        summary: 'En vez de digitar producto por producto, subes el XML o el ZIP de la factura electrónica que te llegó '
-          + 'al correo y XASKA llena la recepción para que la revises. Nada se guarda hasta que tú la registras.',
+        title: 'Cargar la factura del proveedor (XML, foto o PDF)',
+        summary: 'En vez de digitar producto por producto, subes el XML de la factura electrónica, le tomas una foto a '
+          + 'la factura en papel o subes su PDF, y XASKA llena la recepción para que la revises. Nada se guarda hasta '
+          + 'que tú la registras.',
         steps: [
-          'Descarga del correo el ZIP de la factura del proveedor (trae el PDF y el XML).',
-          'Entra a Compras → Recibir mercancía y toca "Cargar factura". Elige el ZIP o el XML.',
+          'Entra a Compras → Recibir mercancía. Si es factura electrónica, toca "XML" (o "Cargar factura") y elige el '
+            + 'ZIP o el XML que te llegó al correo: es exacto y no gasta lecturas.',
+          'Si es de papel, toca "Tomar foto" y fotografía la factura completa, derecha y con buena luz. Si es larga, '
+            + 'toca "Fotos o PDF" y elige hasta 5 fotos en orden, o el PDF (hasta 10 páginas). Espera: puede tardar '
+            + 'hasta un minuto.',
           'Si el proveedor no está en XASKA te lo dice con su NIT: toca "Crear proveedor".',
           'Revisa cada producto. XASKA los encuentra por lo que aprendió de ese proveedor, por el código de barras o por '
             + 'un nombre parecido. Lo que dice "Se eligió por el nombre" confírmalo o cámbialo.',
@@ -757,9 +761,13 @@ export const MANUAL: readonly ManualChapter[] = [
             + 'factura, sale un aviso para que lo revises.',
           'La factura queda guardada con la compra: en el detalle toca "Factura del proveedor" para descargarla.',
           'Si la factura trae lote y vencimiento (en su campo o en la descripción), se llenan solos.',
-          'Por ahora se carga el XML o el ZIP. Pronto también la foto de una factura en papel.',
+          'La foto o el PDF los lee una inteligencia artificial: casi siempre acierta, pero revisa cada cantidad y '
+            + 'costo contra el papel. Si una foto sale borrosa, te avisa y no se descuenta.',
+          'Cada factura leída con IA cuenta una vez en las lecturas del mes de tu plan (Negocio 40, Empresa 150), '
+            + 'aunque tenga varias fotos. Las ves en la misma pantalla y en Ajustes → Suscripción.',
         ],
-        who: 'Quien recibe mercancía, con el permiso "Cargar la factura del proveedor". Requiere el plan Negocio o superior.',
+        who: 'Quien recibe mercancía, con los permisos "Cargar la factura del proveedor" (el XML) y "Leer con IA la '
+          + 'foto o el PDF de la factura". Requiere el plan Negocio o superior.',
       },
       {
         id: 'cuentas-por-pagar',

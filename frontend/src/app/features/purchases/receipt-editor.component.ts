@@ -11,11 +11,18 @@ import { CatalogApi } from '../../core/api/catalog.api';
 import { InventoryApi } from '../../core/api/inventory.api';
 import { OrganizationApi } from '../../core/api/organization.api';
 import { PartiesApi } from '../../core/api/parties.api';
-import { InvoiceDraft, InvoiceDraftLine, PurchasePaymentType, PurchasesApi } from '../../core/api/purchases.api';
+import {
+  InvoiceDraft,
+  InvoiceDraftLine,
+  InvoiceScanUsage,
+  PurchasePaymentType,
+  PurchasesApi,
+} from '../../core/api/purchases.api';
 import { newIdempotencyKey } from '../../core/api/sales.api';
 import { permissionFlag } from '../../core/auth/permission-flag';
 import { documentShortLabel } from '../../shared/document-types';
 import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
+import { invoiceFilesProblem, shrinkPhoto } from '../../shared/image-shrink';
 import { formatCop, formatQuantity } from '../../shared/money';
 import { nitVerificationDigit } from '../../shared/nit';
 import { PageHeaderComponent } from '../../shared/page-header.component';
@@ -57,20 +64,51 @@ import {
     <app-page-header title="Recibir mercancía"
                      description="Registra lo que llegó contra la factura del proveedor. Revisa cada producto antes de aceptarlo." />
 
-    @if (canImport()) {
+    @if (canImport() || canScan()) {
       <section class="card p-4 mb-4 max-w-5xl flex flex-col gap-3" aria-label="Cargar la factura del proveedor">
         <div class="flex flex-wrap items-center gap-3">
           <div class="flex-1 min-w-56">
             <h2 class="font-bold tracking-tight">Cargar la factura del proveedor</h2>
-            <p class="text-xs text-muted">Sube el XML o el ZIP de la factura electrónica que te llegó al correo. XASKA
-              llena lo que llegó para que lo revises; nada se guarda hasta que tú registres la recepción.</p>
+            @if (canScan()) {
+              <p class="text-xs text-muted">Tómale una foto (hasta 5 si es larga), sube su PDF o el XML de la factura
+                electrónica. XASKA llena lo que llegó para que lo revises; nada se guarda hasta que tú registres la
+                recepción.</p>
+            } @else {
+              <p class="text-xs text-muted">Sube el XML o el ZIP de la factura electrónica que te llegó al correo. XASKA
+                llena lo que llegó para que lo revises; nada se guarda hasta que tú registres la recepción.</p>
+            }
+            @if (scanUsageText(); as usage) {
+              <p class="text-xs mt-1" [class.text-muted]="!scanLimitReached()" [class.text-warning]="scanLimitReached()">
+                {{ usage }}</p>
+            }
           </div>
           <input #invoiceFile type="file" class="hidden" aria-label="Archivo de la factura"
                  accept=".xml,.zip,application/xml,text/xml,application/zip,application/x-zip-compressed"
                  (change)="importInvoice($event)" />
-          <p-button [label]="draft() ? 'Cargar otra' : 'Cargar factura'" icon="pi pi-upload" [loading]="importing()"
-                    [outlined]="draft() !== null" (onClick)="invoiceFile.click()" />
+          <input #cameraFile type="file" class="hidden" aria-label="Foto de la factura" accept="image/*"
+                 capture="environment" (change)="scanInvoice($event)" />
+          <input #scanFile type="file" class="hidden" aria-label="Fotos o PDF de la factura" multiple
+                 accept="image/jpeg,image/png,application/pdf,.pdf" (change)="scanInvoice($event)" />
+          <div class="flex flex-wrap gap-2">
+            @if (canScan()) {
+              <p-button label="Tomar foto" icon="pi pi-camera" [loading]="scanning()"
+                        [disabled]="busy() || scanLimitReached()" (onClick)="cameraFile.click()" />
+              <p-button label="Fotos o PDF" icon="pi pi-images" [outlined]="true"
+                        [disabled]="busy() || scanLimitReached()" (onClick)="scanFile.click()" />
+            }
+            @if (canImport()) {
+              <p-button [label]="canScan() ? 'XML' : draft() ? 'Cargar otra' : 'Cargar factura'" icon="pi pi-upload"
+                        [loading]="importing()" [disabled]="scanning()" [outlined]="draft() !== null || canScan()"
+                        (onClick)="invoiceFile.click()" />
+            }
+          </div>
         </div>
+        @if (scanning()) {
+          <p class="text-sm text-muted flex items-center gap-2" role="status">
+            <span class="pi pi-spin pi-spinner" aria-hidden="true"></span>
+            Leyendo la factura con IA. Puede tardar hasta un minuto; no cierres esta pantalla.
+          </p>
+        }
         @if (draft(); as d) {
           <div class="text-sm flex flex-wrap gap-x-4 gap-y-1">
             <span><span class="text-muted">Factura</span> {{ d.invoiceNumber }}</span>
@@ -374,6 +412,7 @@ export class ReceiptEditorComponent implements OnInit, HasUnsavedChanges {
   private readonly confirm = inject(ConfirmService);
   protected readonly canPay = permissionFlag('purchases:pay');
   protected readonly canImport = permissionFlag('purchases:import');
+  private readonly canScanPermission = permissionFlag('purchases:scan');
   protected readonly canManageParties = permissionFlag('parties:manage');
   protected readonly canCreateProducts = permissionFlag('products:manage');
 
@@ -399,6 +438,30 @@ export class ReceiptEditorComponent implements OnInit, HasUnsavedChanges {
   protected readonly draft = signal<InvoiceDraft | null>(null);
   protected readonly pending = signal<InvoiceDraftLine[]>([]);
   protected readonly importing = signal(false);
+  /** Lectura con IA (decisión 295): lo usado del mes y si se está leyendo una factura. */
+  protected readonly scanUsage = signal<InvoiceScanUsage | null>(null);
+  protected readonly scanning = signal(false);
+  protected readonly busy = computed(() => this.importing() || this.scanning());
+  protected readonly canScan = computed(() => {
+    const usage = this.scanUsage();
+    return this.canScanPermission() && usage !== null && usage.available && usage.limit !== 0;
+  });
+  protected readonly scanLimitReached = computed(() => {
+    const usage = this.scanUsage();
+    return usage !== null && usage.limit !== null && usage.used >= usage.limit;
+  });
+  protected readonly scanUsageText = computed(() => {
+    const usage = this.scanUsage();
+    if (!this.canScan() || usage === null) {
+      return null;
+    }
+    if (usage.limit === null) {
+      return `Lecturas con IA este mes: ${usage.used}.`;
+    }
+    return this.scanLimitReached()
+      ? `Llegaste a las ${usage.limit} lecturas con IA de este mes: carga el XML o ingresa la factura a mano.`
+      : `Lecturas con IA: ${usage.used} de ${usage.limit} este mes.`;
+  });
   protected readonly creatingSupplier = signal(false);
   /** Línea sin producto a la que se le está buscando uno (el buscador de arriba la completa). */
   protected readonly assigning = signal<number | null>(null);
@@ -439,6 +502,7 @@ export class ReceiptEditorComponent implements OnInit, HasUnsavedChanges {
   invoiceTotalNotice(this.lines(), this.draft()?.total ?? null, this.pending().length)));
 
   ngOnInit(): void {
+    this.refreshScanUsage();
     if (this.canPay()) {
       this.paymentType = 'PAID';
     }
@@ -595,7 +659,7 @@ export class ReceiptEditorComponent implements OnInit, HasUnsavedChanges {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     input.value = '';
-    if (!file || this.importing()) {
+    if (!file || this.busy()) {
       return;
     }
     if (this.lines().length > 0) {
@@ -608,6 +672,56 @@ export class ReceiptEditorComponent implements OnInit, HasUnsavedChanges {
       return;
     }
     this.upload(file);
+  }
+
+  // ------------------------------------------------------------------ factura leída con IA (decisión 295)
+
+  private refreshScanUsage(): void {
+    if (this.canScanPermission()) {
+      this.api.scanUsage().subscribe({ next: (usage) => this.scanUsage.set(usage), error: () => this.scanUsage.set(null) });
+    }
+  }
+
+  scanInvoice(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const files = Array.from(input.files ?? []);
+    input.value = '';
+    if (files.length === 0 || this.busy()) {
+      return;
+    }
+    const problem = invoiceFilesProblem(files);
+    if (problem) {
+      this.messages.add({ severity: 'warn', summary: 'Factura', detail: problem, life: 5000 });
+      return;
+    }
+    if (this.lines().length > 0) {
+      this.confirm.ask({
+        header: 'Leer la factura',
+        message: 'Lo que ya agregaste se reemplaza por lo que trae la factura.',
+        acceptLabel: 'Leer factura',
+        accept: () => void this.scan(files),
+      });
+      return;
+    }
+    void this.scan(files);
+  }
+
+  /** Reduce las fotos en el celular (sube rápido aun con mala señal) y las manda a leer. */
+  private async scan(files: File[]): Promise<void> {
+    this.scanning.set(true);
+    const ready = await Promise.all(files.map((f) => shrinkPhoto(f)));
+    this.api.scanInvoice(ready).subscribe({
+      next: (draft) => {
+        this.scanning.set(false);
+        this.importing.set(true);
+        this.refreshScanUsage();
+        this.applyDraft(draft);
+      },
+      error: () => {
+        this.scanning.set(false);
+        this.refreshScanUsage();
+      },
+    });
   }
 
   private upload(file: File): void {

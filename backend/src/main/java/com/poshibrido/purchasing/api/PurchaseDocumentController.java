@@ -1,5 +1,9 @@
 package com.poshibrido.purchasing.api;
 
+import com.poshibrido.purchasing.application.InvoiceScanService;
+import java.util.ArrayList;
+import java.util.List;
+
 import com.poshibrido.purchasing.application.InvoiceDocumentService;
 import com.poshibrido.purchasing.application.InvoiceDocumentService.InvoiceDraft;
 import com.poshibrido.purchasing.application.InvoiceDocumentService.StoredFile;
@@ -32,6 +36,7 @@ import java.util.UUID;
 public class PurchaseDocumentController {
 
     private final InvoiceDocumentService documents;
+    private final InvoiceScanService scans;
 
     @PostMapping
     @PreAuthorize("hasAuthority('purchases:import') and hasAuthority('purchases:receive')")
@@ -43,6 +48,33 @@ public class PurchaseDocumentController {
             throw new BusinessRuleException("El archivo supera 5 MB.");
         }
         return documents.upload(file.getOriginalFilename(), file.getBytes());
+    }
+
+    /**
+     * La factura en fotos (hasta 5) o en PDF, leída con IA (decisión 295): devuelve el mismo borrador que el XML. Cuenta
+     * en el tope de lecturas del mes del plan solo si se pudo leer.
+     */
+    @PostMapping("/scan")
+    @PreAuthorize("hasAuthority('purchases:scan') and hasAuthority('purchases:receive')")
+    public InvoiceDraft scan(@RequestParam("files") List<MultipartFile> files) throws IOException {
+        if (files == null || files.isEmpty() || files.size() > InvoiceScanService.MAX_PHOTOS) {
+            throw new BusinessRuleException("Sube de 1 a " + InvoiceScanService.MAX_PHOTOS + " fotos o un PDF.");
+        }
+        List<InvoiceScanService.Upload> uploads = new ArrayList<>();
+        for (MultipartFile f : files) {
+            if (f.getSize() > InvoiceScanService.MAX_PHOTO_BYTES) {
+                throw new BusinessRuleException("Cada archivo puede pesar hasta 10 MB.");
+            }
+            uploads.add(new InvoiceScanService.Upload(f.getOriginalFilename(), f.getBytes()));
+        }
+        return scans.scan(uploads);
+    }
+
+    /** Lecturas con IA de este mes y el tope del plan (para el botón de "Recibir mercancía"). */
+    @GetMapping("/scan-usage")
+    @PreAuthorize("hasAuthority('purchases:scan')")
+    public InvoiceScanService.Usage scanUsage() {
+        return scans.usage();
     }
 
     /** Descarga el soporte (siempre como adjunto, nunca para mostrarse en la página). */

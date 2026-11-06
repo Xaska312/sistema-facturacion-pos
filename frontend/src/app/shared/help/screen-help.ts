@@ -103,7 +103,7 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     manual: 'cargar-factura',
     title: 'Recibir mercancía',
     tips: [
-      'Con "Cargar factura" subes el XML o el ZIP de la factura electrónica y XASKA llena proveedor, número y productos.',
+      'Con "Tomar foto", "Fotos o PDF" o el XML de la factura, XASKA llena proveedor, número y productos por ti.',
       'Lo que se encontró por nombre parecido, lo que viene por caja y los costos muy distintos salen resaltados.',
       'Revisa cada producto, anota lote y vencimiento y rechaza lo que llegó mal: nada se guarda hasta registrar.',
     ],

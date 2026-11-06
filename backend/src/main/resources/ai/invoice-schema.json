@@ -1,0 +1,126 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "readable": {
+      "type": "boolean"
+    },
+    "problem": {
+      "type": "string"
+    },
+    "supplier": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "nit": {
+          "type": "string"
+        },
+        "verificationDigit": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "nit",
+        "verificationDigit"
+      ]
+    },
+    "invoiceNumber": {
+      "type": "string"
+    },
+    "issueDate": {
+      "type": "string"
+    },
+    "dueDate": {
+      "type": "string"
+    },
+    "paymentType": {
+      "type": "string",
+      "enum": [
+        "PAID",
+        "CREDIT",
+        "UNKNOWN"
+      ]
+    },
+    "subtotal": {
+      "type": "number"
+    },
+    "taxTotal": {
+      "type": "number"
+    },
+    "total": {
+      "type": "number"
+    },
+    "globalDiscount": {
+      "type": "number"
+    },
+    "lines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "sellerCode": {
+            "type": "string"
+          },
+          "barcode": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "packageUnit": {
+            "type": "boolean"
+          },
+          "unitCost": {
+            "type": "number"
+          },
+          "taxRate": {
+            "type": "number"
+          },
+          "lotNumber": {
+            "type": "string"
+          },
+          "expirationDate": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "description",
+          "sellerCode",
+          "barcode",
+          "quantity",
+          "unit",
+          "packageUnit",
+          "unitCost",
+          "taxRate",
+          "lotNumber",
+          "expirationDate"
+        ]
+      }
+    }
+  },
+  "required": [
+    "readable",
+    "problem",
+    "supplier",
+    "invoiceNumber",
+    "issueDate",
+    "dueDate",
+    "paymentType",
+    "subtotal",
+    "taxTotal",
+    "total",
+    "globalDiscount",
+    "lines"
+  ]
+}

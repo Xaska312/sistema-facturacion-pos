@@ -27,6 +27,7 @@ interface PlanDraft {
   monthlyPrice: number | null;
   annualPrice: number | null;
   active: boolean;
+  maxInvoiceScans: number | null;
 }
 
 /** Planes de suscripción: límites y precios (fase 8b). Límite vacío = sin límite; precio vacío = sin definir. */
@@ -70,8 +71,13 @@ interface PlanDraft {
             <label for="plan-registers" class="text-sm font-medium">Máximo de cajas</label>
             <input pInputText id="plan-registers" type="number" min="1" [(ngModel)]="draft.maxRegisters" />
           </div>
+          <div class="flex flex-col gap-1">
+            <label for="plan-scans" class="text-sm font-medium">Facturas leídas con IA al mes</label>
+            <input pInputText id="plan-scans" type="number" min="0" [(ngModel)]="draft.maxInvoiceScans" />
+          </div>
         </div>
-        <small class="text-muted -mt-1">Vacío = sin límite. Los usuarios cuentan las invitaciones pendientes.</small>
+        <small class="text-muted -mt-1">Vacío = sin límite. Los usuarios cuentan las invitaciones pendientes. Facturas
+          con IA en 0 = el plan no la incluye.</small>
         <div class="grid grid-cols-2 gap-3">
           <div class="flex flex-col gap-1">
             <label for="plan-monthly" class="text-sm font-medium">Precio mensual</label>
@@ -131,6 +137,7 @@ export class PlatformPlansComponent implements OnInit {
     { header: 'Sucursales', cell: (p) => limitText(p.maxBranches) },
     { header: 'Usuarios', cell: (p) => limitText(p.maxUsers) },
     { header: 'Cajas', cell: (p) => limitText(p.maxRegisters) },
+    { header: 'Facturas IA/mes', cell: (p) => scansText(p.maxInvoiceScans), hideOnMobile: true },
     { header: 'Incluye', cell: (p) => includedText(p.modules, p.features) + (p.legacy ? ' (plan anterior)' : '') },
     { header: 'Precio mensual', cell: (p) => p.monthlyPrice, template: 'monthly' },
     { header: 'Precio anual', cell: (p) => p.annualPrice, template: 'annual' },
@@ -160,7 +167,8 @@ export class PlatformPlansComponent implements OnInit {
     this.target.set(plan);
     this.draft = { name: plan.name, maxBranches: plan.maxBranches, maxUsers: plan.maxUsers,
       maxRegisters: plan.maxRegisters, modules: [...plan.modules], features: [...plan.features],
-      monthlyPrice: plan.monthlyPrice, annualPrice: plan.annualPrice, active: plan.active };
+      monthlyPrice: plan.monthlyPrice, annualPrice: plan.annualPrice, active: plan.active,
+      maxInvoiceScans: plan.maxInvoiceScans };
     this.snapshot = JSON.stringify(this.draft);
     this.editOpen = true;
   }
@@ -175,6 +183,10 @@ export class PlatformPlansComponent implements OnInit {
     }
     if (!validLimit(this.draft.maxBranches) || !validLimit(this.draft.maxUsers) || !validLimit(this.draft.maxRegisters)) {
       return 'Los límites son números enteros desde 1 (o vacíos, sin límite).';
+    }
+    const scans = toLimit(this.draft.maxInvoiceScans);
+    if (scans !== null && (!Number.isInteger(scans) || scans < 0)) {
+      return 'Las facturas con IA son un número entero desde 0 (o vacío, sin límite).';
     }
     return null;
   }
@@ -194,6 +206,7 @@ export class PlatformPlansComponent implements OnInit {
       monthlyPrice: this.draft.monthlyPrice,
       annualPrice: this.draft.annualPrice,
       active: this.draft.active,
+      maxInvoiceScans: toLimit(this.draft.maxInvoiceScans),
     };
     return this.platform.updatePlan(target.code, input);
   };
@@ -201,7 +214,12 @@ export class PlatformPlansComponent implements OnInit {
 
 function emptyDraft(): PlanDraft {
   return { name: '', maxBranches: null, maxUsers: null, maxRegisters: null, modules: [], features: [], monthlyPrice: null,
-    annualPrice: null, active: true };
+    annualPrice: null, active: true, maxInvoiceScans: null };
+}
+
+/** Facturas con IA al mes: 0 = el plan no la incluye. */
+export function scansText(value: number | null): string {
+  return value === 0 ? 'No incluye' : limitText(value);
 }
 
 /** El campo numérico vacío llega como null o ''. */

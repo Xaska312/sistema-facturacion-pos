@@ -31,8 +31,9 @@
 
 	# API: solo /api. Actuator y Swagger del backend no quedan expuestos a internet.
 	handle /api/* {
+		# 12 MB: el PDF de una factura (hasta 10 MB, decisión 295) más el sobre del formulario.
 		request_body {
-			max_size 10MB
+			max_size 12MB
 		}
 		reverse_proxy backend:8080 {
 			# Si el backend se reinicia (actualización), reintenta unos segundos antes de responder 502.

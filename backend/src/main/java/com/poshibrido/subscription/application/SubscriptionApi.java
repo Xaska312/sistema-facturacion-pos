@@ -32,6 +32,9 @@ public interface SubscriptionApi {
     /** 422 si el plan no admite otra caja activa (decisión 288). */
     void requireCanAddRegister(TenantRef tenant);
 
+    /** Lecturas de facturas con IA por mes que admite el plan más sus extras (decisión 295); nulo = sin límite. */
+    Integer invoiceScansPerMonth(UUID tenantId);
+
     /**
      * Módulos y funciones que el plan del negocio (más sus extras vigentes) incluye (decisión 288). Sin suscripción,
      * todo (no se le quita nada a un negocio por un dato que falta).

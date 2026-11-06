@@ -104,7 +104,8 @@ public class SubscriptionService implements SubscriptionApi {
             return new Entitled(plus(plan.maxBranches(), on ? extras.branches() : 0),
                     plus(plan.maxUsers(), on ? extras.users() : 0), plus(plan.maxRegisters(), on ? extras.registers() : 0),
                     csvList(BusinessModule.format(BusinessModule.parse(String.join(",", modules)))),
-                    csvList(PlanFeature.format(PlanFeature.parse(String.join(",", features)))));
+                    csvList(PlanFeature.format(PlanFeature.parse(String.join(",", features)))),
+                    plus(plan.maxInvoiceScans(), on ? extras.invoiceScans() : 0));
         }
 
         private static Integer plus(Integer max, int extra) {
@@ -201,6 +202,11 @@ public class SubscriptionService implements SubscriptionApi {
     }
 
     @Override
+    public Integer invoiceScansPerMonth(UUID tenantId) {
+        return current(tenantId).map(c -> c.entitled(Instant.now()).maxInvoiceScans()).orElse(null);
+    }
+
+    @Override
     public void requireCanAddRegister(TenantRef tenant) {
         current(tenant.id()).ifPresent(c -> {
             Integer max = c.entitled(Instant.now()).maxRegisters();
@@ -232,14 +238,14 @@ public class SubscriptionService implements SubscriptionApi {
         // Un negocio que no terminó de crearse no tiene schema: sin uso que contar.
         boolean provisioned = "ACTIVE".equals(c.tenantStatus()) || "SUSPENDED".equals(c.tenantStatus());
         Usage usage = provisioned ? new Usage(countBranches(c.schema()), countUsers(c.tenantId(), c.schema()),
-                countRegisters(c.schema())) : new Usage(0, 0, 0);
+                countRegisters(c.schema()), countInvoiceScans(c.schema())) : new Usage(0, 0, 0, 0);
         Extras x = c.extras();
         return new SubscriptionView(c.tenantId(), c.tradeName(), c.plan(), status, c.trial(), c.cycle(),
                 c.startedAt(), c.endsAt(), c.trial() ? null : c.endsAt().plus(properties.grace()),
                 daysLeft(c.endsAt(), now), usage, properties.paymentInstructions(),
                 withPayments ? payments(tenantId) : List.of(), c.entitled(now),
                 new Extras(x.modules(), x.features(), x.branches(), x.registers(), x.users(), x.note(), x.until(),
-                        c.extrasActive(now)), c.priceLockedUntil());
+                        c.extrasActive(now), x.invoiceScans()), c.priceLockedUntil());
     }
 
     /** Vista del propio negocio: sin las notas internas que el administrador escribe en cada pago. */
@@ -255,7 +261,7 @@ public class SubscriptionService implements SubscriptionApi {
         return new SubscriptionView(v.tenantId(), v.tradeName(), v.plan(), v.status(), v.trial(), v.billingCycle(),
                 v.startedAt(), v.endsAt(), v.graceEndsAt(), v.daysLeft(), v.usage(), v.paymentInstructions(),
                 payments, v.entitled(), new Extras(x.modules(), x.features(), x.branches(), x.registers(), x.users(),
-                        null, x.until(), x.active()), v.priceLockedUntil());
+                        null, x.until(), x.active(), x.invoiceScans()), v.priceLockedUntil());
     }
 
     @Transactional(readOnly = true)
@@ -308,13 +314,17 @@ public class SubscriptionService implements SubscriptionApi {
     @Transactional
     public PlanView updatePlan(String code, String name, Integer maxBranches, Integer maxUsers, Integer maxRegisters,
                                BigDecimal monthlyPrice, BigDecimal annualPrice, boolean active,
-                               List<String> modules, List<String> features) {
+                               List<String> modules, List<String> features, Integer maxInvoiceScans) {
+        if (maxInvoiceScans != null && maxInvoiceScans < 0) {
+            throw new BusinessRuleException("Las lecturas con IA por mes no pueden ser negativas (vacío = sin límite).");
+        }
         int updated = jdbc.update("""
                 UPDATE platform.plans SET name = ?, max_branches = ?, max_users = ?, max_registers = ?,
                        monthly_price = ?, annual_price = ?, active = ?, modules = coalesce(?, modules),
-                       features = coalesce(?, features), updated_at = now()
+                       features = coalesce(?, features), max_invoice_scans = ?, updated_at = now()
                 WHERE code = ?""", name.trim(), maxBranches, maxUsers, maxRegisters, monthlyPrice, annualPrice, active,
-                modules == null ? null : modulesCsv(modules), features == null ? null : featuresCsv(features), code);
+                modules == null ? null : modulesCsv(modules), features == null ? null : featuresCsv(features),
+                maxInvoiceScans, code);
         if (updated == 0) {
             throw new NotFoundException("Plan no encontrado.");
         }
@@ -366,9 +376,13 @@ public class SubscriptionService implements SubscriptionApi {
      */
     @Transactional
     public SubscriptionView setExtras(UUID tenantId, List<String> modules, List<String> features, int branches,
-                                      int registers, int users, String note, Instant until, UUID adminId) {
+                                      int registers, int users, int invoiceScans, String note, Instant until,
+                                      UUID adminId) {
         if (branches < 0 || branches > 100 || registers < 0 || registers > 100 || users < 0 || users > 500) {
             throw new BusinessRuleException("Los extras van de 0 a 100 sedes o cajas y de 0 a 500 usuarios.");
+        }
+        if (invoiceScans < 0 || invoiceScans > 10000) {
+            throw new BusinessRuleException("Las lecturas con IA de más van de 0 a 10.000 por mes.");
         }
         if (until != null && !until.isAfter(Instant.now())) {
             throw new BusinessRuleException("La fecha de fin de los extras debe ser futura (o vacía, sin fin).");
@@ -381,8 +395,9 @@ public class SubscriptionService implements SubscriptionApi {
         }
         int updated = jdbc.update("""
                 UPDATE platform.subscriptions SET extra_modules = ?, extra_features = ?, extra_branches = ?,
-                       extra_registers = ?, extra_users = ?, extras_note = ?, extras_until = ?, updated_at = now()
-                WHERE tenant_id = ?""", mods, feats, branches, registers, users, cleanNote,
+                       extra_registers = ?, extra_users = ?, extra_invoice_scans = ?, extras_note = ?, extras_until = ?,
+                       updated_at = now()
+                WHERE tenant_id = ?""", mods, feats, branches, registers, users, invoiceScans, cleanNote,
                 until == null ? null : Timestamp.from(until), tenantId);
         if (updated == 0) {
             throw new NotFoundException("El negocio no tiene suscripción.");
@@ -394,6 +409,7 @@ public class SubscriptionService implements SubscriptionApi {
         details.put("branches", branches);
         details.put("registers", registers);
         details.put("users", users);
+        details.put("invoiceScans", invoiceScans);
         details.put("until", until == null ? null : until.toString());
         details.put("note", cleanNote);
         securityEvents.record(SecurityEvent.SUBSCRIPTION_EXTRAS_CHANGED, adminId, null, tenantId, details);
@@ -472,7 +488,8 @@ public class SubscriptionService implements SubscriptionApi {
                        p.code AS p_code, p.name AS p_name, p.max_branches AS p_max_branches,
                        p.max_users AS p_max_users, p.max_registers AS p_max_registers,
                        p.monthly_price AS p_monthly_price, p.annual_price AS p_annual_price, p.active AS p_active,
-                       p.modules AS p_modules, p.features AS p_features, p.legacy AS p_legacy
+                       p.modules AS p_modules, p.features AS p_features, p.legacy AS p_legacy,
+                       p.max_invoice_scans AS p_max_invoice_scans
                 FROM platform.subscriptions s
                 JOIN platform.tenants t ON t.id = s.tenant_id
                 JOIN platform.users u ON u.id = t.owner_user_id
@@ -484,7 +501,8 @@ public class SubscriptionService implements SubscriptionApi {
                 rs.getTimestamp("started_at").toInstant(), rs.getTimestamp("ends_at").toInstant(),
                 new Extras(csvList(rs.getString("extra_modules")), csvList(rs.getString("extra_features")),
                         rs.getInt("extra_branches"), rs.getInt("extra_registers"), rs.getInt("extra_users"),
-                        rs.getString("extras_note"), instantOrNull(rs.getTimestamp("extras_until")), true),
+                        rs.getString("extras_note"), instantOrNull(rs.getTimestamp("extras_until")), true,
+                        rs.getInt("extra_invoice_scans")),
                 instantOrNull(rs.getTimestamp("price_locked_until"))), tenantId)
                 .stream().findFirst();
     }
@@ -521,6 +539,14 @@ public class SubscriptionService implements SubscriptionApi {
         return count == null ? 0 : count;
     }
 
+    /** Facturas leídas con IA este mes (decisión 295; mes en hora de Colombia). */
+    private long countInvoiceScans(String schema) {
+        Long count = jdbc.queryForObject("SELECT count(*) FROM " + TenantSchemas.requireTenantSchema(schema)
+                + ".purchase_invoice_scans WHERE status = 'OK' AND created_at >= "
+                + "date_trunc('month', now() AT TIME ZONE 'America/Bogota') AT TIME ZONE 'America/Bogota'", Long.class);
+        return count == null ? 0 : count;
+    }
+
     /** Miembros activos más invitaciones pendientes vigentes (al aceptarlas serán usuarios). */
     private long countUsers(UUID tenantId, String schema) {
         Long members = jdbc.queryForObject("SELECT count(*) FROM " + TenantSchemas.requireTenantSchema(schema)
@@ -545,7 +571,7 @@ public class SubscriptionService implements SubscriptionApi {
                 (Integer) rs.getObject(prefix + "max_registers"), rs.getBigDecimal(prefix + "monthly_price"),
                 rs.getBigDecimal(prefix + "annual_price"), rs.getBoolean(prefix + "active"),
                 csvList(rs.getString(prefix + "modules")), csvList(rs.getString(prefix + "features")),
-                rs.getBoolean(prefix + "legacy"));
+                rs.getBoolean(prefix + "legacy"), (Integer) rs.getObject(prefix + "max_invoice_scans"));
     }
 
     private static List<String> csvList(String csv) {
