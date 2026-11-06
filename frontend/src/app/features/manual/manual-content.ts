@@ -363,6 +363,31 @@ export const MANUAL: readonly ManualChapter[] = [
         who: 'Propietario y Administrador.',
       },
       {
+        id: 'cartas-por-piso',
+        title: 'Cartas por piso',
+        summary: 'Para un local con dos pisos y una carta en cada uno (comida rápida abajo, cócteles arriba): lo de cada '
+          + 'carta se cobra en la caja de su piso, aunque la mesa esté en el otro piso o el cliente pague en la otra caja. '
+          + 'Plan Empresa.',
+        steps: [
+          'Necesitas una caja por piso (Configuración → Cajas). Luego entra a Mesas → "Configurar" → "Cartas por piso".',
+          'Toca "Nueva carta", escribe su nombre (Piso 2), elige en qué caja se cobra y marca sus categorías (Cócteles, '
+            + 'Cervezas). Si un producto suelto es de esa carta, búscalo y agrégalo.',
+          'Al pedir en una mesa, arriba de los productos elige la carta ("Piso 1", "Piso 2" o "Todas las cartas"). El '
+            + 'equipo recuerda la última que usaste.',
+          'Al cobrar una cuenta con productos de las dos cartas, XASKA registra una venta por caja (la hamburguesa en la '
+            + 'Caja 1 y la margarita en la Caja 2) y reparte el pago en proporción. El cliente recibe un solo tiquete con '
+            + 'las dos partes y el total.',
+        ],
+        tips: [
+          'Las dos cajas deben estar abiertas: si la de una carta está cerrada, XASKA dice cuál abrir.',
+          'La propina y el cambio quedan en la caja donde se cobró. Al cerrar, cada caja ve lo vendido de su carta; el '
+            + 'efectivo se cuadra entre las dos.',
+          'Lo que no está en ninguna carta se cobra en la caja de la zona de la mesa o, si no tiene, en la de quien cobra.',
+          'Una carta inactiva deja de mandar: lo suyo vuelve a cobrarse como antes.',
+        ],
+        who: 'La configura el Propietario o el Administrador; la caja cobra como siempre.',
+      },
+      {
         id: 'mapa-mesas',
         title: 'El mapa de mesas y sus colores',
         summary: 'En Mesas ves el plano de cada zona con las mesas donde están en el local, y cada una del color de en qué va.',
@@ -388,7 +413,7 @@ export const MANUAL: readonly ManualChapter[] = [
         summary: 'En Mesas ves el salón: las mesas libres punteadas y las ocupadas de color, con su total y cuánto llevan '
           + 'abiertas (más de una hora cambian de color).',
         steps: [
-          'Toca una mesa libre, escribe cuántas personas son (opcional) y toca "Abrir cuenta".',
+          'Toca una mesa libre, ajusta cuántas personas son con − y + (empieza en 2) y toca "Abrir cuenta".',
           'Toca los productos para pedirlos: si tienen adiciones se abren sus opciones y una nota. Quedan "Por agregar".',
           'Revisa cantidades y toca "Agregar a la cuenta" (con Cocina y comandas el botón dice "Enviar a cocina": agrega y '
             + 'sale la comanda de una vez). Puedes volver a pedir más tarde las veces que quieras.',
@@ -472,15 +497,18 @@ export const MANUAL: readonly ManualChapter[] = [
       {
         id: 'mesero',
         title: 'El rol Mesero',
-        summary: 'Para quien atiende las mesas desde el celular o una tableta: abre cuentas, pide, envía a cocina, mueve y '
-          + 'une mesas, consulta productos y clientes, cobra con su caja y ve sus ventas del día.',
+        summary: 'Para quien atiende las mesas desde el celular o una tableta: abre cuentas con las personas, pide, envía '
+          + 'a cocina, entrega, mueve y une mesas. Al entrar va directo a Mesas y su menú solo tiene eso. No cobra: cobra '
+          + 'la caja.',
         steps: [
           'En Usuarios invita a la persona y elige el rol "Mesero" y su sucursal.',
           'Entra desde el celular: en Mesas toca la mesa, pide en "Pedir" y toca "Enviar a cocina".',
         ],
         tips: [
           'Lo que ya salió a cocina no lo quita el mesero: lo anula caja o el administrador, con motivo.',
-          'Si prefieres que el mesero no cobre, en Roles y permisos quítale "Registrar ventas" y "Abrir, mover y cerrar caja".',
+          'Si quieres que tu mesero cobre, en Roles y permisos dale al rol Mesero "Registrar ventas" y "Abrir, mover y '
+            + 'cerrar caja": vuelve a ver Vender y su caja.',
+          'Si ya habías cambiado los permisos del rol Mesero, XASKA no los tocó: sigue como lo dejaste.',
         ],
         who: 'Lo asigna el Propietario o el Administrador.',
       },

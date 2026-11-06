@@ -124,8 +124,20 @@ export function dockItems(visible: readonly MenuItem[], type: BusinessType = 'RE
 /** Rutas con subrutas propias en el menú: solo se marcan activas en su ruta exacta. */
 export const EXACT_MATCH_ROUTES: ReadonlySet<string> = new Set(['/app', '/app/inventario', '/app/caja']);
 
+/** Lo único que ve quien solo atiende mesas (decisión 293). */
+export const FLOOR_ONLY_ROUTES: ReadonlySet<string> = new Set(['/app/mesas']);
+
+/**
+ * Quien atiende mesas sin vender ni operar caja (el Mesero tal como viene, decisión 293): su menú es solo Mesas y al
+ * entrar va directo allí. Si el dueño le da "Vender" o la caja, vuelve a ver el menú completo según sus permisos.
+ */
+export function isFloorOnly(has: (permission: string) => boolean): boolean {
+  return has('tables:operate') && !has('sales:create') && !has('cash:operate');
+}
+
 export function visibleMenu(has: (permission: string) => boolean): MenuItem[] {
-  return MENU.filter((item) => (!item.permission || has(item.permission)) && (!item.module || has(item.module)));
+  const items = MENU.filter((item) => (!item.permission || has(item.permission)) && (!item.module || has(item.module)));
+  return isFloorOnly(has) ? items.filter((item) => FLOOR_ONLY_ROUTES.has(item.route)) : items;
 }
 
 /** Agrega el título de sección antes del primer elemento de cada grupo. */

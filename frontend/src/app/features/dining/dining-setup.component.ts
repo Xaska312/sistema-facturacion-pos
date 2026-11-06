@@ -38,6 +38,10 @@ export function nextTableNames(existing: readonly string[], fromNumber: number, 
   template: `
     <app-page-header title="Configurar mesas" description="Zonas de tu local y sus mesas. El nombre de la mesa es el que ve el mesero (4, Barra 2, Terraza A).">
       <a pButton routerLink="/app/mesas" label="Ver el salón" icon="pi pi-arrow-left" severity="secondary" [outlined]="true"></a>
+      @if (zoneRegisters()) {
+        <a pButton routerLink="/app/mesas/cartas" label="Cartas por piso" icon="pi pi-book" severity="secondary"
+           [outlined]="true"></a>
+      }
       <p-button label="Nueva zona" icon="pi pi-plus" (onClick)="openZone(null)" />
     </app-page-header>
 

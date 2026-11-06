@@ -55,7 +55,8 @@ public final class SaleViews {
                            BigDecimal total, BigDecimal paidTotal, BigDecimal changeAmount, String notes,
                            UUID createdBy, String createdByName, Instant voidedAt, UUID voidedBy,
                            String voidedByName, String voidReason, List<ItemView> items, List<PaymentView> payments,
-                           List<TaxView> taxes, ReceiptHeader receipt, TipView tip) {
+                           List<TaxView> taxes, ReceiptHeader receipt, TipView tip, String splitLabel,
+                           List<SaleView> together) {
     }
 
     /** Lo que la pantalla de venta necesita del negocio (sin requerir permisos de configuración). */

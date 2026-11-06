@@ -9,12 +9,14 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { Observable, finalize } from 'rxjs';
 import { Product, ProductLookup, ProductModel, ProductModelRow, ProductVariant } from '../../core/api/api.models';
 import { CatalogApi } from '../../core/api/catalog.api';
-import { DiningApi, Floor, Tab, TabItem, TabSummary } from '../../core/api/dining.api';
+import { DiningApi, DiningMenu, Floor, Tab, TabItem, TabSummary } from '../../core/api/dining.api';
+import { loadMenuChoice, menuCategoryFilter, saveMenuChoice } from './menu-form';
 import { ModifiersApi, PosModifierCatalog, PosModifierGroup } from '../../core/api/modifiers.api';
 import { SalesApi } from '../../core/api/sales.api';
 import { AuthService } from '../../core/auth/auth.service';
 import { permissionFlag } from '../../core/auth/permission-flag';
 import { problemMessage } from '../../core/errors/problem';
+import { CountStepperComponent } from '../../shared/forms/count-stepper.component';
 import { FormDialogComponent } from '../../shared/forms/form-dialog.component';
 import { XIconComponent } from '../../shared/icons/xicon.component';
 import { formatCop, formatQuantity } from '../../shared/money';
@@ -52,7 +54,7 @@ interface Picking {
 @Component({
   selector: 'app-tab',
   imports: [FormsModule, RouterLink, ButtonModule, DialogModule, InputTextModule, SkeletonModule, FormDialogComponent,
-    LiveReplacedComponent,
+    LiveReplacedComponent, CountStepperComponent,
     XIconComponent, ProductGridComponent, ModifierPickerComponent, VariantPickerComponent],
   template: `
     <app-live-replaced />
@@ -110,8 +112,21 @@ interface Picking {
         @if (isOpen()) {
           <section class="min-w-0 min-h-[28rem] lg:h-[calc(100dvh-14rem)] flex flex-col lg:flex" [class.hidden]="pane() !== 'add'"
                    aria-label="Productos para pedir">
-            <app-product-grid class="flex-1 min-h-0" [favoriteIds]="favorites()" (pick)="pick($event)"
-                              (pickModel)="openModel($event)" (favoriteToggle)="toggleFavorite($event)" />
+            <!-- Cartas por piso (decisión 294): cada carta por separado; lo de cada una se cobra en su caja. -->
+            @if (menus().length > 0) {
+              <nav class="flex gap-2 overflow-x-auto pb-2 shrink-0" aria-label="Cartas">
+                <button type="button" class="seg !flex-none px-4 whitespace-nowrap" [attr.aria-pressed]="menuId() === null" (click)="chooseMenu(null)">
+                  Todas las cartas
+                </button>
+                @for (m of menus(); track m.id) {
+                  <button type="button" class="seg !flex-none px-4 whitespace-nowrap" [attr.aria-pressed]="menuId() === m.id" (click)="chooseMenu(m.id)">
+                    {{ m.name }}
+                  </button>
+                }
+              </nav>
+            }
+            <app-product-grid class="flex-1 min-h-0" [favoriteIds]="favorites()" [onlyCategories]="menuCategories()"
+                              (pick)="pick($event)" (pickModel)="openModel($event)" (favoriteToggle)="toggleFavorite($event)" />
           </section>
         }
 
@@ -386,12 +401,12 @@ interface Picking {
     </p-dialog>
 
     <!-- Datos -->
-    <app-form-dialog [(visible)]="detailsOpen" header="Datos de la cuenta" width="28rem" [dirty]="true"
+    <app-form-dialog [(visible)]="detailsOpen" header="Datos de la cuenta" width="28rem" autofocus="desktop" [dirty]="true"
                      [invalidMessage]="detailsProblem()" [save]="detailsRequest" successMessage="Datos guardados" (saved)="apply($event)">
       @if (tab()?.kind === 'TABLE') {
         <div class="flex flex-col gap-1">
-          <label for="d-guests" class="text-sm font-semibold">Personas</label>
-          <input pInputText id="d-guests" type="number" min="1" max="99" [(ngModel)]="details.guests" />
+          <span class="text-sm font-semibold">Personas</span>
+          <app-count-stepper [(value)]="details.guests" />
         </div>
       }
       <div class="flex flex-col gap-1">
@@ -457,7 +472,7 @@ interface Picking {
       background: var(--surface);
       font-weight: 700;
     }
-    .seg[aria-selected='true'] { background: var(--brand); border-color: var(--brand); color: var(--brand-contrast); }
+    .seg[aria-selected='true'], .seg[aria-pressed='true'] { background: var(--brand); border-color: var(--brand); color: var(--brand-contrast); }
     .pick {
       display: flex;
       flex-direction: column;
@@ -588,13 +603,41 @@ export class TabComponent implements OnInit, HasUnsavedChanges {
     }
   }
 
+  /** Cartas activas de la sucursal de la cuenta (decisión 294) y la elegida (se recuerda en el equipo). */
+  protected readonly menus = signal<DiningMenu[]>([]);
+  protected readonly menuId = signal<string | null>(loadMenuChoice());
+  protected readonly menuCategories = computed(() => menuCategoryFilter(this.menus(), this.menuId()));
+
+  private loadMenus(branchId: string): void {
+    this.api.menus(branchId).subscribe({
+      next: (list) => {
+        const active = list.filter((m) => m.active);
+        this.menus.set(active);
+        if (this.menuId() !== null && !active.some((m) => m.id === this.menuId())) {
+          this.menuId.set(null);
+        }
+      },
+      error: () => this.menus.set([]),
+    });
+  }
+
+  protected chooseMenu(id: string | null): void {
+    this.menuId.set(id);
+    saveMenuChoice(id);
+  }
+
   hasUnsavedChanges(): boolean {
     return this.pending().length > 0;
   }
 
   private reload(): void {
     this.api.tab(this.id).subscribe({
-      next: (t) => this.tab.set(t),
+      next: (t) => {
+        if (this.tab()?.branchId !== t.branchId) {
+          this.loadMenus(t.branchId);
+        }
+        this.tab.set(t);
+      },
       error: () => this.notFound.set(true),
     });
   }

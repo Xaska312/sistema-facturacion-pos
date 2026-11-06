@@ -131,8 +131,35 @@ public class SaleQueryService {
         });
     }
 
+    /**
+     * La venta con sus productos, pagos e impuestos. Si es parte de un cobro partido entre cajas (decisión 294),
+     * {@code splitLabel} dice su carta ("Piso 2") y {@code together} trae todas las partes del cobro, en orden, para imprimir un
+     * solo tiquete.
+     */
     @Transactional(readOnly = true)
     public SaleView sale(UUID id) {
+        @SuppressWarnings("unchecked")
+        List<Object[]> parts = em.createNativeQuery("""
+                        SELECT p.sale_id, p.label FROM sale_split_parts p
+                        WHERE p.charge_id = (SELECT charge_id FROM sale_split_parts WHERE sale_id = ?1)
+                        ORDER BY p.position""")
+                .setParameter(1, id).getResultList();
+        if (parts.isEmpty()) {
+            return sale(id, null, null);
+        }
+        // Todas las partes del cobro, en orden (también esta, sin anidar): el tiquete sale igual desde cualquiera.
+        String label = null;
+        List<SaleView> all = new ArrayList<>();
+        for (Object[] p : parts) {
+            if (id.equals(p[0])) {
+                label = (String) p[1];
+            }
+            all.add(sale((UUID) p[0], (String) p[1], null));
+        }
+        return sale(id, label, all);
+    }
+
+    private SaleView sale(UUID id, String splitLabel, List<SaleView> together) {
         Sale s = sales.findById(id).orElseThrow(() -> new NotFoundException("Venta no encontrada."));
         Map<UUID, PaymentMethodRef> methods = cash.paymentMethods();
         Set<UUID> people = new HashSet<>();
@@ -180,7 +207,7 @@ public class SaleQueryService {
                 s.getTaxTotal(), s.getTotal(), s.getPaidTotal(), s.getChangeAmount(), s.getNotes(), s.getCreatedBy(),
                 names.get(s.getCreatedBy()), s.getVoidedAt(), s.getVoidedBy(),
                 s.getVoidedBy() == null ? null : names.get(s.getVoidedBy()), s.getVoidReason(), itemViews,
-                paymentViews, taxViews, receipt, tip(id, methods));
+                paymentViews, taxViews, receipt, tip(id, methods), splitLabel, together);
     }
 
     /** Propina de la venta (Fase 12b-5), si tiene. */

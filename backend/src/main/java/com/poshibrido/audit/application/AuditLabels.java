@@ -92,6 +92,8 @@ public final class AuditLabels {
             Map.entry("ADVERSE_EVENT_REPORTED", "Anotó el reporte al INVIMA de un evento adverso"),
             Map.entry("CASH_DRAWER_OPENED", "Abrió el cajón monedero sin una venta"),
             Map.entry("DINING_ZONE_CASH_REGISTER_UPDATED", "Cambió la caja de una zona de mesas"),
+            Map.entry("DINING_MENU_CREATED", "Creó una carta"),
+            Map.entry("DINING_MENU_UPDATED", "Editó una carta"),
             Map.entry("QUOTE_REJECTED", "Rechazó una cotización"),
             Map.entry("QUOTE_UPDATED", "Modificó una cotización"),
             Map.entry("CASH_SESSION_LEFT", "Dejó una caja compartida"),

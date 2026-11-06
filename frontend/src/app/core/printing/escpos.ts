@@ -1,6 +1,7 @@
 import { Sale } from '../api/api.models';
 import { documentShortLabel } from '../../shared/document-types';
 import { formatCop, formatQuantity } from '../../shared/money';
+import { splitSummary } from '../../shared/receipt/split-receipt';
 
 /**
  * Tiquete en comandos ESC/POS para la impresora térmica (decisión 286): lo arma la app y XASKA Impresora lo manda tal
@@ -239,6 +240,7 @@ export function receiptBytes(s: Sale, o: ReceiptOptions): Uint8Array {
   const cop = formatCop;
   const q = formatQuantity;
   const p = new EscPos(o.plain ?? false);
+  const split = splitSummary(s);
   if (o.openDrawer) {
     p.drawer();
   }
@@ -251,53 +253,87 @@ export function receiptBytes(s: Sale, o: ReceiptOptions): Uint8Array {
       p.lines(wrap(extra, w));
     }
   }
-  p.line().bold(true).line('Tiquete ' + s.documentNumber).bold(false).align('left');
+  p.line().bold(true).line(split ? (s.notes ?? 'Cuenta') : 'Tiquete ' + s.documentNumber).bold(false).align('left');
   p.line(o.date);
   p.lines(wrap(`Caja ${s.receipt.registerCode ?? ''} · ${s.createdByName ?? ''}`, w));
   p.lines(wrap('Cliente: ' + s.customerName, w));
   const doc = s.customerVerificationDigit === null ? s.customerDocumentNumber
     : `${s.customerDocumentNumber}-${s.customerVerificationDigit}`;
   p.line(`${documentShortLabel(s.customerDocumentType)} ${doc}`);
-  if (s.status === 'VOIDED') {
-    p.align('center').bold(true).line('*** VENTA ANULADA ***').bold(false).lines(wrap(s.voidReason ?? '', w)).align('left');
-  }
-  p.rule(w);
-  for (const item of s.items) {
-    p.lines(wrap(item.name, w));
-    for (const m of item.modifiers ?? []) {
-      p.lines(wrap(`  + ${m.optionName}${m.quantity > 1 ? ' x' + m.quantity : ''}`, w));
+  const items = (sale: Sale) => {
+    for (const item of sale.items) {
+      p.lines(wrap(item.name, w));
+      for (const m of item.modifiers ?? []) {
+        p.lines(wrap(`  + ${m.optionName}${m.quantity > 1 ? ' x' + m.quantity : ''}`, w));
+      }
+      if (item.note) {
+        p.lines(wrap('  * ' + item.note, w));
+      }
+      p.lines(row(`  ${q(item.quantity)} ${item.unitCode} x ${cop(item.unitPrice)}`, cop(item.grossAmount), w));
+      if (item.discountAmount > 0) {
+        p.lines(row(`  Desc. ${q(item.discountPercent)} %`, '-' + cop(item.discountAmount), w));
+      }
     }
-    if (item.note) {
-      p.lines(wrap('  * ' + item.note, w));
+  };
+  const taxes = (sale: Sale) => {
+    for (const t of sale.taxes) {
+      if (t.taxAmount > 0) {
+        p.lines(row(`${t.taxType} ${q(t.taxRate)} %`, cop(t.taxAmount), w));
+      }
     }
-    p.lines(row(`  ${q(item.quantity)} ${item.unitCode} x ${cop(item.unitPrice)}`, cop(item.grossAmount), w));
-    if (item.discountAmount > 0) {
-      p.lines(row(`  Desc. ${q(item.discountPercent)} %`, '-' + cop(item.discountAmount), w));
+  };
+  if (split) {
+    // Cobro partido entre cajas (decisión 294): cada carta con su tiquete y su total, y abajo el total de todo.
+    for (const part of split.parts) {
+      p.rule(w).align('center').bold(true).lines(wrap(`${part.splitLabel ?? ''} · Tiquete ${part.documentNumber}`, w))
+        .bold(false).align('left');
+      if (part.status === 'VOIDED') {
+        p.align('center').bold(true).line('*** ANULADA ***').bold(false).align('left');
+      }
+      items(part);
+      taxes(part);
+      p.bold(true).lines(row(`Total ${part.splitLabel ?? ''}`, cop(part.total), w)).bold(false);
     }
-  }
-  p.rule(w);
-  if (s.discountTotal > 0) {
-    p.lines(row('Descuentos', '-' + cop(s.discountTotal), w));
-  }
-  p.lines(row('Subtotal (base)', cop(s.subtotal), w));
-  for (const t of s.taxes) {
-    if (t.taxAmount > 0) {
-      p.lines(row(`${t.taxType} ${q(t.taxRate)} %`, cop(t.taxAmount), w));
+    p.rule(w);
+    p.bold(true).big(true).lines(row('TOTAL', cop(split.total), w)).big(false).bold(false);
+    if (split.tip) {
+      const tip = split.tip;
+      p.lines(row(`Propina voluntaria (${tip.methodName})${tip.voided ? ' ANULADA' : ''}`, cop(tip.amount), w));
+      p.bold(true).lines(row('Total con propina', cop(split.total + (tip.voided ? 0 : tip.amount)), w)).bold(false);
     }
-  }
-  // TOTAL en doble alto (el ancho de columnas no cambia).
-  p.bold(true).big(true).lines(row('TOTAL', cop(s.total), w)).big(false).bold(false);
-  if (s.tip) {
-    const tip = s.tip;
-    p.lines(row(`Propina voluntaria (${tip.methodName})${tip.voided ? ' ANULADA' : ''}`, cop(tip.amount), w));
-    p.bold(true).lines(row('Total con propina', cop(s.total + (tip.voided ? 0 : tip.amount)), w)).bold(false);
-  }
-  p.rule(w);
-  for (const pay of s.payments) {
-    p.lines(row(pay.methodName, cop(pay.tendered), w));
-  }
-  if (s.changeAmount > 0) {
-    p.bold(true).lines(row('Cambio', cop(s.changeAmount), w)).bold(false);
+    p.rule(w);
+    for (const pay of split.payments) {
+      p.lines(row(pay.methodName, cop(pay.tendered), w));
+    }
+    if (split.change > 0) {
+      p.bold(true).lines(row('Cambio', cop(split.change), w)).bold(false);
+    }
+  } else {
+    if (s.status === 'VOIDED') {
+      p.align('center').bold(true).line('*** VENTA ANULADA ***').bold(false).lines(wrap(s.voidReason ?? '', w)).align('left');
+    }
+    p.rule(w);
+    items(s);
+    p.rule(w);
+    if (s.discountTotal > 0) {
+      p.lines(row('Descuentos', '-' + cop(s.discountTotal), w));
+    }
+    p.lines(row('Subtotal (base)', cop(s.subtotal), w));
+    taxes(s);
+    // TOTAL en doble alto (el ancho de columnas no cambia).
+    p.bold(true).big(true).lines(row('TOTAL', cop(s.total), w)).big(false).bold(false);
+    if (s.tip) {
+      const tip = s.tip;
+      p.lines(row(`Propina voluntaria (${tip.methodName})${tip.voided ? ' ANULADA' : ''}`, cop(tip.amount), w));
+      p.bold(true).lines(row('Total con propina', cop(s.total + (tip.voided ? 0 : tip.amount)), w)).bold(false);
+    }
+    p.rule(w);
+    for (const pay of s.payments) {
+      p.lines(row(pay.methodName, cop(pay.tendered), w));
+    }
+    if (s.changeAmount > 0) {
+      p.bold(true).lines(row('Cambio', cop(s.changeAmount), w)).bold(false);
+    }
   }
   p.rule(w).align('center');
   if (s.receipt.footer) {

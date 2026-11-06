@@ -157,6 +157,15 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
       'Con "Plano" arrastras cada mesa a su lugar del local y eliges su forma y tamaño.',
     ],
   },
+  '/app/mesas/cartas': {
+    manual: 'cartas-por-piso',
+    title: 'Cartas por piso',
+    tips: [
+      'Crea una carta por piso con su caja y sus categorías: lo suyo se cobra en esa caja aunque la mesa esté en el otro piso.',
+      'Si una cuenta trae de dos cartas, sale una venta por caja y un solo tiquete con las dos partes.',
+      'Una categoría está en una sola carta: si la marcas en otra, pasa a esa.',
+    ],
+  },
   '/app/comandas': {
     manual: 'comandas',
     title: 'Comandas',
