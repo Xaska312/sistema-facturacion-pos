@@ -2,6 +2,7 @@ import { HttpClient, HttpContext } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { SILENT_CLIENT_ERRORS } from '../errors/error.interceptor';
+import { ImportReport } from './api.models';
 
 /** Un mensaje de la conversación con XASKA IA (decisión 296). */
 export interface AskTurn {
@@ -48,6 +49,77 @@ export interface DigestSettings {
   used: number;
 }
 
+/** "Cargar con Aska" (decisión 300): cómo se reconoció un producto que ya existe. */
+export type CatalogMatchBy = 'MEMORY' | 'BARCODE' | 'SKU' | 'NAME';
+export type CatalogAction = 'CREATE' | 'UPDATE' | 'SKIP';
+
+export interface CatalogMatch {
+  productId: string;
+  sku: string;
+  name: string;
+  by: CatalogMatchBy;
+  currentCost: number | null;
+  currentPrice: number;
+  /** El costo lo calcula el inventario (ya tiene movimientos): la lista no lo cambia. */
+  costLocked: boolean;
+}
+
+export interface CatalogProposal {
+  action: CatalogAction;
+  sku: string;
+  name: string;
+  category: string | null;
+  unitCode: string;
+  taxCode: string;
+  /** Sin IVA. */
+  cost: number;
+  /** Como vende el negocio (con o sin IVA según sus ajustes). */
+  price: number;
+  marginPercent: number;
+}
+
+export interface CatalogRow {
+  rowId: number;
+  description: string;
+  supplierCode: string | null;
+  barcode: string | null;
+  listCost: number;
+  taxRate: number | null;
+  match: CatalogMatch | null;
+  proposal: CatalogProposal;
+}
+
+export interface CatalogOption {
+  code: string;
+  name: string;
+  rate: number | null;
+}
+
+export interface CatalogDraft {
+  rows: CatalogRow[];
+  units: CatalogOption[];
+  taxes: CatalogOption[];
+  categories: string[];
+  pricesIncludeTax: boolean;
+  margin: number;
+  warnings: string[];
+  usage: AskUsage;
+}
+
+/** Fila confirmada: {@code productId} nulo = crear. */
+export interface CatalogConfirmed {
+  productId: string | null;
+  sku: string;
+  name: string;
+  barcode: string | null;
+  category: string | null;
+  unitCode: string;
+  taxCode: string;
+  cost: number;
+  price: number;
+  supplierCode: string | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AiApi {
   private readonly http = inject(HttpClient);
@@ -81,5 +153,25 @@ export class AiApi {
   /** Arma y envía el resumen ahora (reemplaza el del día). */
   runDigest(): Observable<Digest> {
     return this.http.post<Digest>('/api/v1/ai/digest/run', {});
+  }
+
+  /** Aska lee la lista de precios del proveedor; nada se guarda. Los 4xx se muestran en la pantalla. */
+  readCatalog(files: File[], supplierId: string | null, margin: number): Observable<CatalogDraft> {
+    const form = new FormData();
+    files.forEach((f) => form.append('files', f, f.name));
+    if (supplierId) {
+      form.append('supplierId', supplierId);
+    }
+    form.append('margin', String(margin));
+    return this.http.post<CatalogDraft>('/api/v1/ai/catalog/read', form,
+      { context: new HttpContext().set(SILENT_CLIENT_ERRORS, true) });
+  }
+
+  applyCatalog(rows: CatalogConfirmed[], supplierId: string | null): Observable<ImportReport> {
+    return this.http.post<ImportReport>('/api/v1/ai/catalog/apply', { supplierId, rows });
+  }
+
+  catalogUsage(): Observable<AskUsage> {
+    return this.http.get<AskUsage>('/api/v1/ai/catalog/usage');
   }
 }

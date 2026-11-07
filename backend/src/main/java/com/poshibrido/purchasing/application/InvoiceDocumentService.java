@@ -239,6 +239,15 @@ public class InvoiceDocumentService {
 
     // ------------------------------------------------------------------ emparejar
 
+    /**
+     * Empareja líneas leídas (de una factura o de una lista de precios, decisión 300) con los productos: lo aprendido
+     * del proveedor, código de barras, SKU y nombre parecido.
+     */
+    @Transactional(readOnly = true)
+    public List<DraftLine> matchLines(UUID supplierId, List<ParsedLine> parsed) {
+        return match(supplierId, parsed);
+    }
+
     private List<DraftLine> match(UUID supplierId, List<ParsedLine> parsed) {
         Set<UUID> fromSupplier = new HashSet<>();
         if (supplierId != null) {

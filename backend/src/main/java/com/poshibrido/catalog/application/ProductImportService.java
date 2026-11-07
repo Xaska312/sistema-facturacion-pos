@@ -84,6 +84,19 @@ public class ProductImportService {
         return importRows(CsvReader.parseWithLines(content), dryRun);
     }
 
+    /**
+     * La misma carga desde una tabla ya armada (primera fila: encabezados), p. ej. lo que se revisó en "Cargar con
+     * Aska" (decisión 300).
+     */
+    @Transactional
+    public ImportReport importTable(List<List<String>> table, boolean dryRun) {
+        List<CsvReader.Row> rows = new ArrayList<>();
+        for (int i = 0; i < table.size(); i++) {
+            rows.add(new CsvReader.Row(i + 1, table.get(i)));
+        }
+        return importRows(rows, dryRun);
+    }
+
     /** La misma carga desde la plantilla de Excel (.xlsx): se lee la primera hoja (fase 8f). */
     @Transactional
     public ImportReport importXlsx(byte[] content, boolean dryRun) {

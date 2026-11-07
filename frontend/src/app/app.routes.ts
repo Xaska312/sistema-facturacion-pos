@@ -173,6 +173,14 @@ export const routes: Routes = [
           import('./features/products/product-import.component').then((m) => m.ProductImportComponent),
       },
       {
+        path: 'productos/cargar-con-aska',
+        title: 'Cargar con Aska',
+        canActivate: [permissionGuard],
+        data: { permission: 'products:manage' },
+        loadComponent: () =>
+          import('./features/products/catalog-import.component').then((m) => m.CatalogImportComponent),
+      },
+      {
         path: 'productos/modelos',
         title: 'Productos con tallas',
         canActivate: [permissionGuard],

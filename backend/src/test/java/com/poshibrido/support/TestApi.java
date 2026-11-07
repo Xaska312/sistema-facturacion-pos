@@ -217,6 +217,18 @@ public class TestApi {
         return mvc.perform(request);
     }
 
+    /** Sube un archivo con nombre propio en el campo multipart indicado. */
+    public ResultActions uploadNamed(Session session, String path, String field, String filename, byte[] content,
+                                     String... params) throws Exception {
+        var request = multipart(path)
+                .file(new MockMultipartFile(field, filename, "application/octet-stream", content))
+                .header(HttpHeaders.AUTHORIZATION, session.bearer());
+        for (int i = 0; i + 1 < params.length; i += 2) {
+            request.param(params[i], params[i + 1]);
+        }
+        return mvc.perform(request);
+    }
+
     public ResultActions postPublic(String path, String json) throws Exception {
         return mvc.perform(post(path).contentType(MediaType.APPLICATION_JSON).content(json));
     }

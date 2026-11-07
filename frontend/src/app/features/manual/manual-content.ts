@@ -1192,6 +1192,25 @@ export const MANUAL: readonly ManualChapter[] = [
         who: 'El propietario y quien él elija, en negocios con el adicional XASKA IA.',
       },
       {
+        id: 'cargar-con-aska',
+        title: 'Cargar el catálogo con Aska',
+        summary: 'Sube la lista de precios que te mandó el proveedor (Excel, PDF o fotos) y Aska crea los productos nuevos '
+          + 'y pone al día costos y precios de los que ya tienes. Nada se guarda hasta que lo revises.',
+        steps: [
+          'En Productos toca "Cargar con Aska" y elige la lista. Escoge el proveedor y el margen para los productos nuevos.',
+          'Toca "Leer con Aska". Verás cada fila marcada como Nueva, Cambia o Sin cambios.',
+          'Corrige lo que quieras (nombre, SKU, categoría, costo, precio) y desmarca lo que no quieras guardar.',
+          'Toca "Guardar": se guarda todo o nada.',
+        ],
+        tips: [
+          'Los productos que ya tienes conservan su margen: si el costo sube, el precio sube igual. Si baja, el precio se queda.',
+          'Revisa las filas con "Nombre parecido"; si no es el mismo, toca "Es otro producto".',
+          'Si el producto ya tiene movimientos, su costo lo pone el inventario con la próxima compra; aquí se ajusta el precio.',
+          'Con el proveedor elegido, Aska recuerda sus códigos para la próxima lista y la próxima factura.',
+        ],
+        who: 'Quien administra productos, en negocios con el adicional XASKA IA.',
+      },
+      {
         id: 'tablero',
         title: 'Tablero del inicio',
         summary: 'Ventas, utilidad, medios de pago y productos más vendidos del periodo, con alertas de existencias.',

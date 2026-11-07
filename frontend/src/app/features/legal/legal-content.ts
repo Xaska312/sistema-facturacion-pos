@@ -166,8 +166,8 @@ export const PRIVACY_POLICY: LegalDocument = {
             'Envío de correos: Resend.',
             'Copias de seguridad cifradas: Google Drive.',
             'XASKA IA, el adicional de inteligencia artificial: Anthropic (Claude). Solo recibe lo que el negocio decide '
-              + 'enviar: las fotos o el PDF de las facturas de proveedores que se leen, las preguntas a Aska y el '
-              + 'Resumen del día, con los datos de los reportes necesarios para responder o resumir (pueden incluir '
+              + 'enviar: las fotos o el PDF de las facturas y listas de precios de proveedores que se leen, las '
+              + 'preguntas a Aska y el Resumen del día, con los datos de los reportes necesarios para responder o resumir (pueden incluir '
               + 'nombres de clientes, productos y cifras). No los usa para entrenar sus modelos y los borra según sus plazos de '
               + 'retención.',
           ],

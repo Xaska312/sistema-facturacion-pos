@@ -13,10 +13,12 @@ import { permissionFlag } from '../../core/auth/permission-flag';
 import { LatestRequest } from '../../shared/latest-request';
 import { CellTemplateDirective } from '../../shared/table/cell-template.directive';
 import { medicineTags } from './medicine-form';
+import { XaskaIaLogoComponent } from '../../shared/brand/xaska-ia-logo.component';
 
 @Component({
   selector: 'app-products',
-  imports: [FormsModule, RouterLink, ButtonModule, DataTableComponent, PageHeaderComponent, CellTemplateDirective],
+  imports: [FormsModule, RouterLink, ButtonModule, DataTableComponent, PageHeaderComponent, CellTemplateDirective,
+    XaskaIaLogoComponent],
   template: `
     <app-page-header title="Productos" [description]="'Lo que vendes: precio, impuesto, unidad y códigos de barras.'
                        + (hasVariants() ? ' Los productos con tallas y colores están en «Con tallas».' : '')">
@@ -28,6 +30,11 @@ import { medicineTags } from './medicine-form';
       @if (hasScale()) {
         <a pButton routerLink="/app/bascula" label="Báscula" icon="pi pi-calculator" severity="secondary"
            [outlined]="true"></a>
+      }
+      @if (canManage() && canAsk()) {
+        <a routerLink="/app/productos/cargar-con-aska" class="aska-cta">
+          <app-xaska-ia-logo size="sm" /> Cargar con Aska
+        </a>
       }
       @if (canManage()) {
         <a pButton routerLink="/app/productos/importar" label="Importar desde Excel" icon="pi pi-file-excel" severity="secondary"
@@ -82,6 +89,14 @@ import { medicineTags } from './medicine-form';
       </ng-template>
     </app-data-table>
   `,
+  styles: `
+    .aska-cta {
+      display: inline-flex; align-items: center; gap: 0.5rem; min-height: 2.75rem; padding: 0 1rem; border-radius: 0.75rem;
+      font-weight: 700; font-size: 0.875rem; color: var(--aska-contrast); background: var(--aska);
+      box-shadow: 0 0 0 4px var(--aska-glow);
+    }
+    .aska-cta:focus-visible { outline: 2px solid var(--aska-amber); outline-offset: 2px; }
+  `,
 })
 export class ProductsComponent implements OnInit {
   /** Cancela la petición anterior de la lista (QA UI-10). */
@@ -90,6 +105,7 @@ export class ProductsComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly confirm = inject(ConfirmService);
   protected readonly canManage = permissionFlag('products:manage');
+  protected readonly canAsk = permissionFlag('ai:ask');
   protected readonly hasVariants = permissionFlag('module:variants');
   protected readonly hasScale = permissionFlag('module:scale');
   protected readonly hasMedicines = permissionFlag('module:medicines');

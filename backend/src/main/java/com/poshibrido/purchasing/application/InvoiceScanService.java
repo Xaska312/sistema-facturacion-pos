@@ -168,20 +168,20 @@ public class InvoiceScanService {
         return new Prepared("IMAGE", "application/zip", "factura-fotos.zip", zip(pages), pages);
     }
 
-    static boolean isPdf(byte[] b) {
+    public static boolean isPdf(byte[] b) {
         return b.length >= 5 && b[0] == '%' && b[1] == 'P' && b[2] == 'D' && b[3] == 'F' && b[4] == '-';
     }
 
-    static boolean isJpeg(byte[] b) {
+    public static boolean isJpeg(byte[] b) {
         return b.length >= 3 && (b[0] & 0xff) == 0xFF && (b[1] & 0xff) == 0xD8 && (b[2] & 0xff) == 0xFF;
     }
 
-    static boolean isPng(byte[] b) {
+    public static boolean isPng(byte[] b) {
         return b.length >= 8 && (b[0] & 0xff) == 0x89 && b[1] == 'P' && b[2] == 'N' && b[3] == 'G';
     }
 
     /** Páginas de un PDF (aproximado: cuenta los objetos /Type /Page). */
-    static int pdfPages(byte[] pdf) {
+    public static int pdfPages(byte[] pdf) {
         Matcher m = PDF_PAGE.matcher(new String(pdf, StandardCharsets.ISO_8859_1));
         int count = 0;
         while (m.find()) {
@@ -191,7 +191,7 @@ public class InvoiceScanService {
     }
 
     /** Vuelve a dibujar la foto en JPEG de máximo {@link #MAX_SIDE} px: sin metadatos (ubicación, cámara). */
-    static byte[] reencode(byte[] bytes) {
+    public static byte[] reencode(byte[] bytes) {
         BufferedImage source;
         try {
             source = ImageIO.read(new ByteArrayInputStream(bytes));
