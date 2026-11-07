@@ -2,6 +2,7 @@ package com.poshibrido.purchasing.application;
 
 import com.poshibrido.purchasing.application.DianInvoiceParser.ParsedInvoice;
 import com.poshibrido.purchasing.application.DianInvoiceParser.ParsedLine;
+import com.poshibrido.purchasing.application.DianInvoiceParser.SizeQuantity;
 import com.poshibrido.purchasing.application.DianInvoiceParser.ParsedSupplier;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -181,7 +182,8 @@ public class AnthropicInvoiceReader implements InvoiceReader {
                     barcode != null && barcode.length() >= 8 && barcode.length() <= 14 ? barcode : null,
                     unit == null ? null : unit.toUpperCase(Locale.ROOT), Boolean.TRUE.equals(l.get("packageUnit")),
                     quantity, money(l.get("unitCost"), 2).max(BigDecimal.ZERO), money(l.get("taxRate"), 2).max(BigDecimal.ZERO),
-                    BigDecimal.ZERO, clip(text(l.get("lotNumber")), 40), date(text(l.get("expirationDate")))));
+                    BigDecimal.ZERO, clip(text(l.get("lotNumber")), 40), date(text(l.get("expirationDate"))),
+                    clip(text(l.get("color")), 40), sizes(l.get("sizes"), quantity)));
         }
         String payment = text(read.get("paymentType"));
         String number = clip(text(read.get("invoiceNumber")), 40);
@@ -195,6 +197,27 @@ public class AnthropicInvoiceReader implements InvoiceReader {
                 total.signum() > 0 ? total : null, money(read.get("globalDiscount"), 2).max(BigDecimal.ZERO), false,
                 List.copyOf(lines));
         return new Result(invoice, null, model, input, output);
+    }
+
+    /** Las tallas solo si son razonables (hasta 40, con cantidad) y suman la cantidad de la línea. */
+    @SuppressWarnings("unchecked")
+    static List<SizeQuantity> sizes(Object raw, BigDecimal quantity) {
+        if (!(raw instanceof List<?> list) || list.isEmpty() || list.size() > 40) {
+            return List.of();
+        }
+        List<SizeQuantity> sizes = new ArrayList<>();
+        BigDecimal sum = BigDecimal.ZERO;
+        for (Object o : list) {
+            Map<String, Object> s = map(o);
+            String size = clip(text(s.get("size")), 10);
+            BigDecimal q = money(s.get("quantity"), 4);
+            if (size == null || q.signum() <= 0) {
+                continue;
+            }
+            sizes.add(new SizeQuantity(size, q));
+            sum = sum.add(q);
+        }
+        return sum.compareTo(quantity) == 0 ? List.copyOf(sizes) : List.of();
     }
 
     private static Map<String, Object> map(Object o) {

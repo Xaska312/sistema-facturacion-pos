@@ -771,8 +771,12 @@ export const MANUAL: readonly ManualChapter[] = [
           'Si el proveedor no está en XASKA te lo dice con su NIT: toca "Crear proveedor".',
           'Revisa cada producto. XASKA los encuentra por lo que aprendió de ese proveedor, por el código de barras o por '
             + 'un nombre parecido. Lo que dice "Se eligió por el nombre" confírmalo o cámbialo.',
-          'En "Sin producto en XASKA" elige a qué producto corresponde cada línea ("¿Es…?" o "Buscar otro"), créalo con '
-            + '"Crear producto" (abre en otra pestaña con el nombre y el costo) o márcala como "No lo recibo".',
+          'En "Sin producto en XASKA" elige a qué producto corresponde cada línea ("¿Es…?" o "Buscar otro") o márcala '
+            + 'como "No lo recibo". Para crear todos los que faltan de una vez toca "Crear los que faltan": revisa '
+            + 'nombre, SKU y precio (sale con tu margen) y toca "Crear"; quedan en la recepción con lo que llegó.',
+          'Ropa y calzado: marca "Tiene tallas", elige la escala y pon cuántos llegaron de cada talla. Si la factura '
+            + 'trae la curva (35×1, 36×2…), Aska ya la llena. Si la referencia ya existe, solo se agregan las tallas '
+            + 'nuevas.',
           'Revisa la presentación si la factura viene por caja, anota lote y vencimiento si faltan, rechaza lo que '
             + 'llegó mal y termina como siempre con la revisión técnica y el pago.',
         ],

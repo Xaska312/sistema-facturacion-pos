@@ -16,4 +16,5 @@ Reglas:
   - unitCost: el valor de UNA unidad de la línea SIN IVA y ya con el descuento de la línea. Si la factura muestra los precios con IVA incluido, quítale el IVA. Si solo trae el total de la línea, divídelo por la cantidad.
   - taxRate: el porcentaje de IVA de la línea (por ejemplo 0, 5 o 19); 0 si es excluido o exento.
   - lotNumber y expirationDate: solo si aparecen (medicamentos y alimentos).
+  - color y sizes: solo para ropa y calzado. color: el color de la referencia si aparece (o vacío). sizes: si la factura reparte la línea por tallas (por ejemplo "35x1 36x2 37x2 38x1" o una tabla de tallas), una entrada por talla con size (la talla tal como aparece: "36", "M", "10") y quantity (cuántos de esa talla); la suma debe dar la cantidad de la línea. Si no trae tallas, sizes va vacío ([]). No inventes tallas.
 - subtotal, taxTotal y total: los que dice la factura (antes de IVA, el IVA y el total a pagar). globalDiscount: un descuento general que no esté repartido en las líneas (o 0).

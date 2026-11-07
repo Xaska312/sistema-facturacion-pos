@@ -101,6 +101,9 @@ export interface InvoiceDraftLine {
   expirationDate: string | null;
   match: { productId: string; unitId: string | null; by: InvoiceMatchBy; lastCost: number | null } | null;
   candidates: { productId: string; name: string; sku: string }[];
+  /** Ropa y calzado leídos con IA (decisión 301): color y cuántos llegaron de cada talla; vacíos si no aplica. */
+  color: string | null;
+  sizes: { size: string; quantity: number }[];
 }
 
 /** Borrador que sale de la factura cargada: nada queda registrado hasta confirmar la recepción. */

@@ -3,6 +3,7 @@ package com.poshibrido.purchasing.application;
 import com.poshibrido.audit.application.AuditLogger;
 import com.poshibrido.purchasing.application.DianInvoiceParser.ParsedInvoice;
 import com.poshibrido.purchasing.application.DianInvoiceParser.ParsedLine;
+import com.poshibrido.purchasing.application.DianInvoiceParser.SizeQuantity;
 import com.poshibrido.shared.error.BusinessRuleException;
 import com.poshibrido.shared.error.NotFoundException;
 import com.poshibrido.shared.id.Ids;
@@ -72,7 +73,7 @@ public class InvoiceDocumentService {
     public record DraftLine(int lineNo, String description, String supplierCode, String barcode, String unitCode,
                             boolean packageUnit, BigDecimal quantity, BigDecimal unitCost, BigDecimal taxRate,
                             BigDecimal discount, String lotNumber, LocalDate expirationDate, LineMatch match,
-                            List<Candidate> candidates) {
+                            List<Candidate> candidates, String color, List<SizeQuantity> sizes) {
     }
 
     public record InvoiceDraft(UUID documentId, String kind, String fileName, SupplierGuess supplier,
@@ -297,7 +298,7 @@ public class InvoiceDocumentService {
             }
             result.add(new DraftLine(l.lineNo(), l.description(), l.sellerCode(), l.standardCode(), l.unitCode(),
                     l.packageUnit(), l.quantity(), l.unitCost(), l.taxRate(), l.discount(), l.lotNumber(),
-                    l.expirationDate(), match, candidates));
+                    l.expirationDate(), match, candidates, l.color(), l.sizes()));
         }
         return result;
     }

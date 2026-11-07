@@ -123,4 +123,16 @@ class AnthropicInvoiceReaderTest {
         assertThat(new AiProperties("", null, 0).enabled()).isFalse();
         assertThat(new AiProperties(" ", "", 0).model()).isEqualTo("claude-haiku-5-5");
     }
+
+    @Test
+    void keepsSizesOnlyWhenTheyAddUpToTheLineQuantity() {
+        BigDecimal six = BigDecimal.valueOf(6);
+        List<Object> curve = List.of(Map.of("size", "36", "quantity", 1), Map.of("size", "37", "quantity", 2),
+                Map.of("size", "38", "quantity", 2), Map.of("size", "39", "quantity", 1), Map.of("size", "", "quantity", 3));
+        assertThat(AnthropicInvoiceReader.sizes(curve, six)).extracting(DianInvoiceParser.SizeQuantity::size)
+                .containsExactly("36", "37", "38", "39");
+        // No suman 6: mejor sin tallas (la persona las reparte) que con tallas inventadas.
+        assertThat(AnthropicInvoiceReader.sizes(List.of(Map.of("size", "36", "quantity", 4)), six)).isEmpty();
+        assertThat(AnthropicInvoiceReader.sizes(null, six)).isEmpty();
+    }
 }

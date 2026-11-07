@@ -59,9 +59,29 @@ public final class DianInvoiceParser {
     public record ParsedSupplier(String nit, Integer verificationDigit, String name) {
     }
 
+    /**
+     * Una línea de la factura. {@code color} y {@code sizes} (decisión 301): solo en ropa y calzado leídos con IA,
+     * cuando la factura reparte la línea por tallas; vacíos en las demás.
+     */
     public record ParsedLine(int lineNo, String description, String sellerCode, String standardCode, String unitCode,
                              boolean packageUnit, BigDecimal quantity, BigDecimal unitCost, BigDecimal taxRate,
-                             BigDecimal discount, String lotNumber, LocalDate expirationDate) {
+                             BigDecimal discount, String lotNumber, LocalDate expirationDate, String color,
+                             List<SizeQuantity> sizes) {
+
+        public ParsedLine {
+            sizes = sizes == null ? List.of() : List.copyOf(sizes);
+        }
+
+        public ParsedLine(int lineNo, String description, String sellerCode, String standardCode, String unitCode,
+                          boolean packageUnit, BigDecimal quantity, BigDecimal unitCost, BigDecimal taxRate,
+                          BigDecimal discount, String lotNumber, LocalDate expirationDate) {
+            this(lineNo, description, sellerCode, standardCode, unitCode, packageUnit, quantity, unitCost, taxRate,
+                    discount, lotNumber, expirationDate, null, List.of());
+        }
+    }
+
+    /** Cuántos llegaron de una talla. */
+    public record SizeQuantity(String size, BigDecimal quantity) {
     }
 
     public record ParsedInvoice(ParsedSupplier supplier, String number, LocalDate issueDate, LocalDate dueDate,

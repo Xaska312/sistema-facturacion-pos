@@ -92,6 +92,28 @@
           },
           "expirationDate": {
             "type": "string"
+          },
+          "color": {
+            "type": "string"
+          },
+          "sizes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "size": {
+                  "type": "string"
+                },
+                "quantity": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "size",
+                "quantity"
+              ]
+            }
           }
         },
         "required": [
@@ -104,7 +126,9 @@
           "unitCost",
           "taxRate",
           "lotNumber",
-          "expirationDate"
+          "expirationDate",
+          "color",
+          "sizes"
         ]
       }
     }

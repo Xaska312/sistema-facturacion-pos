@@ -9,6 +9,7 @@ import { ImportReport, Party } from '../../core/api/api.models';
 import { PartiesApi } from '../../core/api/parties.api';
 import { permissionFlag } from '../../core/auth/permission-flag';
 import { problemMessage } from '../../core/errors/problem';
+import { AskaLoaderComponent } from '../../shared/brand/aska-loader.component';
 import { XaskaIaLogoComponent } from '../../shared/brand/xaska-ia-logo.component';
 import { shrinkPhoto } from '../../shared/image-shrink';
 import { formatCop } from '../../shared/money';
@@ -23,7 +24,7 @@ type Filter = 'ALL' | 'CREATE' | 'UPDATE' | 'CHECK' | 'SKIP';
  */
 @Component({
   selector: 'app-catalog-import',
-  imports: [FormsModule, RouterLink, ButtonModule, PageHeaderComponent, XaskaIaLogoComponent],
+  imports: [FormsModule, RouterLink, ButtonModule, PageHeaderComponent, XaskaIaLogoComponent, AskaLoaderComponent],
   template: `
     <app-page-header title="Cargar con Aska"
                      description="Sube la lista de precios de tu proveedor: Aska crea los productos nuevos y pone al día costos y precios. Tú revisas antes de guardar.">
@@ -98,7 +99,7 @@ type Filter = 'ALL' | 'CREATE' | 'UPDATE' | 'CHECK' | 'SKIP';
           }
         </div>
         @if (reading()) {
-          <p class="text-xs text-muted" role="status">Una lista larga puede tardar hasta un minuto.</p>
+          <app-aska-loader [messages]="readingMessages" hint="Una lista larga puede tardar hasta un minuto." />
         }
       </section>
     } @else {
@@ -316,6 +317,8 @@ export class CatalogImportComponent implements OnInit {
   protected readonly filter = signal<Filter>('ALL');
   /** Sube con cada cambio en una fila para recalcular los conteos (las filas se editan en su lugar). */
   private readonly version = signal(0);
+  protected readonly readingMessages = ['Leyendo la lista…', 'Buscando tus productos…', 'Calculando precios…',
+    'Casi listo…'];
   protected supplierId = '';
   protected margin = 30;
 

@@ -128,7 +128,7 @@ describe('recepción de compras (Fase 13-2, decisión 280)', () => {
     function draftLine(over: Partial<InvoiceDraftLine> = {}): InvoiceDraftLine {
       return { lineNo: 1, description: 'AMOXICILINA 500 MG', supplierCode: 'A-1', barcode: null, unitCode: '94',
         packageUnit: false, quantity: 5, unitCost: 1100, taxRate: 0, discount: 0, lotNumber: 'X9', expirationDate: '2028-05-31',
-        match: { productId: 'p1', unitId: 'cj', by: 'MEMORY', lastCost: 1000 }, candidates: [], ...over };
+        match: { productId: 'p1', unitId: 'cj', by: 'MEMORY', lastCost: 1000 }, candidates: [], color: null, sizes: [], ...over };
     }
 
     it('llena la línea con lo de la factura, la presentación aprendida y el código del proveedor', () => {

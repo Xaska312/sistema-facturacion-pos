@@ -1,4 +1,7 @@
 import { XaskaIaLogoComponent } from '../../shared/brand/xaska-ia-logo.component';
+import { AskaLoaderComponent } from '../../shared/brand/aska-loader.component';
+import { InvoiceCreatedLine } from '../../core/api/catalog.api';
+import { InvoiceNewProductsComponent } from './invoice-new-products.component';
 import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { forkJoin } from 'rxjs';
 import { FormsModule } from '@angular/forms';
@@ -60,7 +63,7 @@ import {
  */
 @Component({
   selector: 'app-receipt-editor',
-  imports: [XaskaIaLogoComponent, FormsModule, RouterLink, ButtonModule, InputTextModule, PageHeaderComponent, PesosInputDirective],
+  imports: [XaskaIaLogoComponent, AskaLoaderComponent, InvoiceNewProductsComponent, FormsModule, RouterLink, ButtonModule, InputTextModule, PageHeaderComponent, PesosInputDirective],
   template: `
     <app-page-header title="Recibir mercancía"
                      description="Registra lo que llegó contra la factura del proveedor. Revisa cada producto antes de aceptarlo." />
@@ -114,10 +117,8 @@ import {
           </div>
         </div>
         @if (scanning()) {
-          <p class="text-sm text-muted flex items-center gap-2" role="status">
-            <span class="pi pi-spin pi-spinner" aria-hidden="true"></span>
-            Leyendo la factura con IA. Puede tardar hasta un minuto; no cierres esta pantalla.
-          </p>
+          <app-aska-loader [messages]="scanMessages"
+                           hint="Puede tardar hasta un minuto; no cierres esta pantalla." />
         }
         @if (draft(); as d) {
           <div class="text-sm flex flex-wrap gap-x-4 gap-y-1">
@@ -225,9 +226,20 @@ import {
       }
       @if (pending().length > 0) {
         <div class="border rounded-lg border-warning p-3 flex flex-col gap-2">
-          <h3 class="text-sm font-semibold">Sin producto en XASKA ({{ pending().length }})</h3>
+          <div class="flex flex-wrap items-center gap-2">
+            <h3 class="text-sm font-semibold flex-1">Sin producto en XASKA ({{ pending().length }})</h3>
+            @if (canCreateProducts() && !creatingMissing()) {
+              <p-button size="small" icon="pi pi-plus-circle"
+                        [label]="pending().length === 1 ? 'Crearlo aquí' : 'Crear los ' + pending().length + ' que faltan'"
+                        (onClick)="creatingMissing.set(true)" />
+            }
+          </div>
           <p class="text-xs text-muted">Elige a qué producto corresponde cada uno o créalo. XASKA lo recordará para la
             próxima factura de este proveedor.</p>
+          @if (creatingMissing()) {
+            <app-invoice-new-products [lines]="pending()" (created)="addCreated($event)"
+                                      (closed)="creatingMissing.set(false)" />
+          }
           @for (p of pending(); track p.lineNo; let i = $index) {
             <article class="border-t pt-2 flex flex-col gap-2 text-sm" [attr.aria-label]="p.description">
               <div class="flex flex-wrap justify-between gap-2">
@@ -458,6 +470,10 @@ export class ReceiptEditorComponent implements OnInit, HasUnsavedChanges {
   /** Factura cargada (decisión 290): el borrador y las líneas que aún no tienen producto. */
   protected readonly draft = signal<InvoiceDraft | null>(null);
   protected readonly pending = signal<InvoiceDraftLine[]>([]);
+  /** Decisión 301: la tabla para crear de una vez lo que falta. */
+  protected readonly creatingMissing = signal(false);
+  protected readonly scanMessages = ['Leyendo la factura…', 'Buscando el proveedor…', 'Buscando tus productos…',
+    'Casi listo…'];
   protected readonly importing = signal(false);
   /** Lectura con IA (decisión 295): lo usado del mes y si se está leyendo una factura. */
   protected readonly scanUsage = signal<InvoiceScanUsage | null>(null);
@@ -853,6 +869,43 @@ export class ReceiptEditorComponent implements OnInit, HasUnsavedChanges {
     this.pending.update((list) => list.filter((_, i) => i !== index));
     this.assigning.set(null);
     this.touch();
+  }
+
+  /**
+   * Lo recién creado pasa a la recepción: una línea por producto, con la cantidad de la factura o, si va por tallas,
+   * la de cada talla (sin el código del proveedor, que no distingue tallas).
+   */
+  addCreated(created: InvoiceCreatedLine[]): void {
+    const pending = this.pending();
+    const ids = [...new Set(created.flatMap((c) => c.products.map((p) => p.productId)))];
+    forkJoin(ids.map((id) => this.catalog.product(id))).subscribe((list) => {
+      const byId = new Map(list.map((p) => [p.id, p]));
+      const added: ReceiptDraftLine[] = [];
+      for (const c of created) {
+        const draftLine = pending.find((p) => p.lineNo === c.lineNo);
+        if (!draftLine) {
+          continue;
+        }
+        for (const made of c.products) {
+          const product = byId.get(made.productId);
+          if (!product) {
+            continue;
+          }
+          const bySize = made.size !== null;
+          added.push(invoiceLine(product, bySize
+            ? { ...draftLine, quantity: made.quantity ?? 0, supplierCode: null, match: null }
+            : { ...draftLine, match: null }, this.nextKey++, 'MANUAL'));
+        }
+      }
+      const done = new Set(created.map((c) => c.lineNo));
+      this.lines.update((lines) => [...lines, ...added]);
+      this.pending.update((list) => list.filter((p) => !done.has(p.lineNo)));
+      this.creatingMissing.set(false);
+      this.assigning.set(null);
+      this.touch();
+      this.messages.add({ severity: 'success', summary: 'Productos creados',
+        detail: `${added.length} ${added.length === 1 ? 'línea lista' : 'líneas listas'} para recibir.`, life: 4000 });
+    });
   }
 
   dropPending(index: number): void {
