@@ -89,6 +89,10 @@ class DailyDigestIT extends IntegrationTest {
         api.getWith(s, "/api/v1/ai/digest/settings").andExpect(jsonPath("$.used").value(1));
         MailMessage mail = mailbox.last(owner.email(), "resumen-del-dia").orElseThrow();
         assertThat(mail.subject()).startsWith("Aska · Tu resumen del");
+        assertThat(mail.senderName()).isEqualTo("Aska de XASKA");
+        assertThat(mail.from("XASKA POS <no-responder@xaska.co>")).isEqualTo("Aska de XASKA <no-responder@xaska.co>");
+        assertThat(mail.text()).contains("Soy Aska").contains("Aska, la IA de XASKA");
+        assertThat(mail.html()).contains("Pregúntame en XASKA");
         assertThat(mail.text()).contains("Urgente · Caja descuadrada: Faltan $2.000 en Caja 1.").contains("Ticket: $0");
     }
 }
