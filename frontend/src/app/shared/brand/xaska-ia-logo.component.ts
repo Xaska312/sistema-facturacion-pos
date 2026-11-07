@@ -2,8 +2,8 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 /**
  * Logo del adicional XASKA IA y de Aska, su asistente (decisiones 295 y 298): el monograma "IA" dibujado con la A sin
- * barra del nombre XASKA y una chispa ámbar, sobre el índigo de la marca, con volumen (degradado, brillo, borde de luz,
- * sombra y halo de la chispa) para que se note en fondos claros y oscuros. Colores de los tokens --xaska-ia-* (src/styles.css); no cambia con el color de
+ * barra del nombre XASKA y una chispa ámbar, sobre el índigo de la marca, con volumen ("noche con aro de luz": índigo a
+ * noche, aro lavanda, sombra y halo de la chispa) para que se note en fondos claros y oscuros. Colores de los tokens --xaska-ia-* (src/styles.css); no cambia con el color de
  * cada negocio. Con {@code wordmark}: "XASKA" y la etiqueta "IA" al lado.
  *
  * Con {@code label} se anuncia como imagen con ese nombre; sin él es decorativo.
@@ -32,7 +32,7 @@ let nextId = 0;
         </defs>
         <rect x="-6" y="-6" width="112" height="112" rx="26" [attr.fill]="'url(#' + ids.tile + ')'" />
         <rect x="-6" y="-6" width="112" height="60" rx="26" [attr.fill]="'url(#' + ids.gloss + ')'" />
-        <rect x="-4.5" y="-4.5" width="109" height="109" rx="24.5" class="edge" />
+        <rect x="-3" y="-3" width="106" height="106" rx="23" class="ring" />
         <g class="ink-group">
           <rect x="20" y="30" width="8" height="45" class="ink" />
           <polygon [attr.points]="lambda" class="ink" transform="translate(40 30) scale(0.62)" />
@@ -60,16 +60,16 @@ let nextId = 0;
     .xia-icon {
       width: var(--icon); height: var(--icon); flex-shrink: 0; overflow: visible;
       shape-rendering: geometricPrecision;
-      filter: drop-shadow(0 2px 4px var(--xaska-ia-shadow));
+      filter: drop-shadow(0 2px 5px var(--xaska-ia-shadow));
     }
     .stop-top { stop-color: var(--xaska-ia-tile-top); }
     .stop-bottom { stop-color: var(--xaska-ia-tile-bottom); }
     .stop-gloss { stop-color: var(--xaska-ia-gloss); }
     .stop-clear { stop-color: var(--xaska-ia-gloss); stop-opacity: 0; }
-    .edge { fill: none; stroke: var(--xaska-ia-edge); stroke-width: 2; }
+    .ring { fill: none; stroke: var(--xaska-ia-ring); stroke-width: 3; }
     .ink { fill: var(--xaska-ia-ink); }
     .ink-group { filter: drop-shadow(0 2px 0 var(--xaska-ia-ink-shadow)); }
-    .spark { fill: var(--xaska-ia-spark); filter: drop-shadow(0 0 4px var(--xaska-ia-spark-glow)); }
+    .spark { fill: var(--xaska-ia-spark); filter: drop-shadow(0 0 6px var(--xaska-ia-spark-glow)); }
     .xia-name {
       font-weight: 800;
       letter-spacing: -0.01em;
