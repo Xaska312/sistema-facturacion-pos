@@ -53,8 +53,35 @@ public class AnthropicMessages {
     }
 
     /** Envía el cuerpo (ya con modelo, mensajes y herramientas) y devuelve la respuesta. */
-    @SuppressWarnings("unchecked")
     public Map<String, Object> send(Map<String, Object> body) {
+        try {
+            return sendOnce(body);
+        } catch (RetryableException ex) {
+            log.info("Reintentando la petición a la IA: {}", ex.getMessage());
+            sleep();
+            try {
+                return sendOnce(body);
+            } catch (RetryableException again) {
+                throw new AiUnavailableException(again.getMessage(), again.getCause());
+            }
+        }
+    }
+
+    private static void sleep() {
+        try {
+            Thread.sleep(1500);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    /** Errores que vale la pena reintentar una vez: red, demasiadas peticiones o servicio saturado. */
+    static boolean retryable(int status) {
+        return status == 429 || status == 529 || status >= 500;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> sendOnce(Map<String, Object> body) {
         HttpRequest request = HttpRequest.newBuilder(endpoint)
                 .timeout(Duration.ofSeconds(properties.timeout()))
                 .header("x-api-key", properties.anthropicApiKey())
@@ -66,7 +93,7 @@ public class AnthropicMessages {
         try {
             response = http.send(request, HttpResponse.BodyHandlers.ofString());
         } catch (IOException ex) {
-            throw new AiUnavailableException("La IA no respondió.", ex);
+            throw new RetryableException("La IA no respondió: " + ex.getClass().getSimpleName(), ex);
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
             throw new AiUnavailableException("La consulta a la IA se interrumpió.", ex);
@@ -74,10 +101,19 @@ public class AnthropicMessages {
         if (response.statusCode() / 100 != 2) {
             String detail = response.body() == null ? "" : response.body();
             log.warn("La API de Anthropic respondió {}: {}", response.statusCode(),
-                    detail.substring(0, Math.min(300, detail.length())));
+                    detail.substring(0, Math.min(500, detail.length())));
+            if (retryable(response.statusCode())) {
+                throw new RetryableException("La IA respondió " + response.statusCode() + ".", null);
+            }
             throw new AiUnavailableException("La IA respondió " + response.statusCode() + ".", null);
         }
         return JSON.readValue(response.body(), Map.class);
+    }
+
+    private static class RetryableException extends RuntimeException {
+        RetryableException(String message, Throwable cause) {
+            super(message, cause);
+        }
     }
 
     /** La IA no respondió (red, clave, saldo o tope de gasto agotado). */

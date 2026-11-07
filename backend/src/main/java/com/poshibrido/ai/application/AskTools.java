@@ -10,12 +10,19 @@ import com.poshibrido.organization.domain.Branch;
 import com.poshibrido.purchasing.application.PurchaseService;
 import com.poshibrido.reporting.application.ReportFilter;
 import com.poshibrido.reporting.application.ReportQueryService;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -45,6 +52,9 @@ public class AskTools {
     private final CashQueryService cash;
     private final BranchService branches;
 
+    @PersistenceContext
+    private EntityManager em;
+
     /** Una herramienta: nombre, permiso que pide (nulo = cualquiera), etiqueta para la pantalla y esquema. */
     record Tool(String name, String permission, String label, String description, Map<String, Object> schema,
                 BiFunction<AskTools, Map<String, Object>, Object> run) {
@@ -71,6 +81,12 @@ public class AskTools {
                                     "enum", List.of("dia", "sucursal", "vendedor", "medio_pago", "categoria")),
                             "desde", DESDE, "hasta", HASTA, "sucursal", SUCURSAL), "agrupar"),
                     (t, in) -> t.grouped(in)),
+            new Tool("producto", "reports:read", "Ficha del producto",
+                    "Precio de venta, costo, margen, existencia total y ventas de 7 y 30 días (unidades y precio "
+                            + "promedio cobrado) de los productos que coinciden con un texto. Úsala para preguntas de "
+                            + "precios, promociones o si un producto deja ganancia.",
+                    schema(Map.of("buscar", Map.of("type", "string", "description", "Nombre o SKU del producto.")), "buscar"),
+                    (t, in) -> t.product(in)),
             new Tool("productos_vendidos", "reports:read", "Productos más vendidos",
                     "Productos más vendidos en un rango, por valor o por cantidad, con costo y utilidad.",
                     schema(Map.of("desde", DESDE, "hasta", HASTA, "sucursal", SUCURSAL,
@@ -170,6 +186,69 @@ public class AskTools {
             m.put("nombre", b.getName());
             return m;
         }).toList();
+    }
+
+    private Object product(Map<String, Object> in) {
+        String search = text(in.get("buscar"));
+        if (search == null) {
+            throw new IllegalArgumentException("Falta qué producto buscar.");
+        }
+        ZoneId zone = reports.zone();
+        LocalDate today = LocalDate.now(zone);
+        Instant d7 = today.minusDays(7).atStartOfDay(zone).toInstant();
+        Instant d30 = today.minusDays(30).atStartOfDay(zone).toInstant();
+        @SuppressWarnings("unchecked")
+        List<Object[]> rows = em.createNativeQuery("""
+                SELECT p.sku, p.name, u.code, p.sale_price, p.cost,
+                       coalesce((SELECT sum(b.quantity) FROM stock_balances b
+                                 WHERE b.product_id = p.id AND b.lot_id IS NULL), 0),
+                       coalesce(x.q7, 0), coalesce(x.t7, 0), coalesce(x.q30, 0), coalesce(x.t30, 0)
+                FROM products p
+                JOIN units u ON u.id = p.base_unit_id
+                LEFT JOIN LATERAL (
+                    SELECT sum(si.base_quantity) FILTER (WHERE s.created_at >= ?3) AS q7,
+                           sum(si.total) FILTER (WHERE s.created_at >= ?3) AS t7,
+                           sum(si.base_quantity) AS q30, sum(si.total) AS t30
+                    FROM sale_items si JOIN sales s ON s.id = si.sale_id
+                    WHERE si.product_id = p.id AND s.status = 'COMPLETED' AND s.created_at >= ?2) x ON TRUE
+                WHERE p.active AND (p.name ILIKE ?1 OR p.sku ILIKE ?1)
+                ORDER BY p.name LIMIT 10""")
+                .setParameter(1, "%" + search.replace("%", "").replace("_", "") + "%")
+                .setParameter(2, Timestamp.from(d30)).setParameter(3, Timestamp.from(d7)).getResultList();
+        if (rows.isEmpty()) {
+            return "No hay productos activos con \"" + search + "\".";
+        }
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (Object[] r : rows) {
+            BigDecimal price = decimal(r[3]);
+            BigDecimal cost = decimal(r[4]);
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("sku", r[0]);
+            m.put("producto", r[1]);
+            m.put("unidad", r[2]);
+            m.put("precioVenta", price);
+            m.put("costo", cost);
+            m.put("margenPorcentaje", price.signum() == 0 ? null
+                    : price.subtract(cost).multiply(BigDecimal.valueOf(100)).divide(price, 1, RoundingMode.HALF_UP));
+            m.put("existenciaTotal", decimal(r[5]));
+            m.put("vendido7dias", decimal(r[6]));
+            m.put("cobrado7dias", decimal(r[7]));
+            m.put("vendido30dias", decimal(r[8]));
+            m.put("cobrado30dias", decimal(r[9]));
+            BigDecimal q30 = decimal(r[8]);
+            m.put("precioPromedioCobrado30dias", q30.signum() == 0 ? null
+                    : decimal(r[9]).divide(q30, 0, RoundingMode.HALF_UP));
+            out.add(m);
+        }
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("nota", "precioVenta es el de la ficha (con IVA si el negocio vende con IVA incluido); lo cobrado "
+                + "incluye descuentos e impuestos.");
+        result.put("productos", out);
+        return result;
+    }
+
+    private static BigDecimal decimal(Object o) {
+        return o == null ? BigDecimal.ZERO : o instanceof BigDecimal b ? b : new BigDecimal(o.toString());
     }
 
     private Object grouped(Map<String, Object> in) {

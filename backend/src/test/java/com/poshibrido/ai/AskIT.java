@@ -84,6 +84,24 @@ class AskIT extends IntegrationTest {
         List<Map<String, Object>> messages = (List<Map<String, Object>>) second.get("messages");
         assertThat(String.valueOf(messages.getLast())).contains("tool_result").contains("salesCount");
 
+        // Ficha del producto: precio, costo y margen (para preguntas de precios o promociones).
+        api.postWith(s, "/api/v1/products", com.poshibrido.catalog.CatalogFixturesAccess.simpleProduct("ARROZ1",
+                "Arroz 1 kg", "4200")).andExpect(status().isCreated());
+        reset(ai);
+        when(ai.available()).thenReturn(true);
+        when(ai.model()).thenReturn("claude-haiku-5-5");
+        doReturn(Map.of("stop_reason", "tool_use", "usage", usage(), "content", List.of(
+                        Map.of("type", "tool_use", "id", "t2", "name", "producto", "input", Map.of("buscar", "arroz")))),
+                Map.of("stop_reason", "end_turn", "usage", usage(), "content", List.of(
+                        Map.of("type", "text", "text", "El arroz se vende a **$4.200**."))))
+                .when(ai).send(any());
+        api.postWith(s, "/api/v1/ai/ask", "{\"question\":\"¿Subo el precio del arroz?\"}").andExpect(status().isOk())
+                .andExpect(jsonPath("$.consulted[0]").value("Ficha del producto"));
+        ArgumentCaptor<Map<String, Object>> priced = ArgumentCaptor.forClass(Map.class);
+        verify(ai, atLeastOnce()).send(priced.capture());
+        assertThat(String.valueOf(priced.getValue().get("messages"))).contains("precioVenta").contains("Arroz 1 kg");
+        api.getWith(s, "/api/v1/ai/usage").andExpect(jsonPath("$.used").value(2));
+
         // Sin respuesta o rechazada: no cuenta.
         reset(ai);
         when(ai.available()).thenReturn(true);
@@ -94,14 +112,14 @@ class AskIT extends IntegrationTest {
         doReturn(Map.of("stop_reason", "refusal", "usage", usage(), "content", List.of())).when(ai).send(any());
         api.postWith(s, "/api/v1/ai/ask", ask).andExpect(status().is(422))
                 .andExpect(jsonPath("$.detail", containsString("No se descontó")));
-        api.getWith(s, "/api/v1/ai/usage").andExpect(jsonPath("$.used").value(1));
+        api.getWith(s, "/api/v1/ai/usage").andExpect(jsonPath("$.used").value(2));
 
         // Tope de la consola lleno.
         try {
-            api.putWith(admin, "/api/v1/platform/ai-allowances/QUESTIONS", "{\"monthlyLimit\":1}")
+            api.putWith(admin, "/api/v1/platform/ai-allowances/QUESTIONS", "{\"monthlyLimit\":2}")
                     .andExpect(status().isOk());
             api.postWith(s, "/api/v1/ai/ask", ask).andExpect(status().is(422))
-                    .andExpect(jsonPath("$.detail", containsString("Llegaste a las 1 preguntas")));
+                    .andExpect(jsonPath("$.detail", containsString("Llegaste a las 2 preguntas")));
         } finally {
             api.putWith(admin, "/api/v1/platform/ai-allowances/QUESTIONS", "{\"monthlyLimit\":300}")
                     .andExpect(status().isOk());

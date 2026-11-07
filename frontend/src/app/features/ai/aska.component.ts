@@ -1,14 +1,17 @@
 import { Component, ElementRef, HostListener, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
 import { AiApi, AskTurn, AskUsage } from '../../core/api/ai.api';
+import { problemMessage } from '../../core/errors/problem';
 import { AuthService } from '../../core/auth/auth.service';
 import { XaskaIaLogoComponent } from '../../shared/brand/xaska-ia-logo.component';
 import { XIconComponent } from '../../shared/icons/xicon.component';
 import { ParsedAnswer, firstName, parseAnswer, suggestionsFor, usageText } from './ai-text';
 
 interface Message {
-  role: 'user' | 'assistant';
+  /** {@code problem}: Aska no pudo responder (se muestra en el panel, no se manda en el historial). */
+  role: 'user' | 'assistant' | 'problem';
   text: string;
   parsed: ParsedAnswer | null;
   consulted: string[];
@@ -73,6 +76,15 @@ interface Message {
           @for (m of messages(); track $index; let last = $last) {
             @if (m.role === 'user') {
               <p class="aska-me">{{ m.text }}</p>
+            } @else if (m.role === 'problem') {
+              <div class="flex gap-2 items-start" role="alert">
+                <app-xaska-ia-logo size="sm" />
+                <div class="aska-problem">
+                  <p>{{ m.text }}</p>
+                  <button type="button" class="aska-follow self-start" [disabled]="loading() || limitReached()"
+                          (click)="retry()">Intentar de nuevo</button>
+                </div>
+              </div>
             } @else if (m.parsed !== null) {
               @let a = m.parsed!;
               <div class="flex gap-2 items-start">
@@ -237,6 +249,10 @@ interface Message {
       border: 1px solid var(--aska-line); background: var(--surface); color: var(--aska-soft-fg);
     }
     .aska-follow:hover:not(:disabled) { background: var(--aska-soft); }
+    .aska-problem {
+      display: flex; flex-direction: column; gap: 0.5rem; padding: 0.75rem 0.875rem; font-size: 0.875rem;
+      border-radius: 1.125rem 1.125rem 1.125rem 0.375rem; background: var(--warning-soft); color: var(--warning-soft-text);
+    }
     .aska-typing { display: inline-flex; gap: 0.25rem; }
     .aska-typing i { width: 0.375rem; height: 0.375rem; border-radius: 9999px; background: var(--aska); animation: aska-dot 1s infinite; }
     .aska-typing i:nth-child(2) { animation-delay: 0.15s; }
@@ -285,6 +301,7 @@ export class AskaComponent {
   protected readonly loading = signal(false);
   protected readonly usage = signal<AskUsage | null>(null);
   protected question = '';
+  private lastQuestion = '';
 
   protected readonly name = computed(() => firstName(this.auth.user()?.fullName));
   protected readonly canBuy = computed(() => this.auth.permissions().has('purchases:read'));
@@ -342,8 +359,10 @@ export class AskaComponent {
     if (!q || this.loading() || this.limitReached()) {
       return;
     }
-    const history: AskTurn[] = this.messages().map((m) => ({ role: m.role, text: m.text }));
-    this.messages.update((list) => [...list, { role: 'user', text: q, parsed: null, consulted: [] }]);
+    // Lo que no se pudo responder sale de la conversación (la pregunta y el aviso).
+    const kept = this.messages().filter((m, i, all) => m.role !== 'problem' && all[i + 1]?.role !== 'problem');
+    const history: AskTurn[] = kept.map((m) => ({ role: m.role as 'user' | 'assistant', text: m.text }));
+    this.messages.set([...kept, { role: 'user', text: q, parsed: null, consulted: [] }]);
     this.question = '';
     this.loading.set(true);
     this.scrollDown();
@@ -355,13 +374,23 @@ export class AskaComponent {
           { role: 'assistant', text: a.answer, parsed: parseAnswer(a.answer), consulted: a.consulted }]);
         this.scrollDown();
       },
-      error: () => {
+      error: (error: unknown) => {
         this.loading.set(false);
-        // La pregunta vuelve al cuadro para intentar de nuevo; el aviso del error sale arriba.
-        this.messages.update((list) => list.slice(0, -1));
-        this.question = q;
+        const text = error instanceof HttpErrorResponse && error.status >= 400 && error.status < 500
+          ? problemMessage(error)
+          : 'No me pude conectar. Revisa el internet e intenta de nuevo.';
+        this.messages.update((list) => [...list, { role: 'problem', text, parsed: null, consulted: [] }]);
+        this.lastQuestion = q;
+        this.scrollDown();
       },
     });
+  }
+
+  /** Vuelve a hacer la pregunta que no se pudo responder. */
+  protected retry(): void {
+    if (this.lastQuestion) {
+      this.send(this.lastQuestion);
+    }
   }
 
   reset(): void {
