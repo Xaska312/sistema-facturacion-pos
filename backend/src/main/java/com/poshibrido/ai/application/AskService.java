@@ -210,7 +210,7 @@ public class AskService {
         ZoneId zone = ZoneId.of(settings.current().timezone());
         Instant start = LocalDate.now(zone).withDayOfMonth(1).atStartOfDay(zone).toInstant();
         return ((Number) em.createNativeQuery(
-                "SELECT count(*) FROM ai_questions WHERE status = 'OK' AND created_at >= ?1")
+                "SELECT count(*) FROM ai_questions WHERE kind = 'QUESTION' AND status = 'OK' AND created_at >= ?1")
                 .setParameter(1, Timestamp.from(start)).getSingleResult()).longValue();
     }
 
