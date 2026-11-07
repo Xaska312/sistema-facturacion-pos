@@ -830,7 +830,8 @@ export class ReceiptEditorComponent implements OnInit, HasUnsavedChanges {
     this.creatingSupplier.set(true);
     this.parties.save('suppliers', null, {
       personType: 'LEGAL', documentType: 'NIT', documentNumber: s.documentNumber,
-      verificationDigit: s.verificationDigit ?? nitVerificationDigit(s.documentNumber),
+      // El dígito se calcula del NIT: la IA puede leerlo mal (o la factura traerlo errado) y bloquear la creación.
+      verificationDigit: nitVerificationDigit(s.documentNumber),
       firstNames: null, lastNames: null, businessName: s.name?.trim() || 'Proveedor ' + s.documentNumber,
       email: null, phone: null, address: null, cityCode: null,
     }).subscribe({

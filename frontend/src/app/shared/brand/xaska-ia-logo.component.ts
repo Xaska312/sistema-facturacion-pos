@@ -60,7 +60,7 @@ let nextId = 0;
     .xia-icon {
       width: var(--icon); height: var(--icon); flex-shrink: 0; overflow: visible;
       shape-rendering: geometricPrecision;
-      filter: drop-shadow(0 2px 5px var(--xaska-ia-shadow));
+      filter: drop-shadow(0 2px 5px var(--xaska-ia-shadow)) drop-shadow(0 0 calc(var(--icon) * 0.18) var(--xaska-ia-halo));
     }
     .stop-top { stop-color: var(--xaska-ia-tile-top); }
     .stop-bottom { stop-color: var(--xaska-ia-tile-bottom); }

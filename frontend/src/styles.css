@@ -94,6 +94,9 @@
   --xaska-ia-ink-shadow: rgb(30 27 75 / 0.6);
   --xaska-ia-shadow: rgb(30 27 75 / 0.45);
   --xaska-ia-spark-glow: rgb(252 211 77 / 0.85);
+  /* Luz dorada detrás del logo (leve) y la del botón flotante de Aska (más fuerte al pasar el mouse). */
+  --xaska-ia-halo: rgb(252 211 77 / 0.32);
+  --xaska-ia-halo-strong: rgb(252 211 77 / 0.55);
   --aska-cta-from: #1e1b4b;
   --aska-cta-to: #4338ca;
   /* Aska, la IA de XASKA (decisión 298): el índigo de XASKA (no el color del negocio) y el ámbar de la chispa. */

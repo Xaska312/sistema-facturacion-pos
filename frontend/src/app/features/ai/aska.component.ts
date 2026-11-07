@@ -1,4 +1,4 @@
-import { Component, ElementRef, HostListener, computed, effect, inject, signal, viewChild } from '@angular/core';
+import { Component, computed, effect, ElementRef, HostListener, inject, signal, untracked, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -31,7 +31,6 @@ interface Message {
       <button type="button" class="aska-fab" aria-haspopup="dialog" aria-label="Pregúntale a Aska, la IA de tu negocio"
               (click)="show()">
         <app-xaska-ia-logo size="xl" />
-        <span class="aska-fab-dot" aria-hidden="true"></span>
         <span class="aska-fab-label" aria-hidden="true">Pregúntale a <strong>Aska</strong></span>
       </button>
     } @else {
@@ -166,17 +165,18 @@ interface Message {
       display: flex; align-items: center; gap: 0.75rem; flex-direction: row-reverse;
       padding: 0; border: 0; background: transparent; cursor: pointer;
     }
+    /* El logo ya trae su aro y su sombra: el botón solo suma una luz dorada que respira y crece al pasar el mouse. */
     .aska-fab app-xaska-ia-logo {
-      border-radius: 1.125rem; transition: transform 160ms ease;
-      box-shadow: 0 0 0 6px var(--aska-glow), 0 14px 34px var(--aska-shadow);
+      border-radius: 1rem; transition: transform 160ms ease, filter 160ms ease;
+      filter: drop-shadow(0 12px 20px var(--aska-shadow)) drop-shadow(0 0 14px var(--xaska-ia-halo));
+      animation: aska-halo 3.2s ease-in-out infinite;
     }
-    .aska-fab:hover app-xaska-ia-logo, .aska-fab:focus-visible app-xaska-ia-logo { transform: translateY(-2px) scale(1.04); }
+    .aska-fab:hover app-xaska-ia-logo, .aska-fab:focus-visible app-xaska-ia-logo {
+      transform: translateY(-2px) scale(1.05); animation: none;
+      filter: drop-shadow(0 14px 24px var(--aska-shadow)) drop-shadow(0 0 22px var(--xaska-ia-halo-strong));
+    }
     .aska-fab:focus-visible { outline: none; }
-    .aska-fab:focus-visible app-xaska-ia-logo { box-shadow: 0 0 0 3px var(--surface), 0 0 0 6px var(--aska); }
-    .aska-fab-dot {
-      position: absolute; right: -0.25rem; top: -0.25rem; width: 0.875rem; height: 0.875rem; border-radius: 9999px;
-      background: var(--aska-amber); box-shadow: 0 0 0 3px var(--surface); animation: aska-pulse 2.4s ease-in-out infinite;
-    }
+    .aska-fab:focus-visible app-xaska-ia-logo { box-shadow: 0 0 0 3px var(--surface), 0 0 0 6px var(--aska-amber); }
     .aska-fab-label {
       padding: 0.625rem 0.875rem; border-radius: 0.875rem; font-size: 0.8125rem; font-weight: 600; white-space: nowrap;
       background: var(--xaska-panel); color: var(--xaska-panel-fg); box-shadow: var(--elevation-overlay);
@@ -184,7 +184,11 @@ interface Message {
     }
     .aska-fab-label strong { color: var(--aska-amber); }
     .aska-fab:hover .aska-fab-label, .aska-fab:focus-visible .aska-fab-label { opacity: 1; transform: none; }
-    @keyframes aska-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.25); } }
+    @keyframes aska-halo {
+      0%, 100% { filter: drop-shadow(0 12px 20px var(--aska-shadow)) drop-shadow(0 0 12px var(--xaska-ia-halo)); }
+      50% { filter: drop-shadow(0 12px 20px var(--aska-shadow)) drop-shadow(0 0 22px var(--xaska-ia-halo-strong)); }
+    }
+    @media (prefers-reduced-motion: reduce) { .aska-fab app-xaska-ia-logo { animation: none; } }
 
     .aska-backdrop { position: fixed; inset: 0; z-index: 46; background: var(--aska-backdrop); }
     .aska-panel {
@@ -286,7 +290,7 @@ interface Message {
       .aska-backdrop { display: none; }
     }
     @media (prefers-reduced-motion: reduce) {
-      .aska-fab-dot, .aska-typing i, .aska-panel { animation: none; }
+      .aska-typing i, .aska-panel { animation: none; }
     }
   `,
 })
@@ -299,6 +303,8 @@ export class AskaComponent {
   private readonly input = viewChild<ElementRef<HTMLTextAreaElement>>('input');
 
   protected readonly open = signal(false);
+  /** El último pedido de abrir que ya se atendió. */
+  private handledRequest = 0;
   protected readonly messages = signal<Message[]>([]);
   protected readonly loading = signal(false);
   protected readonly usage = signal<AskUsage | null>(null);
@@ -321,10 +327,17 @@ export class AskaComponent {
   });
 
   constructor() {
-    // Otra pantalla pidió abrir a Aska.
+    // Otra pantalla pidió abrir a Aska. Solo reacciona a pedidos nuevos (no a cerrar el panel): antes, al cerrar,
+    // el pedido viejo la volvía a abrir y no había forma de salir.
     effect(() => {
-      if (this.state.openRequests() > 0 && !this.open()) {
-        this.show();
+      const request = this.state.openRequests();
+      if (request > this.handledRequest) {
+        this.handledRequest = request;
+        untracked(() => {
+          if (!this.open()) {
+            this.show();
+          }
+        });
       }
     });
     // Al abrir: el cursor en la pregunta.
