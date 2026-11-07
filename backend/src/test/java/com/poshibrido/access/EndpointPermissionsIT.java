@@ -28,7 +28,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 class EndpointPermissionsIT extends IntegrationTest {
 
     private static final List<String> SESSION_PREFIXES = List.of(
-            "/api/v1/auth/", "/api/v1/tenants", "/api/v1/invitations/", "/api/v1/locations/", "/api/v1/platform/");
+            "/api/v1/auth/", "/api/v1/tenants", "/api/v1/invitations/", "/api/v1/locations/", "/api/v1/platform/",
+            // Decisión 303: planes y precios sin sesión (SecurityConfig: permitAll, solo GET).
+            "/api/v1/public/");
 
     /**
      * Revisados uno por uno: lecturas que cualquier miembro necesita (encabezado del negocio, tipo y módulos, estado

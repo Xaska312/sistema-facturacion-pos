@@ -44,7 +44,7 @@ public class ResendMailSender implements MailSender {
     @Override
     public void deliver(MailMessage message) {
         Map<String, Object> body = new LinkedHashMap<>();
-        body.put("from", from);
+        body.put("from", message.from(from));
         body.put("to", List.of(message.to()));
         body.put("subject", message.subject());
         body.put("html", message.html());

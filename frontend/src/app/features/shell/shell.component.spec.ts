@@ -105,15 +105,27 @@ describe('ShellComponent', () => {
     await fixture.whenStable();
   });
 
-  it('avisa que la prueba gratis está por terminar y cómo pagar (fase 8b)', () => {
+  it('avisa que la prueba gratis está por terminar y a quién pedir que la renueve (fase 8b, decisión 303)', () => {
     const trial = {
-      status: 'TRIAL', daysLeft: 2, graceEndsAt: null, paymentInstructions: 'Nequi 300 000 0000',
+      status: 'TRIAL', daysLeft: 2, graceEndsAt: null, trial: true,
+      plan: { name: 'Empresa' }, entitled: { features: [] },
     } as unknown as Subscription;
     TestBed.overrideProvider(SubscriptionApi, { useValue: { current: () => of(trial) } });
     const fixture = TestBed.createComponent(ShellComponent);
     fixture.detectChanges();
-    const banner = (fixture.nativeElement as HTMLElement).querySelector('[role="status"]');
+    const el = fixture.nativeElement as HTMLElement;
+    const banner = el.querySelector('[role="status"]');
     expect(banner?.textContent).toContain('Tu prueba gratis termina en 2 días.');
-    expect(banner?.textContent).toContain('Nequi 300 000 0000');
+    // Sin permiso de ajustes: no ve cómo pagar ni la píldora del plan, solo a quién pedírselo.
+    expect(banner?.textContent).toContain('Pídele al dueño del negocio que lo renueve.');
+    expect(el.querySelector('.plan-pill')).toBeNull();
+
+    // Quien maneja los ajustes ve "Renovar con Bre-B" y la píldora del plan, que llevan a Planes y pagos.
+    permissions.set(new Set(['sales:create', 'settings:manage']));
+    fixture.detectChanges();
+    expect(el.querySelector('[role="status"] a')?.getAttribute('href')).toBe('/app/planes');
+    expect(el.querySelector('.plan-pill')?.textContent).toContain('Prueba');
+    expect(el.querySelector('.plan-pill')?.getAttribute('href')).toBe('/app/planes');
+    permissions.set(new Set(['sales:create', 'cash:operate', 'branches:read']));
   });
 });

@@ -42,8 +42,8 @@ spring:
       enabled: false
   servlet:
     multipart:
-      max-file-size: 5MB
-      max-request-size: 6MB
+      max-file-size: 10MB
+      max-request-size: 12MB
 
 app:
   security:
@@ -69,6 +69,11 @@ app:
   platform:
     # Correos de los administradores de plataforma, separados por coma (consola /plataforma).
     admin-emails: ${PLATFORM_ADMIN_EMAILS:}
+  ai:
+    # Lectura de facturas con IA (decisión 295). Sin clave, la lectura está apagada (el XML sigue funcionando).
+    anthropic-api-key: ${ANTHROPIC_API_KEY:}
+    invoice-model: ${AI_INVOICE_MODEL:claude-haiku-5-5}
+    timeout-seconds: ${AI_TIMEOUT_SECONDS:90}
   mail:
     # Remitente. Sin dominio propio, Resend solo permite onboarding@resend.dev y enviar a tu propio correo.
     from: ${MAIL_FROM:XASKA POS <onboarding@resend.dev>}
@@ -86,7 +91,7 @@ app:
     trial-plan: EMPRESA
     # Prueba gratis sin código para el primer negocio de cada cuenta. Por defecto no: todo negocio nuevo necesita un
     # código de activación (la prueba se da con un código de 1 mes desde la consola de plataforma).
-    trial-without-code: ${SUBSCRIPTION_TRIAL_WITHOUT_CODE:false}
+    trial-without-code: ${SUBSCRIPTION_TRIAL_WITHOUT_CODE:true}
     # Días que un plan pagado vencido sigue funcionando antes de quedar en solo consulta.
     grace-days: 3
     # Cómo pagar: cuenta, Nequi y a quién enviar el comprobante. Sale en la app y en los correos de aviso.

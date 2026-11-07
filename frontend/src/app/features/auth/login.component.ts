@@ -43,6 +43,9 @@ import { AuthLayoutComponent } from '../../shared/layout/auth-layout.component';
           ¿No tienes cuenta? <a routerLink="/registro" [queryParams]="returnUrl ? { returnUrl: returnUrl } : {}"
                                 class="text-brand hover:underline">Regístrate</a>
         </p>
+        <a routerLink="/precios" class="text-sm text-center font-semibold text-brand hover:underline">
+          <i class="pi pi-tag text-xs mr-1" aria-hidden="true"></i>Ver planes y precios
+        </a>
         <a routerLink="/manual" class="text-sm text-center text-muted hover:text-fg hover:underline">
           <i class="pi pi-book text-xs mr-1" aria-hidden="true"></i>Manual de uso
         </a>

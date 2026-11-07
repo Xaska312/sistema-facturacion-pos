@@ -15,7 +15,11 @@ public interface SubscriptionApi {
      * activación, el plan y los meses del código; sin código, la prueba gratis (solo el primer negocio de la cuenta;
      * si no, 422 {@code ACTIVATION_CODE_REQUIRED}).
      */
-    void startForNewTenant(UUID tenantId, UUID ownerId, String activationCode);
+    void startForNewTenant(UUID tenantId, UUID ownerId, String activationCode, boolean payNow);
+
+    default void startForNewTenant(UUID tenantId, UUID ownerId, String activationCode) {
+        startForNewTenant(tenantId, ownerId, activationCode, false);
+    }
 
     /** Reintento de un negocio que falló al crearse: la prueba cuenta desde hoy. */
     void restartTrialOnRetry(UUID tenantId);
@@ -33,15 +37,27 @@ public interface SubscriptionApi {
     void requireCanAddRegister(TenantRef tenant);
 
     /**
+     * Facturas de compra que puede leer con IA este mes (decisión 295): 0 sin el adicional XASKA IA; con él, el tope de
+     * la consola más sus extras.
+     */
+    Integer invoiceScansPerMonth(UUID tenantId);
+
+    /**
+     * Tope al mes de una función de XASKA IA ({@code platform.ai_allowances.code}, decisión 296): 0 sin el adicional;
+     * con él, el tope de la consola (las facturas suman además sus extras).
+     */
+    int aiMonthlyLimit(UUID tenantId, String allowanceCode);
+
+    /**
      * Módulos y funciones que el plan del negocio (más sus extras vigentes) incluye (decisión 288). Sin suscripción,
-     * todo (no se le quita nada a un negocio por un dato que falta).
+     * todo (no se le quita nada a un negocio por un dato que falta) menos el adicional pagado XASKA IA.
      */
     Entitlements entitlements(UUID tenantId);
 
     record Entitlements(String planName, Set<BusinessModule> modules, Set<PlanFeature> features) {
 
         public static Entitlements everything() {
-            return new Entitlements(null, BusinessModule.all(), PlanFeature.all());
+            return new Entitlements(null, BusinessModule.all(), PlanFeature.allButAddOns());
         }
     }
 }

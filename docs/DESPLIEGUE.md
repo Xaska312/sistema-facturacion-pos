@@ -161,6 +161,7 @@ nano .env
 | `BACKUP_REMOTE` | `posdrive-crypt:` (paso 6) |
 | `PLATFORM_ADMIN_EMAILS` | déjalo vacío por ahora: se llena en el paso 7, después de registrarte |
 | `RESEND_API_KEY`, `MAIL_FROM` | correos de la app (sección 13). Sin clave, los enlaces quedan en el log del backend |
+| `ANTHROPIC_API_KEY` | lectura de facturas de compra con IA (decisión 295), de console.anthropic.com. Vacía = la función queda apagada y los botones no salen |
 
 - **`JWT_SECRET` nuevo**: nunca el de desarrollo ni uno que se haya compartido por chat o correo.
 - Evita `$` en las claves: Docker Compose lo interpreta como variable (el comando de arriba no lo genera).
@@ -277,6 +278,13 @@ actualizar (paso 11).
 | Logo en la impresión directa (292) | Solo la imagen **web**. XASKA Impresora no cambia |
 | Mesero solo mesas (293) | Negocio V37: el rol Mesero deja de cobrar (solo si nadie lo había editado). Avísales a los restaurantes cuyos meseros cobran |
 | Cartas por piso (294) | Negocio V38. Se configuran en Mesas → Configurar → Cartas por piso (plan Empresa) |
+| Registro abierto y QR (303) | Plataforma V23. **Cambia el comportamiento:** `SUBSCRIPTION_TRIAL_WITHOUT_CODE` ahora es `true` por defecto: cualquiera que se registre en app.xaska.co crea su negocio con la prueba gratis (una por cuenta) o lo crea para pagar ya. Si en el `.env` tienes `SUBSCRIPTION_TRIAL_WITHOUT_CODE=false`, quítalo o ponlo en `true`. Sube el QR del banco en la consola → Pagos. Página pública: `app.xaska.co/precios` |
+| Planes y pagos con Bre-B (302) | Plataforma V22. **Antes de anunciarlo:** en la consola → Pagos pon tu llave Bre-B, el titular y el banco (sin eso los negocios no pueden armar pedidos) y revisa los precios de los adicionales (XASKA IA 39.900 de partida). Revisa los comprobantes en Pagos → Por revisar |
+| Cargar con Aska (300) | Plataforma V21 y negocio V43. Tope por defecto: 20 listas al mes (consola → Planes → XASKA IA). Nada más que configurar |
+| Resumen del día (299) | Plataforma V20 y negocio V42. Una tarea revisa cada 5 minutos qué negocios con XASKA IA llegaron a su hora (`AI_DIGEST_SCHEDULE=false` la apaga). Usa los correos de la app (`RESEND_API_KEY`). Política 1.3 ya lo cubre |
+| Qué comprar y Aska (297, 298) | Plataforma V19 y negocio V41. Revisa en la consola → Planes → XASKA IA el tope de revisiones de pedidos (60 al mes). Nada más que configurar |
+| Pregúntale a tu negocio (296) | Plataforma V18 y negocio V40 (permiso `ai:ask` para todos los roles del sistema menos el Mesero). Usa la misma `ANTHROPIC_API_KEY`. Tope por defecto: 300 preguntas al mes (consola → Planes → XASKA IA) |
+| Facturas con foto (295) | Plataforma V17 y negocio V39. Pon `ANTHROPIC_API_KEY` en el `.env` (con un límite de gasto mensual en la consola de Anthropic) y reconstruye también la imagen **web** (el Caddyfile sube el máximo a 12 MB). Política de datos 1.3: todos la aceptan de nuevo. XASKA IA es un adicional: dalo a cada negocio en Suscripciones → Dar extras → "XASKA IA"; el tope al mes se ajusta en Planes → XASKA IA (100 facturas por defecto) |
 
 Prueba rápida después de actualizar: entrar (aceptar lo que pida), una venta, una mesa, descargar XASKA Impresora
 desde Ajustes, crear una droguería de prueba y revisar en los logs del backend que las migraciones se aplicaron.

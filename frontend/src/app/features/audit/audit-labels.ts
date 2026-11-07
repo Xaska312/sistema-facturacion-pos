@@ -77,6 +77,7 @@ const ACTIONS: Readonly<Record<string, string>> = {
   PRODUCT_MEDICINE_SAVED: 'Guardó la ficha de un medicamento',
   PURCHASE_RECEIVED: 'Recibió mercancía de un proveedor',
   PURCHASE_INVOICE_IMPORTED: 'Cargó la factura de un proveedor',
+  PURCHASE_INVOICE_SCANNED: 'Leyó con IA la factura de un proveedor',
   SUPPLIER_PAYMENT_CREATED: 'Registró un pago a un proveedor',
   PURCHASE_RETURNED: 'Devolvió mercancía a un proveedor',
   TECHNICAL_DIRECTOR_UPDATED: 'Cambió los datos del director técnico',

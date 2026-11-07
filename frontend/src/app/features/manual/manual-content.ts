@@ -736,18 +736,47 @@ export const MANUAL: readonly ManualChapter[] = [
         who: 'Propietario, Administrador y Bodega. Pagar de contado necesita además el permiso de pagar a proveedores.',
       },
       {
-        id: 'cargar-factura',
-        title: 'Cargar la factura electrónica del proveedor',
-        summary: 'En vez de digitar producto por producto, subes el XML o el ZIP de la factura electrónica que te llegó '
-          + 'al correo y XASKA llena la recepción para que la revises. Nada se guarda hasta que tú la registras.',
+        id: 'que-comprar',
+        title: 'Qué comprar: el pedido sugerido a cada proveedor',
+        summary: 'XASKA calcula cuánto pedirle a cada proveedor con lo que vendes, lo que tienes y tus mínimos, y te '
+          + 'deja el mensaje listo para WhatsApp o la hoja para imprimir. No se guarda ningún pedido.',
         steps: [
-          'Descarga del correo el ZIP de la factura del proveedor (trae el PDF y el XML).',
-          'Entra a Compras → Recibir mercancía y toca "Cargar factura". Elige el ZIP o el XML.',
+          'Entra a Compras → "Qué comprar" (o desde el menú, en Inventario). Si tienes varias sucursales, elige una.',
+          'Revisa cada proveedor: lo que hay, lo vendido en 7 y 30 días, el sugerido y el valor estimado.',
+          'Cambia la cantidad a pedir donde quieras (0 = no pedir) y los días de cada proveedor.',
+          'Si tienes XASKA IA, toca "Revisar con Aska": te dice qué ajustar y por qué, y aplicas lo que te parezca.',
+          'Toca "WhatsApp" (si el proveedor tiene celular), "Copiar mensaje" o "Imprimir o PDF".',
+        ],
+        tips: [
+          'Sugerido = venta diaria × días del proveedor + mínimo − lo que hay, sin pasar del máximo. La venta diaria '
+            + 'pesa más la última semana que el mes.',
+          'Lo vencido no cuenta como existencia, y lo que vence en 60 días sale marcado.',
+          'El proveedor de cada producto es el de su última compra registrada; sin compras sale en "Sin proveedor".',
+          'Cuando llegue la mercancía, regístrala como siempre en "Recibir mercancía".',
+        ],
+        who: 'Quien consulta compras. Cambiar los días necesita recibir mercancía; revisar con Aska necesita XASKA IA.',
+      },
+      {
+        id: 'cargar-factura',
+        title: 'Cargar la factura del proveedor (XML, foto o PDF)',
+        summary: 'En vez de digitar producto por producto, subes el XML de la factura electrónica, le tomas una foto a '
+          + 'la factura en papel o subes su PDF, y XASKA llena la recepción para que la revises. Nada se guarda hasta '
+          + 'que tú la registras.',
+        steps: [
+          'Entra a Compras → Recibir mercancía. Si es factura electrónica, toca "XML" (o "Cargar factura") y elige el '
+            + 'ZIP o el XML que te llegó al correo: es exacto y no gasta lecturas.',
+          'Si es de papel, toca "Tomar foto" y fotografía la factura completa, derecha y con buena luz. Si es larga, '
+            + 'toca "Fotos o PDF" y elige hasta 5 fotos en orden, o el PDF (hasta 10 páginas). Espera: puede tardar '
+            + 'hasta un minuto.',
           'Si el proveedor no está en XASKA te lo dice con su NIT: toca "Crear proveedor".',
           'Revisa cada producto. XASKA los encuentra por lo que aprendió de ese proveedor, por el código de barras o por '
             + 'un nombre parecido. Lo que dice "Se eligió por el nombre" confírmalo o cámbialo.',
-          'En "Sin producto en XASKA" elige a qué producto corresponde cada línea ("¿Es…?" o "Buscar otro"), créalo con '
-            + '"Crear producto" (abre en otra pestaña con el nombre y el costo) o márcala como "No lo recibo".',
+          'En "Sin producto en XASKA" elige a qué producto corresponde cada línea ("¿Es…?" o "Buscar otro") o márcala '
+            + 'como "No lo recibo". Para crear todos los que faltan de una vez toca "Crear los que faltan": revisa '
+            + 'nombre, SKU y precio (sale con tu margen) y toca "Crear"; quedan en la recepción con lo que llegó.',
+          'Ropa y calzado: marca "Tiene tallas", elige la escala y pon cuántos llegaron de cada talla. Si la factura '
+            + 'trae la curva (35×1, 36×2…), Aska ya la llena. Si la referencia ya existe, solo se agregan las tallas '
+            + 'nuevas.',
           'Revisa la presentación si la factura viene por caja, anota lote y vencimiento si faltan, rechaza lo que '
             + 'llegó mal y termina como siempre con la revisión técnica y el pago.',
         ],
@@ -757,9 +786,13 @@ export const MANUAL: readonly ManualChapter[] = [
             + 'factura, sale un aviso para que lo revises.',
           'La factura queda guardada con la compra: en el detalle toca "Factura del proveedor" para descargarla.',
           'Si la factura trae lote y vencimiento (en su campo o en la descripción), se llenan solos.',
-          'Por ahora se carga el XML o el ZIP. Pronto también la foto de una factura en papel.',
+          'La foto o el PDF los lee una inteligencia artificial: casi siempre acierta, pero revisa cada cantidad y '
+            + 'costo contra el papel. Si una foto sale borrosa, te avisa y no se descuenta.',
+          'La foto y el PDF son parte de XASKA IA, un adicional que se activa aparte del plan. Cada factura leída '
+            + 'cuenta una vez en el tope del mes, aunque tenga varias fotos; lo ves en la misma pantalla.',
         ],
-        who: 'Quien recibe mercancía, con el permiso "Cargar la factura del proveedor". Requiere el plan Negocio o superior.',
+        who: 'Quien recibe mercancía, con los permisos "Cargar la factura del proveedor" (el XML) y "Leer con IA la '
+          + 'foto o el PDF de la factura". Requiere el plan Negocio o superior y, para la foto o el PDF, XASKA IA.',
       },
       {
         id: 'cuentas-por-pagar',
@@ -1124,6 +1157,82 @@ export const MANUAL: readonly ManualChapter[] = [
     title: 'Reportes y control',
     icon: 'pi pi-chart-bar',
     sections: [
+      {
+        id: 'pregunta-ia',
+        title: 'Pregúntale a Aska, la IA de XASKA',
+        summary: 'Escribe una pregunta como "¿cuánto vendí hoy?" o "¿qué se me vence este mes?" y Aska la responde '
+          + 'con tus reportes, con las cifras clave resaltadas. Solo consulta: nunca cambia nada.',
+        steps: [
+          'Toca el botón de Aska (el ícono IA índigo con la chispa), abajo a la derecha, desde cualquier pantalla.',
+          'Escribe tu pregunta o toca uno de los ejemplos, y espera unos segundos.',
+          'Sigue preguntando sobre lo mismo ("¿y la semana pasada?") o toca una de las preguntas que Aska te propone. '
+            + 'Con "Nueva conversación" empiezas otra.',
+        ],
+        tips: [
+          'Responde sobre ventas, productos, inventario y vencimientos, fiados, cuentas por pagar y cajas.',
+          'Cada usuario solo recibe respuestas de lo que su rol le deja ver: un cajero no ve la utilidad del negocio.',
+          'Debajo de cada respuesta dice qué consultó. Revisa en Reportes las cifras importantes antes de decidir.',
+          'La conversación se borra al cerrar el panel: XASKA no guarda lo que preguntas, solo cuenta cuántas preguntas '
+            + 'van en el mes.',
+        ],
+        who: 'Todos los roles menos el Mesero, en negocios con el adicional XASKA IA.',
+      },
+      {
+        id: 'resumen-del-dia',
+        title: 'Resumen del día de Aska',
+        summary: 'Cada día, a la hora que elijas, Aska te escribe cómo le fue al negocio: ventas frente a ayer y a la '
+          + 'semana pasada, caja, inventario y lo que hay por cobrar o pagar. Llega por correo y queda arriba en Inicio.',
+        steps: [
+          'Entra a Ajustes → Resumen del día. Déjalo prendido y elige la hora (9:00 p. m. por defecto).',
+          'Marca quién más del equipo lo recibe por correo. Tú, como propietario, siempre lo recibes.',
+          'Toca "Enviar ahora" para ver uno de prueba con lo que va del día.',
+        ],
+        tips: [
+          'Si eliges una hora antes del mediodía (por ejemplo 6:00 a. m.), el resumen es del día anterior.',
+          'Primero salen los puntos urgentes (descuadres, productos agotados, facturas vencidas) y después lo bueno.',
+          'Cada persona solo ve lo que su rol le deja ver: un cajero no recibe la utilidad del negocio.',
+          'Desde la tarjeta en Inicio toca "Pregúntale a Aska" para profundizar en cualquier punto.',
+        ],
+        who: 'El propietario y quien él elija, en negocios con el adicional XASKA IA.',
+      },
+      {
+        id: 'planes-y-pagos',
+        title: 'Planes y pagos con Bre-B',
+        summary: 'Renueva tu plan, cámbialo, agrega XASKA IA, módulos o más sedes, cajas y usuarios, y paga por Bre-B '
+          + 'desde la app de tu banco o billetera. Sin datáfono ni tarjeta.',
+        steps: [
+          'Toca la píldora de tu plan arriba, junto al nombre del negocio (o Ajustes → Planes y pagos).',
+          'Elige mensual o anual, el plan y los adicionales. Abajo ves el total; toca "Pagar con Bre-B".',
+          'En la app de tu banco envía el valor exacto a la llave de XASKA y escribe la referencia (XK…) en la descripción.',
+          'Toca "Ya pagué: subir el comprobante" y elige la foto o el PDF. Aska lo revisa y XASKA lo aprueba; te avisamos '
+            + 'por correo. Si tenías la app abierta, sal y vuelve a entrar para ver lo nuevo.',
+        ],
+        tips: [
+          'XASKA IA se puede probar gratis 14 días, una sola vez por negocio, con topes más bajos.',
+          'Lo que compras aparte vence por su cuenta; al renovar se suma desde el vencimiento.',
+          'Si pagas desde otro celular, escanea el QR de la pantalla de pago y escribe el valor y la referencia.',
+        ],
+        who: 'El dueño y quien tenga permiso de cambiar los ajustes del negocio.',
+      },
+      {
+        id: 'cargar-con-aska',
+        title: 'Cargar el catálogo con Aska',
+        summary: 'Sube la lista de precios que te mandó el proveedor (Excel, PDF o fotos) y Aska crea los productos nuevos '
+          + 'y pone al día costos y precios de los que ya tienes. Nada se guarda hasta que lo revises.',
+        steps: [
+          'En Productos toca "Cargar con Aska" y elige la lista. Escoge el proveedor y el margen para los productos nuevos.',
+          'Toca "Leer con Aska". Verás cada fila marcada como Nueva, Cambia o Sin cambios.',
+          'Corrige lo que quieras (nombre, SKU, categoría, costo, precio) y desmarca lo que no quieras guardar.',
+          'Toca "Guardar": se guarda todo o nada.',
+        ],
+        tips: [
+          'Los productos que ya tienes conservan su margen: si el costo sube, el precio sube igual. Si baja, el precio se queda.',
+          'Revisa las filas con "Nombre parecido"; si no es el mismo, toca "Es otro producto".',
+          'Si el producto ya tiene movimientos, su costo lo pone el inventario con la próxima compra; aquí se ajusta el precio.',
+          'Con el proveedor elegido, Aska recuerda sus códigos para la próxima lista y la próxima factura.',
+        ],
+        who: 'Quien administra productos, en negocios con el adicional XASKA IA.',
+      },
       {
         id: 'tablero',
         title: 'Tablero del inicio',

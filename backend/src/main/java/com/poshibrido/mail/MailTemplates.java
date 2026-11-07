@@ -169,6 +169,29 @@ public class MailTemplates {
                 "Gracias por confiar en XASKA POS.");
     }
 
+    /** Pago de adicionales aprobado (decisión 302); si el pedido traía plan, ya llega "suscripcion-pagada". */
+    public MailMessage billingApproved(String to, String ownerName, String businessName, List<String> items) {
+        return message(to, "Activamos lo que compraste para " + businessName, "pago-aprobado",
+                "Hola, " + ownerName + ":",
+                List.of("Recibimos tu pago y ya está activo en " + businessName + ": " + String.join(", ", items) + ".",
+                        "Si estabas dentro de XASKA, sal y vuelve a entrar para verlo."),
+                "Entrar a " + PRODUCT, properties.link("/login"),
+                "Gracias por confiar en XASKA POS.");
+    }
+
+    /** El pago no se pudo confirmar (decisión 302): por qué y qué hacer. */
+    public MailMessage billingRejected(String to, String ownerName, String businessName, String reference,
+                                       String reason) {
+        return message(to, "No pudimos confirmar tu pago " + reference, "pago-rechazado",
+                "Hola, " + ownerName + ":",
+                List.of("Revisamos el comprobante del pedido " + reference + " de " + businessName
+                                + " y no pudimos confirmarlo: " + reason,
+                        "Entra a Ajustes → Planes y pagos para subir otro comprobante o armar un pedido nuevo. Si ya "
+                                + "pagaste, respóndenos este correo con el comprobante."),
+                "Ver mis pagos", properties.link("/app/planes"),
+                "Gracias por confiar en XASKA POS.");
+    }
+
     // ---------------------------------------------------------------- caja (al dueño, decisión 253)
 
     /** Lo que muestra el resumen de un cierre de caja; los nombres los escribió el negocio (se escapan). */
@@ -210,6 +233,108 @@ public class MailTemplates {
                 rows, "Ver el historial de caja", properties.link("/app/caja/historial"),
                 "Recibes este correo porque eres el dueño de " + s.businessName()
                         + ". Puedes desactivarlo en Ajustes.");
+    }
+
+    /** Un punto del resumen del día: tono (good, warning, bad, info), título y detalle. */
+    public record DigestPoint(String tone, String title, String detail) {
+    }
+
+    /**
+     * Resumen del día de Aska (decisiones 299 y 300): lo envía "Aska de XASKA", con su propio diseño (encabezado índigo
+     * noche, el monograma IA con la chispa ámbar), en primera persona y firmado por ella. Solo los puntos que el rol de
+     * quien lo recibe puede ver.
+     */
+    public MailMessage dailyDigest(String to, String name, String businessName, String dateLabel, String headline,
+                                   List<DigestPoint> points, List<String[]> figures) {
+        String first = name == null || name.isBlank() ? "" : name.trim().split("\\s+")[0];
+        String hello = first.isEmpty() ? "Hola." : "Hola, " + first + ".";
+        String intro = "Soy Aska. Te cuento cómo le fue a " + businessName + " el " + dateLabel + ":";
+        String link = properties.link("/app");
+        StringBuilder html = new StringBuilder()
+                .append("<!doctype html><html lang=\"es\"><body style=\"margin:0;padding:0;background:#eef0f7;\">")
+                .append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" ")
+                .append("style=\"background:#eef0f7;padding:24px 0;font-family:Arial,Helvetica,sans-serif;\"><tr>")
+                .append("<td align=\"center\"><table role=\"presentation\" width=\"560\" cellpadding=\"0\" ")
+                .append("cellspacing=\"0\" style=\"max-width:560px;width:100%;background:#ffffff;border-radius:18px;")
+                .append("overflow:hidden;border:1px solid #c7d2fe;\">")
+                // Encabezado de Aska.
+                .append("<tr><td style=\"background:#1e1b4b;background-image:linear-gradient(160deg,#1e1b4b,#3730a3);")
+                .append("padding:22px 26px;\"><table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\"><tr>")
+                .append("<td style=\"width:48px;height:48px;background:#4338ca;border-radius:13px;text-align:center;")
+                .append("vertical-align:middle;color:#ffffff;font-size:19px;font-weight:bold;letter-spacing:1px;\">IA")
+                .append("<span style=\"color:#fcd34d;font-size:13px;vertical-align:top;\">&#10022;</span></td>")
+                .append("<td style=\"padding-left:14px;\"><div style=\"color:#ffffff;font-size:24px;font-weight:bold;")
+                .append("letter-spacing:-0.5px;\">Aska</div><div style=\"color:#c7d2fe;font-size:13px;\">")
+                .append("Tu asistente en XASKA &middot; ").append(escape(businessName)).append("</div></td>")
+                .append("</tr></table></td></tr>")
+                .append("<tr><td style=\"padding:24px 26px;color:#111827;font-size:15px;line-height:1.55;\">")
+                .append("<p style=\"margin:0 0 6px;font-weight:bold;\">").append(escape(hello)).append("</p>")
+                .append("<p style=\"margin:0 0 16px;\">").append(escape(intro)).append("</p>")
+                .append("<p style=\"margin:0 0 18px;padding:14px 16px;border-radius:12px;background:#eef2ff;")
+                .append("color:#312e81;font-size:17px;font-weight:bold;line-height:1.4;\">").append(escape(headline))
+                .append("</p>");
+        if (!figures.isEmpty()) {
+            html.append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"6\" ")
+                    .append("style=\"margin:0 -6px 12px;\"><tr>");
+            for (int i = 0; i < figures.size(); i++) {
+                if (i == 2) {
+                    html.append("</tr><tr>");
+                }
+                html.append("<td width=\"50%\" style=\"background:#f5f6fb;border-radius:12px;padding:10px 12px;\">")
+                        .append("<div style=\"font-size:11px;font-weight:bold;letter-spacing:0.5px;color:#4338ca;")
+                        .append("text-transform:uppercase;\">").append(escape(figures.get(i)[0])).append("</div>")
+                        .append("<div style=\"font-size:19px;font-weight:bold;color:#111827;\">")
+                        .append(escape(figures.get(i)[1])).append("</div></td>");
+            }
+            html.append("</tr></table>");
+        }
+        for (DigestPoint p : points) {
+            String[] tone = switch (p.tone() == null ? "" : p.tone()) {
+                case "bad" -> new String[] {"Urgente", "#fee2e2", "#7f1d1d"};
+                case "warning" -> new String[] {"Ojo", "#fef3c7", "#78350f"};
+                case "good" -> new String[] {"Bien", "#dcfce7", "#14532d"};
+                default -> new String[] {"Dato", "#dbeafe", "#1e3a8a"};
+            };
+            html.append("<div style=\"padding:12px 0;border-top:1px solid #e5e7eb;\">")
+                    .append("<span style=\"display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;")
+                    .append("font-weight:bold;background:").append(tone[1]).append(";color:").append(tone[2])
+                    .append(";\">").append(tone[0]).append("</span> <strong>").append(escape(p.title()))
+                    .append("</strong><div style=\"margin-top:4px;color:#374151;font-size:14px;\">")
+                    .append(escape(p.detail())).append("</div></div>");
+        }
+        html.append("<p style=\"margin:22px 0 6px;\"><a href=\"").append(escape(link))
+                .append("\" style=\"display:inline-block;background:#4338ca;color:#ffffff;text-decoration:none;")
+                .append("padding:12px 20px;border-radius:12px;font-weight:bold;\">Pregúntame en XASKA</a></p>")
+                .append("<p style=\"margin:18px 0 0;\">Que tengas un buen cierre,<br><strong>Aska</strong> ")
+                .append("<span style=\"color:#f59e0b;\">&#10022;</span><br><span style=\"font-size:13px;")
+                .append("color:#6b7280;\">Reviso tus datos para que decidas mejor; las decisiones siempre son ")
+                .append("tuyas.</span></p></td></tr>")
+                .append("<tr><td style=\"padding:14px 26px 20px;background:#f5f6fb;font-size:12px;color:#6b7280;")
+                .append("line-height:1.5;\">Te escribo con los datos de ").append(escape(businessName))
+                .append(" que tu usuario puede ver. Puedes cambiar la hora o apagar el resumen en Ajustes &rarr; ")
+                .append("Resumen del día. Si el botón no funciona: ").append(escape(link))
+                .append("<br>Aska es la IA de XASKA POS.</td></tr></table></td></tr></table></body></html>");
+
+        StringBuilder text = new StringBuilder(hello).append("\n").append(intro).append("\n\n")
+                .append(headline).append("\n\n");
+        figures.forEach(f -> text.append(f[0]).append(": ").append(f[1]).append("\n"));
+        if (!figures.isEmpty()) {
+            text.append("\n");
+        }
+        for (DigestPoint p : points) {
+            String prefix = switch (p.tone() == null ? "" : p.tone()) {
+                case "bad" -> "Urgente · ";
+                case "warning" -> "Ojo · ";
+                case "good" -> "Bien · ";
+                default -> "";
+            };
+            text.append(prefix).append(p.title()).append(": ").append(p.detail()).append("\n\n");
+        }
+        text.append("Pregúntame en XASKA: ").append(link).append("\n\n")
+                .append("Que tengas un buen cierre,\nAska, la IA de XASKA\n\n")
+                .append("Cambia la hora o apaga el resumen en Ajustes → Resumen del día.");
+        return new MailMessage(to, "Aska · Tu resumen del " + dateLabel + " · " + businessName, html.toString(),
+                text.toString(), java.util.UUID.randomUUID().toString(), "resumen-del-dia", "Aska de XASKA");
     }
 
     /** "Sin diferencia", "Sobran $2.000", "Faltan $1.500". */

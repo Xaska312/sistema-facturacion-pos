@@ -99,11 +99,20 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     ],
     terms: ['costo-promedio'],
   },
+  '/app/compras/que-comprar': {
+    manual: 'que-comprar',
+    title: 'Qué comprar',
+    tips: [
+      'El sugerido sale de lo que vendiste (más peso a la última semana), lo que hay y tus mínimos y máximos.',
+      'Cambia los días de cada proveedor según cada cuánto te visita; cambia cualquier cantidad antes de pedir.',
+      'Con "Revisar con Aska" la IA te dice qué ajustar y por qué; tú decides si aplicas cada ajuste.',
+    ],
+  },
   '/app/compras/nueva': {
     manual: 'cargar-factura',
     title: 'Recibir mercancía',
     tips: [
-      'Con "Cargar factura" subes el XML o el ZIP de la factura electrónica y XASKA llena proveedor, número y productos.',
+      'Con "Tomar foto", "Fotos o PDF" o el XML de la factura, XASKA llena proveedor, número y productos por ti.',
       'Lo que se encontró por nombre parecido, lo que viene por caja y los costos muy distintos salen resaltados.',
       'Revisa cada producto, anota lote y vencimiento y rechaza lo que llegó mal: nada se guarda hasta registrar.',
     ],
@@ -223,6 +232,24 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
       'Asigna a cada producto que pesas el PLU que tiene en la báscula; su unidad debe admitir decimales (KG, LB…).',
       'En la venta, escanea la etiqueta: entra el producto con su peso (o con la cantidad que da el precio de la etiqueta).',
       'Sin báscula etiquetadora, en el carrito toca la línea y usa "Vende por valor" ($5.000 de queso).',
+    ],
+  },
+  '/app/productos/cargar-con-aska': {
+    manual: 'cargar-con-aska',
+    title: 'Cargar con Aska',
+    tips: [
+      'Sube la lista del proveedor en Excel, PDF o fotos y elige el proveedor: Aska recuerda sus códigos.',
+      'Los productos que ya tienes conservan su margen; los nuevos salen con el margen que pongas.',
+      'Revisa los "Por revisar" (nombre parecido) y corrige cualquier fila antes de guardar.',
+    ],
+  },
+  '/app/planes': {
+    manual: 'planes-y-pagos',
+    title: 'Planes y pagos',
+    tips: [
+      'Arma tu pedido (plan, XASKA IA, módulos o cupos) y toca "Pagar con Bre-B" para ver el valor y la referencia.',
+      'Paga desde la app de tu banco a la llave de XASKA y escribe la referencia en la descripción.',
+      'Sube el comprobante: Aska lo revisa y XASKA lo aprueba; te avisamos por correo.',
     ],
   },
   '/app/productos/importar': {

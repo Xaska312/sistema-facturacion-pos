@@ -3,6 +3,7 @@ package com.poshibrido.purchasing.application;
 import com.poshibrido.audit.application.AuditLogger;
 import com.poshibrido.purchasing.application.DianInvoiceParser.ParsedInvoice;
 import com.poshibrido.purchasing.application.DianInvoiceParser.ParsedLine;
+import com.poshibrido.purchasing.application.DianInvoiceParser.SizeQuantity;
 import com.poshibrido.shared.error.BusinessRuleException;
 import com.poshibrido.shared.error.NotFoundException;
 import com.poshibrido.shared.id.Ids;
@@ -72,7 +73,7 @@ public class InvoiceDocumentService {
     public record DraftLine(int lineNo, String description, String supplierCode, String barcode, String unitCode,
                             boolean packageUnit, BigDecimal quantity, BigDecimal unitCost, BigDecimal taxRate,
                             BigDecimal discount, String lotNumber, LocalDate expirationDate, LineMatch match,
-                            List<Candidate> candidates) {
+                            List<Candidate> candidates, String color, List<SizeQuantity> sizes) {
     }
 
     public record InvoiceDraft(UUID documentId, String kind, String fileName, SupplierGuess supplier,
@@ -109,13 +110,28 @@ public class InvoiceDocumentService {
                     + "con el PDF).");
         }
         ParsedInvoice parsed = DianInvoiceParser.parse(bytes);
+        return importParsed(kind, contentType, safeName(originalName, kind), bytes, parsed, actor,
+                "PURCHASE_INVOICE_IMPORTED", List.of());
+    }
 
+    /**
+     * La factura leída con IA de sus fotos o su PDF (decisión 295): se guarda como soporte (las fotos ya reducidas, o
+     * en un ZIP si son varias) y se empareja igual que el XML. Lo leído llega con un aviso para revisarlo todo.
+     */
+    @Transactional
+    public InvoiceDraft fromScan(String kind, String contentType, String fileName, byte[] bytes, ParsedInvoice parsed) {
+        return importParsed(kind, contentType, fileName, bytes, parsed, CurrentActor.requireUserId(),
+                "PURCHASE_INVOICE_SCANNED",
+                List.of("Leída con IA: revisa cada producto, cantidad y costo contra la factura antes de registrar."));
+    }
+
+    private InvoiceDraft importParsed(String kind, String contentType, String fileName, byte[] bytes,
+                                      ParsedInvoice parsed, UUID actor, String action, List<String> notices) {
         em.createNativeQuery("""
                 DELETE FROM purchase_documents d WHERE d.uploaded_at < ?1
                   AND NOT EXISTS (SELECT 1 FROM purchase_receipts r WHERE r.document_id = d.id)""")
                 .setParameter(1, Timestamp.from(Instant.now().minus(UNUSED_DAYS, ChronoUnit.DAYS))).executeUpdate();
         UUID id = Ids.newId();
-        String fileName = safeName(originalName, kind);
         em.createNativeQuery("""
                 INSERT INTO purchase_documents (id, kind, file_name, content_type, size_bytes, sha256, content,
                     supplier_nit, invoice_number, cufe, uploaded_by, uploaded_at)
@@ -132,7 +148,7 @@ public class InvoiceDocumentService {
                 .setParameter(1, supplier.id()).setParameter(2, parsed.number()).getResultList().isEmpty();
         List<DraftLine> lines = match(supplier.id(), parsed.lines());
 
-        List<String> warnings = new ArrayList<>();
+        List<String> warnings = new ArrayList<>(notices);
         if (supplier.id() == null) {
             warnings.add("El proveedor " + nameOrNit(parsed) + " no está registrado: créalo para continuar.");
         } else if (!supplier.active()) {
@@ -169,7 +185,7 @@ public class InvoiceDocumentService {
         data.put("invoice", parsed.number());
         data.put("lines", lines.size());
         data.put("matched", lines.stream().filter(l -> l.match() != null).count());
-        audit.log("PURCHASE_INVOICE_IMPORTED", "purchase_document", id, null, data);
+        audit.log(action, "purchase_document", id, null, data);
 
         return new InvoiceDraft(id, kind, fileName, supplier, parsed.number(), parsed.issueDate(), parsed.dueDate(),
                 parsed.paymentType(), parsed.cufe(), parsed.subtotal(), parsed.taxTotal(),
@@ -224,6 +240,15 @@ public class InvoiceDocumentService {
 
     // ------------------------------------------------------------------ emparejar
 
+    /**
+     * Empareja líneas leídas (de una factura o de una lista de precios, decisión 300) con los productos: lo aprendido
+     * del proveedor, código de barras, SKU y nombre parecido.
+     */
+    @Transactional(readOnly = true)
+    public List<DraftLine> matchLines(UUID supplierId, List<ParsedLine> parsed) {
+        return match(supplierId, parsed);
+    }
+
     private List<DraftLine> match(UUID supplierId, List<ParsedLine> parsed) {
         Set<UUID> fromSupplier = new HashSet<>();
         if (supplierId != null) {
@@ -273,7 +298,7 @@ public class InvoiceDocumentService {
             }
             result.add(new DraftLine(l.lineNo(), l.description(), l.sellerCode(), l.standardCode(), l.unitCode(),
                     l.packageUnit(), l.quantity(), l.unitCost(), l.taxRate(), l.discount(), l.lotNumber(),
-                    l.expirationDate(), match, candidates));
+                    l.expirationDate(), match, candidates, l.color(), l.sizes()));
         }
         return result;
     }

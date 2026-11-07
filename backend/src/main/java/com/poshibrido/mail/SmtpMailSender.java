@@ -29,7 +29,7 @@ public class SmtpMailSender implements MailSender {
         try {
             MimeMessage mime = smtp.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mime, true, StandardCharsets.UTF_8.name());
-            helper.setFrom(from);
+            helper.setFrom(message.from(from));
             helper.setTo(message.to());
             helper.setSubject(message.subject());
             helper.setText(message.text(), message.html());

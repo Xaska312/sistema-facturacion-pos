@@ -27,7 +27,7 @@ public class SubscriptionGuardFilter extends OncePerRequestFilter {
 
     private static final Set<String> READ_METHODS = Set.of("GET", "HEAD", "OPTIONS");
     private static final Pattern ALLOWED = Pattern.compile(
-            "^/api/v1/(auth/.*|tenants(/.*)?|invitations/.*|platform/.*|cash/sessions/[^/]+/close)$");
+            "^/api/v1/(auth/.*|tenants(/.*)?|invitations/.*|platform/.*|billing/.*|cash/sessions/[^/]+/close)$");
 
     private final SubscriptionApi subscriptions;
     private final HandlerExceptionResolver exceptionResolver;

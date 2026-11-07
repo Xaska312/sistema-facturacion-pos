@@ -20,6 +20,7 @@ import { purchaseBadge, receiptNumber } from './purchase-text';
   template: `
     <app-page-header title="Compras"
                      description="La mercancía que recibes de tus proveedores, contra su factura. Al registrarla sube el inventario y el costo promedio.">
+      <a pButton routerLink="/app/compras/que-comprar" label="Qué comprar" icon="pi pi-shopping-cart" [outlined]="true"></a>
       @if (canPay()) {
         <a pButton routerLink="/app/cuentas-por-pagar" label="Cuentas por pagar" icon="pi pi-wallet" [outlined]="true"></a>
       }

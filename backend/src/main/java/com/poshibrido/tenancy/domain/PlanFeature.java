@@ -22,7 +22,13 @@ public enum PlanFeature {
     /** Traslados entre sedes. */
     TRANSFERS("inventory:transfer"),
     /** Caja por zona de mesas (decisión 285). */
-    ZONE_REGISTERS;
+    ZONE_REGISTERS,
+    /**
+     * XASKA IA (decisión 295): adicional pagado que no trae ningún plan; lo da el administrador como extra. Cada
+     * función tiene su tope al mes ({@code platform.ai_allowances}): leer facturas de compra en foto o PDF y
+     * "Pregúntale a tu negocio" (decisión 296).
+     */
+    AI("purchases:scan", "ai:ask");
 
     private static final String AUTHORITY_PREFIX = "plan:";
 
@@ -47,6 +53,11 @@ public enum PlanFeature {
 
     public static Set<PlanFeature> all() {
         return EnumSet.allOf(PlanFeature.class);
+    }
+
+    /** Lo que se le deja a un negocio sin datos de suscripción: todo menos los adicionales pagados (XASKA IA). */
+    public static Set<PlanFeature> allButAddOns() {
+        return EnumSet.complementOf(EnumSet.of(AI));
     }
 
     /** "PURCHASES,AUDIT" ↔ conjunto; los códigos desconocidos se ignoran. */

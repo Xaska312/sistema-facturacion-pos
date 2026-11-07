@@ -22,6 +22,12 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/login.component').then((m) => m.LoginComponent),
   },
   {
+    // Planes y precios sin iniciar sesión (decisión 303).
+    path: 'precios',
+    title: 'Planes y precios',
+    loadComponent: () => import('./features/billing/pricing.component').then((m) => m.PricingComponent),
+  },
+  {
     path: 'registro',
     title: 'Crear cuenta',
     canActivate: [guestGuard],
@@ -98,6 +104,12 @@ export const routes: Routes = [
           import('./features/platform/platform-plans.component').then((m) => m.PlatformPlansComponent),
       },
       {
+        path: 'pagos',
+        title: 'Plataforma: pagos',
+        loadComponent: () =>
+          import('./features/platform/platform-billing.component').then((m) => m.PlatformBillingComponent),
+      },
+      {
         path: 'seguridad',
         title: 'Plataforma: eventos de seguridad',
         loadComponent: () =>
@@ -171,6 +183,14 @@ export const routes: Routes = [
         data: { permission: 'products:manage' },
         loadComponent: () =>
           import('./features/products/product-import.component').then((m) => m.ProductImportComponent),
+      },
+      {
+        path: 'productos/cargar-con-aska',
+        title: 'Cargar con Aska',
+        canActivate: [permissionGuard],
+        data: { permission: 'products:manage' },
+        loadComponent: () =>
+          import('./features/products/catalog-import.component').then((m) => m.CatalogImportComponent),
       },
       {
         path: 'productos/modelos',
@@ -472,6 +492,14 @@ export const routes: Routes = [
         loadComponent: () => import('./features/purchases/purchases.component').then((m) => m.PurchasesComponent),
       },
       {
+        path: 'compras/que-comprar',
+        title: 'Qué comprar',
+        canActivate: [permissionGuard],
+        data: { permission: 'purchases:read' },
+        loadComponent: () =>
+          import('./features/purchases/purchase-suggestions.component').then((m) => m.PurchaseSuggestionsComponent),
+      },
+      {
         path: 'compras/nueva',
         title: 'Recibir mercancía',
         canActivate: [permissionGuard],
@@ -537,6 +565,13 @@ export const routes: Routes = [
         canActivate: [permissionGuard],
         data: { permission: 'roles:manage' },
         loadComponent: () => import('./features/roles/roles.component').then((m) => m.RolesComponent),
+      },
+      {
+        path: 'planes',
+        title: 'Planes y pagos',
+        canActivate: [permissionGuard],
+        data: { permission: 'settings:manage' },
+        loadComponent: () => import('./features/billing/plans.component').then((m) => m.PlansComponent),
       },
       {
         path: 'ajustes',

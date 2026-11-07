@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
-  ActivationCode, BusinessType, CodeInput, CreatedCodes, PageResponse, PaymentInput, Plan, PlanInput, Subscription, SubscriptionExtras, SubscriptionRow,
+  ActivationCode, AiAllowance, BusinessType, CodeInput, CreatedCodes, PageResponse, PaymentInput, Plan, PlanInput, Subscription, SubscriptionExtras, SubscriptionRow,
   SubscriptionStatus, TenantStatus, TenantSummary,
 } from './api.models';
 
@@ -113,6 +113,15 @@ export class PlatformApi {
 
   updatePlan(code: string, input: PlanInput): Observable<Plan> {
     return this.http.put<Plan>(`${this.base}/plans/${encodeURIComponent(code)}`, input);
+  }
+
+  /** Topes al mes de XASKA IA (decisión 295). */
+  aiAllowances(): Observable<AiAllowance[]> {
+    return this.http.get<AiAllowance[]>(`${this.base}/ai-allowances`);
+  }
+
+  updateAiAllowance(code: string, monthlyLimit: number): Observable<AiAllowance> {
+    return this.http.put<AiAllowance>(`${this.base}/ai-allowances/${encodeURIComponent(code)}`, { monthlyLimit });
   }
 
   subscriptions(q: string | null, status: SubscriptionStatus | null, page: number, size: number)

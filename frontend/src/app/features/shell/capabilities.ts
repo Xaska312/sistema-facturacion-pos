@@ -44,6 +44,8 @@ const RULES: readonly CapabilityRule[] = [
   { permission: 'inventory:read', text: 'consultar existencias y kardex' },
   { permission: 'purchases:receive', text: 'recibir mercancía de los proveedores (revisión técnica, lotes y vencimientos)' },
   { permission: 'purchases:import', text: 'cargar la factura del proveedor para llenar la recepción' },
+  { permission: 'purchases:scan', text: 'leer con IA la foto o el PDF de la factura del proveedor' },
+  { permission: 'ai:ask', text: 'preguntarle a Aska (XASKA IA) sobre el negocio' },
   { permission: 'purchases:pay', text: 'pagar a proveedores' },
   { permission: 'purchases:read', text: 'consultar compras y cuentas por pagar', coveredBy: 'purchases:pay' },
   { permission: 'parties:manage', text: 'registrar clientes y proveedores' },

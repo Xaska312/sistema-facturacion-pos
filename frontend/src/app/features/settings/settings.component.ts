@@ -1,8 +1,10 @@
 import { ConsumptionTaxSectionComponent } from './consumption-tax-section.component';
 import { TechnicalDirectorSectionComponent } from '../pharmacy/technical-director-section.component';
+import { XaskaIaLogoComponent } from '../../shared/brand/xaska-ia-logo.component';
+import { DigestSettingsComponent } from '../ai/digest-settings.component';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -39,7 +41,7 @@ const TIMEZONE_LABEL: Record<string, string> = {
 
 @Component({
   selector: 'app-settings',
-  imports: [ConsumptionTaxSectionComponent, TechnicalDirectorSectionComponent, ReactiveFormsModule, FormsModule, ButtonModule, InputTextModule, PageHeaderComponent, FormDialogComponent,
+  imports: [RouterLink, DigestSettingsComponent, XaskaIaLogoComponent, ConsumptionTaxSectionComponent, TechnicalDirectorSectionComponent, ReactiveFormsModule, FormsModule, ButtonModule, InputTextModule, PageHeaderComponent, FormDialogComponent,
     BrandingSectionComponent, PrinterSectionComponent, BusinessProfileSectionComponent],
   template: `
     <app-page-header title="Ajustes del negocio" description="Cómo funciona tu negocio: tipo y módulos, inventario, impuestos, zona horaria, moneda, tiquete y marca." />
@@ -78,6 +80,12 @@ const TIMEZONE_LABEL: Record<string, string> = {
             <dt class="text-muted">Uso de cajas</dt>
             <dd>{{ s.usage.registers }} de {{ s.entitled.maxRegisters ?? 'sin límite' }}</dd>
           </div>
+          @if (s.entitled.maxInvoiceScans > 0) {
+            <div class="flex flex-col gap-1">
+              <dt class="text-muted flex items-center gap-1"><app-xaska-ia-logo size="sm" />Facturas leídas con IA este mes</dt>
+              <dd>{{ s.usage.invoiceScans }} de {{ s.entitled.maxInvoiceScans }}</dd>
+            </div>
+          }
           <div class="flex flex-col gap-1 sm:col-span-2">
             <dt class="text-muted">Incluye</dt>
             <dd>{{ included(s.entitled.modules, s.entitled.features) }}</dd>
@@ -98,10 +106,18 @@ const TIMEZONE_LABEL: Record<string, string> = {
               </dd>
             </div>
           }
-          <div class="flex flex-col gap-1 sm:col-span-2">
-            <dt class="text-muted">Cómo pagar</dt>
-            <dd>{{ s.paymentInstructions }}</dd>
-          </div>
+          @if (canEdit()) {
+            <div class="sm:col-span-2">
+              <a routerLink="/app/planes" class="plans-cta">
+                <span class="plans-cta-icon" aria-hidden="true"><i class="pi pi-credit-card"></i></span>
+                <span class="flex-1 min-w-0">
+                  <span class="block font-bold">Planes y pagos</span>
+                  <span class="block text-xs plans-cta-sub">Renueva, cambia de plan, agrega XASKA IA, módulos o cupos y paga por Bre-B.</span>
+                </span>
+                <i class="pi pi-arrow-right" aria-hidden="true"></i>
+              </a>
+            </div>
+          }
         </dl>
 
         @if (s.payments.length > 0) {
@@ -251,6 +267,10 @@ const TIMEZONE_LABEL: Record<string, string> = {
 
     <app-branding-section />
 
+    @if (canDigest()) {
+      <app-digest-settings />
+    }
+
     @if (canDirectPrint()) {
       <app-printer-section />
     }
@@ -290,6 +310,17 @@ const TIMEZONE_LABEL: Record<string, string> = {
       </div>
     </app-form-dialog>
   `,
+  styles: `
+    .plans-cta {
+      display: flex; align-items: center; gap: 0.875rem; padding: 0.875rem 1rem; border-radius: 1rem;
+      color: var(--xaska-panel-fg); background: linear-gradient(135deg, var(--aska-cta-from), var(--aska-cta-to));
+      box-shadow: 0 10px 24px var(--aska-shadow); transition: transform 0.15s ease;
+    }
+    .plans-cta:hover, .plans-cta:focus-visible { transform: translateY(-1px); }
+    .plans-cta-icon { display: grid; place-items: center; width: 2.5rem; height: 2.5rem; border-radius: 0.75rem;
+      background: var(--xaska-panel-tile); color: var(--aska-amber); }
+    .plans-cta-sub { color: var(--xaska-panel-muted); }
+  `,
 })
 export class SettingsComponent implements OnInit {
   private readonly api = inject(OrganizationApi);
@@ -302,6 +333,8 @@ export class SettingsComponent implements OnInit {
   protected readonly cop = formatCop;
 
   protected readonly canEdit = computed(() => this.auth.hasPermission('settings:manage'));
+  /** Resumen del día de Aska (decisión 299): con XASKA IA. */
+  protected readonly canDigest = computed(() => this.canEdit() && this.auth.hasPermission('ai:ask'));
   protected readonly hasQuotes = computed(() => this.auth.hasPermission('module:quotes'));
   protected readonly hasTables = computed(() => this.auth.hasPermission('module:tables'));
   protected readonly hasMedicines = computed(() => this.auth.hasPermission('module:medicines'));

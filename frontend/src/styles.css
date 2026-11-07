@@ -80,6 +80,35 @@
   /* "POS" gigante del panel (como en xaska.co): degradado índigo a lavanda. */
   --xaska-pos-from: #6366f1;
   --xaska-pos-to: #c7d2fe;
+  /* Logo del adicional XASKA IA (decisión 295; opción F en la 298): monograma IA en índigo con la chispa ámbar. */
+  --xaska-ia-tile: #4338ca;
+  --xaska-ia-ink: #ffffff;
+  --xaska-ia-spark: #fcd34d;
+  --xaska-ia-tag-bg: #4338ca;
+  --xaska-ia-tag-text: #fef3c7;
+  /* Volumen del logo XASKA IA ("noche con aro de luz"): índigo a noche, brillo suave, aro lavanda, sombra y halo. */
+  --xaska-ia-tile-top: #3730a3;
+  --xaska-ia-tile-bottom: #1e1b4b;
+  --xaska-ia-gloss: rgb(255 255 255 / 0.1);
+  --xaska-ia-ring: rgb(129 140 248 / 0.9);
+  --xaska-ia-ink-shadow: rgb(30 27 75 / 0.6);
+  --xaska-ia-shadow: rgb(30 27 75 / 0.45);
+  --xaska-ia-spark-glow: rgb(252 211 77 / 0.85);
+  /* Luz dorada detrás del logo (leve) y la del botón flotante de Aska (más fuerte al pasar el mouse). */
+  --xaska-ia-halo: rgb(252 211 77 / 0.32);
+  --xaska-ia-halo-strong: rgb(252 211 77 / 0.55);
+  --aska-cta-from: #1e1b4b;
+  --aska-cta-to: #4338ca;
+  /* Aska, la IA de XASKA (decisión 298): el índigo de XASKA (no el color del negocio) y el ámbar de la chispa. */
+  --aska: #4338ca;
+  --aska-contrast: #ffffff;
+  --aska-amber: #fcd34d;
+  --aska-glow: rgb(99 102 241 / 0.22);
+  --aska-shadow: rgb(67 56 202 / 0.45);
+  --aska-soft: #eef2ff;
+  --aska-soft-fg: #3730a3;
+  --aska-line: #c7d2fe;
+  --aska-backdrop: rgb(17 24 39 / 0.18);
 }
 
 .app-dark {
@@ -124,6 +153,10 @@
   --xaska-dot: #818cf8;
   --xaska-tag-bg: #312e81;
   --xaska-tag-text: #e0e7ff;
+  --aska: #6366f1;
+  --aska-soft: rgb(129 140 248 / 0.16);
+  --aska-soft-fg: #c7d2fe;
+  --aska-line: rgb(165 180 252 / 0.35);
 }
 
 /*

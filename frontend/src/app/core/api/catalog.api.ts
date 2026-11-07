@@ -37,6 +37,28 @@ export interface ProductModelQuery extends PageQuery {
 }
 
 /** Catálogo: productos, categorías, unidades, impuestos, listas de precios e importación. */
+/** Producto por crear desde una línea de la factura: con {@code sizes}, {@code sku} es el prefijo del modelo. */
+export interface InvoiceNewProduct {
+  lineNo: number;
+  sku: string;
+  name: string;
+  category: string | null;
+  unitCode: string | null;
+  taxCode: string;
+  cost: number;
+  price: number;
+  barcode: string | null;
+  sizeScaleId: string | null;
+  color: string | null;
+  sizes: { size: string; quantity: number }[];
+}
+
+export interface InvoiceCreatedLine {
+  lineNo: number;
+  products: { productId: string; sku: string; name: string; unitId: string; size: string | null;
+    quantity: number | null }[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class CatalogApi {
   private readonly http = inject(HttpClient);
@@ -133,6 +155,11 @@ export class CatalogApi {
     return this.http.post<ImportReport>('/api/v1/products/import', form, {
       params: new HttpParams().set('dryRun', dryRun),
     });
+  }
+
+  /** Crea de una vez lo que falta de la factura (decisión 301), simples o con tallas; todo o nada. */
+  createFromInvoice(items: InvoiceNewProduct[]): Observable<{ lines: InvoiceCreatedLine[] }> {
+    return this.http.post<{ lines: InvoiceCreatedLine[] }>('/api/v1/products/from-invoice', { items });
   }
 
   categories(): Observable<Category[]> {

@@ -25,12 +25,27 @@ public final class SubscriptionViews {
 
     /** Lo que el administrador le dio de más a un negocio; {@code until} nulo = sin fecha de fin. */
     public record Extras(List<String> modules, List<String> features, int branches, int registers, int users,
-                         String note, Instant until, boolean active) {
+                         String note, Instant until, boolean active, int invoiceScans) {
     }
 
-    /** Lo que el negocio puede usar hoy: su plan más los extras vigentes. Límites {@code null} = sin límite. */
+    /**
+     * Lo que el negocio puede usar hoy: su plan más los extras vigentes. Límites {@code null} = sin límite.
+     * {@code maxInvoiceScans}: facturas con IA al mes (0 sin el adicional XASKA IA).
+     */
     public record Entitled(Integer maxBranches, Integer maxUsers, Integer maxRegisters, List<String> modules,
-                           List<String> features) {
+                           List<String> features, int maxInvoiceScans) {
+    }
+
+    /**
+     * Algo comprado aparte del plan (decisión 302): XASKA IA, un módulo, una función o cupos de sedes, cajas o usuarios,
+     * con su vencimiento. {@code trial}: la prueba gratis de XASKA IA.
+     */
+    public record AddonView(String code, String kind, String ref, String name, int quantity, Instant endsAt,
+                            boolean trial, boolean active) {
+    }
+
+    /** Tope al mes de una función del adicional XASKA IA (decisión 295), igual para todos los negocios que lo tienen. */
+    public record AiAllowance(String code, String name, int monthlyLimit) {
     }
 
     /**
@@ -42,10 +57,11 @@ public final class SubscriptionViews {
                                    boolean trial, BillingCycle billingCycle, Instant startedAt, Instant endsAt,
                                    Instant graceEndsAt, long daysLeft, Usage usage, String paymentInstructions,
                                    List<PaymentView> payments, Entitled entitled, Extras extras,
-                                   Instant priceLockedUntil) {
+                                   Instant priceLockedUntil, List<AddonView> addons, boolean aiTrialAvailable) {
     }
 
-    public record Usage(long branches, long users, long registers) {
+    /** {@code invoiceScans}: facturas leídas con IA este mes (decisión 295). */
+    public record Usage(long branches, long users, long registers, long invoiceScans) {
     }
 
     public record PaymentView(UUID id, String planCode, BillingCycle billingCycle, int periods, BigDecimal amount,

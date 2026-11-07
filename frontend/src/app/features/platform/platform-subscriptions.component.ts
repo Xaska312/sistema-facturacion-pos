@@ -1,3 +1,4 @@
+import { XaskaIaLogoComponent } from '../../shared/brand/xaska-ia-logo.component';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
@@ -30,6 +31,7 @@ interface ExtrasDraft {
   branches: number | null;
   registers: number | null;
   users: number | null;
+  invoiceScans: number | null;
   note: string;
   /** AAAA-MM-DD o vacío (sin fin). */
   until: string;
@@ -54,7 +56,7 @@ export const PAYMENT_METHODS: readonly string[] = ['Transferencia', 'Nequi', 'Da
  */
 @Component({
   selector: 'app-platform-subscriptions',
-  imports: [FormsModule, ButtonModule, DialogModule, InputTextModule, FormDialogComponent, PesosInputDirective,
+  imports: [XaskaIaLogoComponent, FormsModule, ButtonModule, DialogModule, InputTextModule, FormDialogComponent, PesosInputDirective,
     PageHeaderComponent, StatusBadgeComponent, DataTableComponent, CellTemplateDirective],
   template: `
     <app-page-header title="Suscripciones"
@@ -111,6 +113,10 @@ export const PAYMENT_METHODS: readonly string[] = ['Transferencia', 'Nequi', 'Da
           <div><dt class="text-muted">Sucursales</dt><dd>{{ s.usage.branches }} de {{ limit(s.entitled.maxBranches) }}</dd></div>
           <div><dt class="text-muted">Usuarios</dt><dd>{{ s.usage.users }} de {{ limit(s.entitled.maxUsers) }}</dd></div>
           <div><dt class="text-muted">Cajas</dt><dd>{{ s.usage.registers }} de {{ limit(s.entitled.maxRegisters) }}</dd></div>
+          @if (s.entitled.features.includes('AI')) {
+            <div><dt class="text-muted flex items-center gap-1"><app-xaska-ia-logo size="sm" />Facturas con IA este mes</dt>
+              <dd>{{ s.usage.invoiceScans }} de {{ s.entitled.maxInvoiceScans }}</dd></div>
+          }
           <div class="col-span-2 sm:col-span-3"><dt class="text-muted">Incluye (plan + extras)</dt>
             <dd>{{ included(s.entitled.modules, s.entitled.features) }}</dd></div>
           @if (s.priceLockedUntil) {
@@ -202,7 +208,7 @@ export const PAYMENT_METHODS: readonly string[] = ['Transferencia', 'Nequi', 'Da
             }
           </div>
         </fieldset>
-        <div class="grid grid-cols-3 gap-3">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div class="flex flex-col gap-1">
             <label for="ex-branches" class="text-sm font-medium">Sedes de más</label>
             <input pInputText id="ex-branches" type="number" min="0" max="100" [(ngModel)]="extras.branches" />
@@ -214,6 +220,10 @@ export const PAYMENT_METHODS: readonly string[] = ['Transferencia', 'Nequi', 'Da
           <div class="flex flex-col gap-1">
             <label for="ex-users" class="text-sm font-medium">Usuarios de más</label>
             <input pInputText id="ex-users" type="number" min="0" max="500" [(ngModel)]="extras.users" />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label for="ex-scans" class="text-sm font-medium" title="Solo cuentan si tiene XASKA IA">Facturas IA/mes de más</label>
+            <input pInputText id="ex-scans" type="number" min="0" max="10000" [(ngModel)]="extras.invoiceScans" />
           </div>
         </div>
         <div class="grid grid-cols-2 gap-3">
@@ -362,13 +372,14 @@ export class PlatformSubscriptionsComponent implements OnInit {
 
   protected hasExtras(s: Subscription): boolean {
     const x = s.extras;
-    return x.modules.length + x.features.length + x.branches + x.registers + x.users > 0;
+    return x.modules.length + x.features.length + x.branches + x.registers + x.users + x.invoiceScans > 0;
   }
 
   protected extrasText(s: Subscription): string {
     const x = s.extras;
     const counts = [x.branches ? `${x.branches} sede(s)` : '', x.registers ? `${x.registers} caja(s)` : '',
-      x.users ? `${x.users} usuario(s)` : ''].filter((t) => t);
+      x.users ? `${x.users} usuario(s)` : '', x.invoiceScans ? `${x.invoiceScans} factura(s) con IA al mes` : '']
+      .filter((t) => t);
     const items = x.modules.length + x.features.length ? includedText(x.modules, x.features) : '';
     return [items, ...counts].filter((t) => t).join(' · ');
   }
@@ -382,7 +393,7 @@ export class PlatformSubscriptionsComponent implements OnInit {
   openExtras(s: Subscription): void {
     const x = s.extras;
     this.extras = { modules: [...x.modules], features: [...x.features], branches: x.branches, registers: x.registers,
-      users: x.users, note: x.note ?? '', until: x.until ? x.until.slice(0, 10) : '' };
+      users: x.users, invoiceScans: x.invoiceScans, note: x.note ?? '', until: x.until ? x.until.slice(0, 10) : '' };
     this.extrasSnapshot = JSON.stringify(this.extras);
     this.extrasOpen = true;
   }
@@ -399,6 +410,9 @@ export class PlatformSubscriptionsComponent implements OnInit {
     if (!n(this.extras.branches, 100) || !n(this.extras.registers, 100) || !n(this.extras.users, 500)) {
       return 'Sedes y cajas de 0 a 100; usuarios de 0 a 500.';
     }
+    if (!n(this.extras.invoiceScans, 10000)) {
+      return 'Facturas con IA de más: de 0 a 10.000.';
+    }
     if (this.extras.until && this.extras.until < this.tomorrow) {
       return 'La fecha de fin debe ser futura (o vacía, sin fin).';
     }
@@ -414,6 +428,7 @@ export class PlatformSubscriptionsComponent implements OnInit {
     return this.platform.setExtras(s.tenantId, {
       modules: x.modules.filter((m) => !this.inPlan(m)), features: x.features.filter((f) => !this.inPlan(f)),
       branches: Number(x.branches ?? 0), registers: Number(x.registers ?? 0), users: Number(x.users ?? 0),
+      invoiceScans: Number(x.invoiceScans ?? 0),
       note: x.note.trim() || null,
       // Fin del día en Bogotá.
       until: x.until ? `${x.until}T23:59:59-05:00` : null,
@@ -495,7 +510,7 @@ export class PlatformSubscriptionsComponent implements OnInit {
 }
 
 function emptyExtras(): ExtrasDraft {
-  return { modules: [], features: [], branches: 0, registers: 0, users: 0, note: '', until: '' };
+  return { modules: [], features: [], branches: 0, registers: 0, users: 0, invoiceScans: 0, note: '', until: '' };
 }
 
 function emptyPayment(planCode: string): PaymentDraft {

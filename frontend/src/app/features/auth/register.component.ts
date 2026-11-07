@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { rememberStartPlan } from '../billing/start-plan';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -61,6 +62,9 @@ import { AuthLayoutComponent } from '../../shared/layout/auth-layout.component';
           ¿Ya tienes cuenta? <a routerLink="/login" [queryParams]="returnUrl ? { returnUrl: returnUrl } : {}"
                                 class="text-brand hover:underline">Inicia sesión</a>
         </p>
+        <a routerLink="/precios" class="text-sm text-center font-semibold text-brand hover:underline">
+          <i class="pi pi-tag text-xs mr-1" aria-hidden="true"></i>Ver planes y precios
+        </a>
       </form>
     </app-auth-layout>
   `,
@@ -71,6 +75,11 @@ export class RegisterComponent {
   private readonly messages = inject(MessageService);
   private readonly query = inject(ActivatedRoute).snapshot.queryParamMap;
   protected readonly returnUrl = safeReturnUrl(this.query.get('returnUrl'));
+
+  constructor() {
+    // Viene de "Planes y precios" con un plan elegido: se propone al crear el negocio (decisión 303).
+    rememberStartPlan(this.query.get('plan'), this.query.get('ciclo'));
+  }
   protected readonly owner = LEGAL_OWNER;
 
   readonly loading = signal(false);

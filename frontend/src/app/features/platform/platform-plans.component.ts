@@ -1,11 +1,13 @@
+import { XaskaIaLogoComponent } from '../../shared/brand/xaska-ia-logo.component';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { Observable } from 'rxjs';
-import { Plan, PlanFeature, PlanInput } from '../../core/api/api.models';
+import { AiAllowance, Plan, PlanFeature, PlanInput } from '../../core/api/api.models';
 import { BUSINESS_MODULES } from '../../shared/business-types';
-import { PLAN_FEATURES, includedText, toggle } from './plan-features';
+import { PLAN_ONLY_FEATURES, includedText, toggle } from './plan-features';
 import { PlatformApi } from '../../core/api/platform.api';
 import { FormDialogComponent } from '../../shared/forms/form-dialog.component';
 import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
@@ -32,7 +34,7 @@ interface PlanDraft {
 /** Planes de suscripción: límites y precios (fase 8b). Límite vacío = sin límite; precio vacío = sin definir. */
 @Component({
   selector: 'app-platform-plans',
-  imports: [FormsModule, ButtonModule, InputTextModule, FormDialogComponent, PesosInputDirective, PageHeaderComponent,
+  imports: [XaskaIaLogoComponent, FormsModule, ButtonModule, InputTextModule, FormDialogComponent, PesosInputDirective, PageHeaderComponent,
     DataTableComponent, CellTemplateDirective],
   template: `
     <app-page-header title="Planes"
@@ -48,6 +50,29 @@ interface PlanDraft {
                   [ariaLabel]="'Editar el plan ' + row.name" />
       </ng-template>
     </app-data-table>
+
+    <section class="card p-4 mt-4 flex flex-col gap-3" aria-labelledby="ai-title">
+      <div>
+        <h2 id="ai-title" class="font-bold tracking-tight flex items-center gap-2">
+          <app-xaska-ia-logo size="sm" />XASKA IA (adicional)</h2>
+        <p class="text-xs text-muted">Ningún plan lo trae: se le da a cada negocio en Suscripciones → Dar extras →
+          "XASKA IA". Estos son los topes al mes de cada función, iguales para todos los que lo tienen.</p>
+      </div>
+      @for (a of allowances(); track a.code) {
+        <form class="flex flex-wrap items-end gap-3" (ngSubmit)="saveAllowance(a.code)">
+          <label class="flex flex-col gap-1 flex-1 min-w-56">
+            <span class="text-sm font-medium">{{ a.name }} al mes</span>
+            <input pInputText type="number" min="0" max="100000" [name]="'ai-' + a.code"
+                   [(ngModel)]="allowanceDrafts[a.code]" />
+          </label>
+          <p-button type="submit" label="Guardar" icon="pi pi-check" [outlined]="true"
+                    [loading]="savingAllowance() === a.code"
+                    [disabled]="allowanceDrafts[a.code] === a.monthlyLimit" />
+        </form>
+      } @empty {
+        <p class="text-sm text-muted">Cargando…</p>
+      }
+    </section>
 
     <app-form-dialog [(visible)]="editOpen" [header]="'Editar plan ' + (target()?.name ?? '')" width="36rem"
                      [dirty]="dirty()" [invalidMessage]="problem()" [save]="saveRequest"
@@ -114,16 +139,20 @@ interface PlanDraft {
 })
 export class PlatformPlansComponent implements OnInit {
   private readonly platform = inject(PlatformApi);
+  private readonly messages = inject(MessageService);
 
   protected readonly plans = signal<Plan[]>([]);
   protected readonly loading = signal(true);
   protected readonly target = signal<Plan | null>(null);
+  protected readonly allowances = signal<AiAllowance[]>([]);
+  protected readonly savingAllowance = signal<string | null>(null);
+  protected allowanceDrafts: Record<string, number> = {};
   protected editOpen = false;
   protected draft: PlanDraft = emptyDraft();
   private snapshot = '';
 
   protected readonly modules = BUSINESS_MODULES;
-  protected readonly features = PLAN_FEATURES;
+  protected readonly features = PLAN_ONLY_FEATURES;
   protected readonly toggleIn = toggle;
   protected readonly trackByCode = (row: Plan): string => row.code;
   protected readonly columns: ColumnDef<Plan>[] = [
@@ -139,6 +168,32 @@ export class PlatformPlansComponent implements OnInit {
 
   ngOnInit(): void {
     this.load();
+    this.loadAllowances();
+  }
+
+  private loadAllowances(): void {
+    this.platform.aiAllowances().subscribe((list) => {
+      this.allowances.set(list);
+      this.allowanceDrafts = Object.fromEntries(list.map((a) => [a.code, a.monthlyLimit]));
+    });
+  }
+
+  saveAllowance(code: string): void {
+    const value = Number(this.allowanceDrafts[code]);
+    if (!Number.isInteger(value) || value < 0 || value > 100000) {
+      this.messages.add({ severity: 'warn', summary: 'XASKA IA', detail: 'El tope al mes va de 0 a 100.000.' });
+      return;
+    }
+    this.savingAllowance.set(code);
+    this.platform.updateAiAllowance(code, value).subscribe({
+      next: (saved) => {
+        this.savingAllowance.set(null);
+        this.allowances.update((list) => list.map((a) => (a.code === code ? saved : a)));
+        this.allowanceDrafts[code] = saved.monthlyLimit;
+        this.messages.add({ severity: 'success', summary: 'Tope guardado', detail: saved.name, life: 3000 });
+      },
+      error: () => this.savingAllowance.set(null),
+    });
   }
 
   load(): void {

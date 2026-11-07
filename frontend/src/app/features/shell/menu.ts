@@ -74,6 +74,7 @@ export const MENU: MenuItem[] = [
     section: 'Inventario',
   },
   { label: 'Compras', route: '/app/compras', icon: 'pi pi-truck', glyph: 'purchases', permission: 'purchases:read', section: 'Inventario' },
+  { label: 'Qué comprar', route: '/app/compras/que-comprar', icon: 'pi pi-shopping-cart', glyph: 'stock', permission: 'purchases:read', section: 'Inventario' },
   {
     label: 'Cuentas por pagar',
     route: '/app/cuentas-por-pagar',

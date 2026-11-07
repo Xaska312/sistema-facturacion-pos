@@ -101,6 +101,9 @@ export interface InvoiceDraftLine {
   expirationDate: string | null;
   match: { productId: string; unitId: string | null; by: InvoiceMatchBy; lastCost: number | null } | null;
   candidates: { productId: string; name: string; sku: string }[];
+  /** Ropa y calzado leídos con IA (decisión 301): color y cuántos llegaron de cada talla; vacíos si no aplica. */
+  color: string | null;
+  sizes: { size: string; quantity: number }[];
 }
 
 /** Borrador que sale de la factura cargada: nada queda registrado hasta confirmar la recepción. */
@@ -121,6 +124,56 @@ export interface InvoiceDraft {
   alreadyRegistered: boolean;
   lines: InvoiceDraftLine[];
   warnings: string[];
+}
+
+/** Línea del pedido sugerido (decisión 297): cantidades en la unidad base. */
+export interface SuggestionLine {
+  productId: string;
+  sku: string;
+  name: string;
+  unitCode: string;
+  stock: number;
+  minStock: number | null;
+  maxStock: number | null;
+  soldLast7: number;
+  soldLast30: number;
+  dailyAverage: number;
+  expired: number;
+  expiringSoon: number;
+  suggested: number;
+  unitCost: number;
+  estimatedTotal: number;
+  lastPurchase: string | null;
+}
+
+/** Lo sugerido para un proveedor; {@code supplierId} nulo = productos sin compras registradas. */
+export interface SuggestionGroup {
+  supplierId: string | null;
+  supplierName: string;
+  phone: string | null;
+  coverageDays: number;
+  lines: SuggestionLine[];
+  estimatedTotal: number;
+}
+
+export interface PurchaseSuggestions {
+  branchId: string;
+  date: string;
+  groups: SuggestionGroup[];
+}
+
+/** Revisión de Aska: resumen y ajustes con su razón (nada se guarda). */
+export interface PurchaseReview {
+  summary: string;
+  adjustments: { productId: string; quantity: number; reason: string }[];
+  usage: { available: boolean; limit: number; used: number };
+}
+
+/** Lecturas con IA del mes (decisión 295): {@code limit} nulo = sin límite; {@code available}: la IA está encendida. */
+export interface InvoiceScanUsage {
+  available: boolean;
+  limit: number | null;
+  used: number;
 }
 
 export interface PurchaseReturn {
@@ -222,6 +275,38 @@ export class PurchasesApi {
     const form = new FormData();
     form.append('file', file, file.name);
     return this.http.post<InvoiceDraft>('/api/v1/purchases/documents', form);
+  }
+
+  /**
+   * La factura en fotos (hasta 5) o en PDF leída con IA (decisión 295): el mismo borrador que el XML. Solo cuenta en el
+   * tope del mes si se pudo leer.
+   */
+  scanInvoice(files: File[]): Observable<InvoiceDraft> {
+    const form = new FormData();
+    for (const f of files) {
+      form.append('files', f, f.name);
+    }
+    return this.http.post<InvoiceDraft>('/api/v1/purchases/documents/scan', form);
+  }
+
+  scanUsage(): Observable<InvoiceScanUsage> {
+    return this.http.get<InvoiceScanUsage>('/api/v1/purchases/documents/scan-usage');
+  }
+
+  /** Qué comprar (decisión 297): pedido sugerido por proveedor para una sucursal. */
+  suggestions(branchId: string): Observable<PurchaseSuggestions> {
+    return this.http.get<PurchaseSuggestions>('/api/v1/purchases/suggestions', { params: { branchId } });
+  }
+
+  /** Para cuántos días de venta se le pide a un proveedor (1 a 120). */
+  setCoverageDays(supplierId: string, days: number): Observable<void> {
+    return this.http.put<void>(`/api/v1/purchases/suggestions/suppliers/${supplierId}`, { days });
+  }
+
+  /** Aska revisa el pedido de un proveedor con las cantidades que la persona tiene en la lista. */
+  reviewSuggestion(branchId: string, supplierId: string | null, lines: { productId: string; quantity: number }[])
+    : Observable<PurchaseReview> {
+    return this.http.post<PurchaseReview>('/api/v1/purchases/suggestions/review', { branchId, supplierId, lines });
   }
 
   /** El archivo de soporte (para descargarlo). */

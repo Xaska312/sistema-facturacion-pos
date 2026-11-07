@@ -82,6 +82,8 @@ services:
       JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-PT15M}
       # Correos (verificación, invitaciones, contraseña) por Resend. Sin clave quedan en el log del backend.
       RESEND_API_KEY: ${RESEND_API_KEY:-}
+      # Lectura de facturas con IA (decisión 295). Sin clave queda apagada.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       MAIL_FROM: ${MAIL_FROM:-XASKA POS <onboarding@resend.dev>}
       # O por SMTP (piloto con Gmail y una contraseña de aplicación; ver docs/DESPLIEGUE.md). Con RESEND_API_KEY gana Resend.
       SPRING_MAIL_HOST: ${SMTP_HOST:-}

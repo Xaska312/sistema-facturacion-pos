@@ -125,6 +125,17 @@ public class TestApi {
                         """.formatted(slug, slug, slug)));
     }
 
+    /** Crea un negocio para pagarlo ya con Bre-B (decisión 303). */
+    public ResultActions createTenantPayNow(Session session, String slug) throws Exception {
+        return mvc.perform(post("/api/v1/tenants")
+                .header(HttpHeaders.AUTHORIZATION, session.bearer())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"slug":"%s","legalName":"%s S.A.S.","tradeName":"Tienda %s","businessType":"RETAIL",
+                         "payNow":true}
+                        """.formatted(slug, slug, slug)));
+    }
+
     /** Crea un negocio con código de activación (fase 8b). */
     public ResultActions createTenantWithCode(Session session, String slug, String activationCode) throws Exception {
         return mvc.perform(post("/api/v1/tenants")
@@ -210,6 +221,18 @@ public class TestApi {
     public ResultActions upload(Session session, String path, byte[] content, String... params) throws Exception {
         var request = multipart(path)
                 .file(new MockMultipartFile("file", "productos.csv", "text/csv", content))
+                .header(HttpHeaders.AUTHORIZATION, session.bearer());
+        for (int i = 0; i + 1 < params.length; i += 2) {
+            request.param(params[i], params[i + 1]);
+        }
+        return mvc.perform(request);
+    }
+
+    /** Sube un archivo con nombre propio en el campo multipart indicado. */
+    public ResultActions uploadNamed(Session session, String path, String field, String filename, byte[] content,
+                                     String... params) throws Exception {
+        var request = multipart(path)
+                .file(new MockMultipartFile(field, filename, "application/octet-stream", content))
                 .header(HttpHeaders.AUTHORIZATION, session.bearer());
         for (int i = 0; i + 1 < params.length; i += 2) {
             request.param(params[i], params[i + 1]);

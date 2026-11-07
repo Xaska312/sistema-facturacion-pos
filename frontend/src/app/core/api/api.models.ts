@@ -53,6 +53,8 @@ export interface CreateTenantRequest {
   tradeName: string;
   businessType: BusinessType;
   activationCode?: string;
+  /** Decisión 303: crearlo para pagar ya con Bre-B (si ya usó la prueba, nace vencido hasta que se apruebe el pago). */
+  payNow?: boolean;
 }
 
 export interface PageResponse<T> {
@@ -969,7 +971,7 @@ export type SubscriptionStatus = 'TRIAL' | 'ACTIVE' | 'PAST_DUE' | 'EXPIRED';
 export type BillingCycle = 'MONTHLY' | 'ANNUAL';
 
 /** Funciones que dependen del plan (decisión 288). */
-export type PlanFeature = 'PURCHASES' | 'DIRECT_PRINT' | 'AUDIT' | 'TRANSFERS' | 'ZONE_REGISTERS';
+export type PlanFeature = 'PURCHASES' | 'DIRECT_PRINT' | 'AUDIT' | 'TRANSFERS' | 'ZONE_REGISTERS' | 'AI';
 
 export interface Plan {
   code: string;
@@ -987,6 +989,13 @@ export interface Plan {
   legacy: boolean;
 }
 
+/** Tope al mes de una función del adicional XASKA IA (decisión 295), igual para todos los que lo tienen. */
+export interface AiAllowance {
+  code: string;
+  name: string;
+  monthlyLimit: number;
+}
+
 /** Lo que el administrador le dio de más a un negocio; until null = sin fin. note: solo en la consola. */
 export interface SubscriptionExtras {
   modules: string[];
@@ -994,6 +1003,8 @@ export interface SubscriptionExtras {
   branches: number;
   registers: number;
   users: number;
+  /** Lecturas con IA de más por mes (decisión 295). */
+  invoiceScans: number;
   note: string | null;
   until: string | null;
   active: boolean;
@@ -1006,6 +1017,8 @@ export interface Entitled {
   maxRegisters: number | null;
   modules: string[];
   features: PlanFeature[];
+  /** Facturas con IA al mes: 0 sin el adicional XASKA IA (decisión 295). */
+  maxInvoiceScans: number;
 }
 
 export interface SubscriptionPayment {
@@ -1034,7 +1047,8 @@ export interface Subscription {
   endsAt: string;
   graceEndsAt: string | null;
   daysLeft: number;
-  usage: { branches: number; users: number; registers: number };
+  /** invoiceScans: facturas leídas con IA este mes. */
+  usage: { branches: number; users: number; registers: number; invoiceScans: number };
   /** Instrucciones de pago configuradas en el servidor. */
   paymentInstructions: string;
   payments: SubscriptionPayment[];
@@ -1042,6 +1056,21 @@ export interface Subscription {
   extras: SubscriptionExtras;
   /** Clientes de antes de los planes nuevos: su precio se mantiene hasta esta fecha. */
   priceLockedUntil: string | null;
+  /** Lo comprado aparte del plan, con su vencimiento (decisión 302). */
+  addons: SubscriptionAddon[];
+  /** Puede empezar la prueba gratis de XASKA IA (una sola vez). */
+  aiTrialAvailable: boolean;
+}
+
+export interface SubscriptionAddon {
+  code: string;
+  kind: 'FEATURE' | 'MODULE' | 'BRANCH' | 'REGISTER' | 'USER';
+  ref: string | null;
+  name: string;
+  quantity: number;
+  endsAt: string;
+  trial: boolean;
+  active: boolean;
 }
 
 export interface SubscriptionRow {

@@ -1,3 +1,7 @@
+import { XaskaIaLogoComponent } from '../../shared/brand/xaska-ia-logo.component';
+import { AskaLoaderComponent } from '../../shared/brand/aska-loader.component';
+import { InvoiceCreatedLine } from '../../core/api/catalog.api';
+import { InvoiceNewProductsComponent } from './invoice-new-products.component';
 import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { forkJoin } from 'rxjs';
 import { FormsModule } from '@angular/forms';
@@ -11,11 +15,18 @@ import { CatalogApi } from '../../core/api/catalog.api';
 import { InventoryApi } from '../../core/api/inventory.api';
 import { OrganizationApi } from '../../core/api/organization.api';
 import { PartiesApi } from '../../core/api/parties.api';
-import { InvoiceDraft, InvoiceDraftLine, PurchasePaymentType, PurchasesApi } from '../../core/api/purchases.api';
+import {
+  InvoiceDraft,
+  InvoiceDraftLine,
+  InvoiceScanUsage,
+  PurchasePaymentType,
+  PurchasesApi,
+} from '../../core/api/purchases.api';
 import { newIdempotencyKey } from '../../core/api/sales.api';
 import { permissionFlag } from '../../core/auth/permission-flag';
 import { documentShortLabel } from '../../shared/document-types';
 import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
+import { invoiceFilesProblem, shrinkPhoto } from '../../shared/image-shrink';
 import { formatCop, formatQuantity } from '../../shared/money';
 import { nitVerificationDigit } from '../../shared/nit';
 import { PageHeaderComponent } from '../../shared/page-header.component';
@@ -52,25 +63,63 @@ import {
  */
 @Component({
   selector: 'app-receipt-editor',
-  imports: [FormsModule, RouterLink, ButtonModule, InputTextModule, PageHeaderComponent, PesosInputDirective],
+  imports: [XaskaIaLogoComponent, AskaLoaderComponent, InvoiceNewProductsComponent, FormsModule, RouterLink, ButtonModule, InputTextModule, PageHeaderComponent, PesosInputDirective],
   template: `
     <app-page-header title="Recibir mercancía"
                      description="Registra lo que llegó contra la factura del proveedor. Revisa cada producto antes de aceptarlo." />
 
-    @if (canImport()) {
-      <section class="card p-4 mb-4 max-w-5xl flex flex-col gap-3" aria-label="Cargar la factura del proveedor">
+    @if (canImport() || canScan()) {
+      <section class="card p-4 mb-4 max-w-5xl flex flex-col gap-3" [class.aska-section]="canScan()"
+               aria-label="Cargar la factura del proveedor">
         <div class="flex flex-wrap items-center gap-3">
+          @if (canScan()) {
+            <app-xaska-ia-logo size="lg" />
+          }
           <div class="flex-1 min-w-56">
-            <h2 class="font-bold tracking-tight">Cargar la factura del proveedor</h2>
-            <p class="text-xs text-muted">Sube el XML o el ZIP de la factura electrónica que te llegó al correo. XASKA
-              llena lo que llegó para que lo revises; nada se guarda hasta que tú registres la recepción.</p>
+            <h2 class="font-bold tracking-tight flex flex-wrap items-center gap-2">Cargar la factura del proveedor
+              @if (canScan()) {
+                <span class="aska-pill">Aska la lee por ti</span>
+              }
+            </h2>
+            @if (canScan()) {
+              <p class="text-xs text-muted">Tómale una foto (hasta 5 si es larga), sube su PDF o el XML de la factura
+                electrónica. XASKA llena lo que llegó para que lo revises; nada se guarda hasta que tú registres la
+                recepción.</p>
+            } @else {
+              <p class="text-xs text-muted">Sube el XML o el ZIP de la factura electrónica que te llegó al correo. XASKA
+                llena lo que llegó para que lo revises; nada se guarda hasta que tú registres la recepción.</p>
+            }
+            @if (scanUsageText(); as usage) {
+              <p class="text-xs mt-1 flex items-center gap-1.5" [class.text-muted]="!scanLimitReached()"
+                 [class.text-warning]="scanLimitReached()">
+                <i class="pi pi-sparkles text-xs" aria-hidden="true"></i>{{ usage }}</p>
+            }
           </div>
           <input #invoiceFile type="file" class="hidden" aria-label="Archivo de la factura"
                  accept=".xml,.zip,application/xml,text/xml,application/zip,application/x-zip-compressed"
                  (change)="importInvoice($event)" />
-          <p-button [label]="draft() ? 'Cargar otra' : 'Cargar factura'" icon="pi pi-upload" [loading]="importing()"
-                    [outlined]="draft() !== null" (onClick)="invoiceFile.click()" />
+          <input #cameraFile type="file" class="hidden" aria-label="Foto de la factura" accept="image/*"
+                 capture="environment" (change)="scanInvoice($event)" />
+          <input #scanFile type="file" class="hidden" aria-label="Fotos o PDF de la factura" multiple
+                 accept="image/jpeg,image/png,application/pdf,.pdf" (change)="scanInvoice($event)" />
+          <div class="flex flex-wrap gap-2">
+            @if (canScan()) {
+              <p-button label="Tomar foto" icon="pi pi-camera" [loading]="scanning()"
+                        [disabled]="busy() || scanLimitReached()" (onClick)="cameraFile.click()" />
+              <p-button label="Fotos o PDF" icon="pi pi-images" [outlined]="true"
+                        [disabled]="busy() || scanLimitReached()" (onClick)="scanFile.click()" />
+            }
+            @if (canImport()) {
+              <p-button [label]="canScan() ? 'XML' : draft() ? 'Cargar otra' : 'Cargar factura'" icon="pi pi-upload"
+                        [loading]="importing()" [disabled]="scanning()" [outlined]="draft() !== null || canScan()"
+                        (onClick)="invoiceFile.click()" />
+            }
+          </div>
         </div>
+        @if (scanning()) {
+          <app-aska-loader [messages]="scanMessages"
+                           hint="Puede tardar hasta un minuto; no cierres esta pantalla." />
+        }
         @if (draft(); as d) {
           <div class="text-sm flex flex-wrap gap-x-4 gap-y-1">
             <span><span class="text-muted">Factura</span> {{ d.invoiceNumber }}</span>
@@ -177,9 +226,20 @@ import {
       }
       @if (pending().length > 0) {
         <div class="border rounded-lg border-warning p-3 flex flex-col gap-2">
-          <h3 class="text-sm font-semibold">Sin producto en XASKA ({{ pending().length }})</h3>
+          <div class="flex flex-wrap items-center gap-2">
+            <h3 class="text-sm font-semibold flex-1">Sin producto en XASKA ({{ pending().length }})</h3>
+            @if (canCreateProducts() && !creatingMissing()) {
+              <p-button size="small" icon="pi pi-plus-circle"
+                        [label]="pending().length === 1 ? 'Crearlo aquí' : 'Crear los ' + pending().length + ' que faltan'"
+                        (onClick)="creatingMissing.set(true)" />
+            }
+          </div>
           <p class="text-xs text-muted">Elige a qué producto corresponde cada uno o créalo. XASKA lo recordará para la
             próxima factura de este proveedor.</p>
+          @if (creatingMissing()) {
+            <app-invoice-new-products [lines]="pending()" (created)="addCreated($event)"
+                                      (closed)="creatingMissing.set(false)" />
+          }
           @for (p of pending(); track p.lineNo; let i = $index) {
             <article class="border-t pt-2 flex flex-col gap-2 text-sm" [attr.aria-label]="p.description">
               <div class="flex flex-wrap justify-between gap-2">
@@ -361,6 +421,17 @@ import {
                 (onClick)="save()" />
     </div>
   `,
+  styles: `
+    /* Con XASKA IA, la carga de la factura lleva el sello de Aska (decisión 298). */
+    .aska-section {
+      border-left: 4px solid var(--aska);
+      background: linear-gradient(90deg, var(--aska-soft), var(--color-surface) 45%);
+    }
+    .aska-pill {
+      font-size: 0.6875rem; font-weight: 700; padding: 0.1875rem 0.5rem; border-radius: 9999px;
+      color: var(--xaska-ia-tag-text); background: linear-gradient(135deg, var(--aska-cta-from), var(--aska-cta-to));
+    }
+  `,
 })
 export class ReceiptEditorComponent implements OnInit, HasUnsavedChanges {
   private readonly api = inject(PurchasesApi);
@@ -374,6 +445,7 @@ export class ReceiptEditorComponent implements OnInit, HasUnsavedChanges {
   private readonly confirm = inject(ConfirmService);
   protected readonly canPay = permissionFlag('purchases:pay');
   protected readonly canImport = permissionFlag('purchases:import');
+  private readonly canScanPermission = permissionFlag('purchases:scan');
   protected readonly canManageParties = permissionFlag('parties:manage');
   protected readonly canCreateProducts = permissionFlag('products:manage');
 
@@ -398,7 +470,35 @@ export class ReceiptEditorComponent implements OnInit, HasUnsavedChanges {
   /** Factura cargada (decisión 290): el borrador y las líneas que aún no tienen producto. */
   protected readonly draft = signal<InvoiceDraft | null>(null);
   protected readonly pending = signal<InvoiceDraftLine[]>([]);
+  /** Decisión 301: la tabla para crear de una vez lo que falta. */
+  protected readonly creatingMissing = signal(false);
+  protected readonly scanMessages = ['Leyendo la factura…', 'Buscando el proveedor…', 'Buscando tus productos…',
+    'Casi listo…'];
   protected readonly importing = signal(false);
+  /** Lectura con IA (decisión 295): lo usado del mes y si se está leyendo una factura. */
+  protected readonly scanUsage = signal<InvoiceScanUsage | null>(null);
+  protected readonly scanning = signal(false);
+  protected readonly busy = computed(() => this.importing() || this.scanning());
+  protected readonly canScan = computed(() => {
+    const usage = this.scanUsage();
+    return this.canScanPermission() && usage !== null && usage.available && usage.limit !== 0;
+  });
+  protected readonly scanLimitReached = computed(() => {
+    const usage = this.scanUsage();
+    return usage !== null && usage.limit !== null && usage.used >= usage.limit;
+  });
+  protected readonly scanUsageText = computed(() => {
+    const usage = this.scanUsage();
+    if (!this.canScan() || usage === null) {
+      return null;
+    }
+    if (usage.limit === null) {
+      return `Lecturas con IA este mes: ${usage.used}.`;
+    }
+    return this.scanLimitReached()
+      ? `Llegaste a las ${usage.limit} lecturas con IA de este mes: carga el XML o ingresa la factura a mano.`
+      : `Lecturas con IA: ${usage.used} de ${usage.limit} este mes.`;
+  });
   protected readonly creatingSupplier = signal(false);
   /** Línea sin producto a la que se le está buscando uno (el buscador de arriba la completa). */
   protected readonly assigning = signal<number | null>(null);
@@ -439,6 +539,7 @@ export class ReceiptEditorComponent implements OnInit, HasUnsavedChanges {
   invoiceTotalNotice(this.lines(), this.draft()?.total ?? null, this.pending().length)));
 
   ngOnInit(): void {
+    this.refreshScanUsage();
     if (this.canPay()) {
       this.paymentType = 'PAID';
     }
@@ -595,7 +696,7 @@ export class ReceiptEditorComponent implements OnInit, HasUnsavedChanges {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     input.value = '';
-    if (!file || this.importing()) {
+    if (!file || this.busy()) {
       return;
     }
     if (this.lines().length > 0) {
@@ -608,6 +709,56 @@ export class ReceiptEditorComponent implements OnInit, HasUnsavedChanges {
       return;
     }
     this.upload(file);
+  }
+
+  // ------------------------------------------------------------------ factura leída con IA (decisión 295)
+
+  private refreshScanUsage(): void {
+    if (this.canScanPermission()) {
+      this.api.scanUsage().subscribe({ next: (usage) => this.scanUsage.set(usage), error: () => this.scanUsage.set(null) });
+    }
+  }
+
+  scanInvoice(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const files = Array.from(input.files ?? []);
+    input.value = '';
+    if (files.length === 0 || this.busy()) {
+      return;
+    }
+    const problem = invoiceFilesProblem(files);
+    if (problem) {
+      this.messages.add({ severity: 'warn', summary: 'Factura', detail: problem, life: 5000 });
+      return;
+    }
+    if (this.lines().length > 0) {
+      this.confirm.ask({
+        header: 'Leer la factura',
+        message: 'Lo que ya agregaste se reemplaza por lo que trae la factura.',
+        acceptLabel: 'Leer factura',
+        accept: () => void this.scan(files),
+      });
+      return;
+    }
+    void this.scan(files);
+  }
+
+  /** Reduce las fotos en el celular (sube rápido aun con mala señal) y las manda a leer. */
+  private async scan(files: File[]): Promise<void> {
+    this.scanning.set(true);
+    const ready = await Promise.all(files.map((f) => shrinkPhoto(f)));
+    this.api.scanInvoice(ready).subscribe({
+      next: (draft) => {
+        this.scanning.set(false);
+        this.importing.set(true);
+        this.refreshScanUsage();
+        this.applyDraft(draft);
+      },
+      error: () => {
+        this.scanning.set(false);
+        this.refreshScanUsage();
+      },
+    });
   }
 
   private upload(file: File): void {
@@ -679,7 +830,8 @@ export class ReceiptEditorComponent implements OnInit, HasUnsavedChanges {
     this.creatingSupplier.set(true);
     this.parties.save('suppliers', null, {
       personType: 'LEGAL', documentType: 'NIT', documentNumber: s.documentNumber,
-      verificationDigit: s.verificationDigit ?? nitVerificationDigit(s.documentNumber),
+      // El dígito se calcula del NIT: la IA puede leerlo mal (o la factura traerlo errado) y bloquear la creación.
+      verificationDigit: nitVerificationDigit(s.documentNumber),
       firstNames: null, lastNames: null, businessName: s.name?.trim() || 'Proveedor ' + s.documentNumber,
       email: null, phone: null, address: null, cityCode: null,
     }).subscribe({
@@ -718,6 +870,43 @@ export class ReceiptEditorComponent implements OnInit, HasUnsavedChanges {
     this.pending.update((list) => list.filter((_, i) => i !== index));
     this.assigning.set(null);
     this.touch();
+  }
+
+  /**
+   * Lo recién creado pasa a la recepción: una línea por producto, con la cantidad de la factura o, si va por tallas,
+   * la de cada talla (sin el código del proveedor, que no distingue tallas).
+   */
+  addCreated(created: InvoiceCreatedLine[]): void {
+    const pending = this.pending();
+    const ids = [...new Set(created.flatMap((c) => c.products.map((p) => p.productId)))];
+    forkJoin(ids.map((id) => this.catalog.product(id))).subscribe((list) => {
+      const byId = new Map(list.map((p) => [p.id, p]));
+      const added: ReceiptDraftLine[] = [];
+      for (const c of created) {
+        const draftLine = pending.find((p) => p.lineNo === c.lineNo);
+        if (!draftLine) {
+          continue;
+        }
+        for (const made of c.products) {
+          const product = byId.get(made.productId);
+          if (!product) {
+            continue;
+          }
+          const bySize = made.size !== null;
+          added.push(invoiceLine(product, bySize
+            ? { ...draftLine, quantity: made.quantity ?? 0, supplierCode: null, match: null }
+            : { ...draftLine, match: null }, this.nextKey++, 'MANUAL'));
+        }
+      }
+      const done = new Set(created.map((c) => c.lineNo));
+      this.lines.update((lines) => [...lines, ...added]);
+      this.pending.update((list) => list.filter((p) => !done.has(p.lineNo)));
+      this.creatingMissing.set(false);
+      this.assigning.set(null);
+      this.touch();
+      this.messages.add({ severity: 'success', summary: 'Productos creados',
+        detail: `${added.length} ${added.length === 1 ? 'línea lista' : 'líneas listas'} para recibir.`, life: 4000 });
+    });
   }
 
   dropPending(index: number): void {

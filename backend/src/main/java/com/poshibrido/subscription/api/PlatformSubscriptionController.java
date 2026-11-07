@@ -4,6 +4,7 @@ import com.poshibrido.shared.api.PageResponse;
 import com.poshibrido.shared.security.CurrentActor;
 import com.poshibrido.subscription.application.ActivationCodeService;
 import com.poshibrido.subscription.application.SubscriptionService;
+import com.poshibrido.subscription.application.SubscriptionViews;
 import com.poshibrido.subscription.application.SubscriptionService.PaymentCommand;
 import com.poshibrido.subscription.application.SubscriptionViews.ActivationCodeView;
 import com.poshibrido.subscription.application.SubscriptionViews.CreatedCodes;
@@ -71,7 +72,8 @@ public class PlatformSubscriptionController {
     public record ExtrasRequest(@Size(max = 20) List<@Size(max = 20) String> modules,
                                 @Size(max = 20) List<@Size(max = 20) String> features,
                                 @Min(0) @Max(100) int branches, @Min(0) @Max(100) int registers,
-                                @Min(0) @Max(500) int users, @Size(max = 300) String note, java.time.Instant until) {
+                                @Min(0) @Max(500) int users, @Min(0) @Max(10000) Integer invoiceScans,
+                                @Size(max = 300) String note, java.time.Instant until) {
     }
 
     public record CodeRequest(@NotBlank @Size(max = 20) String planCode, @Min(1) @Max(36) int months,
@@ -91,6 +93,21 @@ public class PlatformSubscriptionController {
         return subscriptions.updatePlan(code, request.name(), request.maxBranches(), request.maxUsers(),
                 request.maxRegisters(), request.monthlyPrice(), request.annualPrice(), request.active(),
                 request.modules(), request.features());
+    }
+
+    /** Tope al mes de una función de XASKA IA (decisión 295). */
+    public record AiAllowanceRequest(@Min(0) @Max(100000) int monthlyLimit) {
+    }
+
+    @GetMapping("/ai-allowances")
+    public List<SubscriptionViews.AiAllowance> aiAllowances() {
+        return subscriptions.aiAllowances();
+    }
+
+    @PutMapping("/ai-allowances/{code}")
+    public SubscriptionViews.AiAllowance updateAiAllowance(@PathVariable String code,
+                                                           @Valid @RequestBody AiAllowanceRequest request) {
+        return subscriptions.updateAiAllowance(code, request.monthlyLimit());
     }
 
     // ---------------------------------------------------------------- suscripciones
@@ -124,7 +141,9 @@ public class PlatformSubscriptionController {
     @PutMapping("/tenants/{tenantId}/subscription/extras")
     public SubscriptionView setExtras(@PathVariable UUID tenantId, @Valid @RequestBody ExtrasRequest request) {
         return subscriptions.setExtras(tenantId, request.modules(), request.features(), request.branches(),
-                request.registers(), request.users(), request.note(), request.until(), CurrentActor.requireUserId());
+                request.registers(), request.users(),
+                request.invoiceScans() == null ? 0 : request.invoiceScans(), request.note(), request.until(),
+                CurrentActor.requireUserId());
     }
 
     // ---------------------------------------------------------------- códigos de activación

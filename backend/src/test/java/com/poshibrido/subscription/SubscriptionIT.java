@@ -33,7 +33,7 @@ class SubscriptionIT extends IntegrationTest {
     @Autowired
     private SubscriptionProperties properties;
 
-    /** Por defecto (sin SUBSCRIPTION_TRIAL_WITHOUT_CODE) ningún negocio se crea sin código de activación. */
+    /** Con SUBSCRIPTION_TRIAL_WITHOUT_CODE=false ningún negocio se crea sin código de activación (salvo "Pagar ya"). */
     @Test
     void withoutFreeTrialEveryBusinessNeedsAnActivationCode() throws Exception {
         Object target = AopTestUtils.getUltimateTargetObject(subscriptions);
