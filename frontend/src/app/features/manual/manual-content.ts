@@ -1174,6 +1174,24 @@ export const MANUAL: readonly ManualChapter[] = [
         who: 'Todos los roles menos el Mesero, en negocios con el adicional XASKA IA.',
       },
       {
+        id: 'resumen-del-dia',
+        title: 'Resumen del día de Aska',
+        summary: 'Cada día, a la hora que elijas, Aska te escribe cómo le fue al negocio: ventas frente a ayer y a la '
+          + 'semana pasada, caja, inventario y lo que hay por cobrar o pagar. Llega por correo y queda arriba en Inicio.',
+        steps: [
+          'Entra a Ajustes → Resumen del día. Déjalo prendido y elige la hora (9:00 p. m. por defecto).',
+          'Marca quién más del equipo lo recibe por correo. Tú, como propietario, siempre lo recibes.',
+          'Toca "Enviar ahora" para ver uno de prueba con lo que va del día.',
+        ],
+        tips: [
+          'Si eliges una hora antes del mediodía (por ejemplo 6:00 a. m.), el resumen es del día anterior.',
+          'Primero salen los puntos urgentes (descuadres, productos agotados, facturas vencidas) y después lo bueno.',
+          'Cada persona solo ve lo que su rol le deja ver: un cajero no recibe la utilidad del negocio.',
+          'Desde la tarjeta en Inicio toca "Pregúntale a Aska" para profundizar en cualquier punto.',
+        ],
+        who: 'El propietario y quien él elija, en negocios con el adicional XASKA IA.',
+      },
+      {
         id: 'tablero',
         title: 'Tablero del inicio',
         summary: 'Ventas, utilidad, medios de pago y productos más vendidos del periodo, con alertas de existencias.',

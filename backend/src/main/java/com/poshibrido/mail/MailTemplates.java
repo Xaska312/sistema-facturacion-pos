@@ -212,6 +212,33 @@ public class MailTemplates {
                         + ". Puedes desactivarlo en Ajustes.");
     }
 
+    /** Un punto del resumen del día: tono (good, warning, bad, info), título y detalle. */
+    public record DigestPoint(String tone, String title, String detail) {
+    }
+
+    /**
+     * Resumen del día de Aska (decisión 299): titular, puntos (solo los que el rol de quien lo recibe puede ver) y
+     * cifras clave.
+     */
+    public MailMessage dailyDigest(String to, String name, String businessName, String dateLabel, String headline,
+                                   List<DigestPoint> points, List<String[]> figures) {
+        List<String> paragraphs = new ArrayList<>();
+        paragraphs.add(headline);
+        for (DigestPoint p : points) {
+            String prefix = switch (p.tone() == null ? "" : p.tone()) {
+                case "bad" -> "Urgente · ";
+                case "warning" -> "Ojo · ";
+                case "good" -> "Bien · ";
+                default -> "";
+            };
+            paragraphs.add(prefix + p.title() + ": " + p.detail());
+        }
+        return message(to, "Aska · Tu resumen del " + dateLabel + " · " + businessName, "resumen-del-dia",
+                "Hola, " + name + ":", paragraphs, figures, "Abrir XASKA", properties.link("/app"),
+                "Te lo envía Aska, la IA de XASKA, con los datos de " + businessName + " que tu usuario puede ver. "
+                        + "Se cambia en Ajustes → Resumen del día.");
+    }
+
     /** "Sin diferencia", "Sobran $2.000", "Faltan $1.500". */
     static String differenceText(BigDecimal difference) {
         if (difference == null || difference.signum() == 0) {

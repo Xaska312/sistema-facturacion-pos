@@ -66,6 +66,8 @@ public abstract class IntegrationTest {
         registry.add("app.mail.public-url", () -> "http://pos.test");
         // Los avisos de suscripción se prueban llamando sendDue(); la tarea diaria no corre en las pruebas.
         registry.add("app.subscription.reminders-enabled", () -> "false");
+        // El Resumen del día de Aska se prueba llamando al servicio; la tarea cada 5 minutos no corre.
+        registry.add("app.ai.digest-schedule", () -> "false");
         // Los tests crean negocios sin código (prueba gratis); SubscriptionIT prueba el código obligatorio.
         registry.add("app.subscription.trial-without-code", () -> "true");
     }

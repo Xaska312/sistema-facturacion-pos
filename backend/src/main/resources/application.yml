@@ -74,6 +74,8 @@ app:
     anthropic-api-key: ${ANTHROPIC_API_KEY:}
     invoice-model: ${AI_INVOICE_MODEL:claude-haiku-5-5}
     timeout-seconds: ${AI_TIMEOUT_SECONDS:90}
+    # Resumen del día de Aska (decisión 299): revisa cada 5 minutos qué negocios llegaron a su hora.
+    digest-schedule: ${AI_DIGEST_SCHEDULE:true}
   mail:
     # Remitente. Sin dominio propio, Resend solo permite onboarding@resend.dev y enviar a tu propio correo.
     from: ${MAIL_FROM:XASKA POS <onboarding@resend.dev>}

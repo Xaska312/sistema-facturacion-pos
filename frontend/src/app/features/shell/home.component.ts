@@ -17,6 +17,7 @@ import { OrdersAlertComponent } from '../orders/orders-alert.component';
 import { QualityAlertComponent } from '../pharmacy/quality-alert.component';
 import { describeCapabilities, firstName, greeting, quickActions } from './capabilities';
 import { MENU, isFloorOnly } from './menu';
+import { DigestCardComponent } from '../ai/digest-card.component';
 
 /** Dato de una baldosa del inicio (se llena cuando llega su consulta; si falla, no aparece). */
 interface Tile {
@@ -40,7 +41,7 @@ export function glyphFor(route: string): XIconName {
 @Component({
   selector: 'app-home',
   imports: [RouterLink, SkeletonModule, XIconComponent, DashboardComponent, MyDayComponent, StockAlertsComponent,
-    FirstStepsComponent, OrdersAlertComponent, QualityAlertComponent],
+    FirstStepsComponent, OrdersAlertComponent, QualityAlertComponent, DigestCardComponent],
   template: `
     <h1 class="sr-only">{{ title }}</h1>
     @if (hero(); as h) {
@@ -81,6 +82,11 @@ export function glyphFor(route: string): XIconName {
     }
 
     <app-first-steps class="block mb-5" />
+
+    <!-- Resumen del día de Aska (decisión 299); no ocupa espacio si no hay. -->
+    @if (auth.hasPermission('ai:ask')) {
+      <app-digest-card class="block mb-5 empty:hidden" />
+    }
 
     <!-- Pedidos atrasados o para hoy (decisión 258); no ocupa espacio si no hay. -->
     <app-orders-alert class="block mb-5 empty:hidden" />

@@ -1,6 +1,7 @@
 import { ConsumptionTaxSectionComponent } from './consumption-tax-section.component';
 import { TechnicalDirectorSectionComponent } from '../pharmacy/technical-director-section.component';
 import { XaskaIaLogoComponent } from '../../shared/brand/xaska-ia-logo.component';
+import { DigestSettingsComponent } from '../ai/digest-settings.component';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -40,7 +41,7 @@ const TIMEZONE_LABEL: Record<string, string> = {
 
 @Component({
   selector: 'app-settings',
-  imports: [XaskaIaLogoComponent, ConsumptionTaxSectionComponent, TechnicalDirectorSectionComponent, ReactiveFormsModule, FormsModule, ButtonModule, InputTextModule, PageHeaderComponent, FormDialogComponent,
+  imports: [DigestSettingsComponent, XaskaIaLogoComponent, ConsumptionTaxSectionComponent, TechnicalDirectorSectionComponent, ReactiveFormsModule, FormsModule, ButtonModule, InputTextModule, PageHeaderComponent, FormDialogComponent,
     BrandingSectionComponent, PrinterSectionComponent, BusinessProfileSectionComponent],
   template: `
     <app-page-header title="Ajustes del negocio" description="Cómo funciona tu negocio: tipo y módulos, inventario, impuestos, zona horaria, moneda, tiquete y marca." />
@@ -258,6 +259,10 @@ const TIMEZONE_LABEL: Record<string, string> = {
 
     <app-branding-section />
 
+    @if (canDigest()) {
+      <app-digest-settings />
+    }
+
     @if (canDirectPrint()) {
       <app-printer-section />
     }
@@ -309,6 +314,8 @@ export class SettingsComponent implements OnInit {
   protected readonly cop = formatCop;
 
   protected readonly canEdit = computed(() => this.auth.hasPermission('settings:manage'));
+  /** Resumen del día de Aska (decisión 299): con XASKA IA. */
+  protected readonly canDigest = computed(() => this.canEdit() && this.auth.hasPermission('ai:ask'));
   protected readonly hasQuotes = computed(() => this.auth.hasPermission('module:quotes'));
   protected readonly hasTables = computed(() => this.auth.hasPermission('module:tables'));
   protected readonly hasMedicines = computed(() => this.auth.hasPermission('module:medicines'));

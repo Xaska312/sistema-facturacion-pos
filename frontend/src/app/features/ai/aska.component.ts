@@ -8,6 +8,7 @@ import { AuthService } from '../../core/auth/auth.service';
 import { XaskaIaLogoComponent } from '../../shared/brand/xaska-ia-logo.component';
 import { XIconComponent } from '../../shared/icons/xicon.component';
 import { ParsedAnswer, firstName, parseAnswer, suggestionsFor, usageText } from './ai-text';
+import { AskaState } from './aska-state';
 
 interface Message {
   /** {@code problem}: Aska no pudo responder (se muestra en el panel, no se manda en el historial). */
@@ -293,6 +294,7 @@ export class AskaComponent {
   private readonly api = inject(AiApi);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly state = inject(AskaState);
   private readonly scroller = viewChild<ElementRef<HTMLElement>>('scroller');
   private readonly input = viewChild<ElementRef<HTMLTextAreaElement>>('input');
 
@@ -319,6 +321,12 @@ export class AskaComponent {
   });
 
   constructor() {
+    // Otra pantalla pidió abrir a Aska.
+    effect(() => {
+      if (this.state.openRequests() > 0 && !this.open()) {
+        this.show();
+      }
+    });
     // Al abrir: el cursor en la pregunta.
     effect(() => {
       const el = this.input()?.nativeElement;

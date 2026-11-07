@@ -65,8 +65,8 @@ class InvoiceScanIT extends IntegrationTest {
         Session admin = platformAdmin();
         api.putWith(admin, "/api/v1/platform/plans/EMPRESA", """
                 {"name":"Empresa","active":true,"features":["PURCHASES","AI"]}""").andExpect(status().is(422));
-        api.getWith(admin, "/api/v1/platform/ai-allowances").andExpect(jsonPath("$[0].code").value("INVOICE_SCANS"))
-                .andExpect(jsonPath("$[0].monthlyLimit").value(100));
+        api.getWith(admin, "/api/v1/platform/ai-allowances")
+                .andExpect(jsonPath("$[?(@.code == 'INVOICE_SCANS')].monthlyLimit", org.hamcrest.Matchers.contains(100)));
         String extras = "/api/v1/platform/tenants/%s/subscription/extras".formatted(owner.tenantId());
         api.putWith(admin, extras, "{\"modules\":[],\"features\":[\"AI\"],\"branches\":0,\"registers\":0,\"users\":0}")
                 .andExpect(status().isOk()).andExpect(jsonPath("$.entitled.maxInvoiceScans").value(100));
