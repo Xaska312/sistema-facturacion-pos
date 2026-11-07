@@ -86,6 +86,16 @@
   --xaska-ia-spark: #fcd34d;
   --xaska-ia-tag-bg: #4338ca;
   --xaska-ia-tag-text: #fef3c7;
+  /* Volumen del logo XASKA IA: degradado del índigo, brillo arriba, borde de luz, sombra y halo de la chispa. */
+  --xaska-ia-tile-top: #6366f1;
+  --xaska-ia-tile-bottom: #312e81;
+  --xaska-ia-gloss: rgb(255 255 255 / 0.32);
+  --xaska-ia-edge: rgb(255 255 255 / 0.28);
+  --xaska-ia-ink-shadow: rgb(30 27 75 / 0.55);
+  --xaska-ia-shadow: rgb(49 46 129 / 0.38);
+  --xaska-ia-spark-glow: rgb(252 211 77 / 0.75);
+  --aska-cta-from: #1e1b4b;
+  --aska-cta-to: #4338ca;
   /* Aska, la IA de XASKA (decisión 298): el índigo de XASKA (no el color del negocio) y el ámbar de la chispa. */
   --aska: #4338ca;
   --aska-contrast: #ffffff;

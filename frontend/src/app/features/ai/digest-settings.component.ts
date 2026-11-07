@@ -16,8 +16,8 @@ import { XaskaIaLogoComponent } from '../../shared/brand/xaska-ia-logo.component
   imports: [FormsModule, ButtonModule, XaskaIaLogoComponent],
   template: `
     <section class="card p-4 md:p-6 mt-6 max-w-2xl flex flex-col gap-4" aria-labelledby="digest-settings-title">
-      <div class="flex items-center gap-3">
-        <app-xaska-ia-logo size="md" />
+      <div class="flex items-center gap-4">
+        <app-xaska-ia-logo size="lg" />
         <div>
           <h2 id="digest-settings-title" class="text-lg font-bold tracking-tight">Resumen del día</h2>
           <p class="text-sm text-muted">Aska te escribe cómo le fue al negocio: ventas, caja, inventario y lo que hay por

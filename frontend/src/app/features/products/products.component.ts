@@ -33,7 +33,7 @@ import { XaskaIaLogoComponent } from '../../shared/brand/xaska-ia-logo.component
       }
       @if (canManage() && canAsk()) {
         <a routerLink="/app/productos/cargar-con-aska" class="aska-cta">
-          <app-xaska-ia-logo size="sm" /> Cargar con Aska
+          <app-xaska-ia-logo size="btn" /> Cargar con Aska
         </a>
       }
       @if (canManage()) {
@@ -90,11 +90,15 @@ import { XaskaIaLogoComponent } from '../../shared/brand/xaska-ia-logo.component
     </app-data-table>
   `,
   styles: `
+    /* Botón de Aska: noche índigo (como su panel) para que el logo, más claro y con brillo, resalte encima. */
     .aska-cta {
-      display: inline-flex; align-items: center; gap: 0.5rem; min-height: 2.75rem; padding: 0 1rem; border-radius: 0.75rem;
-      font-weight: 700; font-size: 0.875rem; color: var(--aska-contrast); background: var(--aska);
-      box-shadow: 0 0 0 4px var(--aska-glow);
+      display: inline-flex; align-items: center; gap: 0.5rem; min-height: 2.75rem; padding: 0 1rem 0 0.5rem;
+      border-radius: 0.75rem; font-weight: 700; font-size: 0.875rem; color: var(--aska-contrast);
+      background: linear-gradient(135deg, var(--aska-cta-from), var(--aska-cta-to));
+      box-shadow: 0 0 0 4px var(--aska-glow), 0 6px 16px var(--aska-shadow);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
     }
+    .aska-cta:hover { transform: translateY(-1px); box-shadow: 0 0 0 4px var(--aska-glow), 0 10px 22px var(--aska-shadow); }
     .aska-cta:focus-visible { outline: 2px solid var(--aska-amber); outline-offset: 2px; }
   `,
 })

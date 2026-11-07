@@ -66,10 +66,18 @@ import {
                      description="Registra lo que llegó contra la factura del proveedor. Revisa cada producto antes de aceptarlo." />
 
     @if (canImport() || canScan()) {
-      <section class="card p-4 mb-4 max-w-5xl flex flex-col gap-3" aria-label="Cargar la factura del proveedor">
+      <section class="card p-4 mb-4 max-w-5xl flex flex-col gap-3" [class.aska-section]="canScan()"
+               aria-label="Cargar la factura del proveedor">
         <div class="flex flex-wrap items-center gap-3">
+          @if (canScan()) {
+            <app-xaska-ia-logo size="lg" />
+          }
           <div class="flex-1 min-w-56">
-            <h2 class="font-bold tracking-tight">Cargar la factura del proveedor</h2>
+            <h2 class="font-bold tracking-tight flex flex-wrap items-center gap-2">Cargar la factura del proveedor
+              @if (canScan()) {
+                <span class="aska-pill">Aska la lee por ti</span>
+              }
+            </h2>
             @if (canScan()) {
               <p class="text-xs text-muted">Tómale una foto (hasta 5 si es larga), sube su PDF o el XML de la factura
                 electrónica. XASKA llena lo que llegó para que lo revises; nada se guarda hasta que tú registres la
@@ -81,7 +89,7 @@ import {
             @if (scanUsageText(); as usage) {
               <p class="text-xs mt-1 flex items-center gap-1.5" [class.text-muted]="!scanLimitReached()"
                  [class.text-warning]="scanLimitReached()">
-                <app-xaska-ia-logo size="sm" label="XASKA IA" />{{ usage }}</p>
+                <i class="pi pi-sparkles text-xs" aria-hidden="true"></i>{{ usage }}</p>
             }
           </div>
           <input #invoiceFile type="file" class="hidden" aria-label="Archivo de la factura"
@@ -400,6 +408,17 @@ import {
       <p-button label="Registrar recepción" icon="pi pi-check" [loading]="saving()" [disabled]="problem() !== null"
                 (onClick)="save()" />
     </div>
+  `,
+  styles: `
+    /* Con XASKA IA, la carga de la factura lleva el sello de Aska (decisión 298). */
+    .aska-section {
+      border-left: 4px solid var(--aska);
+      background: linear-gradient(90deg, var(--aska-soft), var(--color-surface) 45%);
+    }
+    .aska-pill {
+      font-size: 0.6875rem; font-weight: 700; padding: 0.1875rem 0.5rem; border-radius: 9999px;
+      color: var(--xaska-ia-tag-text); background: linear-gradient(135deg, var(--aska-cta-from), var(--aska-cta-to));
+    }
   `,
 })
 export class ReceiptEditorComponent implements OnInit, HasUnsavedChanges {

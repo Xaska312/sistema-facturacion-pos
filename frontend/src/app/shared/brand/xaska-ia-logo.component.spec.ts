@@ -26,4 +26,12 @@ describe('XaskaIaLogoComponent (decisión 295)', () => {
     expect(el.querySelector('.xia')?.getAttribute('aria-label')).toBe('XASKA IA');
     expect(el.querySelector('.xia-sm')).not.toBeNull();
   });
+
+  it('cada logo usa sus propios degradados para el volumen', () => {
+    const a = render().querySelector('linearGradient')?.id;
+    const b = render().querySelector('linearGradient')?.id;
+    expect(a).toMatch(/^xia-tile-\d+$/);
+    expect(a).not.toBe(b);
+    expect(render().querySelector('rect')?.getAttribute('fill')).toMatch(/^url\(#xia-tile-\d+\)$/);
+  });
 });

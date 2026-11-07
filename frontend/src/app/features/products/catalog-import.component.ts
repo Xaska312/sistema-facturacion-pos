@@ -90,7 +90,7 @@ type Filter = 'ALL' | 'CREATE' | 'UPDATE' | 'CHECK' | 'SKIP';
         <div class="flex flex-wrap items-center gap-3">
           <button type="button" class="aska-button" [disabled]="files().length === 0 || reading() || !marginOk()"
                   (click)="read()">
-            <app-xaska-ia-logo size="sm" />
+            <app-xaska-ia-logo size="btn" />
             {{ reading() ? 'Aska está leyendo la lista…' : 'Leer con Aska' }}
           </button>
           @if (usage(); as u) {
@@ -265,9 +265,10 @@ type Filter = 'ALL' | 'CREATE' | 'UPDATE' | 'CHECK' | 'SKIP';
     .aska-drop:focus-within { outline: 2px solid var(--aska); outline-offset: 2px; }
     .aska-drop-ready { border-style: solid; }
     .aska-button {
-      display: inline-flex; align-items: center; gap: 0.5rem; min-height: 2.75rem; padding: 0 1.125rem; border-radius: 0.75rem;
-      font-weight: 700; font-size: 0.875rem; color: var(--aska-contrast); background: var(--aska);
-      box-shadow: 0 0 0 4px var(--aska-glow);
+      display: inline-flex; align-items: center; gap: 0.5rem; min-height: 2.75rem; padding: 0 1.125rem 0 0.5rem;
+      border-radius: 0.75rem; font-weight: 700; font-size: 0.875rem; color: var(--aska-contrast);
+      background: linear-gradient(135deg, var(--aska-cta-from), var(--aska-cta-to));
+      box-shadow: 0 0 0 4px var(--aska-glow), 0 6px 16px var(--aska-shadow);
     }
     .aska-button:disabled { opacity: 0.6; box-shadow: none; }
     .aska-problem { display: flex; gap: 0.5rem; align-items: center; font-size: 0.875rem; color: var(--color-danger); }
