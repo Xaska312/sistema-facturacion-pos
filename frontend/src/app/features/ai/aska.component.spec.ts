@@ -16,15 +16,16 @@ describe('AskaComponent', () => {
     const fixture = TestBed.createComponent(AskaComponent);
     fixture.detectChanges();
     const aska = fixture.componentInstance as unknown as { open: () => boolean; close: () => void };
+    // Los efectos del componente corren con la detección de cambios.
     TestBed.inject(AskaState).open();
-    TestBed.flushEffects();
+    fixture.detectChanges();
     expect(aska.open()).toBeTrue();
     aska.close();
-    TestBed.flushEffects();
+    fixture.detectChanges();
     fixture.detectChanges();
     expect(aska.open()).toBeFalse();
     TestBed.inject(AskaState).open();
-    TestBed.flushEffects();
+    fixture.detectChanges();
     expect(aska.open()).toBeTrue();
   });
 });
