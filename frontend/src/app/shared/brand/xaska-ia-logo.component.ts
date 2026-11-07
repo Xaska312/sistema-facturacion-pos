@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 /**
- * Logo del adicional XASKA IA (decisión 295): el monograma "IA" dibujado con la A sin barra del nombre XASKA y una
- * chispa, sobre el índigo de la marca. Colores de los tokens --xaska-ia-* (src/styles.css); no cambia con el color de
+ * Logo del adicional XASKA IA y de Aska, su asistente (decisiones 295 y 298): el monograma "IA" dibujado con la A sin
+ * barra del nombre XASKA y una chispa ámbar, sobre el índigo de la marca. Colores de los tokens --xaska-ia-* (src/styles.css); no cambia con el color de
  * cada negocio. Con {@code wordmark}: "XASKA" y la etiqueta "IA" al lado.
  *
  * Con {@code label} se anuncia como imagen con ese nombre; sin él es decorativo.
@@ -12,7 +12,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'inline-flex' },
   template: `
-    <span class="xia" [class.xia-sm]="size() === 'sm'" [class.xia-lg]="size() === 'lg'"
+    <span class="xia" [class.xia-sm]="size() === 'sm'" [class.xia-lg]="size() === 'lg'" [class.xia-xl]="size() === 'xl'"
           [attr.role]="label() ? 'img' : null" [attr.aria-label]="label() || null"
           [attr.aria-hidden]="label() ? null : 'true'">
       <svg viewBox="-6 -6 112 112" class="xia-icon" aria-hidden="true" focusable="false">
@@ -37,6 +37,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
     }
     .xia-sm { --icon: 1.25rem; gap: 0.375rem; }
     .xia-lg { --icon: 3rem; gap: 0.75rem; }
+    .xia-xl { --icon: 3.5rem; gap: 0.75rem; }
     .xia-icon { width: var(--icon); height: var(--icon); flex-shrink: 0; }
     .tile { fill: var(--xaska-ia-tile); }
     .ink { fill: var(--xaska-ia-ink); }
@@ -60,7 +61,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 export class XaskaIaLogoComponent {
   /** "XASKA" y la etiqueta "IA" al lado del monograma. */
   readonly wordmark = input(false);
-  readonly size = input<'sm' | 'md' | 'lg'>('md');
+  readonly size = input<'sm' | 'md' | 'lg' | 'xl'>('md');
   /** Nombre accesible; vacío = decorativo (cuando el texto ya está cerca). */
   readonly label = input('');
 

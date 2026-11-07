@@ -278,6 +278,7 @@ actualizar (paso 11).
 | Logo en la impresión directa (292) | Solo la imagen **web**. XASKA Impresora no cambia |
 | Mesero solo mesas (293) | Negocio V37: el rol Mesero deja de cobrar (solo si nadie lo había editado). Avísales a los restaurantes cuyos meseros cobran |
 | Cartas por piso (294) | Negocio V38. Se configuran en Mesas → Configurar → Cartas por piso (plan Empresa) |
+| Qué comprar y Aska (297, 298) | Plataforma V19 y negocio V41. Revisa en la consola → Planes → XASKA IA el tope de revisiones de pedidos (60 al mes). Nada más que configurar |
 | Pregúntale a tu negocio (296) | Plataforma V18 y negocio V40 (permiso `ai:ask` para todos los roles del sistema menos el Mesero). Usa la misma `ANTHROPIC_API_KEY`. Tope por defecto: 300 preguntas al mes (consola → Planes → XASKA IA) |
 | Facturas con foto (295) | Plataforma V17 y negocio V39. Pon `ANTHROPIC_API_KEY` en el `.env` (con un límite de gasto mensual en la consola de Anthropic) y reconstruye también la imagen **web** (el Caddyfile sube el máximo a 12 MB). Política de datos 1.3: todos la aceptan de nuevo. XASKA IA es un adicional: dalo a cada negocio en Suscripciones → Dar extras → "XASKA IA"; el tope al mes se ajusta en Planes → XASKA IA (100 facturas por defecto) |
 

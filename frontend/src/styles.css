@@ -80,12 +80,22 @@
   /* "POS" gigante del panel (como en xaska.co): degradado índigo a lavanda. */
   --xaska-pos-from: #6366f1;
   --xaska-pos-to: #c7d2fe;
-  /* Logo del adicional XASKA IA (decisión 295, opción B): monograma IA en el índigo de la marca, igual en oscuro. */
+  /* Logo del adicional XASKA IA (decisión 295; opción F en la 298): monograma IA en índigo con la chispa ámbar. */
   --xaska-ia-tile: #4338ca;
   --xaska-ia-ink: #ffffff;
-  --xaska-ia-spark: #c7d2fe;
+  --xaska-ia-spark: #fcd34d;
   --xaska-ia-tag-bg: #4338ca;
-  --xaska-ia-tag-text: #ffffff;
+  --xaska-ia-tag-text: #fef3c7;
+  /* Aska, la IA de XASKA (decisión 298): el índigo de XASKA (no el color del negocio) y el ámbar de la chispa. */
+  --aska: #4338ca;
+  --aska-contrast: #ffffff;
+  --aska-amber: #fcd34d;
+  --aska-glow: rgb(99 102 241 / 0.22);
+  --aska-shadow: rgb(67 56 202 / 0.45);
+  --aska-soft: #eef2ff;
+  --aska-soft-fg: #3730a3;
+  --aska-line: #c7d2fe;
+  --aska-backdrop: rgb(17 24 39 / 0.18);
 }
 
 .app-dark {
@@ -130,6 +140,10 @@
   --xaska-dot: #818cf8;
   --xaska-tag-bg: #312e81;
   --xaska-tag-text: #e0e7ff;
+  --aska: #6366f1;
+  --aska-soft: rgb(129 140 248 / 0.16);
+  --aska-soft-fg: #c7d2fe;
+  --aska-line: rgb(165 180 252 / 0.35);
 }
 
 /*

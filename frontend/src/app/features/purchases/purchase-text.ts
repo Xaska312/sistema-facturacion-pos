@@ -1,6 +1,6 @@
 import { Product } from '../../core/api/api.models';
 import { InvoiceDraftLine, InvoiceMatchBy, PurchaseLine, PurchaseLineInput, PurchaseSummary } from '../../core/api/purchases.api';
-import { formatCop } from '../../shared/money';
+import { formatCop, formatQuantity } from '../../shared/money';
 import { StatusKey } from '../../shared/status';
 
 /**
@@ -386,4 +386,31 @@ export function returnProblem(drafts: readonly ReturnDraft[], reason: string): s
     }
   }
   return reason.trim() ? null : 'Escribe el motivo de la devolución.';
+}
+
+// ------------------------------------------------------------------ Qué comprar (decisión 297)
+
+/** Lo que se pide de cada producto: la cantidad que la persona dejó o la sugerida. */
+export function orderedQuantity(line: { productId: string; suggested: number }, quantities: Record<string, number>): number {
+  const q = quantities[line.productId];
+  return q === undefined || q === null || Number.isNaN(Number(q)) ? line.suggested : Math.max(0, Number(q));
+}
+
+/** Mensaje para el proveedor (WhatsApp): solo lo que se pide, en la unidad base. */
+export function supplierOrderMessage(supplierName: string, businessName: string,
+                                     lines: { productId: string; sku: string; name: string; unitCode: string; suggested: number }[],
+                                     quantities: Record<string, number>): string {
+  const items = lines
+    .map((l) => ({ l, q: orderedQuantity(l, quantities) }))
+    .filter((x) => x.q > 0)
+    .map((x) => `- ${formatQuantity(x.q)} ${x.l.unitCode} ${x.l.name} (${x.l.sku})`);
+  const hello = supplierName && supplierName !== 'Sin proveedor' ? `Hola, ${supplierName}.` : 'Hola.';
+  return [`${hello} Le escribe ${businessName || 'su cliente'}. Quisiera hacer este pedido:`, '', ...items, '',
+    'Quedo atento a la confirmación y al valor. ¡Gracias!'].join('\n');
+}
+
+/** Valor estimado del pedido con las cantidades actuales. */
+export function orderTotal(lines: { productId: string; suggested: number; unitCost: number }[],
+                           quantities: Record<string, number>): number {
+  return lines.reduce((sum, l) => sum + orderedQuantity(l, quantities) * l.unitCost, 0);
 }

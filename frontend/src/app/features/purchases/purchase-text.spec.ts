@@ -18,8 +18,7 @@ import {
   returnTotal,
   temperatureProblem,
   toLineInputs,
-  withUnit,
-} from './purchase-text';
+  withUnit, orderTotal, orderedQuantity, supplierOrderMessage } from './purchase-text';
 
 const TODAY = '2026-11-02';
 
@@ -165,4 +164,27 @@ describe('recepción de compras (Fase 13-2, decisión 280)', () => {
       expect(invoiceTotalNotice([a], null, 0)).toBeNull();
     });
   });
+
+  describe('qué comprar (decisión 297)', () => {
+    const lines = [
+      { productId: 'a', sku: 'CAFE', name: 'Café 500 g', unitCode: 'UND', suggested: 20, unitCost: 6000 },
+      { productId: 'b', sku: 'AZUC', name: 'Azúcar', unitCode: 'KG', suggested: 5, unitCost: 2000 },
+    ];
+
+    it('usa la cantidad cambiada o la sugerida', () => {
+      expect(orderedQuantity(lines[0], {})).toBe(20);
+      expect(orderedQuantity(lines[0], { a: 12 })).toBe(12);
+      expect(orderedQuantity(lines[0], { a: -3 })).toBe(0);
+      expect(orderTotal(lines, { b: 0 })).toBe(120000);
+    });
+
+    it('arma el mensaje solo con lo que se pide', () => {
+      const text = supplierOrderMessage('Café Andino', 'Tienda Luz', lines, { b: 0 });
+      expect(text).toContain('Hola, Café Andino. Le escribe Tienda Luz.');
+      expect(text).toContain('- 20 UND Café 500 g (CAFE)');
+      expect(text).not.toContain('Azúcar');
+      expect(supplierOrderMessage('Sin proveedor', '', lines, {})).toContain('Hola. Le escribe su cliente.');
+    });
+  });
 });
+

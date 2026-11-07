@@ -472,6 +472,14 @@ export const routes: Routes = [
         loadComponent: () => import('./features/purchases/purchases.component').then((m) => m.PurchasesComponent),
       },
       {
+        path: 'compras/que-comprar',
+        title: 'Qué comprar',
+        canActivate: [permissionGuard],
+        data: { permission: 'purchases:read' },
+        loadComponent: () =>
+          import('./features/purchases/purchase-suggestions.component').then((m) => m.PurchaseSuggestionsComponent),
+      },
+      {
         path: 'compras/nueva',
         title: 'Recibir mercancía',
         canActivate: [permissionGuard],

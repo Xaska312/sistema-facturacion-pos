@@ -15,8 +15,7 @@ import { AuthService } from '../../core/auth/auth.service';
 import { THEME_MODES, ThemeMode, themeModeIcon } from '../../core/theme/theme-mode';
 import { ThemeService } from '../../core/theme/theme.service';
 import { HelpPanelComponent } from '../../shared/help/help-panel.component';
-import { XaskaIaLogoComponent } from '../../shared/brand/xaska-ia-logo.component';
-import { AiPanelComponent } from '../ai/ai-panel.component';
+import { AskaComponent } from '../ai/aska.component';
 import { helpForUrl } from '../../shared/help/screen-help';
 import { TourId } from '../../shared/tour/tour';
 import { TourService } from '../../shared/tour/tour.service';
@@ -37,7 +36,7 @@ interface ThemeOption extends PrimeMenuItem {
 @Component({
   selector: 'app-shell',
   imports: [RouterOutlet, RouterLink, RouterLinkActive, DrawerModule, MenuModule, TooltipModule, HelpPanelComponent,
-    XaskaLogoComponent, XIconComponent, XaskaIaLogoComponent, AiPanelComponent],
+    XaskaLogoComponent, XIconComponent, AskaComponent],
   template: `
     <button type="button" class="skip-link" (click)="focusMain()">Saltar al contenido</button>
 
@@ -75,14 +74,6 @@ interface ThemeOption extends PrimeMenuItem {
           <span class="truncate">{{ tradeName() }}</span>
         </span>
 
-        @if (canAsk()) {
-          <button type="button" class="inline-flex items-center gap-2 h-10 px-2 sm:px-3 rounded-xl border border-line hover:bg-surface-alt text-sm font-semibold"
-                  aria-label="Pregúntale a tu negocio con XASKA IA" aria-haspopup="dialog" [attr.aria-expanded]="aiOpen()"
-                  pTooltip="Pregúntale a tu negocio" tooltipPosition="bottom" (click)="aiOpen.set(true)">
-            <app-xaska-ia-logo size="sm" />
-            <span class="hidden md:inline">Pregúntale</span>
-          </button>
-        }
         @if (helpTopic()) {
           <button type="button" class="icon-button" aria-label="Ayuda de esta pantalla" aria-haspopup="dialog"
                   [attr.aria-expanded]="helpOpen()" pTooltip="Ayuda" tooltipPosition="bottom" (click)="helpOpen.set(true)">
@@ -141,18 +132,14 @@ interface ThemeOption extends PrimeMenuItem {
         </p-drawer>
       }
 
-      @if (canAsk()) {
-        <p-drawer [(visible)]="aiOpen" position="right" [style]="{ width: 'min(28rem, 100vw)' }" header="XASKA IA">
-          @if (aiOpen()) {
-            <app-ai-panel />
-          }
-        </p-drawer>
-      }
-
       <main #main id="main" tabindex="-1" class="flex-1 min-w-0 w-full max-w-[96rem] mx-auto px-4 pt-4 md:px-8 md:pt-6 pb-32 outline-none">
         <router-outlet />
       </main>
     </div>
+
+    @if (canAsk()) {
+      <app-aska />
+    }
 
     <nav class="dock" aria-label="Módulos">
       @for (item of dock(); track item.route; let i = $index) {
@@ -280,8 +267,7 @@ export class ShellComponent {
 
   protected readonly exactRoutes = EXACT_MATCH_ROUTES;
   protected readonly helpOpen = signal(false);
-  /** "Pregúntale a tu negocio" (XASKA IA, decisión 296): al cerrar el panel se borra la conversación. */
-  protected readonly aiOpen = signal(false);
+  /** Aska, la IA de XASKA (decisiones 296 y 298): botón flotante para quien tiene el adicional. */
   protected readonly canAsk = computed(() => this.auth.permissions().has('ai:ask'));
   private readonly url = signal(this.router.url);
   private readonly pageTitle = signal<string | null>(deepestTitle(this.router.routerState.snapshot.root));

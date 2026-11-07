@@ -736,6 +736,27 @@ export const MANUAL: readonly ManualChapter[] = [
         who: 'Propietario, Administrador y Bodega. Pagar de contado necesita además el permiso de pagar a proveedores.',
       },
       {
+        id: 'que-comprar',
+        title: 'Qué comprar: el pedido sugerido a cada proveedor',
+        summary: 'XASKA calcula cuánto pedirle a cada proveedor con lo que vendes, lo que tienes y tus mínimos, y te '
+          + 'deja el mensaje listo para WhatsApp o la hoja para imprimir. No se guarda ningún pedido.',
+        steps: [
+          'Entra a Compras → "Qué comprar" (o desde el menú, en Inventario). Si tienes varias sucursales, elige una.',
+          'Revisa cada proveedor: lo que hay, lo vendido en 7 y 30 días, el sugerido y el valor estimado.',
+          'Cambia la cantidad a pedir donde quieras (0 = no pedir) y los días de cada proveedor.',
+          'Si tienes XASKA IA, toca "Revisar con Aska": te dice qué ajustar y por qué, y aplicas lo que te parezca.',
+          'Toca "WhatsApp" (si el proveedor tiene celular), "Copiar mensaje" o "Imprimir o PDF".',
+        ],
+        tips: [
+          'Sugerido = venta diaria × días del proveedor + mínimo − lo que hay, sin pasar del máximo. La venta diaria '
+            + 'pesa más la última semana que el mes.',
+          'Lo vencido no cuenta como existencia, y lo que vence en 60 días sale marcado.',
+          'El proveedor de cada producto es el de su última compra registrada; sin compras sale en "Sin proveedor".',
+          'Cuando llegue la mercancía, regístrala como siempre en "Recibir mercancía".',
+        ],
+        who: 'Quien consulta compras. Cambiar los días necesita recibir mercancía; revisar con Aska necesita XASKA IA.',
+      },
+      {
         id: 'cargar-factura',
         title: 'Cargar la factura del proveedor (XML, foto o PDF)',
         summary: 'En vez de digitar producto por producto, subes el XML de la factura electrónica, le tomas una foto a '
@@ -1134,13 +1155,14 @@ export const MANUAL: readonly ManualChapter[] = [
     sections: [
       {
         id: 'pregunta-ia',
-        title: 'Pregúntale a tu negocio (XASKA IA)',
-        summary: 'Escribe una pregunta como "¿cuánto vendí hoy?" o "¿qué se me vence este mes?" y XASKA IA la '
-          + 'responde con tus reportes. Solo consulta: nunca cambia nada.',
+        title: 'Pregúntale a Aska, la IA de XASKA',
+        summary: 'Escribe una pregunta como "¿cuánto vendí hoy?" o "¿qué se me vence este mes?" y Aska la responde '
+          + 'con tus reportes, con las cifras clave resaltadas. Solo consulta: nunca cambia nada.',
         steps: [
-          'Toca "Pregúntale" (el ícono IA) en la barra de arriba, desde cualquier pantalla.',
+          'Toca el botón de Aska (el ícono IA índigo con la chispa), abajo a la derecha, desde cualquier pantalla.',
           'Escribe tu pregunta o toca uno de los ejemplos, y espera unos segundos.',
-          'Puedes seguir preguntando sobre lo mismo ("¿y la semana pasada?"). Con "Nueva" empiezas otra conversación.',
+          'Sigue preguntando sobre lo mismo ("¿y la semana pasada?") o toca una de las preguntas que Aska te propone. '
+            + 'Con "Nueva conversación" empiezas otra.',
         ],
         tips: [
           'Responde sobre ventas, productos, inventario y vencimientos, fiados, cuentas por pagar y cajas.',

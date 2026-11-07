@@ -99,6 +99,15 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     ],
     terms: ['costo-promedio'],
   },
+  '/app/compras/que-comprar': {
+    manual: 'que-comprar',
+    title: 'Qué comprar',
+    tips: [
+      'El sugerido sale de lo que vendiste (más peso a la última semana), lo que hay y tus mínimos y máximos.',
+      'Cambia los días de cada proveedor según cada cuánto te visita; cambia cualquier cantidad antes de pedir.',
+      'Con "Revisar con Aska" la IA te dice qué ajustar y por qué; tú decides si aplicas cada ajuste.',
+    ],
+  },
   '/app/compras/nueva': {
     manual: 'cargar-factura',
     title: 'Recibir mercancía',
