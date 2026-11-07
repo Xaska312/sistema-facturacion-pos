@@ -36,6 +36,14 @@ export interface Breb {
   bankName: string;
   notes: string;
   ready: boolean;
+  /** Hay imagen del QR del banco (decisión 303). */
+  hasQr: boolean;
+}
+
+export interface PublicPricing {
+  plans: BillingPlan[];
+  addons: BillingAddon[];
+  trialDays: number;
 }
 
 export interface ProofCheck {
@@ -121,6 +129,16 @@ export class BillingApi {
     return this.http.post<PaymentRequestView>(`/api/v1/billing/requests/${id}/proof`, form);
   }
 
+  /** El QR de la llave Bre-B de XASKA. */
+  qr(): Observable<Blob> {
+    return this.http.get('/api/v1/billing/qr', { responseType: 'blob' });
+  }
+
+  /** Planes y precios sin iniciar sesión (decisión 303). */
+  pricing(): Observable<PublicPricing> {
+    return this.http.get<PublicPricing>('/api/v1/public/pricing');
+  }
+
   startAiTrial(): Observable<Subscription> {
     return this.http.post<Subscription>('/api/v1/billing/ai-trial', {});
   }
@@ -159,6 +177,16 @@ export class BillingApi {
 
   saveBreb(input: { key: string; holderName: string; bankName: string; notes: string }): Observable<Breb> {
     return this.http.put<Breb>('/api/v1/platform/billing/breb', input);
+  }
+
+  saveQr(file: File): Observable<Breb> {
+    const form = new FormData();
+    form.append('file', file, file.name);
+    return this.http.put<Breb>('/api/v1/platform/billing/breb/qr', form);
+  }
+
+  deleteQr(): Observable<Breb> {
+    return this.http.delete<Breb>('/api/v1/platform/billing/breb/qr');
   }
 
   adminAddons(): Observable<BillingAddon[]> {

@@ -132,6 +132,41 @@ class BillingIT extends IntegrationTest {
         assertThat(mailbox.last(owner.email(), "pago-rechazado")).isPresent();
     }
 
+    @Test
+    void publicPricingQrAndPayNowToStart() throws Exception {
+        // Sin iniciar sesión: planes y adicionales con precio.
+        String pricing = body(mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .get("/api/v1/public/pricing")).andExpect(status().isOk()));
+        assertThat((List<String>) JsonPath.read(pricing, "$.plans[*].code")).contains("NEGOCIO");
+        assertThat((Integer) JsonPath.read(pricing, "$.trialDays")).isEqualTo(14);
+
+        Session admin = platformAdmin();
+        api.putWith(admin, "/api/v1/platform/billing/breb",
+                "{\"key\":\"@UMH986\",\"holderName\":\"Daniel Mejía\",\"bankName\":\"Nu\"}").andExpect(status().isOk());
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart("/api/v1/platform/billing/breb/qr")
+                        .file(new org.springframework.mock.web.MockMultipartFile("file", "qr.png", "image/png", png()))
+                        .with(r -> { r.setMethod("PUT"); return r; })
+                        .header("Authorization", admin.bearer()))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.hasQr").value(true));
+        api.uploadNamed(admin, "/api/v1/platform/billing/breb/qr", "file", "x.txt", "hola".getBytes())
+                .andExpect(status().is4xxClientError());
+
+        // Quien ya usó su prueba puede crear otro negocio para pagarlo ya: nace vencido, solo con Planes y pagos.
+        Owned owner = api.newTenant("paga-ya");
+        String slug = TestApi.uniqueSlug("pagaya");
+        String created = body(api.createTenantPayNow(owner.platform(), slug).andExpect(status().isCreated()));
+        java.util.UUID tenantId = java.util.UUID.fromString(JsonPath.read(created, "$.id"));
+        Session s = api.selectTenant(owner.platform(), tenantId);
+        api.getWith(s, "/api/v1/subscription").andExpect(jsonPath("$.status").value("EXPIRED"));
+        api.getWith(s, "/api/v1/billing").andExpect(status().isOk()).andExpect(jsonPath("$.breb.hasQr").value(true));
+        api.getWith(s, "/api/v1/billing/qr").andExpect(status().isOk()).andExpect(content().contentType("image/png"));
+        api.postWith(s, "/api/v1/billing/requests", "{\"planCode\":\"EMPRENDE\",\"billingCycle\":\"MONTHLY\",\"periods\":1}")
+                .andExpect(status().isOk());
+        // Lo demás queda en solo lectura hasta que se apruebe el pago.
+        api.postWith(s, "/api/v1/billing/ai-trial", "{}").andExpect(status().isOk());
+        api.postWith(s, "/api/v1/products", "{}").andExpect(status().is4xxClientError());
+    }
+
     private static byte[] png() throws Exception {
         BufferedImage img = new BufferedImage(40, 40, BufferedImage.TYPE_INT_RGB);
         ByteArrayOutputStream out = new ByteArrayOutputStream();

@@ -1,5 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
+import { ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
@@ -110,6 +112,14 @@ import { COUNTABLE, addonsForSale, annualSaving, checkLines, months, orderTotal,
               <button type="button" class="copy" (click)="copy(r.reference, 'Referencia')">Copiar</button>
             </div>
           </div>
+          @if (qrUrl(); as qr) {
+            <div class="qr-row">
+              <img [src]="qr" alt="Código QR de la llave Bre-B de XASKA" class="qr-img" />
+              <p class="text-sm">¿Pagas desde el celular de otra persona o desde otro equipo? Escanea este QR con la app
+                de tu banco o billetera; luego escribe el <strong>valor exacto</strong> y la <strong>referencia
+                {{ r.reference }}</strong> en la descripción.</p>
+            </div>
+          }
           @if (c.breb.notes) { <p class="text-xs text-muted">{{ c.breb.notes }}</p> }
           <p class="text-xs text-muted">{{ summary(r) }}@if (r.status === 'PENDING') { · El valor se mantiene hasta el {{ date(r.expiresAt) }}. }</p>
 
@@ -258,6 +268,9 @@ import { COUNTABLE, addonsForSale, annualSaving, checkLines, months, orderTotal,
       background: var(--aska-soft); color: var(--aska-soft-fg);
     }
     .breb { border-top: 4px solid var(--aska); }
+    .qr-row { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; padding: 0.75rem; border-radius: 0.875rem;
+      border: 1px dashed var(--aska-line); }
+    .qr-img { width: 9.5rem; height: 9.5rem; object-fit: contain; border-radius: 0.5rem; background: var(--color-surface); }
     .pay-box {
       display: flex; flex-direction: column; gap: 0.25rem; padding: 0.875rem; border-radius: 0.875rem;
       border: 1px solid var(--color-line); background: var(--color-surface-alt);
@@ -296,6 +309,7 @@ export class PlansComponent implements OnInit {
   private readonly api = inject(BillingApi);
   private readonly auth = inject(AuthService);
   private readonly messages = inject(MessageService);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly String = String;
   protected readonly catalog = signal<BillingCatalog | null>(null);
@@ -306,6 +320,10 @@ export class PlansComponent implements OnInit {
   protected readonly creating = signal(false);
   protected readonly uploading = signal(false);
   protected readonly startingTrial = signal(false);
+  protected readonly qrUrl = signal<SafeUrl | null>(null);
+  private readonly route = inject(ActivatedRoute);
+  private readonly sanitizer = inject(DomSanitizer);
+  private qrObjectUrl: string | null = null;
 
   protected readonly plan = computed(() => this.catalog()?.plans.find((p) => p.code === this.planCode()) ?? null);
   /** Lo que trae el plan que quedará (el elegido o el actual). */
@@ -332,12 +350,40 @@ export class PlansComponent implements OnInit {
   protected readonly history = computed(() => this.catalog()?.requests.filter((r) => r.status !== 'CANCELLED') ?? []);
 
   ngOnInit(): void {
+    // Desde "Crear negocio" o la página de precios: plan y forma de pago ya elegidos (decisión 303).
+    const q = this.route.snapshot.queryParamMap;
+    if (q.get('ciclo') === 'anual') {
+      this.cycle.set('ANNUAL');
+    }
+    if (q.get('plan')) {
+      this.planCode.set(q.get('plan'));
+    }
+    if (q.get('ia') === '1') {
+      this.choose('AI', 1);
+    }
     this.load();
+    this.destroyRef.onDestroy(() => this.qrObjectUrl && URL.revokeObjectURL(this.qrObjectUrl));
+  }
+
+  private loadQr(): void {
+    if (this.qrObjectUrl) {
+      return;
+    }
+    this.api.qr().subscribe({
+      next: (blob) => {
+        this.qrObjectUrl = URL.createObjectURL(blob);
+        this.qrUrl.set(this.sanitizer.bypassSecurityTrustUrl(this.qrObjectUrl));
+      },
+      error: () => this.qrUrl.set(null),
+    });
   }
 
   private load(): void {
     this.api.catalog().subscribe((c) => {
       this.catalog.set(c);
+      if (c.breb.hasQr) {
+        this.loadQr();
+      }
       if (this.planCode() === null && c.subscription.trial) {
         // En la prueba, lo normal es elegir un plan: se sugiere el que ya usa.
         this.planCode.set(c.plans.some((p) => p.code === c.subscription.plan.code) ? c.subscription.plan.code : null);

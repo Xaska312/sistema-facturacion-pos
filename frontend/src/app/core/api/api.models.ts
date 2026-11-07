@@ -53,6 +53,8 @@ export interface CreateTenantRequest {
   tradeName: string;
   businessType: BusinessType;
   activationCode?: string;
+  /** Decisión 303: crearlo para pagar ya con Bre-B (si ya usó la prueba, nace vencido hasta que se apruebe el pago). */
+  payNow?: boolean;
 }
 
 export interface PageResponse<T> {

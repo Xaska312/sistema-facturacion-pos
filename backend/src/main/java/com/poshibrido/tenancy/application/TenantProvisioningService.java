@@ -97,7 +97,7 @@ public class TenantProvisioningService {
             Tenant tenant = tenants.saveAndFlush(Tenant.startProvisioning(command.slug(), command.legalName().trim(),
                     command.tradeName().trim(), command.businessType(), ownerId));
             // Prueba gratis o código de activación; si no hay ninguno de los dos, 422 y no se crea nada.
-            subscriptions.startForNewTenant(tenant.getId(), ownerId, command.activationCode());
+            subscriptions.startForNewTenant(tenant.getId(), ownerId, command.activationCode(), command.payNow());
             return tenant;
         });
         return provision(created.getId(), owner);

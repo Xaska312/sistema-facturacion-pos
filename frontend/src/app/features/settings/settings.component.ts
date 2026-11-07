@@ -107,10 +107,15 @@ const TIMEZONE_LABEL: Record<string, string> = {
             </div>
           }
           @if (canEdit()) {
-            <div class="flex flex-col gap-1 sm:col-span-2">
-              <dt class="text-muted">Renovar o agregar</dt>
-              <dd><a routerLink="/app/planes" class="font-semibold underline">Planes y pagos</a>: renueva, agrega XASKA IA,
-                módulos o cupos y paga por Bre-B.</dd>
+            <div class="sm:col-span-2">
+              <a routerLink="/app/planes" class="plans-cta">
+                <span class="plans-cta-icon" aria-hidden="true"><i class="pi pi-credit-card"></i></span>
+                <span class="flex-1 min-w-0">
+                  <span class="block font-bold">Planes y pagos</span>
+                  <span class="block text-xs plans-cta-sub">Renueva, cambia de plan, agrega XASKA IA, módulos o cupos y paga por Bre-B.</span>
+                </span>
+                <i class="pi pi-arrow-right" aria-hidden="true"></i>
+              </a>
             </div>
           }
         </dl>
@@ -304,6 +309,17 @@ const TIMEZONE_LABEL: Record<string, string> = {
         </div>
       </div>
     </app-form-dialog>
+  `,
+  styles: `
+    .plans-cta {
+      display: flex; align-items: center; gap: 0.875rem; padding: 0.875rem 1rem; border-radius: 1rem;
+      color: var(--xaska-panel-fg); background: linear-gradient(135deg, var(--aska-cta-from), var(--aska-cta-to));
+      box-shadow: 0 10px 24px var(--aska-shadow); transition: transform 0.15s ease;
+    }
+    .plans-cta:hover, .plans-cta:focus-visible { transform: translateY(-1px); }
+    .plans-cta-icon { display: grid; place-items: center; width: 2.5rem; height: 2.5rem; border-radius: 0.75rem;
+      background: var(--xaska-panel-tile); color: var(--aska-amber); }
+    .plans-cta-sub { color: var(--xaska-panel-muted); }
   `,
 })
 export class SettingsComponent implements OnInit {

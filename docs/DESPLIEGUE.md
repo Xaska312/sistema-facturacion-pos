@@ -278,6 +278,7 @@ actualizar (paso 11).
 | Logo en la impresión directa (292) | Solo la imagen **web**. XASKA Impresora no cambia |
 | Mesero solo mesas (293) | Negocio V37: el rol Mesero deja de cobrar (solo si nadie lo había editado). Avísales a los restaurantes cuyos meseros cobran |
 | Cartas por piso (294) | Negocio V38. Se configuran en Mesas → Configurar → Cartas por piso (plan Empresa) |
+| Registro abierto y QR (303) | Plataforma V23. **Cambia el comportamiento:** `SUBSCRIPTION_TRIAL_WITHOUT_CODE` ahora es `true` por defecto: cualquiera que se registre en app.xaska.co crea su negocio con la prueba gratis (una por cuenta) o lo crea para pagar ya. Si en el `.env` tienes `SUBSCRIPTION_TRIAL_WITHOUT_CODE=false`, quítalo o ponlo en `true`. Sube el QR del banco en la consola → Pagos. Página pública: `app.xaska.co/precios` |
 | Planes y pagos con Bre-B (302) | Plataforma V22. **Antes de anunciarlo:** en la consola → Pagos pon tu llave Bre-B, el titular y el banco (sin eso los negocios no pueden armar pedidos) y revisa los precios de los adicionales (XASKA IA 39.900 de partida). Revisa los comprobantes en Pagos → Por revisar |
 | Cargar con Aska (300) | Plataforma V21 y negocio V43. Tope por defecto: 20 listas al mes (consola → Planes → XASKA IA). Nada más que configurar |
 | Resumen del día (299) | Plataforma V20 y negocio V42. Una tarea revisa cada 5 minutos qué negocios con XASKA IA llegaron a su hora (`AI_DIGEST_SCHEDULE=false` la apaga). Usa los correos de la app (`RESEND_API_KEY`). Política 1.3 ya lo cubre |

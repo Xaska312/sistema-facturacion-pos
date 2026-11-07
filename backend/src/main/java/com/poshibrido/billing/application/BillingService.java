@@ -80,7 +80,12 @@ public class BillingService {
                               BigDecimal monthlyPrice, boolean active, int sortOrder) {
     }
 
-    public record Breb(String key, String holderName, String bankName, String notes, boolean ready) {
+    /** {@code hasQr}: hay imagen del QR del banco para mostrar (decisión 303). */
+    public record Breb(String key, String holderName, String bankName, String notes, boolean ready, boolean hasQr) {
+    }
+
+    /** Planes y precios para quien aún no se registra (decisión 303). */
+    public record Pricing(List<PlanOption> plans, List<AddonOption> addons, int trialDays) {
     }
 
     public record Catalog(List<PlanOption> plans, List<AddonOption> addons, Breb breb, SubscriptionView subscription,
@@ -420,10 +425,41 @@ public class BillingService {
     }
 
     public Breb breb() {
-        return jdbc.query("SELECT breb_key, holder_name, bank_name, notes FROM platform.billing_settings WHERE id = 1",
+        return jdbc.query("""
+                SELECT breb_key, holder_name, bank_name, notes, qr_image IS NOT NULL
+                FROM platform.billing_settings WHERE id = 1""",
                 (rs, i) -> new Breb(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4),
-                        !rs.getString(1).isBlank() && !rs.getString(2).isBlank())).stream().findFirst()
-                .orElse(new Breb("", "", "", "", false));
+                        !rs.getString(1).isBlank() && !rs.getString(2).isBlank(), rs.getBoolean(5))).stream().findFirst()
+                .orElse(new Breb("", "", "", "", false, false));
+    }
+
+    /** El QR del banco (PNG o JPG hasta 2 MB); se guarda tal cual para que se lea nítido. */
+    public Breb saveQr(byte[] content) {
+        if (content == null || content.length == 0 || content.length > 2 * 1024 * 1024) {
+            throw new BusinessRuleException("Sube la imagen del QR (PNG o JPG) de hasta 2 MB.");
+        }
+        String type = InvoiceScanService.isPng(content) ? "image/png" : InvoiceScanService.isJpeg(content) ? "image/jpeg" : null;
+        if (type == null) {
+            throw new BusinessRuleException("El QR debe ser una imagen PNG o JPG.");
+        }
+        jdbc.update("UPDATE platform.billing_settings SET qr_image = ?, qr_type = ?, updated_at = now() WHERE id = 1",
+                content, type);
+        return breb();
+    }
+
+    public Breb deleteQr() {
+        jdbc.update("UPDATE platform.billing_settings SET qr_image = NULL, qr_type = NULL, updated_at = now() WHERE id = 1");
+        return breb();
+    }
+
+    public Proof qr() {
+        return jdbc.query("SELECT qr_image, qr_type FROM platform.billing_settings WHERE id = 1 AND qr_image IS NOT NULL",
+                (rs, i) -> new Proof(rs.getBytes(1), rs.getString(2), "qr"), (Object[]) new Object[0]).stream().findFirst()
+                .orElseThrow(() -> new NotFoundException("No hay QR configurado."));
+    }
+
+    public Pricing pricing(int trialDays) {
+        return new Pricing(plans(), addons(true), trialDays);
     }
 
     public Breb saveBreb(String key, String holder, String bank, String notes) {

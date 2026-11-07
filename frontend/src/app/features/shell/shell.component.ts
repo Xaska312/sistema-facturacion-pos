@@ -22,7 +22,7 @@ import { TourService } from '../../shared/tour/tour.service';
 import { RestaurantLiveService } from '../kitchen/restaurant-live.service';
 import { buildBreadcrumbs } from './breadcrumbs';
 import { EXACT_MATCH_ROUTES, MENU, dockItems, initials, visibleMenu } from './menu';
-import { subscriptionBanner } from './subscription-banner';
+import { planPill, subscriptionBanner } from './subscription-banner';
 
 interface ThemeOption extends PrimeMenuItem {
   mode: ThemeMode;
@@ -67,6 +67,17 @@ interface ThemeOption extends PrimeMenuItem {
           </ol>
         </nav>
 
+        @if (canManageSettings() && pill(); as pl) {
+          <!-- Píldora del plan (decisión 303): siempre a la vista; abre Planes y pagos. -->
+          <a routerLink="/app/planes" class="plan-pill" [class.plan-pill-soon]="pl.tone === 'soon'"
+             [class.plan-pill-late]="pl.tone === 'late'" [attr.aria-label]="'Planes y pagos: ' + pl.plan + ', ' + pl.detail"
+             pTooltip="Planes y pagos" tooltipPosition="bottom">
+            <span class="plan-pill-dot" aria-hidden="true"></span>
+            <span class="font-bold">{{ pl.plan }}</span>
+            <span class="plan-pill-detail">{{ pl.detail }}</span>
+            @if (pl.ai) { <span class="plan-pill-ai" aria-hidden="true">IA</span> }
+          </a>
+        }
         <span class="hidden lg:flex items-center gap-2 text-sm text-muted max-w-56" title="Negocio actual">
           @if (brandLogo(); as logo) {
             <img [src]="logo" alt="" class="h-8 max-w-24 object-contain" aria-hidden="true" />
@@ -160,6 +171,25 @@ interface ThemeOption extends PrimeMenuItem {
     </nav>
   `,
   styles: `
+    .plan-pill {
+      display: inline-flex; align-items: center; gap: 0.375rem; min-height: 2.25rem; padding: 0 0.75rem 0 0.625rem;
+      border-radius: 9999px; font-size: 0.8125rem; white-space: nowrap; color: var(--aska-soft-fg);
+      background: var(--aska-soft); border: 1px solid var(--aska-line); transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .plan-pill:hover, .plan-pill:focus-visible { transform: translateY(-1px); box-shadow: 0 6px 16px var(--aska-glow); }
+    .plan-pill-dot { width: 0.5rem; height: 0.5rem; border-radius: 9999px; background: var(--color-success); }
+    .plan-pill-detail { opacity: 0.85; }
+    .plan-pill-ai {
+      font-size: 0.625rem; font-weight: 800; padding: 0.0625rem 0.375rem; border-radius: 9999px;
+      color: var(--xaska-ia-tag-text); background: linear-gradient(135deg, var(--aska-cta-from), var(--aska-cta-to));
+    }
+    .plan-pill-soon { color: var(--color-warning-soft-fg); background: var(--color-warning-soft); border-color: var(--color-warning); }
+    .plan-pill-soon .plan-pill-dot { background: var(--color-warning); }
+    .plan-pill-late { color: var(--color-danger-soft-fg); background: var(--color-danger-soft); border-color: var(--color-danger); font-weight: 600; }
+    .plan-pill-late .plan-pill-dot { background: var(--color-danger); animation: plan-pill-pulse 1.4s ease-in-out infinite; }
+    @keyframes plan-pill-pulse { 0%, 100% { box-shadow: 0 0 0 0 var(--color-danger); } 50% { box-shadow: 0 0 0 5px transparent; } }
+    @media (max-width: 639px) { .plan-pill-detail, .plan-pill-ai { display: none; } }
+    @media (prefers-reduced-motion: reduce) { .plan-pill-late .plan-pill-dot { animation: none; } }
     .skip-link {
       position: fixed;
       top: 0.5rem;
@@ -275,6 +305,7 @@ export class ShellComponent {
 
   protected readonly sub = signal<Subscription | null>(null);
   protected readonly banner = computed(() => subscriptionBanner(this.sub()));
+  protected readonly pill = computed(() => planPill(this.sub()));
   protected readonly bannerClosed = signal(false);
   protected readonly canManageSettings = computed(() => this.auth.permissions().has('settings:manage'));
 
@@ -316,6 +347,9 @@ export class ShellComponent {
       items: [
         ...(this.tourAvailable()
           ? [{ label: 'Ver recorrido guiado', icon: 'pi pi-directions', command: () => this.startTour(this.tourAvailable() ?? undefined) }]
+          : []),
+        ...(this.canManageSettings()
+          ? [{ label: 'Planes y pagos', icon: 'pi pi-credit-card', command: () => void this.router.navigate(['/app/planes']) }]
           : []),
         { label: 'Cambiar negocio', icon: 'pi pi-sync', command: () => this.switchTenant() },
         ...(this.auth.isPlatformAdmin()

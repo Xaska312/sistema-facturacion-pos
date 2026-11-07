@@ -1,5 +1,5 @@
 import { Subscription } from '../../core/api/api.models';
-import { subscriptionBanner } from './subscription-banner';
+import { planPill, subscriptionBanner } from './subscription-banner';
 import { formatDate } from '../../shared/format';
 
 describe('subscription-banner', () => {
@@ -30,5 +30,19 @@ describe('subscription-banner', () => {
     const result = subscriptionBanner(sub('EXPIRED', -15));
     expect(result?.tone).toBe('danger');
     expect(result?.text).toBe('La suscripción venció: puedes consultar, pero no registrar ventas ni cambios.');
+  });
+
+  describe('planPill (decisión 303)', () => {
+    function plan(status: string, daysLeft: number, trial: boolean, features: string[] = []): Subscription {
+      return { status, daysLeft, trial, plan: { name: 'Pro (anterior)' }, entitled: { features } } as unknown as Subscription;
+    }
+
+    it('al día, por vencer, en prueba y vencido', () => {
+      expect(planPill(null)).toBeNull();
+      expect(planPill(plan('ACTIVE', 20, false, ['AI']))).toEqual({ plan: 'Pro', detail: 'Mi plan', tone: 'ok', ai: true });
+      expect(planPill(plan('ACTIVE', 1, false))).toEqual({ plan: 'Pro', detail: '1 día', tone: 'soon', ai: false });
+      expect(planPill(plan('TRIAL', 9, true))?.plan).toBe('Prueba');
+      expect(planPill(plan('EXPIRED', 0, false))).toEqual({ plan: 'Pro', detail: 'Renovar', tone: 'late', ai: false });
+    });
   });
 });

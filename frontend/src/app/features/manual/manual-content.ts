@@ -1201,7 +1201,7 @@ export const MANUAL: readonly ManualChapter[] = [
         summary: 'Renueva tu plan, cámbialo, agrega XASKA IA, módulos o más sedes, cajas y usuarios, y paga por Bre-B '
           + 'desde la app de tu banco o billetera. Sin datáfono ni tarjeta.',
         steps: [
-          'Entra a Ajustes → Planes y pagos (o toca "Renovar con Bre-B" en el aviso de vencimiento).',
+          'Toca la píldora de tu plan arriba, junto al nombre del negocio (o Ajustes → Planes y pagos).',
           'Elige mensual o anual, el plan y los adicionales. Abajo ves el total; toca "Pagar con Bre-B".',
           'En la app de tu banco envía el valor exacto a la llave de XASKA y escribe la referencia (XK…) en la descripción.',
           'Toca "Ya pagué: subir el comprobante" y elige la foto o el PDF. Aska lo revisa y XASKA lo aprueba; te avisamos '
@@ -1210,7 +1210,7 @@ export const MANUAL: readonly ManualChapter[] = [
         tips: [
           'XASKA IA se puede probar gratis 14 días, una sola vez por negocio, con topes más bajos.',
           'Lo que compras aparte vence por su cuenta; al renovar se suma desde el vencimiento.',
-          'El valor y la referencia de un pedido valen 3 días; después arma uno nuevo.',
+          'Si pagas desde otro celular, escanea el QR de la pantalla de pago y escribe el valor y la referencia.',
         ],
         who: 'El dueño y quien tenga permiso de cambiar los ajustes del negocio.',
       },

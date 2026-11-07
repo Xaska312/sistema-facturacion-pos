@@ -84,6 +84,16 @@ import { checkLines, statusLabel } from '../billing/billing-text';
         <label class="text-sm flex flex-col gap-1">Banco o billetera<input class="field" [(ngModel)]="breb.bankName" maxlength="60" /></label>
         <label class="text-sm flex flex-col gap-1">Nota (opcional)<input class="field" [(ngModel)]="breb.notes" maxlength="300" /></label>
         <p-button label="Guardar llave" [loading]="savingBreb()" (onClick)="saveBreb()" />
+        <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-line">
+          <span class="text-sm flex-1">QR del banco: {{ hasQr() ? 'cargado' : 'sin cargar' }}</span>
+          <label class="upload-qr">
+            <i class="pi pi-qrcode" aria-hidden="true"></i> {{ hasQr() ? 'Cambiar QR' : 'Subir QR (PNG o JPG)' }}
+            <input type="file" class="sr-only" accept="image/png,image/jpeg" (change)="uploadQr($event)" />
+          </label>
+          @if (hasQr()) {
+            <p-button label="Quitar" [text]="true" severity="danger" (onClick)="deleteQr()" />
+          }
+        </div>
       </section>
 
       <section class="card p-4 flex flex-col gap-2" aria-labelledby="addons-title">
@@ -105,6 +115,9 @@ import { checkLines, statusLabel } from '../billing/billing-text';
       border: 1px solid var(--color-line); background: var(--color-surface); }
     .chip-on { background: var(--aska); border-color: var(--aska); color: var(--aska-contrast); }
     .field { min-height: 2.5rem; border-radius: 0.5rem; border: 1px solid var(--color-line); background: var(--color-surface); padding: 0 0.5rem; }
+    .upload-qr { display: inline-flex; align-items: center; gap: 0.375rem; min-height: 2.5rem; padding: 0 0.875rem;
+      border-radius: 0.625rem; font-size: 0.875rem; font-weight: 600; cursor: pointer; border: 1px solid var(--color-line); }
+    .upload-qr:focus-within { outline: 2px solid var(--aska); }
     .aska-check { display: flex; gap: 0.625rem; padding: 0.625rem 0.75rem; border-radius: 0.75rem; background: var(--aska-soft); }
   `,
 })
@@ -125,12 +138,16 @@ export class PlatformBillingComponent implements OnInit {
   protected readonly addons = signal<BillingAddon[]>([]);
   protected readonly busy = signal<string | null>(null);
   protected readonly savingBreb = signal(false);
+  protected readonly hasQr = signal(false);
   protected reasons: Record<string, string> = {};
   protected breb = { key: '', holderName: '', bankName: '', notes: '' };
 
   ngOnInit(): void {
     this.load();
-    this.api.breb().subscribe((b) => (this.breb = { key: b.key, holderName: b.holderName, bankName: b.bankName, notes: b.notes }));
+    this.api.breb().subscribe((b) => {
+      this.breb = { key: b.key, holderName: b.holderName, bankName: b.bankName, notes: b.notes };
+      this.hasQr.set(b.hasQr);
+    });
     this.api.adminAddons().subscribe((a) => this.addons.set(a));
   }
 
@@ -190,6 +207,22 @@ export class PlatformBillingComponent implements OnInit {
       },
       error: () => this.savingBreb.set(false),
     });
+  }
+
+  uploadQr(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.item(0) ?? null;
+    input.value = '';
+    if (file) {
+      this.api.saveQr(file).subscribe((b) => {
+        this.hasQr.set(b.hasQr);
+        this.messages.add({ severity: 'success', summary: 'QR guardado', life: 2000 });
+      });
+    }
+  }
+
+  deleteQr(): void {
+    this.api.deleteQr().subscribe((b) => this.hasQr.set(b.hasQr));
   }
 
   saveAddon(a: BillingAddon): void {

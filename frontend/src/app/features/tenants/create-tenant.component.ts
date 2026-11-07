@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, ParamMap, Router, RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { BusinessType, CreateTenantRequest } from '../../core/api/api.models';
@@ -13,6 +13,9 @@ import { slugify } from './slugify';
 import { AuthLayoutComponent } from '../../shared/layout/auth-layout.component';
 import { businessTypeInfo } from '../../shared/business-types';
 import { BusinessTypePickerComponent } from '../../shared/business-type-picker.component';
+import { BillingApi, BillingPlan } from '../../core/api/billing.api';
+import { formatCop } from '../../shared/money';
+import { StartPlan, clearStartPlan, readStartPlan, rememberStartPlan } from '../billing/start-plan';
 
 /** 403 del backend al crear un negocio sin haber confirmado el correo. */
 export function isEmailNotVerified(error: unknown): boolean {
@@ -22,6 +25,12 @@ export function isEmailNotVerified(error: unknown): boolean {
 
 function isUnprocessable(error: unknown): boolean {
   return error instanceof HttpErrorResponse && error.status === 422;
+}
+
+/** El plan elegido en "Planes y precios": de la dirección (con sesión) o recordado desde el registro. */
+function startPlanFrom(query: ParamMap): StartPlan | null {
+  rememberStartPlan(query.get('plan'), query.get('ciclo'));
+  return readStartPlan();
 }
 
 export function isActivationCodeRequired(error: unknown): boolean {
@@ -37,6 +46,12 @@ export function isActivationCodeRequired(error: unknown): boolean {
   selector: 'app-create-tenant',
   imports: [ReactiveFormsModule, RouterLink, ButtonModule, InputTextModule, VerifyEmailBannerComponent,
     AuthLayoutComponent, BusinessTypePickerComponent],
+  styles: `
+    .start { display: flex; gap: 0.75rem; align-items: flex-start; padding: 0.75rem 0.875rem; border-radius: 0.875rem;
+      border: 1.5px solid var(--color-line); cursor: pointer; }
+    .start input { margin-top: 0.25rem; }
+    .start-on { border-color: var(--aska); background: var(--aska-soft); }
+  `,
   template: `
     <app-auth-layout width="lg">
       <section class="card p-6 sm:p-8 flex flex-col gap-4">
@@ -62,20 +77,52 @@ export function isActivationCodeRequired(error: unknown): boolean {
               <input pInputText formControlName="slug" (input)="slugTouched = true" />
               <small class="text-muted">Minúsculas, números y "_" (3 a 41). No se puede cambiar después.</small>
             </label>
-            <label class="flex flex-col gap-1">
-              <span class="text-sm font-medium">Código de activación{{ codeRequired() ? '' : ' (opcional)' }}</span>
-              <input pInputText formControlName="activationCode" id="activationCode" maxlength="40" placeholder="XXXX-XXXX-XXXX"
-                     (input)="activationCodeError.set(null)"
-                     autocomplete="off" [attr.aria-invalid]="activationCodeError() ? true : null" />
-              @if (codeRequired()) {
-                <small class="text-muted">Es el código que te damos al contratar tu plan o al pedir la prueba gratis. Si no lo tienes, pídelo a soporte.</small>
-              } @else {
-                <small class="text-muted">Tu primer negocio tiene {{ trialDays() }} días de prueba gratis; para otro negocio necesitas el código que te dimos al comprar tu plan.</small>
+            <!-- Cómo empezar (decisión 303): prueba gratis, pagar ya con Bre-B o con un código de activación. -->
+            <fieldset class="flex flex-col gap-2">
+              <legend class="text-sm font-medium mb-1">¿Cómo quieres empezar?</legend>
+              @if (trialAvailable()) {
+                <label class="start" [class.start-on]="mode() === 'trial'">
+                  <input type="radio" name="start" [checked]="mode() === 'trial'" (change)="setMode('trial')" />
+                  <span><span class="block font-semibold">Probar gratis {{ trialDays() }} días</span>
+                    <span class="block text-xs text-muted">Con todo incluido. Pagas después solo si te sirve.</span></span>
+                </label>
               }
-              @if (activationCodeError()) {
-                <small class="text-danger font-medium">{{ activationCodeError() }}</small>
-              }
-            </label>
+              <label class="start" [class.start-on]="mode() === 'pay'">
+                <input type="radio" name="start" [checked]="mode() === 'pay'" (change)="setMode('pay')" />
+                <span><span class="block font-semibold">Pagar ya con Bre-B</span>
+                  <span class="block text-xs text-muted">Eliges tu plan y pagas desde la app de tu banco.
+                    @if (trialAvailable()) { Mientras lo aprobamos, usas la prueba gratis. } @else { Lo activamos al aprobar tu pago. }</span></span>
+              </label>
+              <label class="start" [class.start-on]="mode() === 'code'">
+                <input type="radio" name="start" [checked]="mode() === 'code'" (change)="setMode('code')" />
+                <span><span class="block font-semibold">Tengo un código de activación</span>
+                  <span class="block text-xs text-muted">El que te dimos al contratar tu plan.</span></span>
+              </label>
+            </fieldset>
+            @if (mode() === 'pay') {
+              <label class="flex flex-col gap-1">
+                <span class="text-sm font-medium">Plan</span>
+                <select class="border border-line rounded-[10px] px-3 min-h-11 bg-surface" [value]="payPlan()"
+                        (change)="payPlan.set($any($event.target).value)">
+                  @for (p of plans(); track p.code) {
+                    <option [value]="p.code">{{ p.name }} · {{ cop(p.monthlyPrice) }}/mes · {{ cop(p.annualPrice) }}/año</option>
+                  }
+                </select>
+                <small class="text-muted">Al crear el negocio te llevamos a pagar; ahí eliges mensual o anual y si agregas XASKA IA.
+                  <a routerLink="/precios" class="underline">Ver qué incluye cada plan</a></small>
+              </label>
+            }
+            @if (mode() === 'code') {
+              <label class="flex flex-col gap-1">
+                <span class="text-sm font-medium">Código de activación</span>
+                <input pInputText formControlName="activationCode" id="activationCode" maxlength="40" placeholder="XXXX-XXXX-XXXX"
+                       (input)="activationCodeError.set(null)"
+                       autocomplete="off" [attr.aria-invalid]="activationCodeError() ? true : null" />
+              </label>
+            }
+            @if (activationCodeError()) {
+              <small class="text-danger font-medium" id="start-error">{{ activationCodeError() }}</small>
+            }
             <div class="flex flex-col gap-2">
               <span id="type-label" class="text-sm font-medium">Tipo de negocio</span>
               <app-business-type-picker [value]="type()" labelledBy="type-label" (pick)="type.set($event.code)" />
@@ -91,6 +138,7 @@ export function isActivationCodeRequired(error: unknown): boolean {
               <dt class="text-muted">Razón social</dt><dd class="col-span-2">{{ form.value.legalName }}</dd>
               <dt class="text-muted">Identificador</dt><dd class="col-span-2 font-mono">{{ form.value.slug }}</dd>
               <dt class="text-muted">Tipo</dt><dd class="col-span-2">{{ typeLabel() }}</dd>
+              <dt class="text-muted">Empezar</dt><dd class="col-span-2">{{ modeLabel() }}</dd>
             </dl>
             <p class="text-sm text-muted">
               Se creará tu negocio con una sede principal, una caja y los roles por defecto.
@@ -109,10 +157,17 @@ export class CreateTenantComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly http = inject(HttpClient);
+  private readonly billing = inject(BillingApi);
 
-  /** Por defecto todo negocio nuevo necesita código; el servidor dice si hay prueba gratis sin él. */
-  readonly codeRequired = signal(true);
   readonly trialDays = signal(14);
+  /** Esta cuenta aún tiene su prueba gratis (decisión 303). */
+  readonly trialAvailable = signal(true);
+  readonly mode = signal<'trial' | 'pay' | 'code'>('trial');
+  readonly plans = signal<BillingPlan[]>([]);
+  readonly payPlan = signal('');
+  private readonly startPlan = startPlanFrom(inject(ActivatedRoute).snapshot.queryParamMap);
+  protected readonly modeLabel = computed(() => this.mode() === 'trial' ? `Prueba gratis de ${this.trialDays()} días`
+    : this.mode() === 'pay' ? `Pagar ya: ${this.plans().find((p) => p.code === this.payPlan())?.name ?? ''}` : 'Con código de activación');
 
   readonly step = signal<1 | 2>(1);
   readonly type = signal<BusinessType>('RETAIL');
@@ -128,22 +183,46 @@ export class CreateTenantComponent {
     tradeName: ['', [Validators.required, Validators.maxLength(200)]],
     legalName: ['', [Validators.required, Validators.maxLength(200)]],
     slug: ['', [Validators.required, Validators.pattern(/^[a-z][a-z0-9_]{2,40}$/)]],
-    activationCode: ['', [Validators.required, Validators.pattern(/\S/), Validators.maxLength(40)]],
+    activationCode: ['', [Validators.maxLength(40)]],
   });
 
   constructor() {
-    this.http.get<{ activationCodeRequired: boolean; trialDays: number }>('/api/v1/tenants/signup-terms')
+    this.http.get<{ trialDays: number; trialAvailable: boolean }>('/api/v1/tenants/signup-terms')
       .subscribe({
         next: (terms) => {
-          this.codeRequired.set(terms.activationCodeRequired);
           this.trialDays.set(terms.trialDays);
-          const code = this.form.controls.activationCode;
-          code.setValidators(terms.activationCodeRequired
-            ? [Validators.required, Validators.pattern(/\S/), Validators.maxLength(40)] : [Validators.maxLength(40)]);
-          code.updateValueAndValidity();
+          this.trialAvailable.set(terms.trialAvailable);
+          if (!terms.trialAvailable && this.mode() === 'trial') {
+            this.setMode('pay');
+          }
         },
         error: () => undefined,
       });
+    this.billing.pricing().subscribe({
+      next: (p) => {
+        this.plans.set(p.plans);
+        const wanted = this.startPlan?.plan;
+        this.payPlan.set(p.plans.some((x) => x.code === wanted) ? wanted! : (p.plans[1] ?? p.plans[0])?.code ?? '');
+        if (wanted && p.plans.some((x) => x.code === wanted)) {
+          // Eligió un plan en "Planes y precios": se propone pagarlo (puede volver a la prueba).
+          this.setMode('pay');
+        }
+      },
+      error: () => undefined,
+    });
+  }
+
+  setMode(mode: 'trial' | 'pay' | 'code'): void {
+    this.mode.set(mode);
+    this.activationCodeError.set(null);
+    const code = this.form.controls.activationCode;
+    code.setValidators(mode === 'code' ? [Validators.required, Validators.pattern(/\S/), Validators.maxLength(40)]
+      : [Validators.maxLength(40)]);
+    code.updateValueAndValidity();
+  }
+
+  protected cop(v: number | null): string {
+    return formatCop(v);
   }
 
   suggestSlug(): void {
@@ -156,19 +235,27 @@ export class CreateTenantComponent {
     this.saving.set(true);
     this.activationCodeError.set(null);
     const value = this.form.getRawValue();
-    const code = value.activationCode.trim();
+    const mode = this.mode();
+    const code = mode === 'code' ? value.activationCode.trim() : '';
     const payload: CreateTenantRequest = {
       tradeName: value.tradeName,
       legalName: value.legalName,
       slug: value.slug,
       businessType: this.type(),
       ...(code ? { activationCode: code } : {}),
+      ...(mode === 'pay' ? { payNow: true } : {}),
     };
 
     this.auth.createTenant(payload).subscribe({
       next: (tenant) =>
         this.auth.selectTenant(tenant.id).subscribe({
-          next: () => void this.router.navigate(['/app']),
+          next: () => {
+            const annual = this.startPlan?.annual === true;
+            clearStartPlan();
+            void (mode === 'pay'
+              ? this.router.navigate(['/app/planes'], { queryParams: { plan: this.payPlan(), ciclo: annual ? 'anual' : 'mensual' } })
+              : this.router.navigate(['/app']));
+          },
           error: () => void this.router.navigate(['/negocios']),
         }),
       error: (err: unknown) => {
@@ -182,7 +269,7 @@ export class CreateTenantComponent {
           // Sin prueba gratis disponible o código no válido: vuelve al paso 1 con el aviso junto al código (fase 8b).
           this.activationCodeError.set(problemMessage(err));
           this.step.set(1);
-          setTimeout(() => document.getElementById('activationCode')?.focus());
+          setTimeout(() => (document.getElementById('activationCode') ?? document.getElementById('start-error'))?.focus());
           return;
         }
         this.step.set(1);

@@ -73,6 +73,15 @@ public class BillingController {
         return billing.uploadProof(CurrentTenant.require().id(), id, file.getBytes());
     }
 
+    /** El QR de la llave Bre-B de XASKA (decisión 303). */
+    @GetMapping("/qr")
+    public org.springframework.http.ResponseEntity<byte[]> qr() {
+        BillingService.Proof qr = billing.qr();
+        return org.springframework.http.ResponseEntity.ok()
+                .contentType(org.springframework.http.MediaType.parseMediaType(qr.contentType()))
+                .header("Cache-Control", "private, max-age=300").body(qr.content());
+    }
+
     @PostMapping("/ai-trial")
     public SubscriptionView aiTrial() {
         return subscriptions.startAiTrial(CurrentTenant.require().id());

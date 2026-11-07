@@ -26,3 +26,23 @@ export function subscriptionBanner(s: Subscription | null): { tone: 'warning' | 
 
   return null;
 }
+
+/**
+ * La píldora del plan en la barra de arriba (decisión 303): siempre a la vista para quien maneja el negocio; al tocarla
+ * abre Planes y pagos. {@code tone}: ok (al día), soon (prueba o vence en 7 días o menos), late (vencido).
+ */
+export function planPill(s: Subscription | null): { plan: string; detail: string; tone: 'ok' | 'soon' | 'late'; ai: boolean } | null {
+  if (!s) {
+    return null;
+  }
+  const plan = s.plan.name.replace(/\s*\(anterior\)$/, '');
+  const ai = s.entitled.features.includes('AI');
+  if (s.status === 'EXPIRED' || s.status === 'PAST_DUE') {
+    return { plan, detail: 'Renovar', tone: 'late', ai };
+  }
+  const days = s.daysLeft === 1 ? '1 día' : `${s.daysLeft} días`;
+  if (s.trial) {
+    return { plan: 'Prueba', detail: days, tone: 'soon', ai };
+  }
+  return { plan, detail: s.daysLeft <= 7 ? days : 'Mi plan', tone: s.daysLeft <= 7 ? 'soon' : 'ok', ai };
+}

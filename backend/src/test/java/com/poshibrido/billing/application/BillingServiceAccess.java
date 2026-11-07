@@ -20,6 +20,6 @@ public final class BillingServiceAccess {
                                      String key, String holder) {
         RequestView r = new RequestView(null, null, null, reference, "PENDING", null, null, BillingCycle.MONTHLY, 1, 1,
                 BigDecimal.ZERO, List.of(), amount, createdAt, createdAt, null, null, null, null, null);
-        return BillingService.compare(read, r, new Breb(key, holder, "", "", true));
+        return BillingService.compare(read, r, new Breb(key, holder, "", "", true, false));
     }
 }

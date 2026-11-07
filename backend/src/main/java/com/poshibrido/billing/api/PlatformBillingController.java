@@ -90,6 +90,16 @@ public class PlatformBillingController {
         return billing.saveBreb(r.key(), r.holderName(), r.bankName(), r.notes());
     }
 
+    @PutMapping("/breb/qr")
+    public Breb saveQr(@RequestParam("file") org.springframework.web.multipart.MultipartFile file) throws java.io.IOException {
+        return billing.saveQr(file.getBytes());
+    }
+
+    @org.springframework.web.bind.annotation.DeleteMapping("/breb/qr")
+    public Breb deleteQr() {
+        return billing.deleteQr();
+    }
+
     @GetMapping("/addons")
     public List<AddonOption> addons() {
         return billing.adminAddons();

@@ -22,6 +22,12 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/login.component').then((m) => m.LoginComponent),
   },
   {
+    // Planes y precios sin iniciar sesión (decisión 303).
+    path: 'precios',
+    title: 'Planes y precios',
+    loadComponent: () => import('./features/billing/pricing.component').then((m) => m.PricingComponent),
+  },
+  {
     path: 'registro',
     title: 'Crear cuenta',
     canActivate: [guestGuard],

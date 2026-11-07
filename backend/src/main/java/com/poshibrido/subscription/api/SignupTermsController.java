@@ -15,6 +15,6 @@ public class SignupTermsController {
 
     @GetMapping("/api/v1/tenants/signup-terms")
     public SignupTerms signupTerms() {
-        return subscriptions.signupTerms();
+        return subscriptions.signupTerms(com.poshibrido.shared.security.CurrentActor.requireUserId());
     }
 }

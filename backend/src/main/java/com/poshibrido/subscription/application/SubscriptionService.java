@@ -154,14 +154,9 @@ public class SubscriptionService implements SubscriptionApi {
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
-    public void startForNewTenant(UUID tenantId, UUID ownerId, String activationCode) {
+    public void startForNewTenant(UUID tenantId, UUID ownerId, String activationCode, boolean payNow) {
         Instant now = Instant.now();
         if (activationCode == null || activationCode.isBlank()) {
-            // Por defecto todo negocio nuevo necesita código (la prueba gratis se da con un código desde la consola).
-            if (!properties.trialWithoutCode()) {
-                throw new ActivationCodeRequiredException("Para crear el negocio necesitas un código de activación. "
-                        + "Te lo damos al contratar tu plan o al pedir la prueba gratis.");
-            }
             // Una prueba por cuenta (también si el primer negocio falló al crearse: se reintenta ese, con
             // retry-provisioning). Se bloquea la cuenta para que dos creaciones simultáneas no tomen dos pruebas.
             jdbc.queryForList("SELECT id FROM platform.users WHERE id = ? FOR UPDATE", ownerId);
@@ -169,11 +164,19 @@ public class SubscriptionService implements SubscriptionApi {
                     SELECT EXISTS (SELECT 1 FROM platform.subscriptions s
                                    JOIN platform.tenants t ON t.id = s.tenant_id
                                    WHERE t.owner_user_id = ?)""", Boolean.class, ownerId);
-            if (Boolean.TRUE.equals(usedTrial)) {
-                throw new ActivationCodeRequiredException();
+            if (properties.trialWithoutCode() && !Boolean.TRUE.equals(usedTrial)) {
+                // Aunque quiera pagar ya, usa la app con la prueba mientras se aprueba el pago (decisión 303).
+                insert(tenantId, properties.trialPlan(), true, now, now.plus(properties.trial()));
+                return;
             }
-            insert(tenantId, properties.trialPlan(), true, now, now.plus(properties.trial()));
-            return;
+            if (payNow) {
+                // Pagar para empezar (decisión 303): el negocio nace vencido; solo Planes y pagos hasta aprobar.
+                insert(tenantId, properties.trialPlan(), true, now, now);
+                return;
+            }
+            throw new ActivationCodeRequiredException(properties.trialWithoutCode()
+                    ? "Ya usaste tu prueba gratis. Crea el negocio con \"Pagar ya\" o con un código de activación."
+                    : "Para crear el negocio necesitas un código de activación, o elige \"Pagar ya\".");
         }
         Redeemed code = codes.redeem(activationCode, ownerId, tenantId);
         Instant endsAt = plusMonths(now, code.months());
@@ -747,9 +750,19 @@ public class SubscriptionService implements SubscriptionApi {
 
     /** Lo que ve quien crea un negocio: si el código es obligatorio y los días de la prueba sin código. */
     public SignupTerms signupTerms() {
-        return new SignupTerms(!properties.trialWithoutCode(), properties.trialDays());
+        return new SignupTerms(!properties.trialWithoutCode(), properties.trialDays(), properties.trialWithoutCode());
     }
 
-    public record SignupTerms(boolean activationCodeRequired, int trialDays) {
+    /** Para esta cuenta: {@code trialAvailable} si su próximo negocio entra con prueba gratis (decisión 303). */
+    public SignupTerms signupTerms(UUID ownerId) {
+        Boolean used = jdbc.queryForObject("""
+                SELECT EXISTS (SELECT 1 FROM platform.subscriptions s JOIN platform.tenants t ON t.id = s.tenant_id
+                               WHERE t.owner_user_id = ?)""", Boolean.class, ownerId);
+        return new SignupTerms(!properties.trialWithoutCode(), properties.trialDays(),
+                properties.trialWithoutCode() && !Boolean.TRUE.equals(used));
+    }
+
+    /** {@code trialAvailable}: sin código, el negocio entra con la prueba gratis; si no, "Pagar ya" o un código. */
+    public record SignupTerms(boolean activationCodeRequired, int trialDays, boolean trialAvailable) {
     }
 }

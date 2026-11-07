@@ -85,6 +85,8 @@ public class SecurityConfig {
                                 "/api/v1/auth/password-reset/request", "/api/v1/auth/password-reset/confirm")
                         .permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/invitations/preview").permitAll()
+                        // Planes y precios para quien aún no se registra (decisión 303).
+                        .requestMatchers(HttpMethod.GET, "/api/v1/public/pricing").permitAll()
                         .requestMatchers("/api/v1/auth/**", "/api/v1/tenants", "/api/v1/tenants/**",
                                 "/api/v1/invitations/**", "/api/v1/locations/**").authenticated()
                         .requestMatchers("/api/v1/platform/**").hasAuthority(PLATFORM_ADMIN)

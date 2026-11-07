@@ -15,7 +15,11 @@ public interface SubscriptionApi {
      * activación, el plan y los meses del código; sin código, la prueba gratis (solo el primer negocio de la cuenta;
      * si no, 422 {@code ACTIVATION_CODE_REQUIRED}).
      */
-    void startForNewTenant(UUID tenantId, UUID ownerId, String activationCode);
+    void startForNewTenant(UUID tenantId, UUID ownerId, String activationCode, boolean payNow);
+
+    default void startForNewTenant(UUID tenantId, UUID ownerId, String activationCode) {
+        startForNewTenant(tenantId, ownerId, activationCode, false);
+    }
 
     /** Reintento de un negocio que falló al crearse: la prueba cuenta desde hoy. */
     void restartTrialOnRetry(UUID tenantId);
