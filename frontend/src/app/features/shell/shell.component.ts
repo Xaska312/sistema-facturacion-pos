@@ -112,9 +112,10 @@ interface ThemeOption extends PrimeMenuItem {
                [class.text-danger]="b.tone === 'danger'" [class.text-warning]="b.tone === 'warning'">
             <div class="text-sm">
               <span class="font-medium">{{ b.text }}</span>
-              <span class="block sm:inline sm:ml-2 text-muted">Cómo pagar: {{ sub()?.paymentInstructions }}</span>
               @if (canManageSettings()) {
-                <a routerLink="/app/ajustes" class="block sm:inline sm:ml-2 font-medium hover:underline text-fg">Ver mi suscripción</a>
+                <a routerLink="/app/planes" class="block sm:inline sm:ml-2 font-medium hover:underline text-fg">Renovar con Bre-B</a>
+              } @else {
+                <span class="block sm:inline sm:ml-2 text-muted">Pídele al dueño del negocio que lo renueve.</span>
               }
             </div>
             @if (sub()?.status !== 'EXPIRED') {

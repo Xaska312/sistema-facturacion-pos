@@ -1054,6 +1054,21 @@ export interface Subscription {
   extras: SubscriptionExtras;
   /** Clientes de antes de los planes nuevos: su precio se mantiene hasta esta fecha. */
   priceLockedUntil: string | null;
+  /** Lo comprado aparte del plan, con su vencimiento (decisión 302). */
+  addons: SubscriptionAddon[];
+  /** Puede empezar la prueba gratis de XASKA IA (una sola vez). */
+  aiTrialAvailable: boolean;
+}
+
+export interface SubscriptionAddon {
+  code: string;
+  kind: 'FEATURE' | 'MODULE' | 'BRANCH' | 'REGISTER' | 'USER';
+  ref: string | null;
+  name: string;
+  quantity: number;
+  endsAt: string;
+  trial: boolean;
+  active: boolean;
 }
 
 export interface SubscriptionRow {

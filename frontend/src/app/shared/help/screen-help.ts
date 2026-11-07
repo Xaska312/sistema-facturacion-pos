@@ -234,6 +234,24 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
       'Sin báscula etiquetadora, en el carrito toca la línea y usa "Vende por valor" ($5.000 de queso).',
     ],
   },
+  '/app/productos/cargar-con-aska': {
+    manual: 'cargar-con-aska',
+    title: 'Cargar con Aska',
+    tips: [
+      'Sube la lista del proveedor en Excel, PDF o fotos y elige el proveedor: Aska recuerda sus códigos.',
+      'Los productos que ya tienes conservan su margen; los nuevos salen con el margen que pongas.',
+      'Revisa los "Por revisar" (nombre parecido) y corrige cualquier fila antes de guardar.',
+    ],
+  },
+  '/app/planes': {
+    manual: 'planes-y-pagos',
+    title: 'Planes y pagos',
+    tips: [
+      'Arma tu pedido (plan, XASKA IA, módulos o cupos) y toca "Pagar con Bre-B" para ver el valor y la referencia.',
+      'Paga desde la app de tu banco a la llave de XASKA y escribe la referencia en la descripción.',
+      'Sube el comprobante: Aska lo revisa y XASKA lo aprueba; te avisamos por correo.',
+    ],
+  },
   '/app/productos/importar': {
     manual: 'importar-productos',
     title: 'Importar productos',

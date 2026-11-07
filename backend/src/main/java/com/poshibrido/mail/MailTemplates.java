@@ -169,6 +169,29 @@ public class MailTemplates {
                 "Gracias por confiar en XASKA POS.");
     }
 
+    /** Pago de adicionales aprobado (decisión 302); si el pedido traía plan, ya llega "suscripcion-pagada". */
+    public MailMessage billingApproved(String to, String ownerName, String businessName, List<String> items) {
+        return message(to, "Activamos lo que compraste para " + businessName, "pago-aprobado",
+                "Hola, " + ownerName + ":",
+                List.of("Recibimos tu pago y ya está activo en " + businessName + ": " + String.join(", ", items) + ".",
+                        "Si estabas dentro de XASKA, sal y vuelve a entrar para verlo."),
+                "Entrar a " + PRODUCT, properties.link("/login"),
+                "Gracias por confiar en XASKA POS.");
+    }
+
+    /** El pago no se pudo confirmar (decisión 302): por qué y qué hacer. */
+    public MailMessage billingRejected(String to, String ownerName, String businessName, String reference,
+                                       String reason) {
+        return message(to, "No pudimos confirmar tu pago " + reference, "pago-rechazado",
+                "Hola, " + ownerName + ":",
+                List.of("Revisamos el comprobante del pedido " + reference + " de " + businessName
+                                + " y no pudimos confirmarlo: " + reason,
+                        "Entra a Ajustes → Planes y pagos para subir otro comprobante o armar un pedido nuevo. Si ya "
+                                + "pagaste, respóndenos este correo con el comprobante."),
+                "Ver mis pagos", properties.link("/app/planes"),
+                "Gracias por confiar en XASKA POS.");
+    }
+
     // ---------------------------------------------------------------- caja (al dueño, decisión 253)
 
     /** Lo que muestra el resumen de un cierre de caja; los nombres los escribió el negocio (se escapan). */

@@ -4,7 +4,7 @@ import { XaskaIaLogoComponent } from '../../shared/brand/xaska-ia-logo.component
 import { DigestSettingsComponent } from '../ai/digest-settings.component';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -41,7 +41,7 @@ const TIMEZONE_LABEL: Record<string, string> = {
 
 @Component({
   selector: 'app-settings',
-  imports: [DigestSettingsComponent, XaskaIaLogoComponent, ConsumptionTaxSectionComponent, TechnicalDirectorSectionComponent, ReactiveFormsModule, FormsModule, ButtonModule, InputTextModule, PageHeaderComponent, FormDialogComponent,
+  imports: [RouterLink, DigestSettingsComponent, XaskaIaLogoComponent, ConsumptionTaxSectionComponent, TechnicalDirectorSectionComponent, ReactiveFormsModule, FormsModule, ButtonModule, InputTextModule, PageHeaderComponent, FormDialogComponent,
     BrandingSectionComponent, PrinterSectionComponent, BusinessProfileSectionComponent],
   template: `
     <app-page-header title="Ajustes del negocio" description="Cómo funciona tu negocio: tipo y módulos, inventario, impuestos, zona horaria, moneda, tiquete y marca." />
@@ -106,10 +106,13 @@ const TIMEZONE_LABEL: Record<string, string> = {
               </dd>
             </div>
           }
-          <div class="flex flex-col gap-1 sm:col-span-2">
-            <dt class="text-muted">Cómo pagar</dt>
-            <dd>{{ s.paymentInstructions }}</dd>
-          </div>
+          @if (canEdit()) {
+            <div class="flex flex-col gap-1 sm:col-span-2">
+              <dt class="text-muted">Renovar o agregar</dt>
+              <dd><a routerLink="/app/planes" class="font-semibold underline">Planes y pagos</a>: renueva, agrega XASKA IA,
+                módulos o cupos y paga por Bre-B.</dd>
+            </div>
+          }
         </dl>
 
         @if (s.payments.length > 0) {

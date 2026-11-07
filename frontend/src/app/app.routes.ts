@@ -98,6 +98,12 @@ export const routes: Routes = [
           import('./features/platform/platform-plans.component').then((m) => m.PlatformPlansComponent),
       },
       {
+        path: 'pagos',
+        title: 'Plataforma: pagos',
+        loadComponent: () =>
+          import('./features/platform/platform-billing.component').then((m) => m.PlatformBillingComponent),
+      },
+      {
         path: 'seguridad',
         title: 'Plataforma: eventos de seguridad',
         loadComponent: () =>
@@ -553,6 +559,13 @@ export const routes: Routes = [
         canActivate: [permissionGuard],
         data: { permission: 'roles:manage' },
         loadComponent: () => import('./features/roles/roles.component').then((m) => m.RolesComponent),
+      },
+      {
+        path: 'planes',
+        title: 'Planes y pagos',
+        canActivate: [permissionGuard],
+        data: { permission: 'settings:manage' },
+        loadComponent: () => import('./features/billing/plans.component').then((m) => m.PlansComponent),
       },
       {
         path: 'ajustes',

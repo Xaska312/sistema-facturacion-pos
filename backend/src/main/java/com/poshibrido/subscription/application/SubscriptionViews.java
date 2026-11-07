@@ -36,6 +36,14 @@ public final class SubscriptionViews {
                            List<String> features, int maxInvoiceScans) {
     }
 
+    /**
+     * Algo comprado aparte del plan (decisión 302): XASKA IA, un módulo, una función o cupos de sedes, cajas o usuarios,
+     * con su vencimiento. {@code trial}: la prueba gratis de XASKA IA.
+     */
+    public record AddonView(String code, String kind, String ref, String name, int quantity, Instant endsAt,
+                            boolean trial, boolean active) {
+    }
+
     /** Tope al mes de una función del adicional XASKA IA (decisión 295), igual para todos los negocios que lo tienen. */
     public record AiAllowance(String code, String name, int monthlyLimit) {
     }
@@ -49,7 +57,7 @@ public final class SubscriptionViews {
                                    boolean trial, BillingCycle billingCycle, Instant startedAt, Instant endsAt,
                                    Instant graceEndsAt, long daysLeft, Usage usage, String paymentInstructions,
                                    List<PaymentView> payments, Entitled entitled, Extras extras,
-                                   Instant priceLockedUntil) {
+                                   Instant priceLockedUntil, List<AddonView> addons, boolean aiTrialAvailable) {
     }
 
     /** {@code invoiceScans}: facturas leídas con IA este mes (decisión 295). */

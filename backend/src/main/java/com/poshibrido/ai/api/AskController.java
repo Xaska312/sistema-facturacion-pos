@@ -24,6 +24,7 @@ import java.util.List;
 public class AskController {
 
     private final AskService asks;
+    private final com.poshibrido.ai.application.AiTeaserService teaser;
 
     public record AskRequest(@NotBlank @Size(max = 500) String question, @Size(max = 20) List<Turn> history) {
     }
@@ -38,5 +39,12 @@ public class AskController {
     @PreAuthorize("hasAuthority('ai:ask')")
     public Usage usage() {
         return asks.usage();
+    }
+
+    /** "Aska encontró…" en Inicio para quien no tiene XASKA IA (decisión 302); no usa la IA. */
+    @GetMapping("/teaser")
+    @PreAuthorize("hasAuthority('inventory:read') or hasAuthority('reports:read')")
+    public com.poshibrido.ai.application.AiTeaserService.Teaser teaser() {
+        return teaser.teaser();
     }
 }

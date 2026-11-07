@@ -10,6 +10,7 @@ import com.poshibrido.shared.error.BusinessRuleException;
 import com.poshibrido.shared.error.NotFoundException;
 import com.poshibrido.shared.id.Ids;
 import com.poshibrido.subscription.application.ActivationCodeService.Redeemed;
+import com.poshibrido.subscription.application.SubscriptionViews.AddonView;
 import com.poshibrido.subscription.application.SubscriptionViews.Entitled;
 import com.poshibrido.subscription.application.SubscriptionViews.Extras;
 import com.poshibrido.subscription.application.SubscriptionViews.PaymentView;
@@ -82,7 +83,8 @@ public class SubscriptionService implements SubscriptionApi {
     /** Suscripción con su plan y los datos del negocio y del dueño. */
     record Current(UUID tenantId, String slug, String tradeName, String schema, String tenantStatus, String ownerEmail,
                    String ownerName, PlanView plan, boolean trial, BillingCycle cycle, Instant startedAt,
-                   Instant endsAt, Extras extras, Instant priceLockedUntil, int aiInvoiceScans) {
+                   Instant endsAt, Extras extras, Instant priceLockedUntil, int aiInvoiceScans,
+                   List<AddonView> addons, Instant aiTrialUsedAt, int aiTrialInvoiceScans) {
 
         SubscriptionStatus status(Duration grace, Instant now) {
             return SubscriptionStatus.of(trial, endsAt, grace, now);
@@ -93,6 +95,19 @@ public class SubscriptionService implements SubscriptionApi {
             return extras.until() == null || extras.until().isAfter(now);
         }
 
+        /** Lo comprado aparte que sigue vigente (decisión 302). */
+        List<AddonView> activeAddons(Instant now) {
+            return addons.stream().filter(a -> a.endsAt().isAfter(now)).toList();
+        }
+
+        /** XASKA IA solo por la prueba gratis (sin plan, extra ni compra que la incluya): topes de prueba. */
+        boolean aiTrialOnly(Instant now) {
+            boolean paid = plan.features().contains(PlanFeature.AI.name())
+                    || (extrasActive(now) && extras.features().contains(PlanFeature.AI.name()))
+                    || activeAddons(now).stream().anyMatch(a -> "AI".equals(a.ref()) && !a.trial());
+            return !paid && activeAddons(now).stream().anyMatch(a -> "AI".equals(a.ref()) && a.trial());
+        }
+
         Entitled entitled(Instant now) {
             boolean on = extrasActive(now);
             Set<String> modules = new java.util.LinkedHashSet<>(plan.modules());
@@ -101,11 +116,25 @@ public class SubscriptionService implements SubscriptionApi {
                 modules.addAll(extras.modules());
                 features.addAll(extras.features());
             }
-            return new Entitled(plus(plan.maxBranches(), on ? extras.branches() : 0),
-                    plus(plan.maxUsers(), on ? extras.users() : 0), plus(plan.maxRegisters(), on ? extras.registers() : 0),
+            int branches = on ? extras.branches() : 0;
+            int users = on ? extras.users() : 0;
+            int registers = on ? extras.registers() : 0;
+            for (AddonView a : activeAddons(now)) {
+                switch (a.kind()) {
+                    case "FEATURE" -> features.add(a.ref());
+                    case "MODULE" -> modules.add(a.ref());
+                    case "BRANCH" -> branches += a.quantity();
+                    case "REGISTER" -> registers += a.quantity();
+                    case "USER" -> users += a.quantity();
+                    default -> { }
+                }
+            }
+            int scans = !features.contains(PlanFeature.AI.name()) ? 0
+                    : aiTrialOnly(now) ? aiTrialInvoiceScans : aiInvoiceScans + (on ? extras.invoiceScans() : 0);
+            return new Entitled(plus(plan.maxBranches(), branches), plus(plan.maxUsers(), users),
+                    plus(plan.maxRegisters(), registers),
                     csvList(BusinessModule.format(BusinessModule.parse(String.join(",", modules)))),
-                    csvList(PlanFeature.format(PlanFeature.parse(String.join(",", features)))),
-                    features.contains(PlanFeature.AI.name()) ? aiInvoiceScans + (on ? extras.invoiceScans() : 0) : 0);
+                    csvList(PlanFeature.format(PlanFeature.parse(String.join(",", features)))), scans);
         }
 
         private static Integer plus(Integer max, int extra) {
@@ -216,7 +245,8 @@ public class SubscriptionService implements SubscriptionApi {
             if ("INVOICE_SCANS".equals(allowanceCode)) {
                 return e.maxInvoiceScans();
             }
-            Integer limit = jdbc.query("SELECT monthly_limit FROM platform.ai_allowances WHERE code = ?",
+            String column = c.aiTrialOnly(Instant.now()) ? "trial_limit" : "monthly_limit";
+            Integer limit = jdbc.query("SELECT " + column + " FROM platform.ai_allowances WHERE code = ?",
                     (rs, i) -> rs.getInt(1), allowanceCode).stream().findFirst().orElse(0);
             return limit;
         }).orElse(0);
@@ -261,7 +291,10 @@ public class SubscriptionService implements SubscriptionApi {
                 daysLeft(c.endsAt(), now), usage, properties.paymentInstructions(),
                 withPayments ? payments(tenantId) : List.of(), c.entitled(now),
                 new Extras(x.modules(), x.features(), x.branches(), x.registers(), x.users(), x.note(), x.until(),
-                        c.extrasActive(now), x.invoiceScans()), c.priceLockedUntil());
+                        c.extrasActive(now), x.invoiceScans()), c.priceLockedUntil(),
+                c.addons().stream().map(a -> new AddonView(a.code(), a.kind(), a.ref(), a.name(), a.quantity(),
+                        a.endsAt(), a.trial(), a.endsAt().isAfter(now))).toList(),
+                c.aiTrialUsedAt() == null && !c.entitled(now).features().contains(PlanFeature.AI.name()));
     }
 
     /** Vista del propio negocio: sin las notas internas que el administrador escribe en cada pago. */
@@ -277,7 +310,8 @@ public class SubscriptionService implements SubscriptionApi {
         return new SubscriptionView(v.tenantId(), v.tradeName(), v.plan(), v.status(), v.trial(), v.billingCycle(),
                 v.startedAt(), v.endsAt(), v.graceEndsAt(), v.daysLeft(), v.usage(), v.paymentInstructions(),
                 payments, v.entitled(), new Extras(x.modules(), x.features(), x.branches(), x.registers(), x.users(),
-                        null, x.until(), x.active(), x.invoiceScans()), v.priceLockedUntil());
+                        null, x.until(), x.active(), x.invoiceScans()), v.priceLockedUntil(), v.addons(),
+                v.aiTrialAvailable());
     }
 
     @Transactional(readOnly = true)
@@ -506,6 +540,60 @@ public class SubscriptionService implements SubscriptionApi {
         }
     }
 
+    // ------------------------------------------------------------------ adicionales (decisión 302)
+
+    static final int AI_TRIAL_DAYS = 14;
+
+    /**
+     * Suma {@code months} meses a un adicional del negocio (desde su vencimiento, o desde hoy si ya venció, no lo
+     * tenía o lo tenía en prueba), con esa cantidad. Comprar deja de ser prueba.
+     */
+    @Transactional
+    public void extendAddon(UUID tenantId, String code, int quantity, int months) {
+        if (months < 1 || months > 36 || quantity < 1 || quantity > 100) {
+            throw new BusinessRuleException("Revisa la cantidad y los meses del adicional.");
+        }
+        Instant now = Instant.now();
+        Instant current = jdbc.query("""
+                SELECT ends_at FROM platform.subscription_addons WHERE tenant_id = ? AND addon_code = ? AND NOT trial
+                FOR UPDATE""", (rs, i) -> rs.getTimestamp(1).toInstant(), tenantId, code).stream().findFirst()
+                .orElse(now);
+        Instant end = plusMonths(current.isAfter(now) ? current : now, months);
+        jdbc.update("""
+                INSERT INTO platform.subscription_addons (tenant_id, addon_code, quantity, ends_at, trial, updated_at)
+                VALUES (?, ?, ?, ?, FALSE, ?)
+                ON CONFLICT (tenant_id, addon_code) DO UPDATE SET quantity = EXCLUDED.quantity,
+                    ends_at = EXCLUDED.ends_at, trial = FALSE, updated_at = EXCLUDED.updated_at""",
+                tenantId, code, quantity, Timestamp.from(end), Timestamp.from(now));
+        evict(tenantId);
+    }
+
+    /** Prueba gratis de XASKA IA: una sola vez por negocio, {@value #AI_TRIAL_DAYS} días, con topes de prueba. */
+    @Transactional
+    public SubscriptionView startAiTrial(UUID tenantId) {
+        Current c = load(tenantId).orElseThrow(() -> new NotFoundException("El negocio no tiene suscripción."));
+        Instant now = Instant.now();
+        if (c.aiTrialUsedAt() != null) {
+            throw new BusinessRuleException("Este negocio ya usó su prueba gratis de XASKA IA.");
+        }
+        if (c.entitled(now).features().contains(PlanFeature.AI.name())) {
+            throw new BusinessRuleException("Este negocio ya tiene XASKA IA.");
+        }
+        int marked = jdbc.update("""
+                UPDATE platform.subscriptions SET ai_trial_used_at = ?, updated_at = now()
+                WHERE tenant_id = ? AND ai_trial_used_at IS NULL""", Timestamp.from(now), tenantId);
+        if (marked == 0) {
+            throw new BusinessRuleException("Este negocio ya usó su prueba gratis de XASKA IA.");
+        }
+        jdbc.update("""
+                INSERT INTO platform.subscription_addons (tenant_id, addon_code, quantity, ends_at, trial, updated_at)
+                VALUES (?, 'AI', 1, ?, TRUE, ?)
+                ON CONFLICT (tenant_id, addon_code) DO NOTHING""",
+                tenantId, Timestamp.from(now.plus(Duration.ofDays(AI_TRIAL_DAYS))), Timestamp.from(now));
+        evict(tenantId);
+        return viewForTenant(tenantId, true);
+    }
+
     // ------------------------------------------------------------------ apoyo
 
     Optional<Current> current(UUID tenantId) {
@@ -526,7 +614,8 @@ public class SubscriptionService implements SubscriptionApi {
                        p.max_users AS p_max_users, p.max_registers AS p_max_registers,
                        p.monthly_price AS p_monthly_price, p.annual_price AS p_annual_price, p.active AS p_active,
                        p.modules AS p_modules, p.features AS p_features, p.legacy AS p_legacy,
-                       (SELECT monthly_limit FROM platform.ai_allowances WHERE code = 'INVOICE_SCANS') AS ai_invoice_scans
+                       (SELECT monthly_limit FROM platform.ai_allowances WHERE code = 'INVOICE_SCANS') AS ai_invoice_scans,
+                       (SELECT trial_limit FROM platform.ai_allowances WHERE code = 'INVOICE_SCANS') AS ai_trial_scans
                 FROM platform.subscriptions s
                 JOIN platform.tenants t ON t.id = s.tenant_id
                 JOIN platform.users u ON u.id = t.owner_user_id
@@ -540,8 +629,18 @@ public class SubscriptionService implements SubscriptionApi {
                         rs.getInt("extra_branches"), rs.getInt("extra_registers"), rs.getInt("extra_users"),
                         rs.getString("extras_note"), instantOrNull(rs.getTimestamp("extras_until")), true,
                         rs.getInt("extra_invoice_scans")),
-                instantOrNull(rs.getTimestamp("price_locked_until")), rs.getInt("ai_invoice_scans")), tenantId)
-                .stream().findFirst();
+                instantOrNull(rs.getTimestamp("price_locked_until")), rs.getInt("ai_invoice_scans"),
+                addons(tenantId), instantOrNull(rs.getTimestamp("ai_trial_used_at")), rs.getInt("ai_trial_scans")),
+                tenantId).stream().findFirst();
+    }
+
+    private List<AddonView> addons(UUID tenantId) {
+        return jdbc.query("""
+                SELECT sa.addon_code, a.kind, a.ref, a.name, sa.quantity, sa.ends_at, sa.trial
+                FROM platform.subscription_addons sa JOIN platform.addons a ON a.code = sa.addon_code
+                WHERE sa.tenant_id = ? ORDER BY a.sort_order""", (rs, i) -> new AddonView(rs.getString(1),
+                rs.getString(2), rs.getString(3), rs.getString(4), rs.getInt(5), rs.getTimestamp(6).toInstant(),
+                rs.getBoolean(7), true), tenantId);
     }
 
     private List<PaymentView> payments(UUID tenantId) {

@@ -278,6 +278,7 @@ actualizar (paso 11).
 | Logo en la impresión directa (292) | Solo la imagen **web**. XASKA Impresora no cambia |
 | Mesero solo mesas (293) | Negocio V37: el rol Mesero deja de cobrar (solo si nadie lo había editado). Avísales a los restaurantes cuyos meseros cobran |
 | Cartas por piso (294) | Negocio V38. Se configuran en Mesas → Configurar → Cartas por piso (plan Empresa) |
+| Planes y pagos con Bre-B (302) | Plataforma V22. **Antes de anunciarlo:** en la consola → Pagos pon tu llave Bre-B, el titular y el banco (sin eso los negocios no pueden armar pedidos) y revisa los precios de los adicionales (XASKA IA 39.900 de partida). Revisa los comprobantes en Pagos → Por revisar |
 | Cargar con Aska (300) | Plataforma V21 y negocio V43. Tope por defecto: 20 listas al mes (consola → Planes → XASKA IA). Nada más que configurar |
 | Resumen del día (299) | Plataforma V20 y negocio V42. Una tarea revisa cada 5 minutos qué negocios con XASKA IA llegaron a su hora (`AI_DIGEST_SCHEDULE=false` la apaga). Usa los correos de la app (`RESEND_API_KEY`). Política 1.3 ya lo cubre |
 | Qué comprar y Aska (297, 298) | Plataforma V19 y negocio V41. Revisa en la consola → Planes → XASKA IA el tope de revisiones de pedidos (60 al mes). Nada más que configurar |

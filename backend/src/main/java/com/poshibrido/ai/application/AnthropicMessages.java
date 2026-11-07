@@ -26,7 +26,7 @@ import java.util.Map;
 public class AnthropicMessages {
 
     static final URI ENDPOINT = URI.create("https://api.anthropic.com/v1/messages");
-    static final ObjectMapper JSON = JsonMapper.builder()
+    public static final ObjectMapper JSON = JsonMapper.builder()
             .enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS).build();
 
     private final AiProperties properties;

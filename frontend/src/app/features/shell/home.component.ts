@@ -18,6 +18,7 @@ import { QualityAlertComponent } from '../pharmacy/quality-alert.component';
 import { describeCapabilities, firstName, greeting, quickActions } from './capabilities';
 import { MENU, isFloorOnly } from './menu';
 import { DigestCardComponent } from '../ai/digest-card.component';
+import { AskaTeaserComponent } from '../ai/aska-teaser.component';
 
 /** Dato de una baldosa del inicio (se llena cuando llega su consulta; si falla, no aparece). */
 interface Tile {
@@ -41,7 +42,7 @@ export function glyphFor(route: string): XIconName {
 @Component({
   selector: 'app-home',
   imports: [RouterLink, SkeletonModule, XIconComponent, DashboardComponent, MyDayComponent, StockAlertsComponent,
-    FirstStepsComponent, OrdersAlertComponent, QualityAlertComponent, DigestCardComponent],
+    FirstStepsComponent, OrdersAlertComponent, QualityAlertComponent, DigestCardComponent, AskaTeaserComponent],
   template: `
     <h1 class="sr-only">{{ title }}</h1>
     @if (hero(); as h) {
@@ -86,6 +87,9 @@ export function glyphFor(route: string): XIconName {
     <!-- Resumen del día de Aska (decisión 299); no ocupa espacio si no hay. -->
     @if (auth.hasPermission('ai:ask')) {
       <app-digest-card class="block mb-5 empty:hidden" />
+    } @else if (auth.hasPermission('inventory:read') || auth.hasPermission('reports:read')) {
+      <!-- "Aska encontró…" para quien no tiene XASKA IA (decisión 302). -->
+      <app-aska-teaser class="block mb-5 empty:hidden" />
     }
 
     <!-- Pedidos atrasados o para hoy (decisión 258); no ocupa espacio si no hay. -->
