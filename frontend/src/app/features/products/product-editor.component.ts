@@ -16,6 +16,7 @@ import { TermComponent } from '../../shared/help/term.component';
 import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
 import { permissionFlag } from '../../core/auth/permission-flag';
 import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
+import { AskaMomentsState } from '../ai/aska-moments-state';
 import { CumEntry, MedicinesApi } from '../../core/api/medicines.api';
 import {
   applyCum,
@@ -292,6 +293,7 @@ import { MedicineSectionComponent } from './medicine-section.component';
   `,
 })
 export class ProductEditorComponent implements OnInit, HasUnsavedChanges {
+  private readonly moments = inject(AskaMomentsState);
   /** Parámetro de ruta :id (ausente en /nuevo). */
   readonly id = input<string>();
   /** Datos para empezar el producto desde la factura de un proveedor (decisión 290): ?nombre=…&codigo=…&costo=… */
@@ -527,6 +529,9 @@ export class ProductEditorComponent implements OnInit, HasUnsavedChanges {
         this.saving.set(false);
         this.messages.add({ severity: 'success', summary: 'Producto guardado', detail: saved.name });
         this.saved = true;
+        if (!current) {
+          this.moments.productCreatedByHand();
+        }
         if (!current && saved.trackInventory && this.canAdjustStock()) {
           this.offerInitialStock(saved);
         } else {

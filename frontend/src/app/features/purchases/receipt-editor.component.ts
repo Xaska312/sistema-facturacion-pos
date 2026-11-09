@@ -2,7 +2,9 @@ import { XaskaIaLogoComponent } from '../../shared/brand/xaska-ia-logo.component
 import { AskaLoaderComponent } from '../../shared/brand/aska-loader.component';
 import { InvoiceCreatedLine } from '../../core/api/catalog.api';
 import { InvoiceNewProductsComponent } from './invoice-new-products.component';
-import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
+import { AskaNudgeComponent } from '../ai/aska-nudge.component';
+import { MANUAL_LINES_TRIGGER } from '../ai/aska-nudge';
+import { Component, ElementRef, HostListener, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import { forkJoin } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -63,7 +65,7 @@ import {
  */
 @Component({
   selector: 'app-receipt-editor',
-  imports: [XaskaIaLogoComponent, AskaLoaderComponent, InvoiceNewProductsComponent, FormsModule, RouterLink, ButtonModule, InputTextModule, PageHeaderComponent, PesosInputDirective],
+  imports: [XaskaIaLogoComponent, AskaLoaderComponent, InvoiceNewProductsComponent, AskaNudgeComponent, FormsModule, RouterLink, ButtonModule, InputTextModule, PageHeaderComponent, PesosInputDirective],
   template: `
     <app-page-header title="Recibir mercancía"
                      description="Registra lo que llegó contra la factura del proveedor. Revisa cada producto antes de aceptarlo." />
@@ -261,6 +263,16 @@ import {
             </article>
           }
         </div>
+      }
+
+      @if (showNudge()) {
+        <!-- Decisión 308: Aska en el momento del dolor. -->
+        <app-aska-nudge moment="purchase" [available]="canScan() && !scanLimitReached()"
+                        [title]="'Vas en la línea ' + lines().length + ' a mano'"
+                        withAi="Tómale una foto a la factura (o súbeme el PDF) y yo lleno el resto en segundos; tú solo revisas."
+                        withoutAi="Con XASKA IA, Aska lee la factura con una foto: proveedor, productos, cantidades y costos en segundos."
+                        action="Leer la factura" (act)="nudgeScan()" (closed)="nudgeClosed.set(true)"
+                        (trialStarted)="refreshScanUsage()" />
       }
 
       @for (line of lines(); track line.key; let i = $index) {
@@ -478,6 +490,11 @@ export class ReceiptEditorComponent implements OnInit, HasUnsavedChanges {
   /** Lectura con IA (decisión 295): lo usado del mes y si se está leyendo una factura. */
   protected readonly scanUsage = signal<InvoiceScanUsage | null>(null);
   protected readonly scanning = signal(false);
+  /** Decisión 308: el aviso de Aska al digitar una compra larga, una vez por compra. */
+  protected readonly nudgeClosed = signal(false);
+  protected readonly showNudge = computed(() =>
+    !this.nudgeClosed() && this.draft() === null && this.lines().length >= MANUAL_LINES_TRIGGER && !this.busy());
+  private readonly scanInput = viewChild<ElementRef<HTMLInputElement>>('scanFile');
   protected readonly busy = computed(() => this.importing() || this.scanning());
   protected readonly canScan = computed(() => {
     const usage = this.scanUsage();
@@ -713,7 +730,13 @@ export class ReceiptEditorComponent implements OnInit, HasUnsavedChanges {
 
   // ------------------------------------------------------------------ factura leída con IA (decisión 295)
 
-  private refreshScanUsage(): void {
+  /** Desde el aviso de Aska: abre el selector de fotos o PDF de la factura (lo digitado se reemplaza, con aviso). */
+  protected nudgeScan(): void {
+    this.nudgeClosed.set(true);
+    this.scanInput()?.nativeElement.click();
+  }
+
+  protected refreshScanUsage(): void {
     if (this.canScanPermission()) {
       this.api.scanUsage().subscribe({ next: (usage) => this.scanUsage.set(usage), error: () => this.scanUsage.set(null) });
     }

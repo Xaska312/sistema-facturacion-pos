@@ -186,13 +186,19 @@ import { COUNTABLE, addonsForSale, annualSaving, checkLines, months, orderTotal,
             <span class="text-xs text-muted">Solo comprar adicionales</span>
           </button>
           @for (p of c.plans; track p.code) {
-            <button type="button" class="plan" [class.plan-on]="planCode() === p.code" role="radio"
-                    [attr.aria-checked]="planCode() === p.code" (click)="planCode.set(p.code)">
+            <button type="button" class="plan" [class.plan-on]="planCode() === p.code" [class.plan-founder]="p.founder"
+                    role="radio" [attr.aria-checked]="planCode() === p.code" (click)="planCode.set(p.code)">
+              @if (p.founder) {
+                <span class="founder-tag">Tu precio fundador</span>
+              }
               <span class="font-bold">{{ p.name }}
                 @if (p.code === s.plan.code) { <span class="trial-tag">actual</span> }</span>
               <span class="text-lg font-extrabold">{{ cop(price(p)) }}<span class="text-xs font-medium text-muted">/{{ cycle() === 'ANNUAL' ? 'año' : 'mes' }}</span></span>
               @if (cycle() === 'ANNUAL' && saving(p); as pct) { <span class="text-xs text-success">Ahorras {{ pct }} %</span> }
               <span class="text-xs text-muted">{{ limits(p) }}</span>
+              @if (p.founder && s.priceLockedUntil) {
+                <span class="text-xs founder-note">Hasta el {{ date(s.priceLockedUntil) }}, por ser de los primeros.</span>
+              }
             </button>
           }
         </div>
@@ -293,6 +299,12 @@ import { COUNTABLE, addonsForSale, annualSaving, checkLines, months, orderTotal,
       border-radius: 0.875rem; border: 1.5px solid var(--color-line); background: var(--color-surface);
     }
     .plan-on { border-color: var(--aska); background: var(--aska-soft); }
+    .plan-founder { border-style: dashed; border-color: var(--aska-amber); }
+    .founder-tag {
+      font-size: 0.6875rem; font-weight: 800; padding: 0.125rem 0.5rem; border-radius: 9999px;
+      color: var(--xaska-ia-tag-text); background: linear-gradient(135deg, var(--aska-cta-from), var(--aska-cta-to));
+    }
+    .founder-note { color: var(--aska-soft-fg); }
     .addon {
       display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; padding: 0.75rem; border-radius: 0.75rem;
       border: 1px solid var(--color-line);
@@ -384,7 +396,10 @@ export class PlansComponent implements OnInit {
       if (c.breb.hasQr) {
         this.loadQr();
       }
-      if (this.planCode() === null && c.subscription.trial) {
+      if (this.planCode() === null && c.plans[0]?.founder) {
+        // Cliente fundador: lo normal es renovar su mismo plan a su precio.
+        this.planCode.set(c.plans[0].code);
+      } else if (this.planCode() === null && c.subscription.trial) {
         // En la prueba, lo normal es elegir un plan: se sugiere el que ya usa.
         this.planCode.set(c.plans.some((p) => p.code === c.subscription.plan.code) ? c.subscription.plan.code : null);
       }

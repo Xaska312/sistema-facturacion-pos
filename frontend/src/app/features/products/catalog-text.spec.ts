@@ -17,16 +17,18 @@ function draft(): CatalogDraft {
           currentPrice: 3570, costLocked: false },
         proposal: { action: 'UPDATE', sku: 'ARROZ-1', name: 'Arroz Diana 1 kg', category: 'Granos', unitCode: 'UND',
           taxCode: 'IVA19', cost: 2400, price: 4300, marginPercent: 33.3 },
+        quantity: null, stockNote: null,
       },
       {
         rowId: 2, description: 'Sal 500 g', supplierCode: 'S-1', barcode: null, listCost: 800, taxRate: 0, match: null,
         proposal: { action: 'SKIP', sku: 'S-1', name: 'Sal 500 g', category: null, unitCode: 'UND', taxCode: 'EXENTO',
           cost: 800, price: 1200, marginPercent: 30 },
+        quantity: null, stockNote: null,
       },
     ],
     units: [{ code: 'KG', name: 'Kilo', rate: null }, { code: 'UND', name: 'Unidad', rate: null }],
     taxes, categories: ['Granos'], pricesIncludeTax: true, margin: 30, warnings: [],
-    usage: { available: true, limit: 20, used: 1 },
+    usage: { available: true, limit: 20, used: 1 }, inventory: false, branchId: null,
   };
 }
 
@@ -64,5 +66,14 @@ describe('catalog-text (Cargar con Aska)', () => {
   it('avisa cuando el costo supera el precio', () => {
     const e = { ...toEdits(draft())[0], cost: 5000, price: 4300 };
     expect(rowProblem(e)).toBe('El costo es mayor que el precio.');
+  });
+
+  it('modo inventario: marca lo que trae cantidad aunque no cambie y la manda en el saldo inicial', () => {
+    const d = draft();
+    d.rows[1] = { ...d.rows[1], quantity: 12 };
+    const edits = toEdits(d);
+    expect(edits[1].selected).toBeTrue();
+    expect(toConfirmed(edits)[1].quantity).toBe(12);
+    expect(rowProblem({ ...edits[1], quantity: -1 })).toBe('La cantidad no es válida.');
   });
 });

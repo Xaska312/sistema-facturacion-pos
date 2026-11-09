@@ -48,4 +48,11 @@ class CatalogImportServiceTest {
         assertThat(CatalogImportService.taxCode(d("0"), taxes)).isEqualTo("EXENTO");
         assertThat(CatalogImportService.taxCode(d("8"), taxes)).isEqualTo("EXCLUIDO");
     }
+
+    @Test
+    void costFromPriceWhenTheNotebookOnlyHasThePrice() {
+        // 2.380 con IVA 19 % incluido → 2.000 sin IVA → con 30 % de margen, costo 1.400.
+        assertThat(CatalogImportService.costFromPrice(d("2380"), d("30"), d("19"), true)).isEqualByComparingTo("1400");
+        assertThat(CatalogImportService.costFromPrice(d("2000"), d("30"), d("0"), true)).isEqualByComparingTo("1400");
+    }
 }

@@ -38,6 +38,41 @@ export interface Digest {
   points: DigestPoint[];
   figures: { label: string; value: string }[];
   createdAt: string | null;
+  /** El clima del día (decisión 307); null si esta persona no ve las ventas o el resumen es anterior. */
+  weather?: DigestWeatherCode | null;
+  /** Lo que suele pasar mañana según el mismo día de las últimas semanas. */
+  forecast?: string | null;
+  /** Hasta 2 preguntas para seguir la conversación con Aska. */
+  followUps?: string[];
+}
+
+export type DigestWeatherCode = 'SUNNY' | 'PARTLY' | 'CLOUDY' | 'RAIN' | 'STORM' | 'QUIET';
+
+/** Aska en el momento del dolor (decisión 308). */
+export interface AskaMoments {
+  /** El negocio tiene XASKA IA (pagada o en prueba). */
+  hasAi: boolean;
+  /** Quien mira puede activarla (el dueño). */
+  canBuy: boolean;
+  /** Puede empezar la prueba gratis. */
+  trialAvailable: boolean;
+  /** Hay productos pero casi ninguno tiene existencias. */
+  emptyStock: boolean;
+}
+
+/** "Lo que hiciste con Aska" (decisión 309): el mes pasado, con el tiempo ahorrado estimado. */
+export interface AskaRecap {
+  title: string;
+  from: string;
+  to: string;
+  invoices: number;
+  invoiceLines: number;
+  products: number;
+  questions: number;
+  reviews: number;
+  digests: number;
+  minutesSaved: number;
+  savedLabel: string;
 }
 
 export interface DigestSettings {
@@ -87,6 +122,10 @@ export interface CatalogRow {
   taxRate: number | null;
   match: CatalogMatch | null;
   proposal: CatalogProposal;
+  /** Modo inventario (decisión 306): lo que hay, para el saldo inicial; null si no aplica. */
+  quantity: number | null;
+  /** Por qué no se le pone saldo inicial (ya tiene movimientos en esa sede). */
+  stockNote: string | null;
 }
 
 export interface CatalogOption {
@@ -104,6 +143,8 @@ export interface CatalogDraft {
   margin: number;
   warnings: string[];
   usage: AskUsage;
+  inventory: boolean;
+  branchId: string | null;
 }
 
 /** Fila confirmada: {@code productId} nulo = crear. */
@@ -118,6 +159,7 @@ export interface CatalogConfirmed {
   cost: number;
   price: number;
   supplierCode: string | null;
+  quantity: number | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -138,6 +180,16 @@ export class AiApi {
   }
 
   /** El último Resumen del día (hoy o ayer) con lo que esta persona puede ver; null si no hay. */
+  /** Decisión 308: si el negocio tiene XASKA IA y si el inventario está vacío (no usa la IA). */
+  moments(): Observable<AskaMoments> {
+    return this.http.get<AskaMoments>('/api/v1/ai/moments', { context: new HttpContext().set(SILENT_CLIENT_ERRORS, true) });
+  }
+
+  /** Decisión 309: lo del mes pasado, solo los primeros 7 días del mes (204 → null). Para el dueño. */
+  recap(): Observable<AskaRecap | null> {
+    return this.http.get<AskaRecap | null>('/api/v1/ai/recap', { context: new HttpContext().set(SILENT_CLIENT_ERRORS, true) });
+  }
+
   latestDigest(): Observable<Digest | null> {
     return this.http.get<Digest | null>('/api/v1/ai/digest/latest');
   }
@@ -156,19 +208,27 @@ export class AiApi {
   }
 
   /** Aska lee la lista de precios del proveedor; nada se guarda. Los 4xx se muestran en la pantalla. */
-  readCatalog(files: File[], supplierId: string | null, margin: number): Observable<CatalogDraft> {
+  readCatalog(files: File[], supplierId: string | null, margin: number, branchId: string | null = null):
+  Observable<CatalogDraft> {
     const form = new FormData();
     files.forEach((f) => form.append('files', f, f.name));
     if (supplierId) {
       form.append('supplierId', supplierId);
+    }
+    if (branchId) {
+      // Modo inventario (decisión 306): cuaderno, hojas o Excel con cantidades.
+      form.append('inventory', 'true');
+      form.append('branchId', branchId);
     }
     form.append('margin', String(margin));
     return this.http.post<CatalogDraft>('/api/v1/ai/catalog/read', form,
       { context: new HttpContext().set(SILENT_CLIENT_ERRORS, true) });
   }
 
-  applyCatalog(rows: CatalogConfirmed[], supplierId: string | null): Observable<ImportReport> {
-    return this.http.post<ImportReport>('/api/v1/ai/catalog/apply', { supplierId, rows });
+  applyCatalog(rows: CatalogConfirmed[], supplierId: string | null, branchId: string | null = null):
+  Observable<{ report: ImportReport; stocked: number }> {
+    return this.http.post<{ report: ImportReport; stocked: number }>('/api/v1/ai/catalog/apply',
+      { supplierId, branchId, rows });
   }
 
   catalogUsage(): Observable<AskUsage> {

@@ -1,3 +1,4 @@
+import { AskaRecapCardComponent } from '../ai/aska-recap-card.component';
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { SkeletonModule } from 'primeng/skeleton';
@@ -41,7 +42,7 @@ export function glyphFor(route: string): XIconName {
  */
 @Component({
   selector: 'app-home',
-  imports: [RouterLink, SkeletonModule, XIconComponent, DashboardComponent, MyDayComponent, StockAlertsComponent,
+  imports: [AskaRecapCardComponent, RouterLink, SkeletonModule, XIconComponent, DashboardComponent, MyDayComponent, StockAlertsComponent,
     FirstStepsComponent, OrdersAlertComponent, QualityAlertComponent, DigestCardComponent, AskaTeaserComponent],
   template: `
     <h1 class="sr-only">{{ title }}</h1>
@@ -83,6 +84,11 @@ export function glyphFor(route: string): XIconName {
     }
 
     <app-first-steps class="block mb-5" />
+
+    <!-- Lo que hiciste con Aska el mes pasado (decisión 309): al dueño, los primeros 7 días del mes. -->
+    @if (auth.hasPermission('settings:manage')) {
+      <app-aska-recap-card class="block mb-5 empty:hidden" />
+    }
 
     <!-- Resumen del día de Aska (decisión 299); no ocupa espacio si no hay. -->
     @if (auth.hasPermission('ai:ask')) {

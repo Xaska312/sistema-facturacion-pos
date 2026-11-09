@@ -240,101 +240,246 @@ public class MailTemplates {
     }
 
     /**
-     * Resumen del día de Aska (decisiones 299 y 300): lo envía "Aska de XASKA", con su propio diseño (encabezado índigo
-     * noche, el monograma IA con la chispa ámbar), en primera persona y firmado por ella. Solo los puntos que el rol de
-     * quien lo recibe puede ver.
+     * Resumen del día de Aska como "el clima de tu negocio" (decisiones 299, 300 y 307): lo envía "Aska de XASKA" en
+     * primera persona. Arriba, el clima del día ({@code weather}: emoji y nombre; nulo si quien lo recibe no ve las
+     * ventas) con la venta del día; luego lo que Aska encontró, el clima de cada sección que esa persona puede ver
+     * ({@code sections}: nombre, emoji, estado), el pronóstico de mañana y preguntas que abren a Aska en la app.
      */
     public MailMessage dailyDigest(String to, String name, String businessName, String dateLabel, String headline,
-                                   List<DigestPoint> points, List<String[]> figures) {
+                                   List<DigestPoint> points, List<String[]> figures, String[] weather,
+                                   List<String[]> sections, String forecast, List<String> followUps) {
         String first = name == null || name.isBlank() ? "" : name.trim().split("\\s+")[0];
-        String hello = first.isEmpty() ? "Hola." : "Hola, " + first + ".";
-        String intro = "Soy Aska. Te cuento cómo le fue a " + businessName + " el " + dateLabel + ":";
+        String hello = first.isEmpty() ? "Hola," : "Hola, " + first + ",";
         String link = properties.link("/app");
+        String day = dateLabel == null ? "" : dateLabel;
+        String main = figures.isEmpty() ? null : figures.getFirst()[1];
         StringBuilder html = new StringBuilder()
                 .append("<!doctype html><html lang=\"es\"><body style=\"margin:0;padding:0;background:#eef0f7;\">")
                 .append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" ")
                 .append("style=\"background:#eef0f7;padding:24px 0;font-family:Arial,Helvetica,sans-serif;\"><tr>")
                 .append("<td align=\"center\"><table role=\"presentation\" width=\"560\" cellpadding=\"0\" ")
-                .append("cellspacing=\"0\" style=\"max-width:560px;width:100%;background:#ffffff;border-radius:18px;")
-                .append("overflow:hidden;border:1px solid #c7d2fe;\">")
-                // Encabezado de Aska.
-                .append("<tr><td style=\"background:#1e1b4b;background-image:linear-gradient(160deg,#1e1b4b,#3730a3);")
-                .append("padding:22px 26px;\"><table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\"><tr>")
-                .append("<td style=\"width:48px;height:48px;background:#4338ca;border-radius:13px;text-align:center;")
-                .append("vertical-align:middle;color:#ffffff;font-size:19px;font-weight:bold;letter-spacing:1px;\">IA")
-                .append("<span style=\"color:#fcd34d;font-size:13px;vertical-align:top;\">&#10022;</span></td>")
-                .append("<td style=\"padding-left:14px;\"><div style=\"color:#ffffff;font-size:24px;font-weight:bold;")
-                .append("letter-spacing:-0.5px;\">Aska</div><div style=\"color:#c7d2fe;font-size:13px;\">")
-                .append("Tu asistente en XASKA &middot; ").append(escape(businessName)).append("</div></td>")
-                .append("</tr></table></td></tr>")
-                .append("<tr><td style=\"padding:24px 26px;color:#111827;font-size:15px;line-height:1.55;\">")
-                .append("<p style=\"margin:0 0 6px;font-weight:bold;\">").append(escape(hello)).append("</p>")
-                .append("<p style=\"margin:0 0 16px;\">").append(escape(intro)).append("</p>")
-                .append("<p style=\"margin:0 0 18px;padding:14px 16px;border-radius:12px;background:#eef2ff;")
-                .append("color:#312e81;font-size:17px;font-weight:bold;line-height:1.4;\">").append(escape(headline))
-                .append("</p>");
-        if (!figures.isEmpty()) {
-            html.append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"6\" ")
-                    .append("style=\"margin:0 -6px 12px;\"><tr>");
-            for (int i = 0; i < figures.size(); i++) {
-                if (i == 2) {
-                    html.append("</tr><tr>");
-                }
-                html.append("<td width=\"50%\" style=\"background:#f5f6fb;border-radius:12px;padding:10px 12px;\">")
-                        .append("<div style=\"font-size:11px;font-weight:bold;letter-spacing:0.5px;color:#4338ca;")
-                        .append("text-transform:uppercase;\">").append(escape(figures.get(i)[0])).append("</div>")
-                        .append("<div style=\"font-size:19px;font-weight:bold;color:#111827;\">")
+                .append("cellspacing=\"0\" style=\"max-width:560px;width:100%;background:#ffffff;border-radius:20px;")
+                .append("overflow:hidden;\">")
+                // El cielo del día: noche índigo que se aclara hacia el ámbar.
+                .append("<tr><td bgcolor=\"#1e1b4b\" style=\"background:#1e1b4b;background-image:linear-gradient(160deg,")
+                .append("#1e1b4b 0%,#3730a3 62%,#b45309 135%);padding:26px 28px 24px;\">")
+                .append("<div style=\"color:#fde68a;font-size:11px;font-weight:bold;letter-spacing:1.5px;")
+                .append("text-transform:uppercase;\">El clima de ").append(escape(businessName)).append(" &middot; ")
+                .append(escape(day)).append("</div>")
+                .append("<table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin-top:12px;\"><tr>")
+                .append("<td style=\"font-size:56px;line-height:1;padding-right:16px;vertical-align:middle;\">")
+                .append(weather == null ? "&#10022;" : weather[0]).append("</td><td style=\"vertical-align:middle;\">");
+        if (main != null) {
+            html.append("<div style=\"color:#ffffff;font-size:36px;font-weight:bold;letter-spacing:-1px;line-height:1.1;\">")
+                    .append(escape(main)).append("</div>");
+        }
+        html.append("<div style=\"color:#e0e7ff;font-size:15px;margin-top:2px;\">")
+                .append(weather == null ? "Tu día, contado por Aska" : escape(weather[1])).append("</div></td></tr></table>")
+                .append("</td></tr>")
+                .append("<tr><td style=\"padding:24px 28px 8px;color:#1f2937;font-size:15px;line-height:1.6;\">")
+                .append("<p style=\"margin:0 0 10px;\">").append(escape(hello)).append("</p>")
+                .append("<p style=\"margin:0 0 16px;font-size:17px;line-height:1.5;color:#111827;\">")
+                .append(escape(headline)).append("</p>");
+        if (figures.size() > 1) {
+            html.append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" ")
+                    .append("style=\"margin:0 0 14px;border-top:1px solid #eef0f7;border-bottom:1px solid #eef0f7;\"><tr>");
+            for (int i = 1; i < figures.size(); i++) {
+                html.append("<td style=\"padding:12px 4px;\"><div style=\"font-size:11px;color:#6b7280;")
+                        .append("text-transform:uppercase;letter-spacing:0.5px;\">").append(escape(figures.get(i)[0]))
+                        .append("</div><div style=\"font-size:18px;font-weight:bold;color:#3730a3;\">")
                         .append(escape(figures.get(i)[1])).append("</div></td>");
             }
             html.append("</tr></table>");
         }
         for (DigestPoint p : points) {
-            String[] tone = switch (p.tone() == null ? "" : p.tone()) {
-                case "bad" -> new String[] {"Urgente", "#fee2e2", "#7f1d1d"};
-                case "warning" -> new String[] {"Ojo", "#fef3c7", "#78350f"};
-                case "good" -> new String[] {"Bien", "#dcfce7", "#14532d"};
-                default -> new String[] {"Dato", "#dbeafe", "#1e3a8a"};
+            String icon = switch (p.tone() == null ? "" : p.tone()) {
+                case "bad" -> "&#9928;&#65039;";
+                case "warning" -> "&#9729;&#65039;";
+                case "good" -> "&#9728;&#65039;";
+                default -> "&#128161;";
             };
-            html.append("<div style=\"padding:12px 0;border-top:1px solid #e5e7eb;\">")
-                    .append("<span style=\"display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;")
-                    .append("font-weight:bold;background:").append(tone[1]).append(";color:").append(tone[2])
-                    .append(";\">").append(tone[0]).append("</span> <strong>").append(escape(p.title()))
-                    .append("</strong><div style=\"margin-top:4px;color:#374151;font-size:14px;\">")
-                    .append(escape(p.detail())).append("</div></div>");
+            String bg = switch (p.tone() == null ? "" : p.tone()) {
+                case "bad" -> "#fef2f2";
+                case "warning" -> "#fffbeb";
+                default -> "#ffffff";
+            };
+            html.append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" ")
+                    .append("style=\"margin:0 0 8px;background:").append(bg).append(";border-radius:12px;\"><tr>")
+                    .append("<td style=\"width:34px;font-size:20px;vertical-align:top;padding:10px 0 10px 10px;\">")
+                    .append(icon).append("</td><td style=\"padding:10px 12px 10px 6px;\"><div style=\"font-weight:bold;")
+                    .append("color:#111827;font-size:15px;\">").append(escape(p.title())).append("</div>")
+                    .append("<div style=\"color:#4b5563;font-size:14px;margin-top:2px;\">").append(escape(p.detail()))
+                    .append("</div></td></tr></table>");
         }
-        html.append("<p style=\"margin:22px 0 6px;\"><a href=\"").append(escape(link))
+        if (!sections.isEmpty()) {
+            html.append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" ")
+                    .append("style=\"margin:14px 0 4px;background:#f5f6fb;border-radius:12px;\"><tr>");
+            for (String[] s : sections) {
+                html.append("<td align=\"center\" style=\"padding:12px 6px;font-size:12px;color:#4b5563;\">")
+                        .append("<div style=\"font-size:22px;line-height:1.2;\">").append(s[1]).append("</div>")
+                        .append("<div style=\"font-weight:bold;color:#1f2937;\">").append(escape(s[0])).append("</div>")
+                        .append("<div>").append(escape(s[2])).append("</div></td>");
+            }
+            html.append("</tr></table>");
+        }
+        if (forecast != null && !forecast.isBlank()) {
+            html.append("<div style=\"margin:16px 0 4px;padding:14px 16px;background:#eef2ff;border-left:4px solid ")
+                    .append("#f59e0b;border-radius:0 12px 12px 0;\"><div style=\"font-size:11px;font-weight:bold;")
+                    .append("letter-spacing:1px;color:#b45309;text-transform:uppercase;\">&#127749; Pronóstico para mañana")
+                    .append("</div><div style=\"color:#312e81;font-size:15px;margin-top:4px;\">").append(escape(forecast))
+                    .append("</div></div>");
+        }
+        if (followUps != null && !followUps.isEmpty()) {
+            html.append("<p style=\"margin:20px 0 8px;font-size:13px;color:#6b7280;\">¿Seguimos? Toca una y te ")
+                    .append("respondo en XASKA:</p><p style=\"margin:0;\">");
+            for (String q : followUps) {
+                String url = properties.link("/app?aska=" + java.net.URLEncoder.encode(q, java.nio.charset.StandardCharsets.UTF_8));
+                html.append("<a href=\"").append(escape(url)).append("\" style=\"display:inline-block;margin:0 6px 8px 0;")
+                        .append("padding:8px 14px;border:1.5px solid #4338ca;border-radius:999px;color:#4338ca;")
+                        .append("text-decoration:none;font-size:14px;\">").append(escape(q)).append("</a>");
+            }
+            html.append("</p>");
+        }
+        html.append("<p style=\"margin:20px 0 6px;\"><a href=\"").append(escape(link))
                 .append("\" style=\"display:inline-block;background:#4338ca;color:#ffffff;text-decoration:none;")
-                .append("padding:12px 20px;border-radius:12px;font-weight:bold;\">Pregúntame en XASKA</a></p>")
-                .append("<p style=\"margin:18px 0 0;\">Que tengas un buen cierre,<br><strong>Aska</strong> ")
-                .append("<span style=\"color:#f59e0b;\">&#10022;</span><br><span style=\"font-size:13px;")
-                .append("color:#6b7280;\">Reviso tus datos para que decidas mejor; las decisiones siempre son ")
-                .append("tuyas.</span></p></td></tr>")
-                .append("<tr><td style=\"padding:14px 26px 20px;background:#f5f6fb;font-size:12px;color:#6b7280;")
-                .append("line-height:1.5;\">Te escribo con los datos de ").append(escape(businessName))
-                .append(" que tu usuario puede ver. Puedes cambiar la hora o apagar el resumen en Ajustes &rarr; ")
-                .append("Resumen del día. Si el botón no funciona: ").append(escape(link))
-                .append("<br>Aska es la IA de XASKA POS.</td></tr></table></td></tr></table></body></html>");
+                .append("padding:12px 22px;border-radius:12px;font-weight:bold;\">Pregúntale a Aska</a></p>")
+                .append("<p style=\"margin:20px 0 22px;\">Aquí estoy para lo que necesites,<br>")
+                .append("<strong style=\"color:#3730a3;\">Aska</strong> <span style=\"color:#f59e0b;\">&#10022;</span></p>")
+                .append("</td></tr>")
+                .append("<tr><td style=\"padding:14px 28px 20px;background:#f5f6fb;font-size:12px;color:#6b7280;")
+                .append("line-height:1.5;\">El clima sale de tus ventas frente al mismo día de la semana pasada y de ")
+                .append("lo que encontré. Te escribo con los datos de ").append(escape(businessName))
+                .append(" que tu usuario puede ver; cambia la hora o apaga el resumen en Ajustes &rarr; Resumen del día. ")
+                .append("Si los botones no funcionan: ").append(escape(link))
+                .append("<br>Aska es la IA de XASKA POS. Las decisiones siempre son tuyas.</td></tr>")
+                .append("</table></td></tr></table></body></html>");
 
-        StringBuilder text = new StringBuilder(hello).append("\n").append(intro).append("\n\n")
-                .append(headline).append("\n\n");
-        figures.forEach(f -> text.append(f[0]).append(": ").append(f[1]).append("\n"));
-        if (!figures.isEmpty()) {
+        StringBuilder text = new StringBuilder();
+        if (weather != null) {
+            text.append(weather[0]).append(" ").append(weather[1]);
+            if (main != null) {
+                text.append(" · ").append(main);
+            }
+            text.append("\n\n");
+        }
+        text.append(hello).append("\n").append(headline).append("\n\n");
+        figures.stream().skip(1).forEach(f -> text.append(f[0]).append(": ").append(f[1]).append("\n"));
+        if (figures.size() > 1) {
             text.append("\n");
         }
         for (DigestPoint p : points) {
-            String prefix = switch (p.tone() == null ? "" : p.tone()) {
-                case "bad" -> "Urgente · ";
-                case "warning" -> "Ojo · ";
-                case "good" -> "Bien · ";
-                default -> "";
-            };
-            text.append(prefix).append(p.title()).append(": ").append(p.detail()).append("\n\n");
+            text.append("· ").append(p.title()).append(": ").append(p.detail()).append("\n");
         }
-        text.append("Pregúntame en XASKA: ").append(link).append("\n\n")
-                .append("Que tengas un buen cierre,\nAska, la IA de XASKA\n\n")
+        if (!sections.isEmpty()) {
+            text.append("\n");
+            sections.forEach(s -> text.append(s[1]).append(" ").append(s[0]).append(": ").append(s[2]).append("\n"));
+        }
+        if (forecast != null && !forecast.isBlank()) {
+            text.append("\nPronóstico para mañana: ").append(forecast).append("\n");
+        }
+        text.append("\nPregúntale a Aska: ").append(link).append("\n\n")
+                .append("Aquí estoy para lo que necesites,\nAska, la IA de XASKA\n\n")
                 .append("Cambia la hora o apaga el resumen en Ajustes → Resumen del día.");
-        return new MailMessage(to, "Aska · Tu resumen del " + dateLabel + " · " + businessName, html.toString(),
-                text.toString(), java.util.UUID.randomUUID().toString(), "resumen-del-dia", "Aska de XASKA");
+        String subject = (weather == null ? "" : weather[0] + " ") + "Aska · El clima de " + businessName + " el " + day;
+        return new MailMessage(to, subject, html.toString(), text.toString(), java.util.UUID.randomUUID().toString(),
+                "resumen-del-dia", "Aska de XASKA");
+    }
+
+    /**
+     * "Lo que hiciste con Aska" (decisión 309): al dueño, lo que XASKA IA hizo por el negocio en el mes o en la prueba
+     * gratis, con el tiempo ahorrado estimado ({@code saved}, nulo si no hubo nada) y lo hecho ({@code lines}: emoji y
+     * frase en primera persona). Con {@code trialEnds} es el de la prueba: cuándo termina y el botón para quedarse.
+     */
+    public MailMessage askaRecap(String to, String name, String businessName, String title, String saved,
+                                 List<String[]> lines, String trialEnds) {
+        String first = name == null || name.isBlank() ? "" : name.trim().split("\\s+")[0];
+        String hello = first.isEmpty() ? "Hola," : "Hola, " + first + ",";
+        boolean trial = trialEnds != null;
+        String link = properties.link(trial ? "/app/planes" : "/app");
+        StringBuilder html = new StringBuilder()
+                .append("<!doctype html><html lang=\"es\"><body style=\"margin:0;padding:0;background:#eef0f7;\">")
+                .append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" ")
+                .append("style=\"background:#eef0f7;padding:24px 0;font-family:Arial,Helvetica,sans-serif;\"><tr>")
+                .append("<td align=\"center\"><table role=\"presentation\" width=\"560\" cellpadding=\"0\" ")
+                .append("cellspacing=\"0\" style=\"max-width:560px;width:100%;background:#ffffff;border-radius:20px;")
+                .append("overflow:hidden;\">")
+                .append("<tr><td bgcolor=\"#1e1b4b\" style=\"background:#1e1b4b;background-image:linear-gradient(160deg,")
+                .append("#1e1b4b 0%,#3730a3 62%,#b45309 135%);padding:26px 28px 24px;\">")
+                .append("<div style=\"color:#fde68a;font-size:11px;font-weight:bold;letter-spacing:1.5px;")
+                .append("text-transform:uppercase;\">").append(escape(title)).append(" &middot; ")
+                .append(escape(businessName)).append("</div>");
+        if (saved != null) {
+            html.append("<div style=\"color:#e0e7ff;font-size:15px;margin-top:14px;\">Te ahorré</div>")
+                    .append("<div style=\"color:#ffffff;font-size:38px;font-weight:bold;letter-spacing:-1px;")
+                    .append("line-height:1.1;\">").append(escape(saved)).append("</div>")
+                    .append("<div style=\"color:#e0e7ff;font-size:15px;margin-top:2px;\">de trabajo a mano ")
+                    .append(trial ? "en tu prueba" : "este mes").append(" &#10022;</div>");
+        } else {
+            html.append("<div style=\"color:#ffffff;font-size:28px;font-weight:bold;line-height:1.2;margin-top:14px;\">")
+                    .append("Aún no me has puesto a trabajar</div>");
+        }
+        html.append("</td></tr>")
+                .append("<tr><td style=\"padding:24px 28px 8px;color:#1f2937;font-size:15px;line-height:1.6;\">")
+                .append("<p style=\"margin:0 0 14px;\">").append(escape(hello)).append("</p>");
+        if (!lines.isEmpty()) {
+            html.append("<p style=\"margin:0 0 12px;\">").append(trial ? "Esto hicimos juntos en tu prueba:"
+                    : "Esto hicimos juntos el mes pasado:").append("</p>");
+            for (String[] l : lines) {
+                html.append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" ")
+                        .append("style=\"margin:0 0 8px;background:#f5f6fb;border-radius:12px;\"><tr>")
+                        .append("<td style=\"width:38px;font-size:22px;padding:10px 0 10px 12px;vertical-align:top;\">")
+                        .append(l[0]).append("</td><td style=\"padding:12px 12px 12px 6px;color:#111827;\">")
+                        .append(escape(l[1])).append("</td></tr></table>");
+            }
+        } else {
+            html.append("<p style=\"margin:0 0 12px;\">Te quedan pocos días para probarme. Tres cosas que hago en ")
+                    .append("segundos:</p><p style=\"margin:0 0 12px;\">&#129534; Tómale foto a la factura de un ")
+                    .append("proveedor en Compras &rarr; Recibir mercancía y la lleno por ti.<br>&#128230; Pásame una ")
+                    .append("foto de tu cuaderno de inventario en Productos &rarr; Cargar con Aska.<br>&#128172; ")
+                    .append("Pregúntame qué se va a agotar esta semana.</p>");
+        }
+        if (trial) {
+            html.append("<div style=\"margin:16px 0 4px;padding:14px 16px;background:#eef2ff;border-left:4px solid ")
+                    .append("#f59e0b;border-radius:0 12px 12px 0;color:#312e81;\">Tu prueba gratis termina el ")
+                    .append(escape(trialEnds)).append(". Si te sirvo, quédate conmigo: sigo leyendo tus facturas, ")
+                    .append("respondiendo y escribiéndote cada día.</div>");
+        }
+        html.append("<p style=\"margin:20px 0 6px;\"><a href=\"").append(escape(link))
+                .append("\" style=\"display:inline-block;background:#4338ca;color:#ffffff;text-decoration:none;")
+                .append("padding:12px 22px;border-radius:12px;font-weight:bold;\">")
+                .append(trial ? "Quedarme con XASKA IA" : "Pregúntale a Aska").append("</a></p>")
+                .append("<p style=\"margin:20px 0 22px;\">Gracias por dejarme ayudarte,<br>")
+                .append("<strong style=\"color:#3730a3;\">Aska</strong> <span style=\"color:#f59e0b;\">&#10022;</span></p>")
+                .append("</td></tr>")
+                .append("<tr><td style=\"padding:14px 28px 20px;background:#f5f6fb;font-size:12px;color:#6b7280;")
+                .append("line-height:1.5;\">El tiempo es un estimado de lo que tardaría hacerlo a mano: unos 30 segundos ")
+                .append("por línea de factura, 1 minuto por producto, 5 minutos por pregunta y 10 por pedido revisado o ")
+                .append("por resumen del día. Si los botones no funcionan: ").append(escape(link))
+                .append("<br>Aska es la IA de XASKA POS. Las decisiones siempre son tuyas.</td></tr>")
+                .append("</table></td></tr></table></body></html>");
+
+        StringBuilder text = new StringBuilder(hello).append("\n\n");
+        if (saved != null) {
+            text.append("Te ahorré ").append(saved).append(" de trabajo a mano ")
+                    .append(trial ? "en tu prueba" : "este mes").append(".\n\n");
+        } else {
+            text.append("Aún no me has puesto a trabajar. Tómale foto a una factura, pásame tu cuaderno de inventario ")
+                    .append("o pregúntame qué se va a agotar.\n\n");
+        }
+        lines.forEach(l -> text.append(l[0]).append(" ").append(l[1]).append("\n"));
+        if (trial) {
+            text.append("\nTu prueba gratis termina el ").append(trialEnds).append(". Quédate con XASKA IA: ")
+                    .append(link).append("\n");
+        } else {
+            text.append("\nPregúntale a Aska: ").append(link).append("\n");
+        }
+        text.append("\nGracias por dejarme ayudarte,\nAska, la IA de XASKA\n\n")
+                .append("El tiempo es un estimado: 30 s por línea de factura, 1 min por producto, 5 min por pregunta y ")
+                .append("10 por pedido revisado o resumen del día.");
+        String subject = trial ? "Aska · " + (saved == null ? "Tu prueba termina pronto" : "Te ahorré " + saved
+                + " en tu prueba") : "Aska · " + title + (saved == null ? "" : ": te ahorré " + saved);
+        return new MailMessage(to, subject, html.toString(), text.toString(), UUID.randomUUID().toString(),
+                trial ? "aska-prueba" : "aska-mes", "Aska de XASKA");
     }
 
     /** "Sin diferencia", "Sobran $2.000", "Faltan $1.500". */

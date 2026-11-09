@@ -782,6 +782,9 @@ export const MANUAL: readonly ManualChapter[] = [
         ],
         tips: [
           'La próxima factura de ese proveedor sale casi sola: XASKA recuerda su código para cada producto.',
+          'Si vas digitando a mano, desde la 4.ª línea Aska te ofrece leer la factura con una foto (lo mismo al crear '
+            + 'el 3.er producto seguido o si tu inventario está casi en cero). Ciérralo con "Ahora no" o "No volver a '
+            + 'mostrar".',
           'Si el costo subió o bajó más de un 25 % frente a la última compra, o si lo cargado no suma lo mismo que la '
             + 'factura, sale un aviso para que lo revises.',
           'La factura queda guardada con la compra: en el detalle toca "Factura del proveedor" para descargarla.',
@@ -1189,9 +1192,13 @@ export const MANUAL: readonly ManualChapter[] = [
         ],
         tips: [
           'Si eliges una hora antes del mediodía (por ejemplo 6:00 a. m.), el resumen es del día anterior.',
-          'Primero salen los puntos urgentes (descuadres, productos agotados, facturas vencidas) y después lo bueno.',
-          'Cada persona solo ve lo que su rol le deja ver: un cajero no recibe la utilidad del negocio.',
-          'Desde la tarjeta en Inicio toca "Pregúntale a Aska" para profundizar en cualquier punto.',
+          'El clima resume tu día: ☀️ vendiste igual o más que el mismo día de la semana pasada, ⛅ un poco menos, '
+            + '🌧️ bastante menos y ⛈️ hay algo urgente (un descuadre, un agotado, una factura vencida).',
+          'Abajo viene el pronóstico de mañana, según cómo te ha ido ese día en las últimas semanas.',
+          'Cada persona solo ve lo que su rol le deja ver: un cajero no recibe las ventas ni la utilidad.',
+          'Toca una de las preguntas del correo o de la tarjeta en Inicio y Aska te la responde de una vez.',
+          'El día 1 de cada mes, al dueño le llega "Lo que hiciste con Aska": las facturas que leyó, los productos que '
+            + 'cargó, las preguntas y el tiempo que te ahorró (también en Inicio la primera semana del mes).',
         ],
         who: 'El propietario y quien él elija, en negocios con el adicional XASKA IA.',
       },
@@ -1226,8 +1233,9 @@ export const MANUAL: readonly ManualChapter[] = [
           'Toca "Guardar": se guarda todo o nada.',
         ],
         tips: [
+          '¿Tu inventario está en un cuaderno? Elige "Mi inventario" (o en Existencias, "Cargar inventario con Aska"), '
+            + 'tómale foto a cada hoja (hasta 10) y elige la sede: los productos quedan creados con su cantidad.',
           'Los productos que ya tienes conservan su margen: si el costo sube, el precio sube igual. Si baja, el precio se queda.',
-          'Revisa las filas con "Nombre parecido"; si no es el mismo, toca "Es otro producto".',
           'Si el producto ya tiene movimientos, su costo lo pone el inventario con la próxima compra; aquí se ajusta el precio.',
           'Con el proveedor elegido, Aska recuerda sus códigos para la próxima lista y la próxima factura.',
         ],

@@ -1,5 +1,5 @@
 import { DigestPoint } from '../../core/api/ai.api';
-import { digestTitle, sortPoints } from './digest-text';
+import { digestTitle, sortPoints, weatherOf } from './digest-text';
 
 describe('Resumen del día (decisión 299)', () => {
   it('nombra el día del resumen', () => {
@@ -12,5 +12,12 @@ describe('Resumen del día (decisión 299)', () => {
     const p = (tone: DigestPoint['tone']): DigestPoint => ({ section: 'SALES', tone, title: tone, detail: '' });
     expect(sortPoints([p('good'), p('info'), p('bad'), p('warning')]).map((x) => x.tone))
       .toEqual(['bad', 'warning', 'info', 'good']);
+  });
+
+  it('traduce el clima del día y no inventa uno cuando no hay', () => {
+    expect(weatherOf('STORM')?.label).toBe('Tormenta');
+    expect(weatherOf('SUNNY')?.emoji).toBe('☀️');
+    expect(weatherOf(null)).toBeNull();
+    expect(weatherOf(undefined)).toBeNull();
   });
 });

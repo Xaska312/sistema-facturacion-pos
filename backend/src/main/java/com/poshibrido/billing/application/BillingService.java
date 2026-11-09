@@ -71,9 +71,13 @@ public class BillingService {
 
     // ------------------------------------------------------------------ vistas
 
+    /**
+     * {@code founder} (decisión 305): el plan anterior del negocio a su precio de siempre, que se ofrece solo a él y
+     * mientras le dure el precio fundador ({@code priceLockedUntil}).
+     */
     public record PlanOption(String code, String name, BigDecimal monthlyPrice, BigDecimal annualPrice,
                              Integer maxBranches, Integer maxUsers, Integer maxRegisters, List<String> modules,
-                             List<String> features) {
+                             List<String> features, boolean founder) {
     }
 
     public record AddonOption(String code, String kind, String ref, String name, String description,
@@ -124,7 +128,8 @@ public class BillingService {
     // ------------------------------------------------------------------ negocio
 
     public Catalog catalog(UUID tenantId) {
-        return new Catalog(plans(), addons(true), breb(), subscriptions.viewForTenant(tenantId, true),
+        SubscriptionView sub = subscriptions.viewForTenant(tenantId, true);
+        return new Catalog(plansFor(sub), addons(true), breb(), sub,
                 requests("WHERE r.tenant_id = ?", tenantId).stream().limit(20).toList());
     }
 
@@ -145,7 +150,7 @@ public class BillingService {
         PlanOption plan = null;
         if (planCode != null) {
             final String code = planCode;
-            plan = plans().stream().filter(p -> p.code().equals(code)).findFirst()
+            plan = plansFor(current).stream().filter(p -> p.code().equals(code)).findFirst()
                     .orElseThrow(() -> new BusinessRuleException("Ese plan no está a la venta."));
             BigDecimal price = cycle == BillingCycle.ANNUAL ? plan.annualPrice() : plan.monthlyPrice();
             if (price == null || price.signum() <= 0) {
@@ -501,7 +506,24 @@ public class BillingService {
                 FROM platform.plans WHERE active AND NOT legacy ORDER BY sort_order""",
                 (rs, i) -> new PlanOption(rs.getString(1), rs.getString(2), rs.getBigDecimal(3), rs.getBigDecimal(4),
                         (Integer) rs.getObject(5), (Integer) rs.getObject(6), (Integer) rs.getObject(7),
-                        csv(rs.getString(8)), csv(rs.getString(9))));
+                        csv(rs.getString(8)), csv(rs.getString(9)), false));
+    }
+
+    /**
+     * Los planes que puede comprar este negocio: los de la venta y, si está en un plan anterior con precio fundador
+     * vigente, ese mismo plan a su precio, primero (decisión 305). Vencido el precio fundador, solo los nuevos.
+     */
+    private List<PlanOption> plansFor(SubscriptionView sub) {
+        List<PlanOption> list = new ArrayList<>(plans());
+        var p = sub.plan();
+        boolean locked = sub.priceLockedUntil() != null && sub.priceLockedUntil().isAfter(Instant.now());
+        if (p.legacy() && locked && list.stream().noneMatch(o -> o.code().equals(p.code()))
+                && (p.monthlyPrice() != null || p.annualPrice() != null)) {
+            list.addFirst(new PlanOption(p.code(), p.name(), p.monthlyPrice(), p.annualPrice(), p.maxBranches(),
+                    p.maxUsers(), p.maxRegisters(), p.modules(), p.features().stream().map(Object::toString).toList(),
+                    true));
+        }
+        return list;
     }
 
     private List<AddonOption> addons(boolean onlyForSale) {

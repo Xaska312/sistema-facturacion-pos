@@ -1,11 +1,13 @@
+import { AskaMomentsState } from '../ai/aska-moments-state';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { AiApi, AskUsage, CatalogDraft } from '../../core/api/ai.api';
-import { ImportReport, Party } from '../../core/api/api.models';
+import { Branch, ImportReport, Party } from '../../core/api/api.models';
+import { OrganizationApi } from '../../core/api/organization.api';
 import { PartiesApi } from '../../core/api/parties.api';
 import { permissionFlag } from '../../core/auth/permission-flag';
 import { problemMessage } from '../../core/errors/problem';
@@ -40,18 +42,38 @@ type Filter = 'ALL' | 'CREATE' | 'UPDATE' | 'CHECK' | 'SKIP';
       </section>
     } @else if (draft() === null) {
       <section class="card p-4 md:p-5 flex flex-col gap-4 max-w-3xl aska-upload">
+        <div class="mode-switch" role="radiogroup" aria-label="Qué vas a cargar">
+          <button type="button" role="radio" [attr.aria-checked]="!inventory()" [class.mode-on]="!inventory()"
+                  (click)="inventory.set(false)">
+            <i class="pi pi-truck" aria-hidden="true"></i>
+            <span><span class="block font-semibold">Lista del proveedor</span>
+              <span class="block text-xs">Precios de compra para crear y poner al día</span></span>
+          </button>
+          <button type="button" role="radio" [attr.aria-checked]="inventory()" [class.mode-on]="inventory()"
+                  (click)="inventory.set(true)">
+            <i class="pi pi-book" aria-hidden="true"></i>
+            <span><span class="block font-semibold">Mi inventario</span>
+              <span class="block text-xs">Cuaderno, hojas o Excel con lo que tienes</span></span>
+          </button>
+        </div>
         <div class="flex items-center gap-3">
           <app-xaska-ia-logo size="lg" />
           <div>
-            <h2 class="text-lg font-bold tracking-tight">¿Qué lista te mandó el proveedor?</h2>
-            <p class="text-sm text-muted">Excel o CSV, un PDF (hasta 20 páginas) o hasta 5 fotos de la lista impresa.</p>
+            @if (inventory()) {
+              <h2 class="text-lg font-bold tracking-tight">Tómale foto a tu inventario</h2>
+              <p class="text-sm text-muted">Hasta 10 fotos del cuaderno u hojas (una por página, derecha y con buena luz), o el
+                Excel. Aska saca cada producto con su cantidad y su precio, y carga lo que hay como saldo inicial.</p>
+            } @else {
+              <h2 class="text-lg font-bold tracking-tight">¿Qué lista te mandó el proveedor?</h2>
+              <p class="text-sm text-muted">Excel o CSV, un PDF (hasta 20 páginas) o hasta 10 fotos de la lista impresa.</p>
+            }
           </div>
         </div>
 
         <label class="aska-drop" [class.aska-drop-ready]="files().length > 0">
           <i class="pi pi-cloud-upload text-2xl" aria-hidden="true"></i>
           @if (files().length === 0) {
-            <span class="font-semibold">Elegir la lista</span>
+            <span class="font-semibold">{{ inventory() ? 'Elegir las fotos' : 'Elegir la lista' }}</span>
             <span class="text-xs text-muted">Toca aquí o arrastra el archivo</span>
           } @else {
             <span class="font-semibold">{{ fileNames() }}</span>
@@ -63,6 +85,17 @@ type Filter = 'ALL' | 'CREATE' | 'UPDATE' | 'CHECK' | 'SKIP';
         </label>
 
         <div class="grid gap-3 sm:grid-cols-2">
+          @if (inventory()) {
+            <label class="flex flex-col gap-1 text-sm">
+              <span class="font-medium">Sede donde está ese inventario</span>
+              <select class="min-h-11 rounded-lg border border-line bg-surface px-3" [(ngModel)]="branchId">
+                @for (b of branches(); track b.id) {
+                  <option [value]="b.id">{{ b.name }}</option>
+                }
+              </select>
+              <span class="text-xs text-muted">Las cantidades entran como saldo inicial en esa sede.</span>
+            </label>
+          } @else {
           <label class="flex flex-col gap-1 text-sm">
             <span class="font-medium">Proveedor</span>
             <select class="min-h-11 rounded-lg border border-line bg-surface px-3" [(ngModel)]="supplierId">
@@ -73,14 +106,17 @@ type Filter = 'ALL' | 'CREATE' | 'UPDATE' | 'CHECK' | 'SKIP';
             </select>
             <span class="text-xs text-muted">Así Aska recuerda sus códigos para la próxima lista y la próxima factura.</span>
           </label>
+          }
           <label class="flex flex-col gap-1 text-sm">
-            <span class="font-medium">Margen para los productos nuevos</span>
+            <span class="font-medium">{{ inventory() ? 'Tu margen de ganancia' : 'Margen para los productos nuevos' }}</span>
             <span class="flex items-center gap-2">
               <input type="number" min="0" max="90" step="1" class="w-24 min-h-11 rounded-lg border border-line bg-surface px-3"
                      [(ngModel)]="margin" />
               <span class="text-muted">%</span>
             </span>
-            <span class="text-xs text-muted">Los que ya tienes conservan su margen actual.</span>
+            <span class="text-xs text-muted">{{ inventory()
+              ? 'Si solo anotaste el precio, el costo sale con este margen (y al revés).'
+              : 'Los que ya tienes conservan su margen actual.' }}</span>
           </label>
         </div>
 
@@ -89,7 +125,8 @@ type Filter = 'ALL' | 'CREATE' | 'UPDATE' | 'CHECK' | 'SKIP';
         }
 
         <div class="flex flex-wrap items-center gap-3">
-          <button type="button" class="aska-button" [disabled]="files().length === 0 || reading() || !marginOk()"
+          <button type="button" class="aska-button"
+                  [disabled]="files().length === 0 || reading() || !marginOk() || (inventory() && !branchId)"
                   (click)="read()">
             <app-xaska-ia-logo size="btn" />
             {{ reading() ? 'Aska está leyendo la lista…' : 'Leer con Aska' }}
@@ -141,6 +178,9 @@ type Filter = 'ALL' | 'CREATE' | 'UPDATE' | 'CHECK' | 'SKIP';
                 </th>
                 <th scope="col" class="py-2 px-2 font-medium">Producto</th>
                 <th scope="col" class="py-2 px-2 font-medium">Categoría · unidad · impuesto</th>
+                @if (d.inventory) {
+                  <th scope="col" class="py-2 px-2 font-medium text-right">Hay</th>
+                }
                 <th scope="col" class="py-2 px-2 font-medium text-right">Costo (sin IVA)</th>
                 <th scope="col" class="py-2 px-2 font-medium text-right">Precio {{ d.pricesIncludeTax ? '(con IVA)' : '(sin IVA)' }}</th>
                 <th scope="col" class="py-2 px-2 font-medium text-right">Margen</th>
@@ -194,6 +234,16 @@ type Filter = 'ALL' | 'CREATE' | 'UPDATE' | 'CHECK' | 'SKIP';
                       <span class="text-xs text-muted">Se conservan los datos del producto.</span>
                     }
                   </td>
+                  @if (d.inventory) {
+                    <td class="py-2 px-2 text-right">
+                      @if (e.stockNote) {
+                        <span class="block text-xs text-muted max-w-36 ml-auto">{{ e.stockNote }}</span>
+                      } @else {
+                        <input type="number" min="0" step="any" class="field w-20 text-right" [(ngModel)]="e.quantity"
+                               (ngModelChange)="touch()" [attr.aria-label]="'Cantidad de ' + e.name" />
+                      }
+                    </td>
+                  }
                   <td class="py-2 px-2 text-right">
                     <input type="number" min="0" step="any" class="field w-28 text-right" [(ngModel)]="e.cost"
                            (ngModelChange)="touch()" [disabled]="e.match?.costLocked === true"
@@ -216,7 +266,7 @@ type Filter = 'ALL' | 'CREATE' | 'UPDATE' | 'CHECK' | 'SKIP';
                   </td>
                 </tr>
               } @empty {
-                <tr><td colspan="6" class="py-6 text-center text-muted">No hay filas con este filtro.</td></tr>
+                <tr><td [attr.colspan]="d.inventory ? 7 : 6" class="py-6 text-center text-muted">No hay filas con este filtro.</td></tr>
               }
             </tbody>
           </table>
@@ -258,6 +308,13 @@ type Filter = 'ALL' | 'CREATE' | 'UPDATE' | 'CHECK' | 'SKIP';
   `,
   styles: `
     .aska-upload { border-top: 4px solid var(--aska); }
+    .mode-switch { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 0.5rem; }
+    .mode-switch button {
+      display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 0.875rem; text-align: left; border-radius: 0.875rem;
+      border: 1.5px solid var(--color-line); background: var(--color-surface); color: var(--color-muted);
+    }
+    .mode-switch button i { font-size: 1.25rem; color: var(--aska); }
+    .mode-switch .mode-on { border-color: var(--aska); background: var(--aska-soft); color: var(--aska-soft-fg); }
     .aska-drop {
       display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.25rem; min-height: 8rem;
       padding: 1rem; border: 2px dashed var(--aska-line); border-radius: 1rem; background: var(--aska-soft);
@@ -300,7 +357,10 @@ type Filter = 'ALL' | 'CREATE' | 'UPDATE' | 'CHECK' | 'SKIP';
 })
 export class CatalogImportComponent implements OnInit {
   private readonly ai = inject(AiApi);
+  private readonly moments = inject(AskaMomentsState);
   private readonly parties = inject(PartiesApi);
+  private readonly organization = inject(OrganizationApi);
+  private readonly route = inject(ActivatedRoute);
   private readonly messages = inject(MessageService);
   private readonly router = inject(Router);
 
@@ -320,6 +380,10 @@ export class CatalogImportComponent implements OnInit {
   protected readonly readingMessages = ['Leyendo la lista…', 'Buscando tus productos…', 'Calculando precios…',
     'Casi listo…'];
   protected supplierId = '';
+  /** Decisión 306: cargar lo que el negocio tiene (cuaderno, hojas, Excel) con saldo inicial en una sede. */
+  protected readonly inventory = signal(false);
+  protected readonly branches = signal<Branch[]>([]);
+  protected branchId = '';
   protected margin = 30;
 
   protected readonly filters: { value: Filter; label: string }[] = [
@@ -355,6 +419,14 @@ export class CatalogImportComponent implements OnInit {
       return;
     }
     this.ai.catalogUsage().subscribe({ next: (u) => this.usage.set(u), error: () => this.usage.set(null) });
+    this.organization.branches({ page: 0, size: 100, sort: 'code,asc' }).subscribe((page) => {
+      const active = page.content.filter((b) => b.active);
+      this.branches.set(active);
+      this.branchId = active[0]?.id ?? '';
+    });
+    if (this.route.snapshot.queryParamMap.get('modo') === 'inventario') {
+      this.inventory.set(true);
+    }
     this.parties.search('suppliers', { page: 0, size: 100, sort: 'displayName,asc' }, null, false).subscribe({
       next: (page) => this.suppliers.set(page.content.filter((p) => !p.system)),
       error: () => this.suppliers.set([]),
@@ -372,8 +444,8 @@ export class CatalogImportComponent implements OnInit {
     if (chosen.length === 0) {
       return;
     }
-    this.problem.set(chosen.length > 5 ? 'Sube máximo 5 fotos por lista.' : null);
-    this.files.set(chosen.slice(0, 5));
+    this.problem.set(chosen.length > 10 ? 'Sube máximo 10 fotos por vez.' : null);
+    this.files.set(chosen.slice(0, 10));
   }
 
   async read(): Promise<void> {
@@ -384,7 +456,9 @@ export class CatalogImportComponent implements OnInit {
     this.problem.set(null);
     // Las fotos se achican antes de subir (más rápido y más barato); Excel, CSV y PDF van tal cual.
     const files = await Promise.all(this.files().map((f) => f.type.startsWith('image/') ? shrinkPhoto(f) : f));
-    this.ai.readCatalog(files, this.supplierId || null, this.margin).subscribe({
+    const inventory = this.inventory();
+    this.ai.readCatalog(files, inventory ? null : this.supplierId || null, this.margin,
+      inventory ? this.branchId || null : null).subscribe({
       next: (draft) => {
         this.reading.set(false);
         this.usage.set(draft.usage);
@@ -432,13 +506,19 @@ export class CatalogImportComponent implements OnInit {
       return;
     }
     this.saving.set(true);
-    this.ai.applyCatalog(toConfirmed(this.edits()), this.supplierId || null).subscribe({
-      next: (report) => {
+    const d = this.draft();
+    this.ai.applyCatalog(toConfirmed(this.edits()), d?.inventory ? null : this.supplierId || null,
+      d?.inventory ? d.branchId : null).subscribe({
+      next: ({ report, stocked }) => {
         this.saving.set(false);
         this.report.set(report);
         if (report.applied) {
+          // Decisión 308: ya no está creando a mano ni con el inventario vacío.
+          this.moments.resetManualProducts();
+          this.moments.refresh();
           this.messages.add({ severity: 'success', summary: 'Catálogo al día',
-            detail: `${report.toCreate} nuevos, ${report.toUpdate} actualizados.` });
+            detail: `${report.toCreate} nuevos, ${report.toUpdate} actualizados`
+              + (stocked > 0 ? `, ${stocked} con su cantidad en inventario.` : '.') });
           void this.router.navigate(['/app/productos']);
         }
       },

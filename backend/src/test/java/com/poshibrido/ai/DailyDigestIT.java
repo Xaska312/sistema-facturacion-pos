@@ -41,7 +41,9 @@ class DailyDigestIT extends IntegrationTest {
              {"section":"INVENTORY","tone":"warning","title":"Arroz bajo el mínimo","detail":"Quedan 3."},
              {"section":"MONEY","tone":"info","title":"Proveedores","detail":"Nada vence esta semana."},
              {"section":"OTRA","tone":"info","title":"Ignorar","detail":"x"}],
-             "figures":[{"label":"Ventas","value":"$0"},{"label":"Ticket","value":"$0"}]}""";
+             "figures":[{"label":"Ventas","value":"$0"},{"label":"Ticket","value":"$0"}],
+             "forecast":"Los martes suelen ser flojos; ten listo el arroz.",
+             "followUps":["¿Qué pasó con la caja?","¿Qué debo pedir mañana?","Sobra"]}""";
 
     @Test
     @SuppressWarnings("unchecked")
@@ -77,22 +79,28 @@ class DailyDigestIT extends IntegrationTest {
         api.postWith(s, "/api/v1/ai/digest/run", "").andExpect(status().isOk())
                 .andExpect(jsonPath("$.headline").value("Buen día: vendiste más que ayer."))
                 .andExpect(jsonPath("$.points.length()").value(4))
-                .andExpect(jsonPath("$.figures[0].label").value("Ventas"));
+                .andExpect(jsonPath("$.figures[0].label").value("Ventas"))
+                .andExpect(jsonPath("$.weather").value("STORM"))
+                .andExpect(jsonPath("$.forecast").value("Los martes suelen ser flojos; ten listo el arroz."))
+                .andExpect(jsonPath("$.followUps.length()").value(2));
         ArgumentCaptor<Map<String, Object>> sent = ArgumentCaptor.forClass(Map.class);
         verify(ai).send(sent.capture());
         assertThat(String.valueOf(sent.getValue().get("messages"))).contains("mismoDiaSemanaPasada").contains("caja")
-                .contains("inventario").contains("proveedores");
+                .contains("inventario").contains("proveedores")
+                .contains("pronosticoManana");
         assertThat(String.valueOf(sent.getValue().get("output_config"))).contains("json_schema");
 
         api.getWith(s, "/api/v1/ai/digest/latest").andExpect(status().isOk())
                 .andExpect(jsonPath("$.points[1].title").value("Caja descuadrada"));
         api.getWith(s, "/api/v1/ai/digest/settings").andExpect(jsonPath("$.used").value(1));
         MailMessage mail = mailbox.last(owner.email(), "resumen-del-dia").orElseThrow();
-        assertThat(mail.subject()).startsWith("Aska · Tu resumen del");
+        assertThat(mail.subject()).startsWith("⛈️ Aska · El clima de");
         assertThat(mail.senderName()).isEqualTo("Aska de XASKA");
         assertThat(mail.from("XASKA POS <no-responder@xaska.co>")).isEqualTo("Aska de XASKA <no-responder@xaska.co>");
-        assertThat(mail.text()).contains("Soy Aska").contains("Aska, la IA de XASKA");
-        assertThat(mail.html()).contains("Pregúntame en XASKA");
-        assertThat(mail.text()).contains("Urgente · Caja descuadrada: Faltan $2.000 en Caja 1.").contains("Ticket: $0");
+        assertThat(mail.html()).contains("Tormenta").contains("Pronóstico para mañana")
+                .contains("/app?aska=%C2%BFQu%C3%A9+pas%C3%B3+con+la+caja%3F");
+        assertThat(mail.text()).contains("⛈️ Tormenta · $0").contains("Caja descuadrada: Faltan $2.000 en Caja 1.")
+                .contains("Ticket: $0").contains("⛈️ Caja: Tormenta").contains("☀️ Cobros y pagos: Soleado")
+                .contains("Pronóstico para mañana: Los martes").contains("Aska, la IA de XASKA");
     }
 }

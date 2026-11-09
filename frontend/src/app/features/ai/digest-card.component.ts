@@ -5,7 +5,7 @@ import { XaskaIaLogoComponent } from '../../shared/brand/xaska-ia-logo.component
 import { XIconComponent } from '../../shared/icons/xicon.component';
 import { isoDay } from '../orders/order-text';
 import { AskaState } from './aska-state';
-import { SECTION_ICON, TONE_LABEL, digestTitle, sortPoints } from './digest-text';
+import { SECTION_ICON, TONE_LABEL, digestTitle, sortPoints, weatherOf } from './digest-text';
 
 /**
  * Tarjeta del Resumen del día de Aska en Inicio (decisión 299): el último resumen (de hoy o de ayer) con lo que el
@@ -20,9 +20,13 @@ import { SECTION_ICON, TONE_LABEL, digestTitle, sortPoints } from './digest-text
         <div class="digest-head">
           <span class="digest-orb" aria-hidden="true"></span>
           <div class="relative flex items-center gap-3">
-            <app-xaska-ia-logo size="md" />
+            @if (weather(); as w) {
+              <span class="digest-weather" role="img" [attr.aria-label]="'Clima del día: ' + w.label">{{ w.emoji }}</span>
+            } @else {
+              <app-xaska-ia-logo size="md" />
+            }
             <div class="flex-1 min-w-0">
-              <p id="digest-title" class="digest-kicker">{{ title() }} · Aska</p>
+              <p id="digest-title" class="digest-kicker">{{ kicker() }}</p>
               <p class="digest-headline">{{ d.headline }}</p>
             </div>
             <button type="button" class="digest-ask" (click)="ask()">Pregúntale a Aska</button>
@@ -53,6 +57,19 @@ import { SECTION_ICON, TONE_LABEL, digestTitle, sortPoints } from './digest-text
               </li>
             }
           </ul>
+          @if (d.forecast) {
+            <div class="digest-forecast">
+              <p class="digest-forecast-label">🌅 Pronóstico para mañana</p>
+              <p class="mt-0.5">{{ d.forecast }}</p>
+            </div>
+          }
+          @if ((d.followUps ?? []).length > 0) {
+            <div class="flex flex-wrap gap-2">
+              @for (q of d.followUps; track $index) {
+                <button type="button" class="digest-follow" (click)="ask(q)">{{ q }}</button>
+              }
+            </div>
+          }
         </div>
       </section>
     }
@@ -69,6 +86,17 @@ import { SECTION_ICON, TONE_LABEL, digestTitle, sortPoints } from './digest-text
       position: absolute; right: -3rem; top: -5rem; width: 14rem; height: 14rem; border-radius: 9999px;
       background: var(--xaska-panel-tile); border: 1px solid var(--xaska-panel-line);
     }
+    .digest-weather { font-size: 2.5rem; line-height: 1; flex-shrink: 0; }
+    .digest-forecast {
+      padding: 0.75rem 0.875rem; border-radius: 0 0.875rem 0.875rem 0; background: var(--aska-soft);
+      border-left: 4px solid var(--aska-amber); color: var(--aska-soft-fg); font-size: 0.9375rem;
+    }
+    .digest-forecast-label { font-size: 0.6875rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
+    .digest-follow {
+      min-height: 2.5rem; padding: 0 0.875rem; border-radius: 9999px; font-size: 0.875rem; font-weight: 600;
+      border: 1.5px solid var(--aska-line); color: var(--aska-soft-fg); background: var(--surface);
+    }
+    .digest-follow:hover { background: var(--aska-soft); }
     .digest-kicker { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; color: var(--aska-amber); }
     .digest-headline { margin-top: 0.125rem; font-size: 1.125rem; line-height: 1.35; font-weight: 800; letter-spacing: -0.01em; }
     .digest-ask {
@@ -102,6 +130,11 @@ export class DigestCardComponent implements OnInit {
   protected readonly icon = SECTION_ICON;
   protected readonly tone = TONE_LABEL;
   protected readonly points = computed(() => sortPoints(this.digest()?.points ?? []));
+  protected readonly weather = computed(() => weatherOf(this.digest()?.weather));
+  protected readonly kicker = computed(() => {
+    const w = this.weather();
+    return `${this.title()} · Aska${w ? ' · ' + w.label : ''}`;
+  });
   protected readonly title = computed(() => {
     const d = this.digest();
     return d ? digestTitle(d.date, isoDay(new Date())) : '';
@@ -113,7 +146,7 @@ export class DigestCardComponent implements OnInit {
     }
   }
 
-  protected ask(): void {
-    this.aska.open();
+  protected ask(question?: string): void {
+    this.aska.open(question);
   }
 }

@@ -15,6 +15,8 @@ export interface BillingPlan {
   maxRegisters: number | null;
   modules: string[];
   features: string[];
+  /** Su plan anterior a su precio fundador (decisión 305): solo para ese negocio y mientras le dure. */
+  founder: boolean;
 }
 
 export type AddonKind = 'FEATURE' | 'MODULE' | 'BRANCH' | 'REGISTER' | 'USER';
