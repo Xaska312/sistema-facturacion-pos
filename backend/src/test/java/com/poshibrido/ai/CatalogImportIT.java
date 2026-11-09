@@ -101,8 +101,8 @@ class CatalogImportIT extends IntegrationTest {
                  {"productId":"%s","cost":2400,"price":4300,"supplierCode":"7702511000014"},
                  {"sku":"FR-500","name":"Frijol bola roja 500 g","category":"Granos","unitCode":"UND","taxCode":"IVA5",
                   "cost":4000,"price":6500,"supplierCode":"FR-500"}]}""".formatted(supplier, arroz))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.applied").value(true))
-                .andExpect(jsonPath("$.toCreate").value(1)).andExpect(jsonPath("$.toUpdate").value(1));
+                .andExpect(status().isOk()).andExpect(jsonPath("$.report.applied").value(true))
+                .andExpect(jsonPath("$.report.toCreate").value(1)).andExpect(jsonPath("$.report.toUpdate").value(1));
         api.getWith(s, "/api/v1/products/" + arroz).andExpect(jsonPath("$.salePrice").value(4300))
                 .andExpect(jsonPath("$.cost").value(2400)).andExpect(jsonPath("$.name").value("Arroz Diana 1 kg"));
         Integer codes = jdbc.queryForObject("SELECT count(*) FROM " + schema(owner)
@@ -122,6 +122,80 @@ class CatalogImportIT extends IntegrationTest {
                 .when(ai).send(any());
         api.uploadNamed(s, "/api/v1/ai/catalog/read", "files", "lista.csv", csv).andExpect(status().isUnprocessableEntity());
         api.getWith(s, "/api/v1/ai/catalog/usage").andExpect(jsonPath("$.used").value(2));
+    }
+
+    @Test
+    void loadsTheNotebookInventoryWithOpeningBalances() throws Exception {
+        when(ai.available()).thenReturn(true);
+        when(ai.model()).thenReturn("claude-haiku-5-5");
+        Owned owner = api.newTenant("cuaderno");
+        Session s = owner.tenant();
+        com.poshibrido.sales.PosTestSupport pos = new com.poshibrido.sales.PosTestSupport(api);
+        // Gaseosa ya tiene existencias (movimientos): su cantidad no se toca. Arroz existe pero sin movimientos.
+        UUID gaseosa = pos.productWithStock(s, "GAS-400", "2500", "7", "1500");
+        UUID arroz = pos.productWithStock(s, "ARR-1", "3600", null, null);
+        Session admin = platformAdmin();
+        api.putWith(admin, "/api/v1/platform/tenants/%s/subscription/extras".formatted(owner.tenantId()),
+                "{\"modules\":[],\"features\":[\"AI\"],\"branches\":0,\"registers\":0,\"users\":0}").andExpect(status().isOk());
+        s = TestApi.session(api.refreshRaw(s.refreshToken()).andExpect(status().isOk()).andReturn());
+        String branch = api.principalBranchId(s).toString();
+
+        doReturn(Map.of("stop_reason", "end_turn", "usage", Map.of("input_tokens", 900, "output_tokens", 300),
+                "content", List.of(Map.of("type", "text", "text", """
+                {"readable":true,"problem":"","pricesIncludeTax":true,"items":[
+                 {"description":"Producto GAS-400","supplierCode":"","barcode":"","unit":"UND","cost":-1,"taxRate":-1,
+                  "category":"Bebidas","quantity":10,"price":2500},
+                 {"description":"Producto ARR-1","supplierCode":"","barcode":"","unit":"UND","cost":-1,"taxRate":-1,
+                  "category":"Granos","quantity":5,"price":3600},
+                 {"description":"Panela redonda","supplierCode":"","barcode":"","unit":"UND","cost":-1,"taxRate":-1,
+                  "category":"Granos","quantity":12,"price":2000},
+                 {"description":"Jabón Rey","supplierCode":"","barcode":"","unit":"UND","cost":1500,"taxRate":-1,
+                  "category":"Aseo","quantity":3,"price":-1},
+                 {"description":"Ilegible","supplierCode":"","barcode":"","unit":"UND","cost":-1,"taxRate":-1,
+                  "category":"","quantity":4,"price":-1}]}""")))).when(ai).send(any());
+
+        // Sin sede no se lee un inventario.
+        api.uploadNamed(s, "/api/v1/ai/catalog/read", "files", "hoja.png", png(), "inventory", "true")
+                .andExpect(status().isUnprocessableEntity());
+        String json = body(api.uploadNamed(s, "/api/v1/ai/catalog/read", "files", "hoja.png", png(),
+                "inventory", "true", "branchId", branch, "margin", "30").andExpect(status().isOk()));
+        assertThat((Boolean) JsonPath.read(json, "$.inventory")).isTrue();
+        assertThat((List<Object>) JsonPath.read(json, "$.rows")).hasSize(4);
+        // Gaseosa: ya tiene movimientos, sin cantidad y con la nota.
+        assertThat((Object) JsonPath.read(json, "$.rows[0].quantity")).isNull();
+        assertThat((String) JsonPath.read(json, "$.rows[0].stockNote")).contains("conteo");
+        // Arroz: existe, mismo precio, sin movimientos: recibe su cantidad.
+        assertThat((String) JsonPath.read(json, "$.rows[1].proposal.action")).isEqualTo("SKIP");
+        assertThat(JsonPath.read(json, "$.rows[1].quantity").toString()).isEqualTo("5.0");
+        // Panela: nueva, solo precio → costo con el margen: 2.000 × 0,7 = 1.400.
+        assertThat((String) JsonPath.read(json, "$.rows[2].proposal.action")).isEqualTo("CREATE");
+        assertThat(JsonPath.read(json, "$.rows[2].proposal.cost").toString()).isEqualTo("1400.0");
+        assertThat(JsonPath.read(json, "$.rows[2].proposal.price").toString()).isEqualTo("2000");
+        // Jabón: solo costo → precio con el margen: 1.500 / 0,7 = 2.142,86 → 2.200.
+        assertThat(JsonPath.read(json, "$.rows[3].proposal.price").toString()).isEqualTo("2200");
+
+        api.postWith(s, "/api/v1/ai/catalog/apply", """
+                {"branchId":"%s","rows":[
+                 {"productId":"%s","cost":1500,"price":2500,"quantity":10},
+                 {"productId":"%s","cost":0,"price":3600,"quantity":5},
+                 {"sku":"PANELA-01","name":"Panela redonda","category":"Granos","unitCode":"UND","taxCode":"EXENTO",
+                  "cost":1400,"price":2000,"quantity":12},
+                 {"sku":"JABREY-01","name":"Jabón Rey","category":"Aseo","unitCode":"UND","taxCode":"EXENTO",
+                  "cost":1500,"price":2200,"quantity":3}]}""".formatted(branch, gaseosa, arroz))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.report.applied").value(true))
+                .andExpect(jsonPath("$.report.toCreate").value(2)).andExpect(jsonPath("$.stocked").value(3));
+        assertThat(pos.stock(s, gaseosa)).isEqualByComparingTo("7");
+        assertThat(pos.stock(s, arroz)).isEqualByComparingTo("5");
+        UUID panela = UUID.fromString(JsonPath.read(body(api.getWith(s, "/api/v1/products?search=PANELA-01")),
+                "$.content[0].id"));
+        assertThat(pos.stock(s, panela)).isEqualByComparingTo("12");
+    }
+
+    private static byte[] png() throws Exception {
+        java.awt.image.BufferedImage img = new java.awt.image.BufferedImage(40, 40, java.awt.image.BufferedImage.TYPE_INT_RGB);
+        java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+        javax.imageio.ImageIO.write(img, "png", out);
+        return out.toByteArray();
     }
 
     private String schema(Owned owner) {

@@ -34,16 +34,20 @@ public class CatalogImportController {
 
     private final CatalogImportService catalog;
 
-    public record ApplyRequest(UUID supplierId, @NotNull @Valid @Size(min = 1, max = 500) List<Confirmed> rows) {
+    /** {@code branchId} (decisión 306): la sede del saldo inicial cuando las filas traen cantidad. */
+    public record ApplyRequest(UUID supplierId, UUID branchId,
+                               @NotNull @Valid @Size(min = 1, max = 500) List<Confirmed> rows) {
     }
 
     @PostMapping("/read")
     @PreAuthorize("hasAuthority('products:manage') and hasAuthority('ai:ask')")
     public Draft read(@RequestParam("files") List<MultipartFile> files,
                       @RequestParam(required = false) UUID supplierId,
-                      @RequestParam(required = false) BigDecimal margin) throws IOException {
-        if (files == null || files.isEmpty() || files.size() > 5) {
-            throw new BusinessRuleException("Sube la lista en un archivo (Excel, CSV o PDF) o hasta 5 fotos.");
+                      @RequestParam(required = false) BigDecimal margin,
+                      @RequestParam(defaultValue = "false") boolean inventory,
+                      @RequestParam(required = false) UUID branchId) throws IOException {
+        if (files == null || files.isEmpty() || files.size() > 10) {
+            throw new BusinessRuleException("Sube la lista en un archivo (Excel, CSV o PDF) o hasta 10 fotos.");
         }
         List<Upload> uploads = new ArrayList<>();
         for (MultipartFile f : files) {
@@ -52,13 +56,13 @@ public class CatalogImportController {
             }
             uploads.add(new Upload(f.getOriginalFilename(), f.getBytes()));
         }
-        return catalog.read(uploads, supplierId, margin);
+        return catalog.read(uploads, supplierId, margin, inventory, branchId);
     }
 
     @PostMapping("/apply")
     @PreAuthorize("hasAuthority('products:manage') and hasAuthority('ai:ask')")
-    public ImportReport apply(@Valid @RequestBody ApplyRequest request) {
-        return catalog.apply(request.rows(), request.supplierId());
+    public CatalogImportService.Applied apply(@Valid @RequestBody ApplyRequest request) {
+        return catalog.apply(request.rows(), request.supplierId(), request.branchId());
     }
 
     @GetMapping("/usage")

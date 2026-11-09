@@ -18,13 +18,17 @@ export interface CatalogEdit {
   taxCode: string;
   cost: number;
   price: number;
+  /** Modo inventario: cantidad para el saldo inicial (null = no se carga). */
+  quantity: number | null;
+  stockNote: string | null;
 }
 
 export function toEdits(draft: CatalogDraft): CatalogEdit[] {
   return draft.rows.map((r: CatalogRow) => ({
     rowId: r.rowId,
-    // Lo que no cambia queda sin marcar; lo parecido solo por el nombre se marca, pero se avisa que hay que revisarlo.
-    selected: r.proposal.action !== 'SKIP',
+    // Lo que no cambia queda sin marcar (salvo que traiga cantidad para el saldo inicial); lo parecido solo por el
+    // nombre se marca, pero se avisa que hay que revisarlo.
+    selected: r.proposal.action !== 'SKIP' || (r.quantity ?? 0) > 0,
     action: r.proposal.action,
     match: r.match,
     description: r.description,
@@ -39,6 +43,8 @@ export function toEdits(draft: CatalogDraft): CatalogEdit[] {
     taxCode: r.proposal.taxCode,
     cost: r.proposal.cost,
     price: r.proposal.price,
+    quantity: r.quantity,
+    stockNote: r.stockNote,
   }));
 }
 
@@ -113,6 +119,9 @@ export function rowProblem(edit: CatalogEdit): string | null {
   if (edit.price > 0 && edit.cost > edit.price) {
     return 'El costo es mayor que el precio.';
   }
+  if (edit.quantity !== null && !(edit.quantity >= 0)) {
+    return 'La cantidad no es válida.';
+  }
   return null;
 }
 
@@ -128,6 +137,7 @@ export function toConfirmed(edits: CatalogEdit[]): CatalogConfirmed[] {
     cost: e.cost,
     price: e.price,
     supplierCode: e.supplierCode,
+    quantity: e.quantity !== null && e.quantity > 0 ? e.quantity : null,
   }));
 }
 
