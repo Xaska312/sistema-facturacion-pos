@@ -1,9 +1,9 @@
-import { Component, input } from '@angular/core';
+import { Component, computed, input } from '@angular/core';
 import { Order } from '../../core/api/api.models';
 import { formatDay, sizeText } from './order-text';
 import { formatDateTime } from '../../shared/format';
 import { formatCop } from '../../shared/money';
-import { ReceiptWidth } from '../../shared/receipt/receipt-prefs';
+import { ReceiptWidth, printableMm } from '../../shared/receipt/receipt-prefs';
 
 /**
  * Comprobante de un pedido por encargo (decisión 258) para la impresora térmica o PDF: qué pidió, fecha de entrega,
@@ -14,7 +14,7 @@ import { ReceiptWidth } from '../../shared/receipt/receipt-prefs';
   selector: 'app-order-receipt',
   template: `
     @let o = order();
-    <div class="receipt" [class.receipt-58]="width() === 58" [style.width.mm]="width()">
+    <div class="receipt" [class.receipt-58]="width() === 58" [style.width.mm]="printable()">
       @if (logo(); as src) {
         <img [src]="src" alt="" class="logo" />
       }
@@ -53,9 +53,11 @@ import { ReceiptWidth } from '../../shared/receipt/receipt-prefs';
     </div>
   `,
   styles: `
-    .receipt { font-family: ui-monospace, 'Courier New', monospace; font-size: 12px; line-height: 1.3; color: #000;
-      background: #fff; padding: 3mm; box-sizing: border-box; }
-    .receipt-58 { font-size: 10px; }
+    /* Como el tiquete de venta (decisión 289): el ancho que de verdad imprime la cabeza (72 o 48 mm) y letra gruesa sin
+       serifas, para que ningún driver la recorte ni la deje pálida (decisión 304). */
+    .receipt { font-family: Arial, Helvetica, sans-serif; font-size: 13px; font-weight: 600; line-height: 1.3; color: #000;
+      background: #fff; padding: 1mm 0; box-sizing: border-box; }
+    .receipt-58 { font-size: 11px; }
     p { margin: 0; overflow-wrap: anywhere; white-space: pre-line; }
     .row { display: flex; justify-content: space-between; gap: 6px; }
     .row span:last-child { white-space: nowrap; }
@@ -72,6 +74,7 @@ export class OrderReceiptComponent {
   readonly order = input.required<Order>();
   readonly businessName = input('');
   readonly width = input<ReceiptWidth>(80);
+  protected readonly printable = computed(() => printableMm(this.width()));
   readonly logo = input<string | null>(null);
 
   protected readonly cop = formatCop;

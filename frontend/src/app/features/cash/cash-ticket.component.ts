@@ -1,7 +1,7 @@
 import { Component, computed, input } from '@angular/core';
 import { CashReport } from '../../core/api/api.models';
 import { formatCop } from '../../shared/money';
-import { ReceiptWidth } from '../../shared/receipt/receipt-prefs';
+import { ReceiptWidth, printableMm } from '../../shared/receipt/receipt-prefs';
 import { cashRows, reportTitle, ticketDateTime } from './cash-ticket-text';
 import { differenceLabel } from './labels';
 
@@ -13,7 +13,7 @@ import { differenceLabel } from './labels';
   selector: 'app-cash-ticket',
   template: `
     @let r = report();
-    <div class="receipt" [class.receipt-58]="width() === 58" [style.width.mm]="width()">
+    <div class="receipt" [class.receipt-58]="width() === 58" [style.width.mm]="printable()">
       @if (logo(); as src) {
         <img [src]="src" alt="" class="logo" />
       }
@@ -67,9 +67,11 @@ import { differenceLabel } from './labels';
     </div>
   `,
   styles: `
-    .receipt { font-family: ui-monospace, 'Courier New', monospace; font-size: 12px; line-height: 1.3; color: #000;
-      background: #fff; padding: 3mm; box-sizing: border-box; }
-    .receipt-58 { font-size: 10px; }
+    /* Como el tiquete de venta (decisión 289): el ancho que de verdad imprime la cabeza (72 o 48 mm) y letra gruesa sin
+       serifas, para que ningún driver la recorte ni la deje pálida (decisión 304). */
+    .receipt { font-family: Arial, Helvetica, sans-serif; font-size: 13px; font-weight: 600; line-height: 1.3; color: #000;
+      background: #fff; padding: 1mm 0; box-sizing: border-box; }
+    .receipt-58 { font-size: 11px; }
     p { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
     .row { display: flex; justify-content: space-between; gap: 6px; }
     .row span:last-child { white-space: nowrap; }
@@ -87,6 +89,7 @@ export class CashTicketComponent {
   readonly report = input.required<CashReport>();
   readonly businessName = input('');
   readonly width = input<ReceiptWidth>(80);
+  protected readonly printable = computed(() => printableMm(this.width()));
   readonly logo = input<string | null>(null);
 
   protected readonly title = computed(() => reportTitle(this.report()).toUpperCase());
