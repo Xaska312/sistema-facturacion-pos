@@ -2,7 +2,7 @@ import { BillingAddon, BillingPlan } from '../../core/api/billing.api';
 import { addonsForSale, annualSaving, checkLines, orderTotal } from './billing-text';
 
 const negocio: BillingPlan = { code: 'NEGOCIO', name: 'Negocio', monthlyPrice: 69900, annualPrice: 699000, maxBranches: 1,
-  maxUsers: 6, maxRegisters: 3, modules: ['TABLES'], features: ['PURCHASES'] };
+  maxUsers: 6, maxRegisters: 3, modules: ['TABLES'], features: ['PURCHASES'], founder: false };
 const addon = (code: string, kind: BillingAddon['kind'], ref: string | null, price: number | null): BillingAddon =>
   ({ code, kind, ref, name: code, description: '', monthlyPrice: price, active: true, sortOrder: 1 });
 const addons = [addon('AI', 'FEATURE', 'AI', 39900), addon('TABLES', 'MODULE', 'TABLES', 14900),

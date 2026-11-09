@@ -167,6 +167,53 @@ class BillingIT extends IntegrationTest {
         api.postWith(s, "/api/v1/products", "{}").andExpect(status().is4xxClientError());
     }
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.poshibrido.subscription.application.SubscriptionService subscriptionService;
+
+    @Test
+    void founderKeepsItsLegacyPlanAndPriceWhileLocked() throws Exception {
+        Owned owner = api.newTenant("fundador");
+        Session s = owner.tenant();
+        Session admin = platformAdmin();
+        api.putWith(admin, "/api/v1/platform/billing/breb",
+                "{\"key\":\"@XASKAPOS\",\"holderName\":\"Daniel Mejía\",\"bankName\":\"Nu\"}").andExpect(status().isOk());
+        // El precio fundador es el del plan anterior (Consola → Planes); se deja uno para la prueba y se devuelve al final.
+        java.math.BigDecimal before = jdbc.queryForObject(
+                "SELECT monthly_price FROM platform.plans WHERE code = 'PRO'", java.math.BigDecimal.class);
+        java.math.BigDecimal proPrice = new java.math.BigDecimal("45000");
+        jdbc.update("UPDATE platform.plans SET monthly_price = ? WHERE code = 'PRO'", proPrice);
+        try {
+            // Cliente de antes de los planes nuevos: Pro (anterior) con su precio fijo un año más.
+            jdbc.update("""
+                    UPDATE platform.subscriptions SET plan_code = 'PRO', trial = FALSE,
+                        price_locked_until = now() + interval '1 year' WHERE tenant_id = ?""", owner.tenantId());
+            subscriptionService.evict(owner.tenantId());
+
+            String catalog = body(api.getWith(s, "/api/v1/billing").andExpect(status().isOk()));
+            assertThat((String) JsonPath.read(catalog, "$.plans[0].code")).isEqualTo("PRO");
+            assertThat((Boolean) JsonPath.read(catalog, "$.plans[0].founder")).isTrue();
+            String req = body(api.postWith(s, "/api/v1/billing/requests",
+                    "{\"planCode\":\"PRO\",\"billingCycle\":\"MONTHLY\",\"periods\":2}").andExpect(status().isOk()));
+            assertThat(new java.math.BigDecimal(JsonPath.read(req, "$.amount").toString()))
+                    .isEqualByComparingTo(proPrice.multiply(java.math.BigDecimal.TWO));
+            String id = JsonPath.read(req, "$.id");
+            api.postEmpty(admin, "/api/v1/platform/billing/requests/" + id + "/approve").andExpect(status().isOk());
+            api.getWith(s, "/api/v1/subscription").andExpect(jsonPath("$.plan.code").value("PRO"))
+                    .andExpect(jsonPath("$.status").value("ACTIVE"));
+
+            // Vencido el precio fundador, el plan anterior ya no se vende: solo los nuevos.
+            jdbc.update("UPDATE platform.subscriptions SET price_locked_until = now() - interval '1 day' WHERE tenant_id = ?",
+                    owner.tenantId());
+            subscriptionService.evict(owner.tenantId());
+            catalog = body(api.getWith(s, "/api/v1/billing"));
+            assertThat((List<String>) JsonPath.read(catalog, "$.plans[*].code")).doesNotContain("PRO");
+            api.postWith(s, "/api/v1/billing/requests", "{\"planCode\":\"PRO\",\"billingCycle\":\"MONTHLY\",\"periods\":1}")
+                    .andExpect(status().isUnprocessableEntity());
+        } finally {
+            jdbc.update("UPDATE platform.plans SET monthly_price = ? WHERE code = 'PRO'", before);
+        }
+    }
+
     private static byte[] png() throws Exception {
         BufferedImage img = new BufferedImage(40, 40, BufferedImage.TYPE_INT_RGB);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
