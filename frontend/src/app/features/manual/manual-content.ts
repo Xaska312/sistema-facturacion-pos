@@ -1197,6 +1197,8 @@ export const MANUAL: readonly ManualChapter[] = [
           'Abajo viene el pronóstico de mañana, según cómo te ha ido ese día en las últimas semanas.',
           'Cada persona solo ve lo que su rol le deja ver: un cajero no recibe las ventas ni la utilidad.',
           'Toca una de las preguntas del correo o de la tarjeta en Inicio y Aska te la responde de una vez.',
+          'El día 1 de cada mes, al dueño le llega "Lo que hiciste con Aska": las facturas que leyó, los productos que '
+            + 'cargó, las preguntas y el tiempo que te ahorró (también en Inicio la primera semana del mes).',
         ],
         who: 'El propietario y quien él elija, en negocios con el adicional XASKA IA.',
       },

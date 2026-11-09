@@ -60,6 +60,21 @@ export interface AskaMoments {
   emptyStock: boolean;
 }
 
+/** "Lo que hiciste con Aska" (decisión 309): el mes pasado, con el tiempo ahorrado estimado. */
+export interface AskaRecap {
+  title: string;
+  from: string;
+  to: string;
+  invoices: number;
+  invoiceLines: number;
+  products: number;
+  questions: number;
+  reviews: number;
+  digests: number;
+  minutesSaved: number;
+  savedLabel: string;
+}
+
 export interface DigestSettings {
   enabled: boolean;
   /** HH:mm en la zona del negocio. */
@@ -168,6 +183,11 @@ export class AiApi {
   /** Decisión 308: si el negocio tiene XASKA IA y si el inventario está vacío (no usa la IA). */
   moments(): Observable<AskaMoments> {
     return this.http.get<AskaMoments>('/api/v1/ai/moments', { context: new HttpContext().set(SILENT_CLIENT_ERRORS, true) });
+  }
+
+  /** Decisión 309: lo del mes pasado, solo los primeros 7 días del mes (204 → null). Para el dueño. */
+  recap(): Observable<AskaRecap | null> {
+    return this.http.get<AskaRecap | null>('/api/v1/ai/recap', { context: new HttpContext().set(SILENT_CLIENT_ERRORS, true) });
   }
 
   latestDigest(): Observable<Digest | null> {

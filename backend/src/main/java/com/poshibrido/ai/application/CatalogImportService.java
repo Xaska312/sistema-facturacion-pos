@@ -195,7 +195,8 @@ public class CatalogImportService {
             throw new BusinessRuleException((problem.isEmpty() ? "No pude leer esa lista." : problem)
                     + " No se descontó.");
         }
-        record("OK", input, output, actor);
+        int items = read.get("items") instanceof List<?> l ? l.size() : 0;
+        record("OK", input, output, actor, items);
         return tx.execute(s -> draft(read, inventory ? null : supplierId, m, new Usage(true, limit, used + 1),
                 inventory, branchId));
     }
@@ -738,13 +739,18 @@ public class CatalogImportService {
     }
 
     private void record(String status, int input, int output, UUID actor) {
+        record(status, input, output, actor, 0);
+    }
+
+    /** {@code items}: productos que trajo la lista (decisión 309, para "Lo que hiciste con Aska"). */
+    private void record(String status, int input, int output, UUID actor, int items) {
         tx.executeWithoutResult(s -> em.createNativeQuery("""
                 INSERT INTO ai_questions (id, kind, status, model, input_tokens, output_tokens, tool_calls, created_by,
-                                          created_at)
-                VALUES (?1, 'CATALOG_READ', ?2, ?3, ?4, ?5, 0, ?6, ?7)""")
+                                          created_at, items)
+                VALUES (?1, 'CATALOG_READ', ?2, ?3, ?4, ?5, 0, ?6, ?7, ?8)""")
                 .setParameter(1, Ids.newId()).setParameter(2, status).setParameter(3, ai.model())
                 .setParameter(4, input).setParameter(5, output).setParameter(6, actor)
-                .setParameter(7, Timestamp.from(Instant.now())).executeUpdate());
+                .setParameter(7, Timestamp.from(Instant.now())).setParameter(8, items).executeUpdate());
     }
 
     @SuppressWarnings("unchecked")

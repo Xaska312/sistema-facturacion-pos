@@ -385,6 +385,103 @@ public class MailTemplates {
                 "resumen-del-dia", "Aska de XASKA");
     }
 
+    /**
+     * "Lo que hiciste con Aska" (decisión 309): al dueño, lo que XASKA IA hizo por el negocio en el mes o en la prueba
+     * gratis, con el tiempo ahorrado estimado ({@code saved}, nulo si no hubo nada) y lo hecho ({@code lines}: emoji y
+     * frase en primera persona). Con {@code trialEnds} es el de la prueba: cuándo termina y el botón para quedarse.
+     */
+    public MailMessage askaRecap(String to, String name, String businessName, String title, String saved,
+                                 List<String[]> lines, String trialEnds) {
+        String first = name == null || name.isBlank() ? "" : name.trim().split("\\s+")[0];
+        String hello = first.isEmpty() ? "Hola," : "Hola, " + first + ",";
+        boolean trial = trialEnds != null;
+        String link = properties.link(trial ? "/app/planes" : "/app");
+        StringBuilder html = new StringBuilder()
+                .append("<!doctype html><html lang=\"es\"><body style=\"margin:0;padding:0;background:#eef0f7;\">")
+                .append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" ")
+                .append("style=\"background:#eef0f7;padding:24px 0;font-family:Arial,Helvetica,sans-serif;\"><tr>")
+                .append("<td align=\"center\"><table role=\"presentation\" width=\"560\" cellpadding=\"0\" ")
+                .append("cellspacing=\"0\" style=\"max-width:560px;width:100%;background:#ffffff;border-radius:20px;")
+                .append("overflow:hidden;\">")
+                .append("<tr><td bgcolor=\"#1e1b4b\" style=\"background:#1e1b4b;background-image:linear-gradient(160deg,")
+                .append("#1e1b4b 0%,#3730a3 62%,#b45309 135%);padding:26px 28px 24px;\">")
+                .append("<div style=\"color:#fde68a;font-size:11px;font-weight:bold;letter-spacing:1.5px;")
+                .append("text-transform:uppercase;\">").append(escape(title)).append(" &middot; ")
+                .append(escape(businessName)).append("</div>");
+        if (saved != null) {
+            html.append("<div style=\"color:#e0e7ff;font-size:15px;margin-top:14px;\">Te ahorré</div>")
+                    .append("<div style=\"color:#ffffff;font-size:38px;font-weight:bold;letter-spacing:-1px;")
+                    .append("line-height:1.1;\">").append(escape(saved)).append("</div>")
+                    .append("<div style=\"color:#e0e7ff;font-size:15px;margin-top:2px;\">de trabajo a mano ")
+                    .append(trial ? "en tu prueba" : "este mes").append(" &#10022;</div>");
+        } else {
+            html.append("<div style=\"color:#ffffff;font-size:28px;font-weight:bold;line-height:1.2;margin-top:14px;\">")
+                    .append("Aún no me has puesto a trabajar</div>");
+        }
+        html.append("</td></tr>")
+                .append("<tr><td style=\"padding:24px 28px 8px;color:#1f2937;font-size:15px;line-height:1.6;\">")
+                .append("<p style=\"margin:0 0 14px;\">").append(escape(hello)).append("</p>");
+        if (!lines.isEmpty()) {
+            html.append("<p style=\"margin:0 0 12px;\">").append(trial ? "Esto hicimos juntos en tu prueba:"
+                    : "Esto hicimos juntos el mes pasado:").append("</p>");
+            for (String[] l : lines) {
+                html.append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" ")
+                        .append("style=\"margin:0 0 8px;background:#f5f6fb;border-radius:12px;\"><tr>")
+                        .append("<td style=\"width:38px;font-size:22px;padding:10px 0 10px 12px;vertical-align:top;\">")
+                        .append(l[0]).append("</td><td style=\"padding:12px 12px 12px 6px;color:#111827;\">")
+                        .append(escape(l[1])).append("</td></tr></table>");
+            }
+        } else {
+            html.append("<p style=\"margin:0 0 12px;\">Te quedan pocos días para probarme. Tres cosas que hago en ")
+                    .append("segundos:</p><p style=\"margin:0 0 12px;\">&#129534; Tómale foto a la factura de un ")
+                    .append("proveedor en Compras &rarr; Recibir mercancía y la lleno por ti.<br>&#128230; Pásame una ")
+                    .append("foto de tu cuaderno de inventario en Productos &rarr; Cargar con Aska.<br>&#128172; ")
+                    .append("Pregúntame qué se va a agotar esta semana.</p>");
+        }
+        if (trial) {
+            html.append("<div style=\"margin:16px 0 4px;padding:14px 16px;background:#eef2ff;border-left:4px solid ")
+                    .append("#f59e0b;border-radius:0 12px 12px 0;color:#312e81;\">Tu prueba gratis termina el ")
+                    .append(escape(trialEnds)).append(". Si te sirvo, quédate conmigo: sigo leyendo tus facturas, ")
+                    .append("respondiendo y escribiéndote cada día.</div>");
+        }
+        html.append("<p style=\"margin:20px 0 6px;\"><a href=\"").append(escape(link))
+                .append("\" style=\"display:inline-block;background:#4338ca;color:#ffffff;text-decoration:none;")
+                .append("padding:12px 22px;border-radius:12px;font-weight:bold;\">")
+                .append(trial ? "Quedarme con XASKA IA" : "Pregúntale a Aska").append("</a></p>")
+                .append("<p style=\"margin:20px 0 22px;\">Gracias por dejarme ayudarte,<br>")
+                .append("<strong style=\"color:#3730a3;\">Aska</strong> <span style=\"color:#f59e0b;\">&#10022;</span></p>")
+                .append("</td></tr>")
+                .append("<tr><td style=\"padding:14px 28px 20px;background:#f5f6fb;font-size:12px;color:#6b7280;")
+                .append("line-height:1.5;\">El tiempo es un estimado de lo que tardaría hacerlo a mano: unos 30 segundos ")
+                .append("por línea de factura, 1 minuto por producto, 5 minutos por pregunta y 10 por pedido revisado o ")
+                .append("por resumen del día. Si los botones no funcionan: ").append(escape(link))
+                .append("<br>Aska es la IA de XASKA POS. Las decisiones siempre son tuyas.</td></tr>")
+                .append("</table></td></tr></table></body></html>");
+
+        StringBuilder text = new StringBuilder(hello).append("\n\n");
+        if (saved != null) {
+            text.append("Te ahorré ").append(saved).append(" de trabajo a mano ")
+                    .append(trial ? "en tu prueba" : "este mes").append(".\n\n");
+        } else {
+            text.append("Aún no me has puesto a trabajar. Tómale foto a una factura, pásame tu cuaderno de inventario ")
+                    .append("o pregúntame qué se va a agotar.\n\n");
+        }
+        lines.forEach(l -> text.append(l[0]).append(" ").append(l[1]).append("\n"));
+        if (trial) {
+            text.append("\nTu prueba gratis termina el ").append(trialEnds).append(". Quédate con XASKA IA: ")
+                    .append(link).append("\n");
+        } else {
+            text.append("\nPregúntale a Aska: ").append(link).append("\n");
+        }
+        text.append("\nGracias por dejarme ayudarte,\nAska, la IA de XASKA\n\n")
+                .append("El tiempo es un estimado: 30 s por línea de factura, 1 min por producto, 5 min por pregunta y ")
+                .append("10 por pedido revisado o resumen del día.");
+        String subject = trial ? "Aska · " + (saved == null ? "Tu prueba termina pronto" : "Te ahorré " + saved
+                + " en tu prueba") : "Aska · " + title + (saved == null ? "" : ": te ahorré " + saved);
+        return new MailMessage(to, subject, html.toString(), text.toString(), UUID.randomUUID().toString(),
+                trial ? "aska-prueba" : "aska-mes", "Aska de XASKA");
+    }
+
     /** "Sin diferencia", "Sobran $2.000", "Faltan $1.500". */
     static String differenceText(BigDecimal difference) {
         if (difference == null || difference.signum() == 0) {

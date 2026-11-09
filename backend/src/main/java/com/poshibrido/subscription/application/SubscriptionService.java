@@ -275,6 +275,15 @@ public class SubscriptionService implements SubscriptionApi {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public Instant aiTrialEndsAt(UUID tenantId) {
+        Instant now = Instant.now();
+        return current(tenantId).filter(c -> c.aiTrialOnly(now)).flatMap(c -> c.activeAddons(now).stream()
+                .filter(a -> "AI".equals(a.ref()) && a.trial()).map(a -> a.endsAt()).max(Instant::compareTo))
+                .orElse(null);
+    }
+
+    @Override
     public Entitlements entitlements(UUID tenantId) {
         return current(tenantId).map(c -> {
             Entitled e = c.entitled(Instant.now());
