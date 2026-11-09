@@ -45,9 +45,10 @@ public class CatalogImportController {
                       @RequestParam(required = false) UUID supplierId,
                       @RequestParam(required = false) BigDecimal margin,
                       @RequestParam(defaultValue = "false") boolean inventory,
-                      @RequestParam(required = false) UUID branchId) throws IOException {
+                      @RequestParam(required = false) UUID branchId,
+                      @RequestParam(defaultValue = "1") int fromPhoto) throws IOException {
         if (files == null || files.isEmpty() || files.size() > 10) {
-            throw new BusinessRuleException("Sube la lista en un archivo (Excel, CSV o PDF) o hasta 10 fotos.");
+            throw new BusinessRuleException("Sube la lista en un archivo (Excel, CSV, PDF o Word) o hasta 10 fotos.");
         }
         List<Upload> uploads = new ArrayList<>();
         for (MultipartFile f : files) {
@@ -56,7 +57,7 @@ public class CatalogImportController {
             }
             uploads.add(new Upload(f.getOriginalFilename(), f.getBytes()));
         }
-        return catalog.read(uploads, supplierId, margin, inventory, branchId);
+        return catalog.read(uploads, supplierId, margin, inventory, branchId, fromPhoto);
     }
 
     @PostMapping("/apply")

@@ -70,17 +70,25 @@ type Filter = 'ALL' | 'CREATE' | 'UPDATE' | 'CHECK' | 'SKIP';
           </div>
         </div>
 
+        @if (nextPhoto(); as n) {
+          <!-- Decisión 313: un Word con más de 10 fotos se lee por tandas. -->
+          <div class="card p-3 flex flex-wrap items-center gap-3" role="status">
+            <p class="flex-1 min-w-56 text-sm">Listo, guardé esas. Del Word quedan las fotos {{ n }} a {{ totalPhotos() }}.</p>
+            <p-button [label]="'Seguir con las fotos ' + n + ' a ' + lastOf(n)" icon="pi pi-images"
+                      [loading]="reading()" (onClick)="read(n)" />
+          </div>
+        }
         <label class="aska-drop" [class.aska-drop-ready]="files().length > 0">
           <i class="pi pi-cloud-upload text-2xl" aria-hidden="true"></i>
           @if (files().length === 0) {
             <span class="font-semibold">{{ inventory() ? 'Elegir las fotos' : 'Elegir la lista' }}</span>
-            <span class="text-xs text-muted">Toca aquí o arrastra el archivo</span>
+            <span class="text-xs text-muted">Toca aquí o arrastra el archivo: fotos, PDF, Excel o un Word con fotos</span>
           } @else {
             <span class="font-semibold">{{ fileNames() }}</span>
             <span class="text-xs text-muted">Toca para cambiarla</span>
           }
           <input type="file" multiple class="sr-only"
-                 accept=".xlsx,.csv,.pdf,image/jpeg,image/png,application/pdf,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                 accept=".xlsx,.csv,.pdf,.docx,image/jpeg,image/png,application/pdf,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                  (change)="pick($event)" />
         </label>
 
@@ -368,6 +376,9 @@ export class CatalogImportComponent implements OnInit {
   protected readonly suppliers = signal<Party[]>([]);
   protected readonly usage = signal<AskUsage | null>(null);
   protected readonly files = signal<File[]>([]);
+  /** Decisión 313: la foto del Word desde la que sigue la siguiente tanda (null = no hay más). */
+  protected readonly nextPhoto = signal<number | null>(null);
+  protected readonly totalPhotos = signal(0);
   protected readonly reading = signal(false);
   protected readonly saving = signal(false);
   protected readonly problem = signal<string | null>(null);
@@ -446,19 +457,26 @@ export class CatalogImportComponent implements OnInit {
     }
     this.problem.set(chosen.length > 10 ? 'Sube máximo 10 fotos por vez.' : null);
     this.files.set(chosen.slice(0, 10));
+    this.nextPhoto.set(null);
   }
 
-  async read(): Promise<void> {
+  protected lastOf(from: number): number {
+    return Math.min(this.totalPhotos(), from + 9);
+  }
+
+  /** {@code fromPhoto} (decisión 313): la siguiente tanda de fotos de un Word. */
+  async read(fromPhoto = 1): Promise<void> {
     if (this.files().length === 0 || this.reading()) {
       return;
     }
+    this.nextPhoto.set(null);
     this.reading.set(true);
     this.problem.set(null);
     // Las fotos se achican antes de subir (más rápido y más barato); Excel, CSV y PDF van tal cual.
     const files = await Promise.all(this.files().map((f) => f.type.startsWith('image/') ? shrinkPhoto(f) : f));
     const inventory = this.inventory();
     this.ai.readCatalog(files, inventory ? null : this.supplierId || null, this.margin,
-      inventory ? this.branchId || null : null).subscribe({
+      inventory ? this.branchId || null : null, fromPhoto).subscribe({
       next: (draft) => {
         this.reading.set(false);
         this.usage.set(draft.usage);
@@ -519,6 +537,16 @@ export class CatalogImportComponent implements OnInit {
           this.messages.add({ severity: 'success', summary: 'Catálogo al día',
             detail: `${report.toCreate} nuevos, ${report.toUpdate} actualizados`
               + (stocked > 0 ? `, ${stocked} con su cantidad en inventario.` : '.') });
+          const photos = d?.photos;
+          if (photos && photos.to < photos.total) {
+            // Decisión 313: quedan fotos del Word; se sigue con la siguiente tanda.
+            this.nextPhoto.set(photos.to + 1);
+            this.totalPhotos.set(photos.total);
+            this.draft.set(null);
+            this.edits.set([]);
+            this.report.set(null);
+            return;
+          }
           void this.router.navigate(['/app/productos']);
         }
       },

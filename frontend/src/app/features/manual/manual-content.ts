@@ -1254,7 +1254,10 @@ export const MANUAL: readonly ManualChapter[] = [
         ],
         tips: [
           '¿Tu inventario está en un cuaderno? Elige "Mi inventario" (o en Existencias, "Cargar inventario con Aska"), '
-            + 'tómale foto a cada hoja (hasta 10) y elige la sede: los productos quedan creados con su cantidad.',
+            + 'tómale foto a cada hoja (hasta 10) o sube un Word con las fotos, y elige la sede. Si el Word trae más de '
+            + '10, Aska los lee por tandas: guardas y tocas "Seguir con las fotos 11 a 20".',
+          'Si la lista o el cuaderno no trae precios, Aska saca igual los productos: escribe el precio de cada uno en '
+            + 'la revisión (o 0 si aún no lo sabes).',
           'Los productos que ya tienes conservan su margen: si el costo sube, el precio sube igual. Si baja, el precio se queda.',
           'Si el producto ya tiene movimientos, su costo lo pone el inventario con la próxima compra; aquí se ajusta el precio.',
           'Con el proveedor elegido, Aska recuerda sus códigos para la próxima lista y la próxima factura.',
