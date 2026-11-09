@@ -55,6 +55,8 @@ export interface CreateTenantRequest {
   activationCode?: string;
   /** Decisión 303: crearlo para pagar ya con Bre-B (si ya usó la prueba, nace vencido hasta que se apruebe el pago). */
   payNow?: boolean;
+  /** Decisión 312: código de invitación de otro negocio o de un aliado. */
+  referralCode?: string;
 }
 
 export interface PageResponse<T> {

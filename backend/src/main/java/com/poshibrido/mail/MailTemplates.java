@@ -179,6 +179,20 @@ public class MailTemplates {
                 "Gracias por confiar en XASKA POS.");
     }
 
+    /** Referidos (decisión 312): el negocio que invitó pagó y quien invita ganó un mes de XASKA IA. */
+    public MailMessage referralReward(String to, String ownerName, String businessName, String referredName,
+                                      String untilLabel) {
+        return message(to, "Ganaste un mes de XASKA IA gracias a " + referredName, "referido-premio",
+                "Hola, " + ownerName + ":",
+                List.of(referredName + " entró a XASKA con tu invitación y ya pagó su primer mes. Gracias por "
+                                + "recomendarnos.",
+                        "Te regalamos un mes de XASKA IA para " + businessName + ": la tienes hasta el " + untilLabel
+                                + ". Si estabas dentro de XASKA, sal y vuelve a entrar para verla.",
+                        "Cada negocio que invites y pague te da otro mes. Tu código está en Ajustes → Planes y pagos."),
+                "Invitar a otro negocio", properties.link("/app/planes"),
+                "Gracias por confiar en XASKA POS.");
+    }
+
     /** El pago no se pudo confirmar (decisión 302): por qué y qué hacer. */
     public MailMessage billingRejected(String to, String ownerName, String businessName, String reference,
                                        String reason) {

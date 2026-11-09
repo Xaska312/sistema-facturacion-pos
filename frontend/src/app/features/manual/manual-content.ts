@@ -1205,6 +1205,24 @@ export const MANUAL: readonly ManualChapter[] = [
         who: 'El propietario y quien él elija, en negocios con el adicional XASKA IA.',
       },
       {
+        id: 'invita-y-gana',
+        title: 'Invita y gana: un mes de XASKA IA por cada negocio',
+        summary: 'Comparte tu código con otros negocios. Cuando uno entre con él y pague su primer mes, te regalamos un '
+          + 'mes de XASKA IA. Tu invitado prueba 14 días gratis con la IA incluida.',
+        steps: [
+          'Entra a Ajustes → Planes y pagos y busca "Invita y gana": ahí está tu código.',
+          'Toca "Compartir por WhatsApp" (el mensaje ya va con tu enlace) o "Copiar enlace".',
+          'Tu invitado se registra con el enlace; si lo escribe a mano, va en "Código de invitación" al crear su negocio.',
+          'Cuando pague su primer mes, te llega un correo y tu mes de XASKA IA queda activo.',
+        ],
+        tips: [
+          'No hay límite: cada negocio que pague te da otro mes, que se suma al que ya tengas.',
+          'Abajo ves a quién invitaste y quién ya pagó.',
+          'Tu propio código no sirve para crear otro negocio tuyo.',
+        ],
+        who: 'El propietario del negocio.',
+      },
+      {
         id: 'planes-y-pagos',
         title: 'Planes y pagos con Bre-B',
         summary: 'Renueva tu plan, cámbialo, agrega XASKA IA, módulos o más sedes, cajas y usuarios, y paga por Bre-B '
