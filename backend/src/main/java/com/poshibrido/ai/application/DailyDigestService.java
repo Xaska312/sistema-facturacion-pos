@@ -554,14 +554,14 @@ public class DailyDigestService {
                     new String[]{"MONEY", "Cobros y pagos"})) {
                 if (SECTION_PERMISSIONS.get(s[0]).stream().anyMatch(perms::contains)) {
                     var w = DigestWeather.section(s[0], mine.points());
-                    sections.add(new String[]{s[1], w.emoji(), w.label()});
+                    sections.add(new String[]{s[1], w.emoji(), w.label(), w.code()});
                 }
             }
             DigestWeather.Weather weather = mine.weather() == null ? null : DigestWeather.of(mine.weather());
             mailer.send(templates.dailyDigest(u.email(), u.fullName(), tenant.tradeName(), dateLabel, mine.headline(),
                     mine.points().stream().map(p -> new DigestPoint(p.tone(), p.title(), p.detail())).toList(),
                     mine.figures().stream().map(f -> new String[]{f.label(), f.value()}).toList(),
-                    weather == null ? null : new String[]{weather.emoji(), weather.label()}, sections, mine.forecast(),
+                    weather == null ? null : new String[]{weather.emoji(), weather.label(), weather.code()}, sections, mine.forecast(),
                     mine.followUps()));
             sent++;
         }
