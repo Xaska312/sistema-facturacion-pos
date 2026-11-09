@@ -61,6 +61,29 @@ public class AskaMomentService {
         return isEmpty(total, stocked);
     }
 
+    /**
+     * La prueba gratis de XASKA IA (decisión 311): cuándo termina, cuántos días quedan y los tres retos de la bienvenida
+     * (leer una factura, preguntarle a Aska, cargar con Aska). Nulo si el negocio no la tiene solo por la prueba.
+     */
+    public record Trial(java.time.Instant endsAt, long daysLeft, boolean scanned, boolean asked, boolean loaded) {
+    }
+
+    @Transactional(readOnly = true)
+    public Trial trial() {
+        var tenant = TenantContext.current().orElse(null);
+        java.time.Instant ends = tenant == null ? null : subscriptions.aiTrialEndsAt(tenant.id());
+        if (ends == null) {
+            return null;
+        }
+        long left = Math.max(0, (long) Math.ceil(java.time.Duration.between(java.time.Instant.now(), ends).toHours() / 24.0));
+        Object[] r = (Object[]) em.createNativeQuery("""
+                SELECT EXISTS (SELECT 1 FROM purchase_invoice_scans WHERE status = 'OK'),
+                       EXISTS (SELECT 1 FROM ai_questions WHERE status = 'OK' AND kind = 'QUESTION'),
+                       EXISTS (SELECT 1 FROM ai_questions WHERE status = 'OK' AND kind = 'CATALOG_READ')""")
+                .getSingleResult();
+        return new Trial(ends, left, Boolean.TRUE.equals(r[0]), Boolean.TRUE.equals(r[1]), Boolean.TRUE.equals(r[2]));
+    }
+
     static boolean isEmpty(long total, long stocked) {
         return total >= MIN_PRODUCTS && stocked * 5 <= total;
     }

@@ -1173,6 +1173,8 @@ export const MANUAL: readonly ManualChapter[] = [
         ],
         tips: [
           'Responde sobre ventas, productos, inventario y vencimientos, fiados, cuentas por pagar y cajas.',
+          'En la prueba gratis de 14 días, arriba verás cuántos días te quedan: tócalo para ver los tres retos (leer una '
+            + 'factura, preguntar qué se agota y cargar tu cuaderno), que se marcan solos al hacerlos.',
           'Cada usuario solo recibe respuestas de lo que su rol le deja ver: un cajero no ve la utilidad del negocio.',
           'Debajo de cada respuesta dice qué consultó. Revisa en Reportes las cifras importantes antes de decidir.',
           'La conversación se borra al cerrar el panel: XASKA no guarda lo que preguntas, solo cuenta cuántas preguntas '

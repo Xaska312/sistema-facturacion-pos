@@ -16,6 +16,9 @@ import { THEME_MODES, ThemeMode, themeModeIcon } from '../../core/theme/theme-mo
 import { ThemeService } from '../../core/theme/theme.service';
 import { HelpPanelComponent } from '../../shared/help/help-panel.component';
 import { AskaComponent } from '../ai/aska.component';
+import { AskaWelcomeComponent } from '../ai/aska-welcome.component';
+import { AskaTrialState } from '../ai/aska-trial-state';
+import { daysLeftText } from '../ai/aska-trial';
 import { helpForUrl } from '../../shared/help/screen-help';
 import { TourId } from '../../shared/tour/tour';
 import { TourService } from '../../shared/tour/tour.service';
@@ -36,7 +39,7 @@ interface ThemeOption extends PrimeMenuItem {
 @Component({
   selector: 'app-shell',
   imports: [RouterOutlet, RouterLink, RouterLinkActive, DrawerModule, MenuModule, TooltipModule, HelpPanelComponent,
-    XaskaLogoComponent, XIconComponent, AskaComponent],
+    XaskaLogoComponent, XIconComponent, AskaComponent, AskaWelcomeComponent],
   template: `
     <button type="button" class="skip-link" (click)="focusMain()">Saltar al contenido</button>
 
@@ -77,6 +80,14 @@ interface ThemeOption extends PrimeMenuItem {
             <span class="plan-pill-detail">{{ pl.detail }}</span>
             @if (pl.ai) { <span class="plan-pill-ai" aria-hidden="true">IA</span> }
           </a>
+        }
+        @if (canAsk() && askaTrial(); as t) {
+          <!-- Decisión 311: los días de la prueba de XASKA IA; abre la bienvenida con los retos. -->
+          <button type="button" class="trial-pill" (click)="trialState.openWelcome()"
+                  [attr.aria-label]="'Prueba de XASKA IA: ' + trialDays()">
+            <span class="plan-pill-ai" aria-hidden="true">IA</span>
+            <span>{{ trialDays() }}</span>
+          </button>
         }
         <span class="hidden lg:flex items-center gap-2 text-sm text-muted max-w-56" title="Negocio actual">
           @if (brandLogo(); as logo) {
@@ -150,6 +161,7 @@ interface ThemeOption extends PrimeMenuItem {
     </div>
 
     @if (canAsk()) {
+      <app-aska-welcome />
       <app-aska />
     }
 
@@ -179,6 +191,12 @@ interface ThemeOption extends PrimeMenuItem {
     .plan-pill:hover, .plan-pill:focus-visible { transform: translateY(-1px); box-shadow: 0 6px 16px var(--aska-glow); }
     .plan-pill-dot { width: 0.5rem; height: 0.5rem; border-radius: 9999px; background: var(--color-success); }
     .plan-pill-detail { opacity: 0.85; }
+    .trial-pill {
+      display: inline-flex; align-items: center; gap: 0.375rem; min-height: 2.25rem; padding: 0 0.75rem;
+      border-radius: 9999px; font-size: 0.8125rem; font-weight: 700; white-space: nowrap; color: var(--aska-soft-fg);
+      background: var(--aska-soft); border: 1px dashed var(--aska); transition: transform 0.15s ease;
+    }
+    .trial-pill:hover, .trial-pill:focus-visible { transform: translateY(-1px); }
     .plan-pill-ai {
       font-size: 0.625rem; font-weight: 800; padding: 0.0625rem 0.375rem; border-radius: 9999px;
       color: var(--xaska-ia-tag-text); background: linear-gradient(135deg, var(--aska-cta-from), var(--aska-cta-to));
@@ -300,6 +318,9 @@ export class ShellComponent {
   protected readonly helpOpen = signal(false);
   /** Aska, la IA de XASKA (decisiones 296 y 298): botón flotante para quien tiene el adicional. */
   protected readonly canAsk = computed(() => this.auth.permissions().has('ai:ask'));
+  protected readonly trialState = inject(AskaTrialState);
+  protected readonly askaTrial = this.trialState.trial;
+  protected readonly trialDays = computed(() => daysLeftText(this.askaTrial()?.daysLeft ?? 0));
   private readonly url = signal(this.router.url);
   private readonly pageTitle = signal<string | null>(deepestTitle(this.router.routerState.snapshot.root));
 

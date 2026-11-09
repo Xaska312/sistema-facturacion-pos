@@ -75,6 +75,15 @@ export interface AskaRecap {
   savedLabel: string;
 }
 
+/** La prueba gratis de XASKA IA (decisión 311): días que quedan y los tres retos de la bienvenida. */
+export interface AiTrial {
+  endsAt: string;
+  daysLeft: number;
+  scanned: boolean;
+  asked: boolean;
+  loaded: boolean;
+}
+
 export interface DigestSettings {
   enabled: boolean;
   /** HH:mm en la zona del negocio. */
@@ -188,6 +197,11 @@ export class AiApi {
   /** Decisión 309: lo del mes pasado, solo los primeros 7 días del mes (204 → null). Para el dueño. */
   recap(): Observable<AskaRecap | null> {
     return this.http.get<AskaRecap | null>('/api/v1/ai/recap', { context: new HttpContext().set(SILENT_CLIENT_ERRORS, true) });
+  }
+
+  /** Decisión 311: la prueba de XASKA IA en curso; null si el negocio no está en prueba (204). */
+  trial(): Observable<AiTrial | null> {
+    return this.http.get<AiTrial | null>('/api/v1/ai/trial', { context: new HttpContext().set(SILENT_CLIENT_ERRORS, true) });
   }
 
   latestDigest(): Observable<Digest | null> {
