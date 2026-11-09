@@ -1,6 +1,7 @@
 import { Component, computed, effect, ElementRef, HostListener, inject, signal, untracked, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { NavigationEnd, Router, RouterLink } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AiApi, AskTurn, AskUsage } from '../../core/api/ai.api';
 import { problemMessage } from '../../core/errors/problem';
@@ -337,9 +338,20 @@ export class AskaComponent {
           if (!this.open()) {
             this.show();
           }
+          const q = this.state.takeQuestion();
+          if (q) {
+            this.send(q);
+          }
         });
       }
     });
+    // Un enlace con ?aska=pregunta (las preguntas del correo del Resumen del día, decisión 307) la abre y pregunta.
+    this.router.events.pipe(takeUntilDestroyed()).subscribe((e) => {
+      if (e instanceof NavigationEnd) {
+        this.fromLink(e.urlAfterRedirects);
+      }
+    });
+    queueMicrotask(() => this.fromLink(this.router.url));
     // Al abrir: el cursor en la pregunta.
     effect(() => {
       const el = this.input()?.nativeElement;
@@ -348,6 +360,22 @@ export class AskaComponent {
       }
     });
   }
+
+  private fromLink(url: string): void {
+    const q = this.router.parseUrl(url).queryParams['aska'];
+    if (typeof q !== 'string' || !q.trim()) {
+      return;
+    }
+    void this.router.navigate([], { queryParams: { aska: null }, queryParamsHandling: 'merge', replaceUrl: true });
+    if (q === this.linkQuestion) {
+      return;
+    }
+    this.linkQuestion = q;
+    this.state.open(q);
+  }
+
+  /** La última pregunta que llegó por enlace, para no hacerla dos veces mientras se limpia la dirección. */
+  private linkQuestion: string | null = null;
 
   @HostListener('document:keydown.escape')
   protected onEscape(): void {

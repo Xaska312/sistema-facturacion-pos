@@ -38,7 +38,15 @@ export interface Digest {
   points: DigestPoint[];
   figures: { label: string; value: string }[];
   createdAt: string | null;
+  /** El clima del día (decisión 307); null si esta persona no ve las ventas o el resumen es anterior. */
+  weather?: DigestWeatherCode | null;
+  /** Lo que suele pasar mañana según el mismo día de las últimas semanas. */
+  forecast?: string | null;
+  /** Hasta 2 preguntas para seguir la conversación con Aska. */
+  followUps?: string[];
 }
+
+export type DigestWeatherCode = 'SUNNY' | 'PARTLY' | 'CLOUDY' | 'RAIN' | 'STORM' | 'QUIET';
 
 export interface DigestSettings {
   enabled: boolean;

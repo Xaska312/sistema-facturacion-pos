@@ -1189,9 +1189,11 @@ export const MANUAL: readonly ManualChapter[] = [
         ],
         tips: [
           'Si eliges una hora antes del mediodía (por ejemplo 6:00 a. m.), el resumen es del día anterior.',
-          'Primero salen los puntos urgentes (descuadres, productos agotados, facturas vencidas) y después lo bueno.',
-          'Cada persona solo ve lo que su rol le deja ver: un cajero no recibe la utilidad del negocio.',
-          'Desde la tarjeta en Inicio toca "Pregúntale a Aska" para profundizar en cualquier punto.',
+          'El clima resume tu día: ☀️ vendiste igual o más que el mismo día de la semana pasada, ⛅ un poco menos, '
+            + '🌧️ bastante menos y ⛈️ hay algo urgente (un descuadre, un agotado, una factura vencida).',
+          'Abajo viene el pronóstico de mañana, según cómo te ha ido ese día en las últimas semanas.',
+          'Cada persona solo ve lo que su rol le deja ver: un cajero no recibe las ventas ni la utilidad.',
+          'Toca una de las preguntas del correo o de la tarjeta en Inicio y Aska te la responde de una vez.',
         ],
         who: 'El propietario y quien él elija, en negocios con el adicional XASKA IA.',
       },
