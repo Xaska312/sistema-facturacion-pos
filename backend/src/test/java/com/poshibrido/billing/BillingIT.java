@@ -103,6 +103,10 @@ class BillingIT extends IntegrationTest {
         Session s = owner.tenant();
         api.getWith(s, "/api/v1/ai/teaser").andExpect(status().isOk()).andExpect(jsonPath("$.canBuy").value(true));
         api.getWith(s, "/api/v1/subscription").andExpect(jsonPath("$.aiTrialAvailable").value(true));
+        // Decisión 308: las pantallas de trabajo a mano ofrecen la prueba al dueño.
+        api.getWith(s, "/api/v1/ai/moments").andExpect(status().isOk()).andExpect(jsonPath("$.hasAi").value(false))
+                .andExpect(jsonPath("$.canBuy").value(true)).andExpect(jsonPath("$.trialAvailable").value(true))
+                .andExpect(jsonPath("$.emptyStock").isBoolean());
         api.postEmpty(s, "/api/v1/billing/ai-trial").andExpect(status().isOk())
                 .andExpect(jsonPath("$.aiTrialAvailable").value(false))
                 .andExpect(jsonPath("$.addons[0].code").value("AI"))
@@ -112,6 +116,8 @@ class BillingIT extends IntegrationTest {
         // Con la prueba, los topes son los de prueba.
         api.getWith(s, "/api/v1/ai/usage").andExpect(jsonPath("$.limit").value(40));
         api.getWith(s, "/api/v1/ai/teaser").andExpect(jsonPath("$.show").value(false));
+        api.getWith(s, "/api/v1/ai/moments").andExpect(jsonPath("$.hasAi").value(true))
+                .andExpect(jsonPath("$.trialAvailable").value(false));
 
         Session admin = platformAdmin();
         api.putWith(admin, "/api/v1/platform/billing/breb",

@@ -48,6 +48,9 @@ public interface SubscriptionApi {
      */
     int aiMonthlyLimit(UUID tenantId, String allowanceCode);
 
+    /** El negocio puede empezar la prueba gratis de XASKA IA (una sola vez, si no la tiene) (decisiones 302 y 308). */
+    boolean aiTrialAvailable(UUID tenantId);
+
     /**
      * Módulos y funciones que el plan del negocio (más sus extras vigentes) incluye (decisión 288). Sin suscripción,
      * todo (no se le quita nada a un negocio por un dato que falta) menos el adicional pagado XASKA IA.

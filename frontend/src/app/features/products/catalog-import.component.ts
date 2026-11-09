@@ -1,3 +1,4 @@
+import { AskaMomentsState } from '../ai/aska-moments-state';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -356,6 +357,7 @@ type Filter = 'ALL' | 'CREATE' | 'UPDATE' | 'CHECK' | 'SKIP';
 })
 export class CatalogImportComponent implements OnInit {
   private readonly ai = inject(AiApi);
+  private readonly moments = inject(AskaMomentsState);
   private readonly parties = inject(PartiesApi);
   private readonly organization = inject(OrganizationApi);
   private readonly route = inject(ActivatedRoute);
@@ -511,6 +513,9 @@ export class CatalogImportComponent implements OnInit {
         this.saving.set(false);
         this.report.set(report);
         if (report.applied) {
+          // Decisión 308: ya no está creando a mano ni con el inventario vacío.
+          this.moments.resetManualProducts();
+          this.moments.refresh();
           this.messages.add({ severity: 'success', summary: 'Catálogo al día',
             detail: `${report.toCreate} nuevos, ${report.toUpdate} actualizados`
               + (stocked > 0 ? `, ${stocked} con su cantidad en inventario.` : '.') });

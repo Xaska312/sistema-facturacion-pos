@@ -48,6 +48,18 @@ export interface Digest {
 
 export type DigestWeatherCode = 'SUNNY' | 'PARTLY' | 'CLOUDY' | 'RAIN' | 'STORM' | 'QUIET';
 
+/** Aska en el momento del dolor (decisión 308). */
+export interface AskaMoments {
+  /** El negocio tiene XASKA IA (pagada o en prueba). */
+  hasAi: boolean;
+  /** Quien mira puede activarla (el dueño). */
+  canBuy: boolean;
+  /** Puede empezar la prueba gratis. */
+  trialAvailable: boolean;
+  /** Hay productos pero casi ninguno tiene existencias. */
+  emptyStock: boolean;
+}
+
 export interface DigestSettings {
   enabled: boolean;
   /** HH:mm en la zona del negocio. */
@@ -153,6 +165,11 @@ export class AiApi {
   }
 
   /** El último Resumen del día (hoy o ayer) con lo que esta persona puede ver; null si no hay. */
+  /** Decisión 308: si el negocio tiene XASKA IA y si el inventario está vacío (no usa la IA). */
+  moments(): Observable<AskaMoments> {
+    return this.http.get<AskaMoments>('/api/v1/ai/moments', { context: new HttpContext().set(SILENT_CLIENT_ERRORS, true) });
+  }
+
   latestDigest(): Observable<Digest | null> {
     return this.http.get<Digest | null>('/api/v1/ai/digest/latest');
   }

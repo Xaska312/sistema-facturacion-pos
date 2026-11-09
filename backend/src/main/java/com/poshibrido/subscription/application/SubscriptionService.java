@@ -268,6 +268,13 @@ public class SubscriptionService implements SubscriptionApi {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public boolean aiTrialAvailable(UUID tenantId) {
+        return current(tenantId).map(c -> c.aiTrialUsedAt() == null
+                && !c.entitled(Instant.now()).features().contains(PlanFeature.AI.name())).orElse(false);
+    }
+
+    @Override
     public Entitlements entitlements(UUID tenantId) {
         return current(tenantId).map(c -> {
             Entitled e = c.entitled(Instant.now());

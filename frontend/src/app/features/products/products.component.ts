@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
@@ -14,10 +14,13 @@ import { LatestRequest } from '../../shared/latest-request';
 import { CellTemplateDirective } from '../../shared/table/cell-template.directive';
 import { medicineTags } from './medicine-form';
 import { XaskaIaLogoComponent } from '../../shared/brand/xaska-ia-logo.component';
+import { AskaNudgeComponent } from '../ai/aska-nudge.component';
+import { AskaMomentsState } from '../ai/aska-moments-state';
+import { MANUAL_PRODUCTS_TRIGGER } from '../ai/aska-nudge';
 
 @Component({
   selector: 'app-products',
-  imports: [FormsModule, RouterLink, ButtonModule, DataTableComponent, PageHeaderComponent, CellTemplateDirective,
+  imports: [AskaNudgeComponent, FormsModule, RouterLink, ButtonModule, DataTableComponent, PageHeaderComponent, CellTemplateDirective,
     XaskaIaLogoComponent],
   template: `
     <app-page-header title="Productos" [description]="'Lo que vendes: precio, impuesto, unidad y códigos de barras.'
@@ -42,6 +45,15 @@ import { XaskaIaLogoComponent } from '../../shared/brand/xaska-ia-logo.component
         <a pButton routerLink="/app/productos/nuevo" label="Nuevo producto" icon="pi pi-plus"></a>
       }
     </app-page-header>
+
+    @if (showNudge()) {
+      <!-- Decisión 308: Aska en el momento del dolor. -->
+      <app-aska-nudge class="mb-4" moment="products" [available]="canAsk()"
+                      [title]="'Ya creaste ' + manualProducts() + ' productos a mano'"
+                      withAi="Pásame una foto de la lista del proveedor o de tu cuaderno y los creo todos de una vez, con sus precios."
+                      withoutAi="Con XASKA IA, Aska crea tus productos desde una foto de la lista del proveedor o de tu cuaderno."
+                      action="Cargar con Aska" (act)="nudgeLoad()" (closed)="nudgeClosed.set(true)" />
+    }
 
     <app-data-table [columns]="columns" [page]="page()" [loading]="loading()" [trackBy]="trackById"
                     initialSort="name,asc" caption="Productos"
@@ -110,6 +122,12 @@ export class ProductsComponent implements OnInit {
   private readonly confirm = inject(ConfirmService);
   protected readonly canManage = permissionFlag('products:manage');
   protected readonly canAsk = permissionFlag('ai:ask');
+  private readonly moments = inject(AskaMomentsState);
+  protected readonly manualProducts = this.moments.manualProducts;
+  /** Decisión 308: desde el 3.er producto creado a mano seguido. */
+  protected readonly nudgeClosed = signal(false);
+  protected readonly showNudge = computed(() =>
+    this.canManage() && !this.nudgeClosed() && this.manualProducts() >= MANUAL_PRODUCTS_TRIGGER);
   protected readonly hasVariants = permissionFlag('module:variants');
   protected readonly hasScale = permissionFlag('module:scale');
   protected readonly hasMedicines = permissionFlag('module:medicines');
@@ -161,6 +179,11 @@ export class ProductsComponent implements OnInit {
 
   reloadFirstPage(): void {
     this.load({ ...this.query, page: 0 });
+  }
+
+  protected nudgeLoad(): void {
+    this.moments.resetManualProducts();
+    void this.router.navigate(['/app/productos/cargar-con-aska']);
   }
 
   create(): void {

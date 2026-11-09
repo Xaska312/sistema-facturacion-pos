@@ -782,6 +782,9 @@ export const MANUAL: readonly ManualChapter[] = [
         ],
         tips: [
           'La próxima factura de ese proveedor sale casi sola: XASKA recuerda su código para cada producto.',
+          'Si vas digitando a mano, desde la 4.ª línea Aska te ofrece leer la factura con una foto (lo mismo al crear '
+            + 'el 3.er producto seguido o si tu inventario está casi en cero). Ciérralo con "Ahora no" o "No volver a '
+            + 'mostrar".',
           'Si el costo subió o bajó más de un 25 % frente a la última compra, o si lo cargado no suma lo mismo que la '
             + 'factura, sale un aviso para que lo revises.',
           'La factura queda guardada con la compra: en el detalle toca "Factura del proveedor" para descargarla.',

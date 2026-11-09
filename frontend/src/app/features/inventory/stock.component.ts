@@ -16,6 +16,8 @@ import { ColumnDef, TableQuery, initialQuery, toPageQuery } from '../../shared/t
 import { TermComponent } from '../../shared/help/term.component';
 import { permissionFlag } from '../../core/auth/permission-flag';
 import { XaskaIaLogoComponent } from '../../shared/brand/xaska-ia-logo.component';
+import { AskaNudgeComponent } from '../ai/aska-nudge.component';
+import { AskaMomentsState } from '../ai/aska-moments-state';
 import { LatestRequest } from '../../shared/latest-request';
 
 const STOCK_STATUS: Record<StockStatus, StatusKey> = { LOW: 'stock-low', OK: 'stock-ok', OVER: 'stock-over' };
@@ -23,7 +25,7 @@ const STOCK_STATUS: Record<StockStatus, StatusKey> = { LOW: 'stock-low', OK: 'st
 /** Existencias por sucursal, alertas de mínimo y niveles mínimo/máximo. */
 @Component({
   selector: 'app-stock',
-  imports: [TermComponent, FormsModule, RouterLink, ButtonModule, DialogModule, InputTextModule, DataTableComponent, PageHeaderComponent,
+  imports: [AskaNudgeComponent, TermComponent, FormsModule, RouterLink, ButtonModule, DialogModule, InputTextModule, DataTableComponent, PageHeaderComponent,
     XaskaIaLogoComponent],
   styles: `
     .aska-cta {
@@ -44,6 +46,14 @@ const STOCK_STATUS: Record<StockStatus, StatusKey> = { LOW: 'stock-low', OK: 'st
         </a>
       }
     </app-page-header>
+
+    @if (emptyStock()) {
+      <!-- Decisión 308: Aska en el momento del dolor. -->
+      <app-aska-nudge class="mb-4" moment="stock" [available]="canAsk()" title="Casi todo tu inventario está en cero"
+                      withAi="Si lo llevas en un cuaderno o en una lista, tómale fotos y yo cargo las cantidades por ti."
+                      withoutAi="Con XASKA IA, Aska carga tu inventario desde fotos del cuaderno: productos, cantidades y precios."
+                      action="Cargar inventario con Aska" (act)="nudgeLoad()" />
+    }
 
     @if (alerts().length > 0) {
       <section class="bg-warning-soft border border-warning/40 rounded-xl p-3 mb-4 text-sm" aria-label="Alertas de existencias">
@@ -114,6 +124,9 @@ export class StockComponent implements OnInit {
   protected readonly canManageProducts = permissionFlag('products:manage');
   protected readonly canAsk = permissionFlag('ai:ask');
   private readonly router = inject(Router);
+  private readonly moments = inject(AskaMomentsState);
+  /** Decisión 308: productos que llevan inventario y casi ninguno con existencias. */
+  protected readonly emptyStock = signal(false);
 
   protected readonly q = formatQuantity;
   protected readonly branches = signal<Branch[]>([]);
@@ -142,7 +155,14 @@ export class StockComponent implements OnInit {
     void this.router.navigate(['/app/productos']);
   }
 
+  protected nudgeLoad(): void {
+    void this.router.navigate(['/app/productos/cargar-con-aska'], { queryParams: { modo: 'inventario' } });
+  }
+
   ngOnInit(): void {
+    if (this.canAdjust() && this.canManageProducts()) {
+      this.moments.moments().subscribe((m) => this.emptyStock.set(m.emptyStock));
+    }
     this.organization.branches({ page: 0, size: 100, sort: 'code,asc' }).subscribe((p) => {
       const active = p.content.filter((b) => b.active);
       this.branches.set(active);
