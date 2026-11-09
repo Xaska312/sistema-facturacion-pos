@@ -6,7 +6,11 @@
  */
 /** 1.2 (decisión 288): planes Emprende, Negocio y Empresa, extras, mejoras y precios. */
 export const TERMS_VERSION = '1.2';
-/** 1.3 (decisiones 295 a 299): XASKA IA (Anthropic, encargado en Estados Unidos): facturas, preguntas y resúmenes. */
+/**
+ * 1.3 (decisiones 295 a 299): XASKA IA (Anthropic, encargado en Estados Unidos): facturas, preguntas y resúmenes.
+ * Decisión 309: se nombran también el cuaderno de inventario y los pedidos revisados; mismo encargado y finalidad, sin
+ * nueva versión.
+ */
 export const PRIVACY_VERSION = '1.3';
 
 /** Datos del responsable (persona natural con la marca XASKA). */
@@ -166,8 +170,10 @@ export const PRIVACY_POLICY: LegalDocument = {
             'Envío de correos: Resend.',
             'Copias de seguridad cifradas: Google Drive.',
             'XASKA IA, el adicional de inteligencia artificial: Anthropic (Claude). Solo recibe lo que el negocio decide '
-              + 'enviar: las fotos o el PDF de las facturas y listas de precios de proveedores que se leen, los '
-              + 'comprobantes de pago a XASKA, las preguntas a Aska y el Resumen del día, con los datos de los reportes necesarios para responder o resumir (pueden incluir '
+              + 'enviar: las fotos o el PDF de las facturas y listas de precios de proveedores y las fotos del cuaderno '
+              + 'de inventario que se leen, los comprobantes de pago a XASKA, las preguntas a Aska, los pedidos '
+              + 'sugeridos que se revisan y el Resumen del día, con los datos de los reportes necesarios para responder, '
+              + 'revisar o resumir (pueden incluir '
               + 'nombres de clientes, productos y cifras). No los usa para entrenar sus modelos y los borra según sus plazos de '
               + 'retención.',
           ],
