@@ -46,7 +46,8 @@ import { receiptBytes, saleDate } from '../../core/printing/escpos';
 import { printableLogo } from '../../core/printing/printable-logo';
 import { PrintAgentService } from '../../core/printing/print-agent.service';
 import { ActivatedRoute, Router } from '@angular/router';
-import { saleWhatsAppLink } from '../sales/sale-text';
+import { saleTicketImage, saleWhatsAppLink } from '../sales/sale-text';
+import { shareTicketPng, ticketPng } from '../../shared/ticket-image';
 import { grandChange, grandTotal } from '../../shared/receipt/split-receipt';
 import { TourService } from '../../shared/tour/tour.service';
 import {
@@ -637,6 +638,8 @@ const STOCK_PAGES = 5;
             <a pButton label="WhatsApp" icon="pi pi-whatsapp" severity="secondary" [outlined]="true" class="min-h-11"
                target="_blank" rel="noopener noreferrer" [href]="saleWhatsApp(sale)"
                aria-label="Enviar el recibo por WhatsApp (abre WhatsApp)"></a>
+            <p-button label="Imagen" icon="pi pi-image" severity="secondary" [outlined]="true" styleClass="min-h-11"
+                      ariaLabel="Compartir el recibo como imagen" (onClick)="shareImage(sale)" />
           }
           <span class="flex-1"></span>
           <p-button id="new-sale" label="Nueva venta (Enter)" icon="pi pi-plus" styleClass="min-h-11"
@@ -2100,6 +2103,20 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   protected readonly grandChange = grandChange;
   protected splitText(sale: Sale): string {
     return (sale.together ?? []).map((p) => `${p.splitLabel} ${this.cop(p.total)}`).join(' · ');
+  }
+
+  /** Decisión 315: el recibo como imagen (igual en todos los teléfonos y sin poder editarse). */
+  protected async shareImage(sale: Sale): Promise<void> {
+    const blob = await ticketPng(saleTicketImage(sale));
+    if (!blob) {
+      this.messages.add({ severity: 'warn', summary: 'Imagen', detail: 'Este navegador no pudo crear la imagen.', life: 5000 });
+      return;
+    }
+    const result = await shareTicketPng(blob, `tiquete-${sale.documentNumber}.png`);
+    if (result === 'downloaded') {
+      this.messages.add({ severity: 'success', summary: 'Imagen descargada',
+        detail: 'Adjúntala en WhatsApp o donde la necesites.', life: 5000 });
+    }
   }
 
   protected saleWhatsApp(sale: Sale): string {
