@@ -9,6 +9,7 @@ import { Subscription } from '../../core/api/api.models';
 import { SubscriptionApi } from '../../core/api/subscription.api';
 import { RestaurantLiveService } from '../kitchen/restaurant-live.service';
 import { ShellComponent } from './shell.component';
+import { AskaTrialState } from '../ai/aska-trial-state';
 
 @Component({ template: '<p>contenido</p>' })
 class PageComponent {}
@@ -41,6 +42,9 @@ describe('ShellComponent', () => {
           },
         ]),
         { provide: AuthService, useValue: auth },
+        // Decisión 311: sin prueba de XASKA IA en curso.
+        { provide: AskaTrialState, useValue: { trial: signal(null), welcomeOpen: signal(false), load: () => undefined,
+          openWelcome: () => undefined } },
         // Por defecto la suscripción no responde: sin aviso (fase 8b).
         { provide: SubscriptionApi, useValue: { current: () => EMPTY } },
         // Lo del restaurante en segundo plano (Fases 12b-3 y 12b-4) no corre en estas pruebas.
