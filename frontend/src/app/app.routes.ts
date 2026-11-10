@@ -530,6 +530,13 @@ export const routes: Routes = [
         loadComponent: () => import('./features/purchases/payables.component').then((m) => m.PayablesComponent),
       },
       {
+        path: 'gastos',
+        title: 'Gastos',
+        canActivate: [permissionGuard],
+        data: { permission: 'expenses:read' },
+        loadComponent: () => import('./features/expenses/expenses.component').then((m) => m.ExpensesComponent),
+      },
+      {
         path: 'clientes',
         title: 'Clientes',
         canActivate: [permissionGuard],

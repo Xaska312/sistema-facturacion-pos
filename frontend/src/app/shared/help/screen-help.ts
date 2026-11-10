@@ -33,7 +33,7 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     title: 'Mi caja',
     tips: [
       'Abre la caja al empezar el turno contando el efectivo del cajón (la base).',
-      'Registra como ingreso o egreso el efectivo que entra o sale sin ser una venta (por ejemplo, pagar un domicilio).',
+      'Registra como ingreso el efectivo que entra sin ser una venta, y como egreso lo que pagas con la caja (un domicilio, un arreglo): eliges en qué se gastó y queda en Gastos.',
       'Un retiro es dinero que sacas para guardarlo; no es un gasto.',
       'Al cerrar, cuenta billetes y monedas y escribe el total: el sistema calcula si cuadra.',
     ],
@@ -117,6 +117,16 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
       'Revisa cada producto, anota lote y vencimiento y rechaza lo que llegó mal: nada se guarda hasta registrar.',
     ],
     terms: ['costo-promedio'],
+  },
+  '/app/gastos': {
+    manual: 'gastos',
+    title: 'Gastos',
+    tips: [
+      'Aquí va lo que paga el negocio para funcionar. Lo que pagas en efectivo se registra en Mi caja con "Egreso"; lo que pagas por banco, Nequi o tarjeta, aquí con "Registrar gasto".',
+      'Toca una categoría en "En qué se fue la plata" para ver solo sus gastos.',
+      'Los egresos de caja de antes salen "Sin clasificar": ponles categoría con "Clasificar".',
+      'La mercancía que compras a proveedores va en Compras, no aquí.',
+    ],
   },
   '/app/cuentas-por-pagar': {
     manual: 'cuentas-por-pagar',

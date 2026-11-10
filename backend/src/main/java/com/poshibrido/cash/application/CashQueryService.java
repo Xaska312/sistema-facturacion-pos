@@ -131,7 +131,9 @@ public class CashQueryService {
         BigDecimal sales = totals.getOrDefault(CashMovementType.SALE, BigDecimal.ZERO);
         BigDecimal voids = totals.getOrDefault(CashMovementType.SALE_VOID, BigDecimal.ZERO);
         BigDecimal incomes = totals.getOrDefault(CashMovementType.INCOME, BigDecimal.ZERO);
-        BigDecimal expenses = totals.getOrDefault(CashMovementType.EXPENSE, BigDecimal.ZERO);
+        // Gastos en efectivo menos los anulados con la caja abierta (decisión 320).
+        BigDecimal expenses = totals.getOrDefault(CashMovementType.EXPENSE, BigDecimal.ZERO)
+                .add(totals.getOrDefault(CashMovementType.EXPENSE_VOID, BigDecimal.ZERO));
         BigDecimal withdrawals = totals.getOrDefault(CashMovementType.WITHDRAWAL, BigDecimal.ZERO);
         BigDecimal creditPayments = totals.getOrDefault(CashMovementType.CREDIT_PAYMENT, BigDecimal.ZERO)
                 .add(totals.getOrDefault(CashMovementType.CREDIT_PAYMENT_VOID, BigDecimal.ZERO));

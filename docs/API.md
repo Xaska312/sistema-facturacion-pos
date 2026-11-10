@@ -627,3 +627,25 @@ Todo con `pharmacy:quality` y el módulo Medicamentos. `branchId` opcional (la p
 | GET/PUT | `/business-profile` | — | Traen `allowedModules` y `planName`; PUT da 422 si se prende un módulo que el plan no incluye |
 
 Funciones (`features`): `PURCHASES`, `DIRECT_PRINT`, `AUDIT`, `TRANSFERS`, `ZONE_REGISTERS` y el adicional `AI` (XASKA IA, solo como extra; `entitled.maxInvoiceScans` es 0 sin él); en el token, `plan:purchases`, `plan:direct-print`… `POST /cash-registers` y activar una caja dan 422 al pasar el límite de cajas.
+
+## Gastos (Finanzas parte A, decisión 320)
+
+Un gasto pagado con un medio que entra al efectivo sale de la caja abierta de quien lo registra; con otro medio no toca la caja. Los egresos manuales de caja sin clasificar salen en el listado con `unclassified: true`, sin `number` y con el `id` del movimiento de caja.
+
+| Método | Ruta | Permiso | Notas |
+|---|---|---|---|
+| GET | `/expense-categories?includeInactive=` | `expenses:read`, `expenses:manage` o `cash:operate` | `[{id, name, active, sortOrder}]` |
+| POST | `/expense-categories` | `expenses:manage` | `{name}`. 409 si el nombre ya existe (sin distinguir mayúsculas); máximo 60 |
+| PUT | `/expense-categories/{id}` | `expenses:manage` | `{name?, active?}`: renombrar, apagar o prender |
+| GET | `/expenses?from=&to=&categoryId=&branchId=&supplierId=&paymentMethodId=&source=&unclassified=&includeVoided=&q=&page=&size=` | `expenses:read` | Sin fechas, del día 1 del mes a hoy. `source`: `CASH` u `OTHER`. `q` busca en la nota y la referencia. Cada gasto: `{id, number, date, categoryId, categoryName, branchId, branchName, supplierId, supplierName, amount, paymentMethodId, paymentMethodName, fromCash, cashSessionOpen, reference, note, status (ACTIVE o VOID), voidReason, unclassified, hasDocument, createdByName, createdAt}` |
+| GET | `/expenses/summary` (mismos filtros, sin `includeVoided`) | `expenses:read` | `{from, to, total, count, cashTotal, otherTotal, unclassifiedCount, unclassifiedTotal, byCategory[{categoryId, name, total, count}], byMethod[]}`; los anulados nunca suman |
+| GET | `/expenses.csv` (mismos filtros) | `expenses:read` | Para Excel, máximo 20.000 filas. Auditoría `REPORT_EXPORTED` |
+| GET | `/expenses/{id}` | `expenses:read` | El gasto |
+| POST | `/expenses` | `expenses:manage` o `cash:operate` | `{amount, categoryId, paymentMethodId, branchId?, date?, supplierId?, reference?, note?}`, `Idempotency-Key` opcional. En efectivo: la sede y la fecha son las de la caja (422 sin caja abierta o si pasa de lo que hay); crea el movimiento `EXPENSE`. Con otro medio: `branchId` obligatorio y `date` no futura. Con solo `cash:operate`, 403 si no es en efectivo |
+| PUT | `/expenses/{id}` | `expenses:manage` | `{categoryId, date?, supplierId?, reference?, note?}`. La fecha de un gasto en efectivo no cambia (422) |
+| POST | `/expenses/{id}/void` | `expenses:manage` | `{reason}`. Si salió de una caja crea `EXPENSE_VOID`; 422 si esa caja ya se cerró. 409 si ya estaba anulado |
+| POST | `/expenses/unclassified/{movementId}/classify` | `expenses:manage` | `{categoryId, supplierId?, note?}`: crea el gasto de un egreso de caja de antes, sin mover la caja. 409 si ya se clasificó |
+| POST | `/expenses/{id}/document` | `expenses:manage` o `cash:operate` | Multipart `file`: JPG, PNG o PDF de hasta 5 MB. Lo sube quien registró el gasto o quien tiene `expenses:manage`; reemplaza el anterior |
+| GET | `/expenses/{id}/document` | `expenses:read` | Descarga el soporte (siempre como adjunto) |
+
+Informe de caja: `cash.expenses` es ahora el neto de `EXPENSE` y `EXPENSE_VOID`.

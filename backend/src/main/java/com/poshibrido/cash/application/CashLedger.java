@@ -34,6 +34,7 @@ public class CashLedger implements CashApi {
     private static final String ORDER_PAYMENT_REFERENCE = "ORDER_PAYMENT";
     private static final String TIP_PAYOUT_REFERENCE = "TIP_PAYOUT";
     private static final String SUPPLIER_PAYMENT_REFERENCE = "SUPPLIER_PAYMENT";
+    private static final String EXPENSE_REFERENCE = "EXPENSE";
 
     private final CashSessionRepository sessions;
     private final PaymentMethodRepository paymentMethods;
@@ -137,9 +138,38 @@ public class CashLedger implements CashApi {
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
     public UUID recordSupplierPaymentCash(UUID actorId, BigDecimal amount, UUID paymentId, String label) {
+        return outflow(actorId, CashMovementType.SUPPLIER_PAYMENT, amount, SUPPLIER_PAYMENT_REFERENCE, paymentId, label,
+                "Abre tu caja para pagar en efectivo, o elige otro medio de pago.",
+                "No hay suficiente efectivo en tu caja para ese pago. Elige otro medio de pago o regístralo a "
+                        + "crédito.").getId();
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public OpenSession recordExpenseCash(UUID actorId, BigDecimal amount, UUID expenseId, String label) {
+        CashSession s = outflow(actorId, CashMovementType.EXPENSE, amount, EXPENSE_REFERENCE, expenseId, label,
+                "Abre tu caja para registrar un gasto en efectivo, o elige otro medio de pago.",
+                "No hay suficiente efectivo en tu caja para ese gasto. Revisa el valor o elige otro medio de pago.");
+        return new OpenSession(s.getId(), s.getCashRegisterId(), s.getBranchId(), s.getOpenedBy());
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void recordExpenseVoidCash(UUID sessionId, BigDecimal amount, UUID expenseId, String label) {
+        if (sessions.lockIfOpen(sessionId).isEmpty()) {
+            throw new BusinessRuleException("La caja de donde salió ese gasto ya se cerró, así que no se puede anular. "
+                    + "Si la plata volvió, regístrala como un ingreso en la caja de hoy.");
+        }
+        em.persist(CashMovement.record(sessionId, CashMovementType.EXPENSE_VOID, amount, label, EXPENSE_REFERENCE,
+                expenseId, null, CurrentActor.userId().orElse(null)));
+    }
+
+    /** Salida de efectivo de la caja abierta de {@code actorId}: bloqueo exclusivo y sin pasar de lo que hay. */
+    private CashSession outflow(UUID actorId, CashMovementType type, BigDecimal amount, String referenceType,
+                                UUID referenceId, String label, String noSession, String notEnough) {
         List<UUID> open = sessions.lockOpenOf(actorId);
         if (open.isEmpty()) {
-            throw new BusinessRuleException("Abre tu caja para pagar en efectivo, o elige otro medio de pago.");
+            throw new BusinessRuleException(noSession);
         }
         UUID sessionId = open.getFirst();
         if (sessions.lockForOutflow(sessionId).isEmpty()) {
@@ -151,12 +181,10 @@ public class CashLedger implements CashApi {
                 .map(row -> row[1] instanceof BigDecimal d ? d : new BigDecimal(String.valueOf(row[1])))
                 .toList();
         if (amount.compareTo(CashCount.expected(session.getOpeningAmount(), current)) > 0) {
-            throw new BusinessRuleException("No hay suficiente efectivo en tu caja para ese pago. Elige otro medio de "
-                    + "pago o regístralo a crédito.");
+            throw new BusinessRuleException(notEnough);
         }
-        em.persist(CashMovement.record(sessionId, CashMovementType.SUPPLIER_PAYMENT, amount, label,
-                SUPPLIER_PAYMENT_REFERENCE, paymentId, null, actorId));
-        return sessionId;
+        em.persist(CashMovement.record(sessionId, type, amount, label, referenceType, referenceId, null, actorId));
+        return session;
     }
 
     /** La fila ya está bloqueada: se carga (o relee) la entidad para devolver sus datos actuales. */

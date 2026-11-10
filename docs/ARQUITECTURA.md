@@ -18,6 +18,7 @@ com.poshibrido
   cash/          medios de pago, sesiones de caja, movimientos de efectivo, informe X/Z
   sales/         ventas (tiquete POS), cálculo, pagos, consecutivos, anulación, eventos
   reporting/     reportes y tablero (solo lectura, SQL nativo sobre las tablas del negocio), CSV
+  finance/       finanzas: gastos con categorías (decisión 320); usa la caja por CashApi
   location/      catálogo DIVIPOLA (departamentos y municipios)       -> platform.*
   audit/         registro de auditoría (audit_log del negocio)
 ```
@@ -111,6 +112,13 @@ que implementa el módulo de ventas.
 rango y `costs` = costo de lo vendido por venta) sobre la conexión del negocio actual. No escribe ni llama a otros
 módulos. Las fechas se agrupan con `created_at AT TIME ZONE <zona del negocio>`. Los CSV se arman con
 `shared/csv/CsvWriter` (Excel en español). En el frontend, todas las gráficas pasan por `shared/charts/chart.component` (Chart.js, UX-3).
+
+## Finanzas: gastos (decisión 320)
+`finance` guarda los gastos (`expenses`) con su categoría. Un gasto en efectivo le pide a la caja, por `CashApi`, que
+saque la plata de la sesión abierta de quien lo registra (movimiento `EXPENSE` con referencia al gasto) y, al anularlo,
+que la devuelva (`EXPENSE_VOID`); con otro medio de pago no toca la caja. La caja no conoce los gastos. El listado une
+`expenses` con los egresos manuales de caja sin clasificar, así los de antes aparecen sin copiarlos. Los pagos a
+proveedores por mercancía no son gastos: ya entran como costo de lo vendido.
 
 ## Frontend: sistema de diseño
 Los colores viven solo en `frontend/src/styles.css` como tokens CSS (`--surface`, `--text`, `--brand`, `--success`,

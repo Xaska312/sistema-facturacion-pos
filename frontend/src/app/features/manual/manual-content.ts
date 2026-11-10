@@ -601,11 +601,18 @@ export const MANUAL: readonly ManualChapter[] = [
           headers: ['Movimiento', 'Cuándo usarlo'],
           rows: [
             ['Ingreso', 'Entra efectivo que no es una venta (por ejemplo, te dan sencillo).'],
-            ['Egreso', 'Pagas algo con el efectivo de la caja (un domicilio, un arreglo).'],
+            ['Egreso', 'Pagas algo con el efectivo de la caja (un domicilio, un arreglo). Es un gasto: eliges en qué '
+              + 'se gastó y, si quieres, le tomas foto al recibo.'],
             ['Retiro', 'Sacas dinero para guardarlo o consignarlo. No es un gasto.'],
           ],
         },
-        steps: ['En "Mi caja", toca "Ingreso", "Egreso" o "Retiro", escribe el valor y el motivo, y guarda.'],
+        steps: [
+          'Ingreso o retiro: en "Mi caja" toca el botón, escribe el valor y el motivo, y guarda.',
+          'Egreso: toca "Egreso", escribe cuánto fue, elige en qué se gastó (servicios, transporte, insumos…), agrega una '
+            + 'nota o la foto del recibo si quieres, y toca "Registrar gasto". El efectivo sale de la caja y el gasto '
+            + 'queda en Gastos con su categoría.',
+        ],
+        tips: ['No se puede sacar más efectivo del que debería haber en la caja.'],
       },
       {
         id: 'cerrar-caja',
@@ -1163,6 +1170,46 @@ export const MANUAL: readonly ManualChapter[] = [
     title: 'Reportes y control',
     icon: 'pi pi-chart-bar',
     sections: [
+      {
+        id: 'gastos',
+        title: 'Gastos del negocio',
+        summary: 'Anota todo lo que paga el negocio para funcionar (arriendo, servicios, nómina, transporte, arreglos) y '
+          + 'mira en qué se va la plata. Cada gasto lleva una categoría; puede salir del efectivo de la caja o pagarse '
+          + 'por banco, Nequi, Bre-B o tarjeta.',
+        table: {
+          headers: ['Cómo se pagó', 'Dónde se registra y qué pasa con la caja'],
+          rows: [
+            ['En efectivo', 'En "Mi caja", con el botón "Egreso". Sale de tu caja abierta y aparece en su cierre como '
+              + 'egreso.'],
+            ['Por banco, Nequi, Bre-B o tarjeta', 'En Gastos, con "Registrar gasto". No toca la caja y puedes ponerle '
+              + 'la fecha en que lo pagaste.'],
+          ],
+        },
+        steps: [
+          'Entra a Gastos y toca "Registrar gasto".',
+          'Escribe cuánto fue y elige en qué se gastó y con qué se pagó.',
+          'Si no fue en efectivo, elige la sede y la fecha. La referencia, el proveedor, la nota y la foto o el PDF del '
+            + 'recibo son opcionales.',
+          'Toca "Registrar gasto". Arriba ves cuánto gastaste en el periodo y, en "En qué se fue la plata", el total de '
+            + 'cada categoría; toca una para ver solo sus gastos.',
+          'Con "Exportar" bajas el listado para Excel.',
+        ],
+        tips: [
+          'Categorías: con el botón "Categorías" agregas las tuyas, las renombras o apagas las que no uses. Una '
+            + 'apagada deja de ofrecerse, pero los gastos que la usaron la conservan.',
+          'Sin clasificar: los egresos de caja de antes no tenían categoría. Aparecen como "Sin clasificar"; toca '
+            + '"Clasificar" para ponérsela. Eso no mueve otra vez la caja.',
+          'Corregir: puedes cambiar la categoría, el proveedor, la nota y la fecha. El valor y el medio de pago no se '
+            + 'cambian: si te equivocaste, anula el gasto y regístralo de nuevo.',
+          'Anular: pide el motivo y el gasto deja de sumar. Si salió de una caja, el efectivo vuelve a ella, y por eso '
+            + 'solo se puede anular mientras esa caja siga abierta.',
+          'La mercancía que les compras a los proveedores no va aquí: se registra en Compras, porque ya cuenta como '
+            + 'costo de lo que vendes.',
+          'Un retiro de caja (sacar plata para guardarla o consignarla) tampoco es un gasto.',
+        ],
+        who: 'Propietario, Administrador y Contador ven y registran gastos (permisos "Ver los gastos" y "Registrar, '
+          + 'corregir y anular gastos"). Quien opera una caja registra el gasto en efectivo de su caja.',
+      },
       {
         id: 'pregunta-ia',
         title: 'Pregúntale a Aska, la IA de XASKA',

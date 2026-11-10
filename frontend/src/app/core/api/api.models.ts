@@ -549,7 +549,8 @@ export type CashMovementType =
   | 'TIP'
   | 'TIP_VOID'
   | 'TIP_PAYOUT'
-  | 'SUPPLIER_PAYMENT';
+  | 'SUPPLIER_PAYMENT'
+  | 'EXPENSE_VOID';
 export type ManualCashMovementType = 'INCOME' | 'EXPENSE' | 'WITHDRAWAL';
 
 export interface PaymentMethod {
