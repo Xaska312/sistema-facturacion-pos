@@ -13,6 +13,7 @@ const ENTITIES: Readonly<Record<string, string>> = {
   cash_movement: 'Movimiento de caja',
   expense: 'Gasto',
   expense_category: 'Categoría de gasto',
+  recurring_expense: 'Gasto fijo',
   cash_register: 'Caja',
   cash_session: 'Turno de caja',
   category: 'Categoría',
@@ -89,6 +90,11 @@ const ACTIONS: Readonly<Record<string, string>> = {
   EXPENSE_DOCUMENT_ATTACHED: 'Subió el soporte de un gasto',
   EXPENSE_CATEGORY_CREATED: 'Creó una categoría de gasto',
   EXPENSE_CATEGORY_UPDATED: 'Cambió una categoría de gasto',
+  RECURRING_EXPENSE_CREATED: 'Creó un gasto fijo',
+  RECURRING_EXPENSE_UPDATED: 'Cambió un gasto fijo',
+  RECURRING_EXPENSE_PAID: 'Pagó un gasto fijo',
+  RECURRING_EXPENSE_SKIPPED: 'Marcó que un gasto fijo no se paga en una fecha',
+  RECURRING_EXPENSE_UNSKIPPED: 'Deshizo el "no se paga" de un gasto fijo',
   TECHNICAL_DIRECTOR_UPDATED: 'Cambió los datos del director técnico',
   TAB_BILL_REQUESTED: 'Marcó que una mesa pidió la cuenta',
   TAB_BILL_REQUEST_CLEARED: 'Desmarcó que una mesa pidió la cuenta',
@@ -261,6 +267,11 @@ const FIELDS: Readonly<Record<string, string>> = {
   originalName: 'Nombre original',
   reference: 'Referencia',
   supplier: 'Proveedor',
+  dayOfMonth: 'Día del mes',
+  dueDate: 'Fecha de pago',
+  expenseNumber: 'Número del gasto',
+  frequency: 'Frecuencia',
+  startsOn: 'Desde',
 };
 
 export function entityLabel(entity: string): string {

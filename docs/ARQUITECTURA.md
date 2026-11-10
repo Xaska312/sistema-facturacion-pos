@@ -120,6 +120,9 @@ que la devuelva (`EXPENSE_VOID`); con otro medio de pago no toca la caja. La caj
 `expenses` con los egresos manuales de caja sin clasificar, así los de antes aparecen sin copiarlos. Los pagos a
 proveedores por mercancía no son gastos: ya entran como costo de lo vendido.
 
+Los gastos fijos (decisión 321) no guardan lo pendiente: `RecurringSchedule` calcula las fechas y
+`recurring_expense_occurrences` solo guarda las pagadas (con su gasto) y las saltadas. Pagar uno crea un gasto normal.
+
 ## Frontend: sistema de diseño
 Los colores viven solo en `frontend/src/styles.css` como tokens CSS (`--surface`, `--text`, `--brand`, `--success`,
 `--warning`, `--danger`…) con su versión oscura bajo `.app-dark`. Tailwind los expone con `@theme`

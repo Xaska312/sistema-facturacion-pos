@@ -194,3 +194,121 @@ export class ExpensesApi {
     return params;
   }
 }
+
+// ---------------------------------------------------------------- gastos fijos (decisión 321)
+
+export type RecurringFrequency = 'MONTHLY' | 'BIWEEKLY';
+
+/** Un gasto fijo: lo que se repite cada mes (un día) o cada quincena (el 15 y el último día). */
+export interface RecurringExpense {
+  id: string;
+  name: string;
+  categoryId: string;
+  categoryName: string;
+  branchId: string;
+  branchName: string;
+  supplierId: string | null;
+  supplierName: string | null;
+  amount: number;
+  paymentMethodId: string;
+  paymentMethodName: string;
+  fromCash: boolean;
+  frequency: RecurringFrequency;
+  dayOfMonth: number | null;
+  startsOn: string;
+  note: string | null;
+  active: boolean;
+  /** Próxima fecha de pago (nula si está apagado). */
+  nextDue: string | null;
+}
+
+export interface RecurringExpenseInput {
+  name: string;
+  categoryId: string;
+  branchId: string;
+  supplierId: string | null;
+  amount: number;
+  paymentMethodId: string;
+  frequency: RecurringFrequency;
+  dayOfMonth: number | null;
+  startsOn: string | null;
+  note: string | null;
+  active?: boolean;
+}
+
+/** Una fecha por pagar. {@code daysUntil} negativo: vencida hace esos días. */
+export interface RecurringDue {
+  recurringId: string;
+  name: string;
+  dueDate: string;
+  overdue: boolean;
+  daysUntil: number;
+  frequency: RecurringFrequency;
+  categoryId: string;
+  categoryName: string;
+  branchId: string;
+  branchName: string;
+  supplierId: string | null;
+  supplierName: string | null;
+  amount: number;
+  paymentMethodId: string;
+  paymentMethodName: string;
+  fromCash: boolean;
+  note: string | null;
+}
+
+export interface RecurringDueSummary {
+  count: number;
+  overdueCount: number;
+  total: number;
+  items: RecurringDue[];
+}
+
+/** Lo que se paga de verdad; lo vacío se toma del gasto fijo. */
+export interface RecurringPayment {
+  dueDate: string;
+  amount: number;
+  paymentMethodId: string;
+  branchId: string | null;
+  date: string | null;
+  supplierId: string | null;
+  reference: string | null;
+  note: string | null;
+}
+
+@Injectable({ providedIn: 'root' })
+export class RecurringExpensesApi {
+  private readonly http = inject(HttpClient);
+
+  list(): Observable<RecurringExpense[]> {
+    return this.http.get<RecurringExpense[]>('/api/v1/recurring-expenses');
+  }
+
+  /** Vencido (hasta 3 meses) y lo de los próximos 7 días. */
+  due(): Observable<RecurringDueSummary> {
+    return this.http.get<RecurringDueSummary>('/api/v1/recurring-expenses/due');
+  }
+
+  create(input: RecurringExpenseInput): Observable<RecurringExpense> {
+    return this.http.post<RecurringExpense>('/api/v1/recurring-expenses', input);
+  }
+
+  update(id: string, input: RecurringExpenseInput): Observable<RecurringExpense> {
+    return this.http.put<RecurringExpense>(`/api/v1/recurring-expenses/${id}`, input);
+  }
+
+  pay(id: string, payment: RecurringPayment, idempotencyKey: string): Observable<Expense> {
+    return this.http.post<Expense>(`/api/v1/recurring-expenses/${id}/pay`, payment, {
+      headers: new HttpHeaders({ 'Idempotency-Key': idempotencyKey }),
+    });
+  }
+
+  /** "Este mes no": la fecha deja de estar por pagar sin registrar gasto. */
+  skip(id: string, dueDate: string): Observable<void> {
+    return this.http.post<void>(`/api/v1/recurring-expenses/${id}/skip`, { dueDate });
+  }
+
+  unskip(id: string, dueDate: string): Observable<void> {
+    return this.http.delete<void>(`/api/v1/recurring-expenses/${id}/skip/${dueDate}`);
+  }
+}

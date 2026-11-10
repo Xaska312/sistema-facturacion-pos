@@ -583,7 +583,7 @@ public class ExpenseService {
         return data;
     }
 
-    private static BigDecimal amount(BigDecimal value) {
+    static BigDecimal amount(BigDecimal value) {
         if (value == null || value.signum() <= 0 || value.stripTrailingZeros().scale() > 2) {
             throw new BusinessRuleException("Escribe el valor del gasto.");
         }
@@ -594,7 +594,7 @@ public class ExpenseService {
     }
 
     /** Nombre de la categoría. Una apagada solo sirve si el gasto ya la tenía. */
-    private String requireCategory(UUID categoryId, boolean requireActive) {
+    String requireCategory(UUID categoryId, boolean requireActive) {
         if (categoryId == null) {
             throw new BusinessRuleException("Elige la categoría del gasto.");
         }
@@ -610,7 +610,7 @@ public class ExpenseService {
         return (String) row[0];
     }
 
-    private PaymentMethodRef requireMethod(UUID methodId) {
+    PaymentMethodRef requireMethod(UUID methodId) {
         PaymentMethodRef m = methodId == null ? null : cash.paymentMethods().get(methodId);
         if (m == null || !m.active() || NOT_FOR_EXPENSES.contains(m.code())) {
             throw new BusinessRuleException("Elige el medio con que pagaste (efectivo, transferencia…).");
@@ -618,7 +618,7 @@ public class ExpenseService {
         return m;
     }
 
-    private void requireSupplier(UUID supplierId) {
+    void requireSupplier(UUID supplierId) {
         List<?> found = em.createNativeQuery("SELECT active FROM suppliers WHERE party_id = ?1")
                 .setParameter(1, supplierId).getResultList();
         if (found.isEmpty()) {
@@ -629,7 +629,7 @@ public class ExpenseService {
         }
     }
 
-    private static String clean(String value, int max) {
+    static String clean(String value, int max) {
         if (value == null || value.isBlank()) {
             return null;
         }
@@ -643,11 +643,11 @@ public class ExpenseService {
         return q;
     }
 
-    private ZoneId zone() {
+    ZoneId zone() {
         return ZoneId.of(settings.current().timezone());
     }
 
-    private static BigDecimal money(Object value) {
+    static BigDecimal money(Object value) {
         return (value instanceof BigDecimal d ? d : new BigDecimal(String.valueOf(value))).setScale(2, RoundingMode.HALF_UP);
     }
 

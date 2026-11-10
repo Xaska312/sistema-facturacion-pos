@@ -12,6 +12,9 @@ import {
   ExpenseSource,
   ExpenseSummary,
   ExpensesApi,
+  RecurringDue,
+  RecurringDueSummary,
+  RecurringExpensesApi,
 } from '../../core/api/expenses.api';
 import { OrganizationApi } from '../../core/api/organization.api';
 import { permissionFlag } from '../../core/auth/permission-flag';
@@ -30,6 +33,9 @@ import { formatDay } from '../orders/order-text';
 import { PeriodSelection, periodLabel, resolvePeriod } from '../reports/periods';
 import { ExpenseCategoriesDialogComponent } from './expense-categories-dialog.component';
 import { ExpenseDialogComponent } from './expense-dialog.component';
+import { RecurringExpensesDialogComponent } from './recurring-expenses-dialog.component';
+import { dueLabel, dueLine, skipLabel } from './recurring-text';
+import { ConfirmService } from '../../shared/confirm';
 import { categoryShares, expenseBadge, expenseLine, expenseNumber, expenseSource, hasExtraFilters, voidBlocker } from './expense-text';
 
 /**
@@ -41,10 +47,12 @@ import { categoryShares, expenseBadge, expenseLine, expenseNumber, expenseSource
   selector: 'app-expenses',
   imports: [FormsModule, ButtonModule, InputTextModule, PageHeaderComponent, PeriodFilterComponent, StatCardComponent,
     StatusBadgeComponent, DataTableComponent, CellTemplateDirective, FormDialogComponent, ExpenseDialogComponent,
-    ExpenseCategoriesDialogComponent],
+    ExpenseCategoriesDialogComponent, RecurringExpensesDialogComponent],
   template: `
     <app-page-header title="Gastos" glyph="expenses"
                      description="Todo lo que paga el negocio para funcionar: arriendo, servicios, nómina, transporte… En efectivo desde la caja o por banco, Nequi o tarjeta.">
+      <p-button label="Gastos fijos" icon="pi pi-replay" severity="secondary" [outlined]="true"
+                (onClick)="recurringDialog()?.open()" />
       @if (canManage()) {
         <p-button label="Categorías" icon="pi pi-tags" severity="secondary" [outlined]="true" (onClick)="categoriesDialog()?.open()" />
       }
@@ -58,6 +66,40 @@ import { categoryShares, expenseBadge, expenseLine, expenseNumber, expenseSource
     <app-period-filter [selection]="period()" [options]="['today', 'last7', 'thisMonth', 'lastMonth', 'custom']"
                        [branches]="branches()" [showBranch]="branches().length > 1"
                        (selectionChange)="setPeriod($event)" />
+
+    @if (dues(); as d) {
+      @if (d.count > 0 || undo()) {
+        <section class="card p-4 mt-4" aria-labelledby="due-title">
+          <div class="flex flex-wrap items-baseline justify-between gap-2 mb-2">
+            <h2 id="due-title" class="font-bold tracking-tight">Por pagar
+              @if (d.count > 0) { <span class="font-normal text-muted text-sm">· {{ cop(d.total) }}</span> }</h2>
+            @if (undo(); as u) {
+              <p class="text-sm text-muted">Saltaste {{ dueLineOf(u) }}.
+                <button type="button" class="text-brand hover:underline font-medium" (click)="undoSkip(u)">Deshacer</button></p>
+            }
+          </div>
+          <ul class="flex flex-col">
+            @for (item of d.items; track item.recurringId + item.dueDate) {
+              <li class="flex flex-wrap items-center gap-x-3 gap-y-2 py-2 border-t border-line first:border-t-0">
+                <div class="flex-1 min-w-40">
+                  <p class="font-medium">{{ item.name }}</p>
+                  <p class="text-xs" [class.text-danger]="item.overdue" [class.font-semibold]="item.overdue"
+                     [class.text-muted]="!item.overdue">{{ dueText(item) }} · {{ item.paymentMethodName }}</p>
+                </div>
+                <span class="font-semibold tabular-nums">{{ cop(item.amount) }}</span>
+                @if (canManage()) {
+                  <div class="flex gap-1">
+                    <p-button label="Pagar" size="small" icon="pi pi-check" (onClick)="dialog()?.openRecurring(item)" />
+                    <p-button [label]="skipText(item.frequency)" size="small" [text]="true" severity="secondary"
+                              (onClick)="askSkip(item)" />
+                  </div>
+                }
+              </li>
+            }
+          </ul>
+        </section>
+      }
+    }
 
     @if (summary(); as s) {
       <section class="grid gap-3 grid-cols-2 lg:grid-cols-4 mt-4" aria-label="Totales del periodo">
@@ -173,6 +215,7 @@ import { categoryShares, expenseBadge, expenseLine, expenseNumber, expenseSource
 
     <app-expense-dialog (saved)="onSaved($event)" />
     <app-expense-categories-dialog (changed)="reload()" />
+    <app-recurring-expenses-dialog (changed)="loadDues()" />
 
     @if (voiding(); as v) {
       <app-form-dialog [(visible)]="voidOpen" header="Anular gasto" width="28rem" submitLabel="Anular gasto"
@@ -203,6 +246,14 @@ export class ExpensesComponent implements OnInit {
   private readonly api = inject(ExpensesApi);
   private readonly organization = inject(OrganizationApi);
   private readonly messages = inject(MessageService);
+  private readonly recurring = inject(RecurringExpensesApi);
+  private readonly confirm = inject(ConfirmService);
+  protected readonly recurringDialog = viewChild(RecurringExpensesDialogComponent);
+  protected readonly dues = signal<RecurringDueSummary | null>(null);
+  /** Lo último que se saltó, para deshacerlo sin salir de la pantalla. */
+  protected readonly undo = signal<RecurringDue | null>(null);
+  protected readonly dueText = dueLabel;
+  protected readonly skipText = skipLabel;
   protected readonly canManage = permissionFlag('expenses:manage');
   protected readonly dialog = viewChild(ExpenseDialogComponent);
   protected readonly categoriesDialog = viewChild(ExpenseCategoriesDialogComponent);
@@ -265,7 +316,35 @@ export class ExpensesComponent implements OnInit {
     });
     this.loadCategories();
     this.loadSummary();
+    this.loadDues();
     this.load(this.query);
+  }
+
+  protected loadDues(): void {
+    this.recurring.due().subscribe({ next: (d) => this.dues.set(d), error: () => this.dues.set(null) });
+  }
+
+  protected dueLineOf(due: RecurringDue): string {
+    return dueLine(due);
+  }
+
+  protected askSkip(due: RecurringDue): void {
+    this.confirm.ask({
+      header: skipLabel(due.frequency),
+      message: `${dueLine(due)} deja de estar por pagar y no se registra ningún gasto.`,
+      acceptLabel: 'No se paga',
+      accept: () => this.recurring.skip(due.recurringId, due.dueDate).subscribe(() => {
+        this.undo.set(due);
+        this.loadDues();
+      }),
+    });
+  }
+
+  protected undoSkip(due: RecurringDue): void {
+    this.recurring.unskip(due.recurringId, due.dueDate).subscribe(() => {
+      this.undo.set(null);
+      this.loadDues();
+    });
   }
 
   /** La primera página se pide al entrar; la tabla avisa cuando se cambia de página. */
@@ -354,6 +433,7 @@ export class ExpensesComponent implements OnInit {
 
   protected onSaved(expense: Expense): void {
     this.messages.add({ severity: 'success', summary: 'Gasto guardado', detail: expenseLine(expense), life: 3000 });
+    this.loadDues();
     this.refresh();
   }
 
@@ -391,6 +471,8 @@ export class ExpensesComponent implements OnInit {
 
   protected onVoided(): void {
     this.messages.add({ severity: 'success', summary: 'Gasto anulado', life: 3000 });
+    // Si era el pago de un gasto fijo, esa fecha vuelve a quedar por pagar.
+    this.loadDues();
     this.refresh();
   }
 }

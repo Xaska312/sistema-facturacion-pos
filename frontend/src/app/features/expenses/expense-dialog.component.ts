@@ -5,7 +5,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { Observable, catchError, from, of, switchMap, tap } from 'rxjs';
 import { Branch, Party, PaymentMethod } from '../../core/api/api.models';
 import { CashApi } from '../../core/api/cash.api';
-import { Expense, ExpenseCategory, ExpensesApi } from '../../core/api/expenses.api';
+import { Expense, ExpenseCategory, ExpensesApi, RecurringDue, RecurringExpensesApi } from '../../core/api/expenses.api';
 import { OrganizationApi } from '../../core/api/organization.api';
 import { PartiesApi } from '../../core/api/parties.api';
 import { newIdempotencyKey } from '../../core/api/sales.api';
@@ -17,8 +17,9 @@ import { formatCop } from '../../shared/money';
 import { methodLabel } from '../pos/pos-labels';
 import { businessToday, isoDate } from '../reports/periods';
 import { documentProblem, expenseMethods, expenseNumber, expenseProblem } from './expense-text';
+import { dueLabel } from './recurring-text';
 
-type Mode = 'new' | 'cash' | 'edit' | 'classify';
+type Mode = 'new' | 'cash' | 'edit' | 'classify' | 'recurring';
 
 /**
  * Registrar, corregir o clasificar un gasto (decisión 320).
@@ -27,6 +28,7 @@ type Mode = 'new' | 'cash' | 'edit' | 'classify';
  *   <li>{@code openNew}: desde Gastos; se elige con qué se pagó. Con otro medio no toca la caja y lleva sede y fecha.</li>
  *   <li>{@code openEdit}: corrige categoría, proveedor, nota y, si no salió de una caja, la fecha.</li>
  *   <li>{@code openClassify}: le pone categoría a un egreso de caja de antes.</li>
+ *   <li>{@code openRecurring}: paga una fecha de un gasto fijo (decisión 321) con lo sugerido, que se puede cambiar.</li>
  * </ul>
  * La clave de idempotencia se crea al abrir: reintentar no registra dos gastos.
  */
@@ -37,7 +39,11 @@ type Mode = 'new' | 'cash' | 'edit' | 'classify';
     <app-form-dialog [(visible)]="visible" [header]="title()" width="30rem" [submitLabel]="submitLabel()"
                      [dirty]="dirty()" [invalidMessage]="problem()" [save]="saveRequest" [successMessage]="null"
                      (saved)="onSaved($any($event))">
-      @if (mode() === 'new' || mode() === 'cash') {
+      @if (due(); as d) {
+        <p class="text-sm"><strong>{{ d.name }}</strong> · {{ d.categoryName }}
+          <span class="block text-xs" [class.text-danger]="d.overdue" [class.text-muted]="!d.overdue">{{ dueText(d) }}</span></p>
+      }
+      @if (takesAmount()) {
         <div class="flex flex-col gap-1">
           <label for="expense-amount" class="text-sm font-medium">¿Cuánto fue?</label>
           <input id="expense-amount" appPesos class="h-12 border rounded-lg px-3 text-xl text-right tabular-nums"
@@ -49,6 +55,7 @@ type Mode = 'new' | 'cash' | 'edit' | 'classify';
           <span class="text-muted"> · {{ e.paymentMethodName ?? 'Efectivo' }}{{ e.fromCash ? ' de la caja' : '' }}</span></p>
       }
 
+      @if (mode() !== 'recurring') {
       <fieldset class="flex flex-col gap-1">
         <legend class="text-sm font-medium mb-1">¿En qué se gastó?</legend>
         <div class="flex flex-wrap gap-2">
@@ -62,8 +69,9 @@ type Mode = 'new' | 'cash' | 'edit' | 'classify';
           }
         </div>
       </fieldset>
+      }
 
-      @if (mode() === 'new') {
+      @if (picksMethod()) {
         <fieldset class="flex flex-col gap-1">
           <legend class="text-sm font-medium mb-1">¿Con qué se pagó?</legend>
           <div class="flex flex-wrap gap-2">
@@ -77,14 +85,14 @@ type Mode = 'new' | 'cash' | 'edit' | 'classify';
           </div>
         </fieldset>
       }
-      @if ((mode() === 'new' || mode() === 'cash') && selected()?.affectsCash) {
+      @if (takesAmount() && selected()?.affectsCash) {
         <p class="text-xs text-muted">Sale del efectivo de tu caja abierta (no puede pasar de lo que hay en ella) y
           queda con la fecha de hoy.</p>
       }
 
       @if (outsideCash()) {
         <div class="grid gap-3 sm:grid-cols-2">
-          @if (mode() === 'new') {
+          @if (picksMethod()) {
             <label class="flex flex-col gap-1">
               <span class="text-sm font-medium">Sede</span>
               <select class="border rounded-lg px-2 h-11" name="branch" [(ngModel)]="branchId">
@@ -146,6 +154,7 @@ type Mode = 'new' | 'cash' | 'edit' | 'classify';
 })
 export class ExpenseDialogComponent {
   private readonly api = inject(ExpensesApi);
+  private readonly recurring = inject(RecurringExpensesApi);
   private readonly cash = inject(CashApi);
   private readonly organization = inject(OrganizationApi);
   private readonly parties = inject(PartiesApi);
@@ -158,6 +167,7 @@ export class ExpenseDialogComponent {
 
   protected readonly mode = signal<Mode>('new');
   protected readonly expense = signal<Expense | null>(null);
+  protected readonly due = signal<RecurringDue | null>(null);
   protected readonly categories = signal<ExpenseCategory[]>([]);
   protected readonly allMethods = signal<PaymentMethod[]>([]);
   protected readonly branches = signal<Branch[]>([]);
@@ -181,6 +191,7 @@ export class ExpenseDialogComponent {
 
   protected readonly cop = formatCop;
   protected readonly number = expenseNumber;
+  protected readonly dueText = dueLabel;
 
   /** Gasto en efectivo desde Mi caja. */
   openCash(): void {
@@ -200,9 +211,23 @@ export class ExpenseDialogComponent {
     this.start('classify', expense);
   }
 
+  /** Pagar una fecha de un gasto fijo: todo viene sugerido y se puede cambiar antes de guardar. */
+  openRecurring(due: RecurringDue): void {
+    this.start('recurring', null);
+    this.due.set(due);
+    this.amount = due.amount;
+    this.categoryId = due.categoryId;
+    this.methodId = due.paymentMethodId;
+    this.branchId = due.branchId;
+    this.date = due.dueDate > this.today ? this.today : due.dueDate;
+    this.supplierId = due.supplierId ?? '';
+    this.note = due.name;
+  }
+
   private start(mode: Mode, expense: Expense | null): void {
     this.mode.set(mode);
     this.expense.set(expense);
+    this.due.set(null);
     this.today = isoDate(businessToday());
     this.amount = null;
     this.categoryId = expense?.categoryId ?? '';
@@ -266,9 +291,19 @@ export class ExpenseDialogComponent {
     return this.allMethods().find((m) => m.id === this.methodId);
   }
 
+  /** Se escribe el valor: gasto nuevo, desde la caja o de un gasto fijo. */
+  protected takesAmount(): boolean {
+    return this.mode() === 'new' || this.mode() === 'cash' || this.mode() === 'recurring';
+  }
+
+  /** Se elige con qué se pagó (en la caja siempre es efectivo). */
+  protected picksMethod(): boolean {
+    return this.mode() === 'new' || this.mode() === 'recurring';
+  }
+
   /** Lleva sede, fecha y referencia: un gasto nuevo con otro medio, o uno que no salió de una caja al corregirlo. */
   protected outsideCash(): boolean {
-    if (this.mode() === 'new') {
+    if (this.picksMethod()) {
       const method = this.selected();
       return !!method && !method.affectsCash;
     }
@@ -284,20 +319,25 @@ export class ExpenseDialogComponent {
       case 'cash': return 'Gasto en efectivo';
       case 'edit': return 'Corregir gasto';
       case 'classify': return 'Clasificar egreso de caja';
+      case 'recurring': return 'Pagar gasto fijo';
       default: return 'Registrar gasto';
     }
   }
 
   protected submitLabel(): string {
-    return this.mode() === 'edit' ? 'Guardar' : this.mode() === 'classify' ? 'Clasificar' : 'Registrar gasto';
+    return this.mode() === 'edit' ? 'Guardar' : this.mode() === 'classify' ? 'Clasificar'
+      : this.mode() === 'recurring' ? 'Registrar pago' : 'Registrar gasto';
   }
 
   protected dirty(): boolean {
+    if (this.mode() === 'recurring') {
+      return this.file() !== null || Number(this.amount ?? 0) !== this.due()?.amount;
+    }
     return Number(this.amount ?? 0) > 0 || this.note.trim() !== (this.expense()?.note ?? '') || this.file() !== null;
   }
 
   protected problem(): string | null {
-    if (this.mode() === 'new' || this.mode() === 'cash') {
+    if (this.takesAmount()) {
       return expenseProblem({ amount: this.amount, categoryId: this.categoryId, method: this.selected(),
         branchId: this.branchId, date: this.date, reference: this.reference }, this.today);
     }
@@ -325,7 +365,15 @@ export class ExpenseDialogComponent {
     const note = this.note.trim() || null;
     let request: Observable<Expense>;
     const current = this.expense();
-    if (this.mode() === 'classify' && current) {
+    const due = this.due();
+    if (this.mode() === 'recurring' && due) {
+      const outside = this.outsideCash();
+      request = this.recurring.pay(due.recurringId, {
+        dueDate: due.dueDate, amount: Number(this.amount), paymentMethodId: this.methodId,
+        branchId: outside ? this.branchId : null, date: outside ? this.date : null, supplierId,
+        reference: outside ? this.reference.trim() || null : null, note,
+      }, this.idempotencyKey);
+    } else if (this.mode() === 'classify' && current) {
       request = this.api.classify(current.id, { categoryId: this.categoryId, supplierId, note });
     } else if (this.mode() === 'edit' && current) {
       request = this.api.update(current.id, {

@@ -649,3 +649,15 @@ Un gasto pagado con un medio que entra al efectivo sale de la caja abierta de qu
 | GET | `/expenses/{id}/document` | `expenses:read` | Descarga el soporte (siempre como adjunto) |
 
 Informe de caja: `cash.expenses` es ahora el neto de `EXPENSE` y `EXPENSE_VOID`.
+
+## Gastos fijos (Finanzas parte A2, decisión 321)
+
+| Método | Ruta | Permiso | Notas |
+|---|---|---|---|
+| GET | `/recurring-expenses` | `expenses:read` | Todos, primero los prendidos: `{id, name, categoryId, categoryName, branchId, branchName, supplierId, supplierName, amount, paymentMethodId, paymentMethodName, fromCash, frequency (MONTHLY o BIWEEKLY), dayOfMonth, startsOn, note, active, nextDue}` |
+| GET | `/recurring-expenses/due` | `expenses:read` | `{count, overdueCount, total, items[{recurringId, name, dueDate, overdue, daysUntil, frequency, …lo sugerido}]}`: fechas sin pagar ni saltar de los prendidos, de 3 meses atrás a 7 días adelante, de la más antigua a la más reciente |
+| POST | `/recurring-expenses` | `expenses:manage` | `{name, amount, categoryId, branchId, paymentMethodId, frequency, dayOfMonth (1–31, solo MONTHLY), startsOn?, supplierId?, note?}`. 409 si el nombre ya existe; máximo 100 |
+| PUT | `/recurring-expenses/{id}` | `expenses:manage` | Lo mismo más `active` (apagar o prender). Lo ya pagado no cambia |
+| POST | `/recurring-expenses/{id}/pay` | `expenses:manage` | `{dueDate, amount?, paymentMethodId?, branchId?, date?, supplierId?, reference?, note?}`, `Idempotency-Key` opcional. Lo vacío se toma del gasto fijo; crea el gasto con las reglas de `POST /expenses`. 422 si la fecha no le toca o falta más de una semana; 409 si ya se pagó o se saltó |
+| POST | `/recurring-expenses/{id}/skip` | `expenses:manage` | `{dueDate}`: "este mes no". 409 si ya se pagó o se saltó |
+| DELETE | `/recurring-expenses/{id}/skip/{dueDate}` | `expenses:manage` | Deshace el salto; 404 si no estaba saltada |

@@ -1211,6 +1211,29 @@ export const MANUAL: readonly ManualChapter[] = [
           + 'corregir y anular gastos"). Quien opera una caja registra el gasto en efectivo de su caja.',
       },
       {
+        id: 'gastos-fijos',
+        title: 'Gastos fijos: arriendo, nómina, servicios',
+        summary: 'Lo que pagas siempre (el arriendo cada mes, la nómina cada quincena) lo creas una vez como gasto fijo. '
+          + 'XASKA te avisa cuando toca, en Gastos y en Inicio, y lo registras con un toque.',
+        steps: [
+          'En Gastos toca "Gastos fijos" y luego "Nuevo gasto fijo".',
+          'Escribe el nombre y el valor de cada pago, y elige cada cuánto se paga: cada mes (un día, por ejemplo el 5) '
+            + 'o cada quincena (el 15 y el último día del mes).',
+          'Elige la categoría, con qué lo pagas normalmente, la sede y desde cuándo. Toca "Crear gasto fijo".',
+          'Desde una semana antes de cada fecha aparece en "Por pagar" (arriba en Gastos) y en Inicio. Toca "Pagar": '
+            + 'todo viene listo y puedes cambiar el valor, el medio, la fecha o subir el recibo. Toca "Registrar pago".',
+        ],
+        tips: [
+          'Si un mes no se paga (por ejemplo, no hubo nómina extra), toca "Este mes no" ("Esta quincena no" en los '
+            + 'quincenales). Si te equivocaste, toca "Deshacer".',
+          'Si pones una fecha de inicio en el pasado, te muestra lo que quedó sin pagar (hasta 3 meses atrás).',
+          'En los meses cortos, un gasto del día 31 se avisa el último día del mes.',
+          'Si anulas el gasto de un pago, esa fecha vuelve a quedar por pagar.',
+          'Para dejar de recibir avisos, apágalo en "Gastos fijos". Lo que ya pagaste sigue en Gastos.',
+        ],
+        who: 'Lo ven quienes ven los gastos; lo crean, lo pagan y lo saltan Propietario, Administrador y Contador.',
+      },
+      {
         id: 'pregunta-ia',
         title: 'Pregúntale a Aska, la IA de XASKA',
         summary: 'Escribe una pregunta como "¿cuánto vendí hoy?" o "¿qué se me vence este mes?" y Aska la responde '
