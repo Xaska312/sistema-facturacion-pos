@@ -183,6 +183,15 @@ class ExpensesIT extends IntegrationTest {
         api.getWith(s, "/api/v1/expenses?from=" + from + "&q=luz").andExpect(jsonPath("$.totalElements").value(1));
         api.getWith(s, "/api/v1/expenses?from=" + from + "&q=neq-1").andExpect(jsonPath("$.totalElements").value(1));
         api.getWith(s, "/api/v1/expenses?from=" + TODAY + "&to=" + from).andExpect(status().is(422));
+        // Los totales con cada filtro (como los pide la pantalla).
+        for (String filter : new String[] {"&source=CASH", "&source=OTHER", "&unclassified=true", "&q=luz",
+                "&categoryId=" + RENT, "&branchId=" + branch, "&supplierId=" + supplier, "&paymentMethodId=" + TRANSFER}) {
+            api.getWith(s, "/api/v1/expenses/summary?from=" + from + "&to=" + TODAY + filter).andExpect(status().isOk());
+        }
+        assertThat(number(body(api.getWith(s, "/api/v1/expenses/summary?from=" + from + "&source=CASH")), "$.total"))
+                .isEqualByComparingTo("35000");
+        assertThat(number(body(api.getWith(s, "/api/v1/expenses/summary?from=" + from + "&categoryId=" + RENT)),
+                "$.total")).isEqualByComparingTo("800000");
 
         // --- Corregir: categoría, nota y fecha (la de un gasto en efectivo no cambia).
         api.putWith(s, "/api/v1/expenses/" + rentId, "{\"categoryId\":\"%s\",\"date\":\"%s\",\"note\":\"Arriendo local\"}"

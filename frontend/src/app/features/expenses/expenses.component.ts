@@ -265,9 +265,10 @@ export class ExpensesComponent implements OnInit {
     });
     this.loadCategories();
     this.loadSummary();
+    this.load(this.query);
   }
 
-  /** La tabla pide su página al iniciar y al cambiar de página. */
+  /** La primera página se pide al entrar; la tabla avisa cuando se cambia de página. */
   load(query: TableQuery): void {
     this.query = query;
     this.loading.set(true);

@@ -436,8 +436,8 @@ public class ExpenseService {
         List<CategoryTotal> byCategory = new ArrayList<>();
         for (Object row : query(ALL + """
                 SELECT x.category_id, c.name, sum(x.amount), count(*)
-                FROM x LEFT JOIN expense_categories c ON c.id = x.category_id""" + where + """
-                 GROUP BY x.category_id, c.name ORDER BY sum(x.amount) DESC, c.name""", params).getResultList()) {
+                FROM x LEFT JOIN expense_categories c ON c.id = x.category_id""" + where
+                + " GROUP BY x.category_id, c.name ORDER BY sum(x.amount) DESC, c.name", params).getResultList()) {
             Object[] r = (Object[]) row;
             byCategory.add(new CategoryTotal((UUID) r[0], r[1] == null ? UNCLASSIFIED : (String) r[1], money(r[2]),
                     ((Number) r[3]).longValue()));
@@ -445,8 +445,8 @@ public class ExpenseService {
         List<MethodTotal> byMethod = new ArrayList<>();
         for (Object row : query(ALL + """
                 SELECT x.payment_method_id, pm.name, sum(x.amount), count(*)
-                FROM x LEFT JOIN payment_methods pm ON pm.id = x.payment_method_id""" + where + """
-                 GROUP BY x.payment_method_id, pm.name, pm.sort_order ORDER BY pm.sort_order, pm.name""", params)
+                FROM x LEFT JOIN payment_methods pm ON pm.id = x.payment_method_id""" + where
+                + " GROUP BY x.payment_method_id, pm.name, pm.sort_order ORDER BY pm.sort_order, pm.name", params)
                 .getResultList()) {
             Object[] r = (Object[]) row;
             byMethod.add(new MethodTotal((UUID) r[0], (String) r[1], money(r[2]), ((Number) r[3]).longValue()));
