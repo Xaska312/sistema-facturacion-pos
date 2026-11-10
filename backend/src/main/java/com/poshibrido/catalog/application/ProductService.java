@@ -167,8 +167,38 @@ public class ProductService {
         throw new ConflictException("No fue posible generar un código interno libre. Intenta de nuevo.");
     }
 
+    /**
+     * Eliminar (decisión 314): el producto queda oculto para siempre (fuera de listas, búsquedas, ventas y lecturas de
+     * facturas) pero las ventas, compras y reportes anteriores lo conservan. Su SKU y sus códigos de barras quedan
+     * libres. Las tallas se eliminan desde su modelo.
+     */
+    @Transactional
+    public void delete(UUID id) {
+        Product product = products.findById(id).orElseThrow(() -> new NotFoundException("Producto no encontrado."));
+        if (product.isDeleted()) {
+            return;
+        }
+        if (product.isVariant()) {
+            throw new BusinessRuleException("Esta es una talla de un modelo: desactívala desde el modelo en «Con tallas».");
+        }
+        String sku = product.getSku();
+        product.markDeleted(freedSku(sku, id), java.time.Instant.now());
+        audit.log("PRODUCT_DELETED", "product", id, Map.of("sku", sku, "name", product.getName()), null);
+    }
+
+    /** "ARROZ-1~3f9a1c20": el SKU anterior (recortado) y parte del id; no choca con ninguno que se pueda escribir. */
+    static String freedSku(String sku, UUID id) {
+        String base = sku.length() > 31 ? sku.substring(0, 31) : sku;
+        return base + "~" + id.toString().substring(0, 8);
+    }
+
     Product find(UUID id) {
-        return products.findById(id).orElseThrow(() -> new NotFoundException("Producto no encontrado."));
+        Product product = products.findById(id).orElseThrow(() -> new NotFoundException("Producto no encontrado."));
+        if (product.isDeleted()) {
+            // Decisión 314: un eliminado ya no se edita ni se activa.
+            throw new NotFoundException("Ese producto se eliminó.");
+        }
+        return product;
     }
 
     // ------------------------------------------------------------------ validación y aplicación

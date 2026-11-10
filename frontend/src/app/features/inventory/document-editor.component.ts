@@ -1,3 +1,4 @@
+import { isTouch } from '../../shared/touch';
 import { Component, HostListener, OnInit, computed, inject, input, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -99,7 +100,7 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
       <section class="card p-4 mt-4 max-w-5xl flex flex-col gap-3">
         <div class="flex flex-wrap gap-2 items-center">
           <input pInputText class="flex-1 min-w-64" placeholder="Escanea el código o escribe SKU/nombre y presiona Enter"
-                 [(ngModel)]="code" (keyup.enter)="add()" autofocus />
+                 [(ngModel)]="code" (keyup.enter)="add()" [attr.autofocus]="desktop ? '' : null" />
           <p-button label="Agregar" [loading]="adding()" (onClick)="add()" />
           <p-button label="Por tallas" icon="pi pi-th-large" severity="secondary" [outlined]="true"
                     (onClick)="sizeGrid()?.open()" />
@@ -228,6 +229,8 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
   `,
 })
 export class InventoryDocumentEditorComponent implements OnInit, HasUnsavedChanges {
+  /** Decisión 314: en el celular el teclado no se abre solo. */
+  protected readonly desktop = !isTouch();
   /** Segmento de ruta :kind (saldo-inicial, ajuste, traslado, conteo). */
   readonly kind = input.required<string>();
   /** ?producto=id: llega desde "Producto creado → registrar existencias" y entra ya en la lista. */

@@ -1,3 +1,4 @@
+import { focusOnDesktop } from '../../shared/touch';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, ElementRef, HostListener, OnDestroy, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -1284,8 +1285,7 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   focusOpenPrice(): void {
     setTimeout(() => {
       const input = document.getElementById('open-price') as HTMLInputElement | null;
-      input?.focus();
-      input?.select();
+      focusOnDesktop(input, true);
     }, 0);
   }
 
@@ -1601,8 +1601,7 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   focusHoldLabel(): void {
     setTimeout(() => {
       const input = this.holdLabelInput()?.nativeElement;
-      input?.focus();
-      input?.select();
+      focusOnDesktop(input, true);
     }, 0);
   }
 
@@ -1812,8 +1811,7 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   focusPayment(): void {
     setTimeout(() => {
       const input = document.getElementById('pay-0') as HTMLInputElement | null;
-      input?.focus();
-      input?.select();
+      focusOnDesktop(input, true);
     }, 0);
   }
 
@@ -1845,7 +1843,7 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
     this.payments = [...this.payments, this.draft(method, missing > 0 ? missing : null)];
     this.paymentsRevision.update((n) => n + 1);
     const index = this.payments.length - 1;
-    setTimeout(() => document.getElementById(`pay-${index}`)?.focus(), 0);
+    setTimeout(() => focusOnDesktop(document.getElementById(`pay-${index}`)), 0);
   }
 
   removePayment(index: number): void {
@@ -2169,12 +2167,13 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
         this.focusScanner(attempt + 1);
         return;
       }
-      this.scanner()?.nativeElement.focus();
+      // Decisión 314: sin mover la pantalla (en el celular, al agregar un producto subía hasta arriba).
+      this.scanner()?.nativeElement.focus({ preventScroll: true });
     }, attempt === 0 ? 0 : 50);
   }
 
   focus(which: 'search' | 'customerSearch'): void {
-    setTimeout(() => (which === 'search' ? this.search() : this.customerSearch())?.nativeElement.focus(), 0);
+    setTimeout(() => focusOnDesktop((which === 'search' ? this.search() : this.customerSearch())?.nativeElement), 0);
   }
 
   /** "?" abre la ayuda fuera de los campos, o desde el campo de código cuando está vacío. */

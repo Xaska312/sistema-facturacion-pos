@@ -1,3 +1,4 @@
+import { focusOnDesktop } from '../../shared/touch';
 import { Component, ElementRef, afterNextRender, computed, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -103,7 +104,7 @@ export class AllModulesComponent {
   });
 
   constructor() {
-    afterNextRender(() => this.search().nativeElement.focus());
+    afterNextRender(() => focusOnDesktop(this.search().nativeElement));
   }
 
   openFirst(): void {

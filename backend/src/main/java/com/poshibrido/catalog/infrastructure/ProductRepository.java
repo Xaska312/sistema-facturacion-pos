@@ -33,6 +33,7 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
               and (:anyCategory = true or p.categoryId = :categoryId)
               and (:includeInactive = true or p.active = true)
               and (:includeVariants = true or p.modelId is null)
+              and p.deletedAt is null
             """)
     Page<Product> search(@Param("pattern") String pattern, @Param("patternUpper") String patternUpper,
                          @Param("exact") String exact, @Param("anyCategory") boolean anyCategory,
@@ -85,4 +86,12 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
                                 @Param("categoryId") UUID categoryId, Pageable pageable);
 
     long countByCategoryIdAndActiveTrue(UUID categoryId);
+
+    /** Productos de la categoría que no se han eliminado (decisión 314). */
+    long countByCategoryIdAndDeletedAtIsNull(UUID categoryId);
+
+    /** Los eliminados sueltan la categoría antes de borrarla (decisión 314). */
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("update Product p set p.categoryId = null where p.categoryId = :categoryId and p.deletedAt is not null")
+    int detachDeleted(@Param("categoryId") UUID categoryId);
 }

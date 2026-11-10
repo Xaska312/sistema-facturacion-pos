@@ -1,3 +1,4 @@
+import { focusOnDesktop } from '../../shared/touch';
 import { Component, OnInit, computed, inject, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -167,7 +168,7 @@ export class OpenCashComponent implements OnInit {
         const free = this.openable().filter((r) => !r.busy);
         this.registerId.set(free.length === 1 ? free[0].id : null);
         if (this.joinable().length === 0) {
-          setTimeout(() => document.getElementById('opening-amount')?.focus(), 0);
+          setTimeout(() => focusOnDesktop(document.getElementById('opening-amount')), 0);
         }
       },
       error: () => this.registers.set([]),

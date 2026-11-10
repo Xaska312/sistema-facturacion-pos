@@ -42,6 +42,9 @@ public class CatalogConfigService implements PriceListApi {
     private final ProductRepository products;
     private final AuditLogger audit;
 
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager em;
+
     // ------------------------------------------------------------------ Categorías
 
     @Transactional(readOnly = true)
@@ -82,6 +85,38 @@ public class CatalogConfigService implements PriceListApi {
         category.setActive(active);
         audit.log(active ? "CATEGORY_ACTIVATED" : "CATEGORY_DEACTIVATED", "category", id, null, null);
         return category;
+    }
+
+    /**
+     * Eliminar una categoría (decisión 314): solo si no tiene productos (los eliminados la sueltan) ni subcategorías.
+     * Sus asignaciones a cartas, estaciones de cocina y modificadores se quitan con ella.
+     */
+    @Transactional
+    public void deleteCategory(UUID id) {
+        Category category = category(id);
+        long inUse = products.countByCategoryIdAndDeletedAtIsNull(id);
+        if (inUse > 0) {
+            throw new ConflictException("La categoría tiene " + inUse + (inUse == 1 ? " producto" : " productos")
+                    + ". Muévelos a otra categoría o elimínalos primero.");
+        }
+        if (categories.existsByParentId(id)) {
+            throw new ConflictException("La categoría tiene subcategorías. Muévelas o elimínalas primero.");
+        }
+        products.detachDeleted(id);
+        for (String table : List.of("category_modifier_groups", "kitchen_station_categories", "dining_menu_categories")) {
+            em.createNativeQuery("DELETE FROM " + table + " WHERE category_id = ?1").setParameter(1, id).executeUpdate();
+        }
+        em.createNativeQuery("UPDATE product_models SET category_id = NULL WHERE category_id = ?1 AND NOT active")
+                .setParameter(1, id).executeUpdate();
+        Number models = (Number) em.createNativeQuery("SELECT count(*) FROM product_models WHERE category_id = ?1")
+                .setParameter(1, id).getSingleResult();
+        if (models.longValue() > 0) {
+            throw new ConflictException("La categoría tiene modelos con tallas. Muévelos a otra categoría primero.");
+        }
+        String name = category.getName();
+        categories.delete(category);
+        categories.flush();
+        audit.log("CATEGORY_DELETED", "category", id, Map.of("name", name), null);
     }
 
     public Category category(UUID id) {

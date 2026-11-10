@@ -1,3 +1,4 @@
+import { focusOnDesktop } from '../../shared/touch';
 import { Component, computed, effect, ElementRef, HostListener, inject, signal, untracked, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { NavigationEnd, Router, RouterLink } from '@angular/router';
@@ -356,7 +357,7 @@ export class AskaComponent {
     effect(() => {
       const el = this.input()?.nativeElement;
       if (el && this.open()) {
-        setTimeout(() => el.focus());
+        setTimeout(() => focusOnDesktop(el));
       }
     });
   }

@@ -644,7 +644,9 @@ export const MANUAL: readonly ManualChapter[] = [
         tips: [
           'En "Más opciones" están las presentaciones (vender por caja de 24, con su código y precio) y los precios de otras listas.',
           'En Ajustes indica si tus precios ya incluyen el IVA ("Los precios incluyen impuestos").',
-          'Desactivar un producto lo oculta del punto de venta sin borrar su historia.',
+          'Desactivar un producto lo oculta del punto de venta sin borrar su historia; puedes volver a activarlo. '
+            + '"Eliminar" lo quita para siempre de las listas y libera su SKU y su código de barras; las ventas '
+            + 'anteriores lo conservan.',
         ],
         who: 'Propietario, Administrador y Bodeguero.',
       },

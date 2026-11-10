@@ -162,6 +162,16 @@ export class CatalogApi {
     return this.http.post<{ lines: InvoiceCreatedLine[] }>('/api/v1/products/from-invoice', { items });
   }
 
+  /** Decisión 314: oculto para siempre; el historial lo conserva. */
+  deleteProduct(id: string): Observable<void> {
+    return this.http.delete<void>(`/api/v1/products/${id}`);
+  }
+
+  /** Decisión 314: solo si no tiene productos ni subcategorías. */
+  deleteCategory(id: string): Observable<void> {
+    return this.http.delete<void>(`/api/v1/categories/${id}`);
+  }
+
   categories(): Observable<Category[]> {
     return this.http.get<Category[]>('/api/v1/categories');
   }

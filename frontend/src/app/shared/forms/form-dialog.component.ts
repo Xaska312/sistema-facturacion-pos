@@ -82,7 +82,7 @@ export class FormDialogComponent {
    * Poner el cursor en el primer campo al abrir: 'always' (por defecto) o 'desktop' (no en pantallas táctiles, para que
    * el teclado del celular no tape la ventana; decisión 293).
    */
-  readonly autofocus = input<'always' | 'desktop'>('always');
+  readonly autofocus = input<'always' | 'desktop'>('desktop');
   /** Para borradores con ngModel: motivo por el que aún no se puede guardar (null = se puede). */
   readonly invalidMessage = input<string | null>(null);
   /** Petición de guardado; se llama al enviar el formulario válido. */

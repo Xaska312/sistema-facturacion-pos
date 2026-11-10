@@ -86,7 +86,8 @@ interface ThemeOption extends PrimeMenuItem {
           <button type="button" class="trial-pill" (click)="trialState.openWelcome()"
                   [attr.aria-label]="'Prueba de XASKA IA: ' + trialDays()">
             <span class="plan-pill-ai" aria-hidden="true">IA</span>
-            <span>{{ trialDays() }}</span>
+            <span class="hidden sm:inline">{{ trialDays() }}</span>
+            <span class="sm:hidden" aria-hidden="true">{{ t.daysLeft }} d</span>
           </button>
         }
         <span class="hidden lg:flex items-center gap-2 text-sm text-muted max-w-56" title="Negocio actual">
@@ -97,12 +98,13 @@ interface ThemeOption extends PrimeMenuItem {
         </span>
 
         @if (helpTopic()) {
-          <button type="button" class="icon-button" aria-label="Ayuda de esta pantalla" aria-haspopup="dialog"
+          <!-- Decisión 314: en el celular, ayuda y tema van en el menú del perfil para que se vea el perfil. -->
+          <button type="button" class="icon-button desk-only" aria-label="Ayuda de esta pantalla" aria-haspopup="dialog"
                   [attr.aria-expanded]="helpOpen()" pTooltip="Ayuda" tooltipPosition="bottom" (click)="helpOpen.set(true)">
             <i class="pi pi-question-circle" aria-hidden="true"></i>
           </button>
         }
-        <button type="button" class="icon-button" aria-haspopup="menu" [attr.aria-label]="themeButtonLabel()"
+        <button type="button" class="icon-button desk-only" aria-haspopup="menu" [attr.aria-label]="themeButtonLabel()"
                 (click)="themeMenu.toggle($event)">
           <i [class]="themeIcon()" aria-hidden="true"></i>
         </button>
@@ -191,6 +193,7 @@ interface ThemeOption extends PrimeMenuItem {
     .plan-pill:hover, .plan-pill:focus-visible { transform: translateY(-1px); box-shadow: 0 6px 16px var(--aska-glow); }
     .plan-pill-dot { width: 0.5rem; height: 0.5rem; border-radius: 9999px; background: var(--color-success); }
     .plan-pill-detail { opacity: 0.85; }
+    @media (max-width: 639px) { .desk-only { display: none; } }
     .trial-pill {
       display: inline-flex; align-items: center; gap: 0.375rem; min-height: 2.25rem; padding: 0 0.75rem;
       border-radius: 9999px; font-size: 0.8125rem; font-weight: 700; white-space: nowrap; color: var(--aska-soft-fg);
@@ -362,6 +365,8 @@ export class ShellComponent {
       command: () => this.theme.setMode(option.mode),
     })),
   );
+  /** Decisión 314: pantalla de celular (menos de 640 px). */
+  protected readonly narrow = signal(narrowScreen());
   protected readonly userItems = computed<PrimeMenuItem[]>(() => [
     {
       label: this.auth.user()?.email ?? '',
@@ -371,6 +376,17 @@ export class ShellComponent {
           : []),
         ...(this.canManageSettings()
           ? [{ label: 'Planes y pagos', icon: 'pi pi-credit-card', command: () => void this.router.navigate(['/app/planes']) }]
+          : []),
+        // Decisión 314: en el celular la ayuda y el tema están aquí (el encabezado no alcanza).
+        ...(this.narrow() && this.helpTopic()
+          ? [{ label: 'Ayuda de esta pantalla', icon: 'pi pi-question-circle', command: () => this.helpOpen.set(true) }]
+          : []),
+        ...(this.narrow()
+          ? THEME_MODES.map((option) => ({
+            label: 'Tema: ' + option.label.toLowerCase(),
+            icon: option.mode === this.theme.mode() ? 'pi pi-check' : option.icon,
+            command: () => this.theme.setMode(option.mode),
+          }))
           : []),
         { label: 'Cambiar negocio', icon: 'pi pi-sync', command: () => this.switchTenant() },
         ...(this.auth.isPlatformAdmin()
@@ -383,6 +399,12 @@ export class ShellComponent {
   ]);
 
   constructor() {
+    try {
+      const media = globalThis.matchMedia?.('(max-width: 639px)');
+      media?.addEventListener('change', (e) => this.narrow.set(e.matches));
+    } catch {
+      // Sin matchMedia (pruebas): se queda como empezó.
+    }
     this.router.events
       .pipe(
         filter((event): event is NavigationEnd => event instanceof NavigationEnd),
@@ -435,6 +457,14 @@ export class ShellComponent {
 }
 
 /** Título de la ruta más profunda activa (el que se ve en la pestaña). */
+function narrowScreen(): boolean {
+  try {
+    return globalThis.matchMedia?.('(max-width: 639px)').matches ?? false;
+  } catch {
+    return false;
+  }
+}
+
 export function deepestTitle(root: ActivatedRouteSnapshot): string | null {
   let node: ActivatedRouteSnapshot | null = root;
   let title: string | null = null;
