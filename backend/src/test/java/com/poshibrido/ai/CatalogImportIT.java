@@ -74,7 +74,11 @@ class CatalogImportIT extends IntegrationTest {
                 "content", List.of(Map.of("type", "text", "text", read)))).when(ai).send(any());
         String json = body(api.uploadNamed(s, "/api/v1/ai/catalog/read", "files", "lista.csv", csv,
                 "supplierId", supplier.toString(), "margin", "30").andExpect(status().isOk()));
-        assertThat((List<Object>) JsonPath.read(json, "$.rows")).hasSize(2);
+        // Decisión 313: el que no trae costo también entra, sin precio, para escribirlo en la revisión.
+        assertThat((List<Object>) JsonPath.read(json, "$.rows")).hasSize(3);
+        assertThat((String) JsonPath.read(json, "$.rows[2].proposal.action")).isEqualTo("CREATE");
+        assertThat((Object) JsonPath.read(json, "$.rows[2].proposal.price")).isNull();
+        assertThat(JsonPath.read(json, "$.warnings").toString()).contains("1 producto no trae precio");
         // Arroz: existe (por el código de barras); conserva su margen 33,3 % con el costo nuevo:
         // 2.400 / 0,667 × 1,19 = 4.281,9 → 4.300.
         assertThat((String) JsonPath.read(json, "$.rows[0].proposal.action")).isEqualTo("UPDATE");
@@ -160,7 +164,11 @@ class CatalogImportIT extends IntegrationTest {
         String json = body(api.uploadNamed(s, "/api/v1/ai/catalog/read", "files", "hoja.png", png(),
                 "inventory", "true", "branchId", branch, "margin", "30").andExpect(status().isOk()));
         assertThat((Boolean) JsonPath.read(json, "$.inventory")).isTrue();
-        assertThat((List<Object>) JsonPath.read(json, "$.rows")).hasSize(4);
+        assertThat((List<Object>) JsonPath.read(json, "$.rows")).hasSize(5);
+        // Decisión 313: solo el nombre, sin precio ni costo: nuevo, con su cantidad y el precio por escribir.
+        assertThat((String) JsonPath.read(json, "$.rows[4].proposal.action")).isEqualTo("CREATE");
+        assertThat((Object) JsonPath.read(json, "$.rows[4].proposal.price")).isNull();
+        assertThat(JsonPath.read(json, "$.rows[4].quantity").toString()).isEqualTo("4.0");
         // Gaseosa: ya tiene movimientos, sin cantidad y con la nota.
         assertThat((Object) JsonPath.read(json, "$.rows[0].quantity")).isNull();
         assertThat((String) JsonPath.read(json, "$.rows[0].stockNote")).contains("conteo");
@@ -189,6 +197,68 @@ class CatalogImportIT extends IntegrationTest {
         UUID panela = UUID.fromString(JsonPath.read(body(api.getWith(s, "/api/v1/products?search=PANELA-01")),
                 "$.content[0].id"));
         assertThat(pos.stock(s, panela)).isEqualByComparingTo("12");
+    }
+
+    @Test
+    void readsTheNotebookPhotosFromAWordInBatchesOfTen() throws Exception {
+        when(ai.available()).thenReturn(true);
+        when(ai.model()).thenReturn("claude-haiku-5-5");
+        Owned owner = api.newTenant("word");
+        Session s = owner.tenant();
+        api.putWith(platformAdmin(), "/api/v1/platform/tenants/" + owner.tenantId() + "/subscription/extras",
+                "{\"modules\":[],\"features\":[\"AI\"],\"branches\":0,\"registers\":0,\"users\":0}").andExpect(status().isOk());
+        s = TestApi.session(api.refreshRaw(s.refreshToken()).andExpect(status().isOk()).andReturn());
+        doReturn(Map.of("stop_reason", "end_turn", "usage", Map.of("input_tokens", 900, "output_tokens", 300),
+                "content", List.of(Map.of("type", "text", "text", """
+                {"readable":true,"problem":"","pricesIncludeTax":true,"items":[
+                 {"description":"Jugo Hit Mango 1 L","supplierCode":"","barcode":"","unit":"UND","cost":-1,"taxRate":-1,
+                  "category":"Bebidas","quantity":-1,"price":-1}]}""")))).when(ai).send(any());
+        byte[] docx = docx(12);
+        String json = body(api.uploadNamed(s, "/api/v1/ai/catalog/read", "files", "inventario.docx", docx)
+                .andExpect(status().isOk()));
+        assertThat((Integer) JsonPath.read(json, "$.photos.from")).isEqualTo(1);
+        assertThat((Integer) JsonPath.read(json, "$.photos.to")).isEqualTo(10);
+        assertThat((Integer) JsonPath.read(json, "$.photos.total")).isEqualTo(12);
+        assertThat(JsonPath.read(json, "$.warnings[0]").toString()).contains("trae 12 fotos");
+        json = body(api.uploadNamed(s, "/api/v1/ai/catalog/read", "files", "inventario.docx", docx, "fromPhoto", "11")
+                .andExpect(status().isOk()));
+        assertThat((Integer) JsonPath.read(json, "$.photos.to")).isEqualTo(12);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, Object>> sent = ArgumentCaptor.forClass(Map.class);
+        verify(ai, org.mockito.Mockito.times(2)).send(sent.capture());
+        String last = String.valueOf(sent.getAllValues().get(1).get("messages"));
+        assertThat(last.split("media_type=image", -1)).hasSize(3);
+        api.uploadNamed(s, "/api/v1/ai/catalog/read", "files", "inventario.docx", docx, "fromPhoto", "13")
+                .andExpect(status().isUnprocessableEntity());
+        // Un precio sin escribir no se guarda.
+        api.postWith(s, "/api/v1/ai/catalog/apply", """
+                {"rows":[{"sku":"HIT-1L","name":"Jugo Hit Mango 1 L","category":"Bebidas","unitCode":"UND",
+                 "taxCode":"IVA19","cost":0}]}""").andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("Falta el precio de Jugo Hit")));
+    }
+
+    /** Un Word con {@code photos} fotos PNG, en orden. */
+    private static byte[] docx(int photos) throws Exception {
+        java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+        try (java.util.zip.ZipOutputStream zip = new java.util.zip.ZipOutputStream(out)) {
+            StringBuilder doc = new StringBuilder("<w:document><w:body>");
+            StringBuilder rels = new StringBuilder("<Relationships>");
+            for (int i = 1; i <= photos; i++) {
+                doc.append("<a:blip r:embed=\"rId").append(i).append("\"/>");
+                rels.append("<Relationship Id=\"rId").append(i)
+                        .append("\" Type=\"image\" Target=\"media/image").append(i).append(".png\"/>");
+                zip.putNextEntry(new java.util.zip.ZipEntry("word/media/image" + i + ".png"));
+                zip.write(png());
+                zip.closeEntry();
+            }
+            zip.putNextEntry(new java.util.zip.ZipEntry("word/document.xml"));
+            zip.write(doc.append("</w:body></w:document>").toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            zip.closeEntry();
+            zip.putNextEntry(new java.util.zip.ZipEntry("word/_rels/document.xml.rels"));
+            zip.write(rels.append("</Relationships>").toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            zip.closeEntry();
+        }
+        return out.toByteArray();
     }
 
     private static byte[] png() throws Exception {

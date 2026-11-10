@@ -118,6 +118,14 @@ public class CatalogConfigController {
         return CategoryResponse.of(service.setCategoryActive(id, false));
     }
 
+    /** Decisión 314: solo si no tiene productos ni subcategorías. */
+    @org.springframework.web.bind.annotation.DeleteMapping("/api/v1/categories/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasAuthority('products:manage')")
+    public void deleteCategory(@PathVariable UUID id) {
+        service.deleteCategory(id);
+    }
+
     // ---------------------------------------------------------------- Unidades
 
     @GetMapping("/api/v1/units")

@@ -142,6 +142,10 @@ export function settingRows(tab: Tab, data: { tree: { category: Category; depth:
           <p-button [label]="row.active ? 'Desactivar' : 'Activar'" size="small" [text]="true"
                     [icon]="row.active ? 'pi pi-ban' : 'pi pi-check-circle'"
                     [severity]="row.active ? 'danger' : 'success'" (onClick)="toggle(row)" />
+          @if (tab() === 'categories') {
+            <p-button label="Eliminar" icon="pi pi-trash" size="small" [text]="true" severity="danger"
+                      (onClick)="removeCategory(row)" />
+          }
         }
       </ng-template>
     </app-data-table>
@@ -327,6 +331,17 @@ export class CatalogSettingsComponent implements OnInit {
     }
     return id ? this.api.renamePriceList(id, name) : this.api.createPriceList(this.code.trim(), name);
   };
+
+  /** Decisión 314: una categoría sin productos ni subcategorías se borra. */
+  removeCategory(row: SettingRow): void {
+    this.confirm.ask({
+      header: 'Eliminar categoría',
+      message: `¿Eliminar la categoría ${row.name}? Solo se puede si no tiene productos ni subcategorías.`,
+      acceptLabel: 'Eliminar categoría',
+      danger: true,
+      accept: () => this.api.deleteCategory(row.id).subscribe(() => this.reload()),
+    });
+  }
 
   toggle(row: SettingRow): void {
     const resource = this.tab();

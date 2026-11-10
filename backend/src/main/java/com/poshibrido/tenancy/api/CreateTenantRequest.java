@@ -17,5 +17,7 @@ public record CreateTenantRequest(
         // Opcional: sin código, prueba gratis (solo el primer negocio de la cuenta). Fase 8b.
         @Size(max = 40) String activationCode,
         // Decisión 303: crear el negocio para pagarlo ya con Bre-B (si ya usó la prueba gratis).
-        Boolean payNow) {
+        Boolean payNow,
+        // Decisión 312: código de invitación (otro negocio o un aliado), opcional.
+        @Size(max = 20) String referralCode) {
 }

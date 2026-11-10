@@ -75,6 +75,15 @@ export interface AskaRecap {
   savedLabel: string;
 }
 
+/** La prueba gratis de XASKA IA (decisión 311): días que quedan y los tres retos de la bienvenida. */
+export interface AiTrial {
+  endsAt: string;
+  daysLeft: number;
+  scanned: boolean;
+  asked: boolean;
+  loaded: boolean;
+}
+
 export interface DigestSettings {
   enabled: boolean;
   /** HH:mm en la zona del negocio. */
@@ -108,8 +117,8 @@ export interface CatalogProposal {
   taxCode: string;
   /** Sin IVA. */
   cost: number;
-  /** Como vende el negocio (con o sin IVA según sus ajustes). */
-  price: number;
+  /** Como vende el negocio (con o sin IVA según sus ajustes); nulo si la lista no lo trae (decisión 313). */
+  price: number | null;
   marginPercent: number;
 }
 
@@ -145,6 +154,8 @@ export interface CatalogDraft {
   usage: AskUsage;
   inventory: boolean;
   branchId: string | null;
+  /** Decisión 313: un Word con más fotos de las que Aska lee por vez; qué tanda se leyó. */
+  photos?: { from: number; to: number; total: number } | null;
 }
 
 /** Fila confirmada: {@code productId} nulo = crear. */
@@ -190,6 +201,11 @@ export class AiApi {
     return this.http.get<AskaRecap | null>('/api/v1/ai/recap', { context: new HttpContext().set(SILENT_CLIENT_ERRORS, true) });
   }
 
+  /** Decisión 311: la prueba de XASKA IA en curso; null si el negocio no está en prueba (204). */
+  trial(): Observable<AiTrial | null> {
+    return this.http.get<AiTrial | null>('/api/v1/ai/trial', { context: new HttpContext().set(SILENT_CLIENT_ERRORS, true) });
+  }
+
   latestDigest(): Observable<Digest | null> {
     return this.http.get<Digest | null>('/api/v1/ai/digest/latest');
   }
@@ -208,9 +224,13 @@ export class AiApi {
   }
 
   /** Aska lee la lista de precios del proveedor; nada se guarda. Los 4xx se muestran en la pantalla. */
-  readCatalog(files: File[], supplierId: string | null, margin: number, branchId: string | null = null):
-  Observable<CatalogDraft> {
+  readCatalog(files: File[], supplierId: string | null, margin: number, branchId: string | null = null,
+              fromPhoto = 1): Observable<CatalogDraft> {
     const form = new FormData();
+    if (fromPhoto > 1) {
+      // Decisión 313: la siguiente tanda de fotos de un Word.
+      form.append('fromPhoto', String(fromPhoto));
+    }
     files.forEach((f) => form.append('files', f, f.name));
     if (supplierId) {
       form.append('supplierId', supplierId);

@@ -68,4 +68,13 @@ public class AskController {
         return r == null ? org.springframework.http.ResponseEntity.noContent().build()
                 : org.springframework.http.ResponseEntity.ok(r);
     }
+
+    /** La prueba gratis de XASKA IA: días que quedan y retos de la bienvenida (decisión 311); 204 si no está en prueba. */
+    @GetMapping("/trial")
+    @PreAuthorize("hasAuthority('ai:ask')")
+    public org.springframework.http.ResponseEntity<com.poshibrido.ai.application.AskaMomentService.Trial> trial() {
+        var t = moments.trial();
+        return t == null ? org.springframework.http.ResponseEntity.noContent().build()
+                : org.springframework.http.ResponseEntity.ok(t);
+    }
 }

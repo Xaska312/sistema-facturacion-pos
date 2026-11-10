@@ -16,6 +16,7 @@ import { formatDate } from '../../shared/format';
 import { formatCop } from '../../shared/money';
 import { PageHeaderComponent } from '../../shared/page-header.component';
 import { includedText } from '../platform/plan-features';
+import { ReferralCardComponent } from './referral-card.component';
 import { COUNTABLE, addonsForSale, annualSaving, checkLines, months, orderTotal, planPrice, statusLabel } from './billing-text';
 
 /**
@@ -25,7 +26,7 @@ import { COUNTABLE, addonsForSale, annualSaving, checkLines, months, orderTotal,
  */
 @Component({
   selector: 'app-plans',
-  imports: [FormsModule, ButtonModule, PageHeaderComponent, XaskaIaLogoComponent, AskaLoaderComponent],
+  imports: [FormsModule, ButtonModule, PageHeaderComponent, XaskaIaLogoComponent, AskaLoaderComponent, ReferralCardComponent],
   template: `
     <app-page-header title="Planes y pagos"
                      description="Renueva tu plan, agrega XASKA IA, módulos o más cupos y paga por Bre-B desde la app de tu banco." />
@@ -234,6 +235,9 @@ import { COUNTABLE, addonsForSale, annualSaving, checkLines, months, orderTotal,
                     [loading]="creating()" (onClick)="create()" />
         </div>
       </section>
+
+      <!-- Decisión 312: Invita y gana. -->
+      <app-referral-card class="block mt-4 max-w-6xl" />
 
       @if (history().length > 0) {
         <section class="card p-4 mt-4 max-w-6xl" aria-labelledby="history">

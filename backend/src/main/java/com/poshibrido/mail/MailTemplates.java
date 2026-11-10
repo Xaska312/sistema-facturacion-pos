@@ -179,6 +179,20 @@ public class MailTemplates {
                 "Gracias por confiar en XASKA POS.");
     }
 
+    /** Referidos (decisión 312): el negocio que invitó pagó y quien invita ganó un mes de XASKA IA. */
+    public MailMessage referralReward(String to, String ownerName, String businessName, String referredName,
+                                      String untilLabel) {
+        return message(to, "Ganaste un mes de XASKA IA gracias a " + referredName, "referido-premio",
+                "Hola, " + ownerName + ":",
+                List.of(referredName + " entró a XASKA con tu invitación y ya pagó su primer mes. Gracias por "
+                                + "recomendarnos.",
+                        "Te regalamos un mes de XASKA IA para " + businessName + ": la tienes hasta el " + untilLabel
+                                + ". Si estabas dentro de XASKA, sal y vuelve a entrar para verla.",
+                        "Cada negocio que invites y pague te da otro mes. Tu código está en Ajustes → Planes y pagos."),
+                "Invitar a otro negocio", properties.link("/app/planes"),
+                "Gracias por confiar en XASKA POS.");
+    }
+
     /** El pago no se pudo confirmar (decisión 302): por qué y qué hacer. */
     public MailMessage billingRejected(String to, String ownerName, String businessName, String reference,
                                        String reason) {
@@ -268,7 +282,7 @@ public class MailTemplates {
                 .append(escape(day)).append("</div>")
                 .append("<table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin-top:12px;\"><tr>")
                 .append("<td style=\"font-size:56px;line-height:1;padding-right:16px;vertical-align:middle;\">")
-                .append(weather == null ? "&#10022;" : weather[0]).append("</td><td style=\"vertical-align:middle;\">");
+                .append(weather == null ? "&#10022;" : weatherIcon(weather, 56)).append("</td><td style=\"vertical-align:middle;\">");
         if (main != null) {
             html.append("<div style=\"color:#ffffff;font-size:36px;font-weight:bold;letter-spacing:-1px;line-height:1.1;\">")
                     .append(escape(main)).append("</div>");
@@ -316,7 +330,8 @@ public class MailTemplates {
                     .append("style=\"margin:14px 0 4px;background:#f5f6fb;border-radius:12px;\"><tr>");
             for (String[] s : sections) {
                 html.append("<td align=\"center\" style=\"padding:12px 6px;font-size:12px;color:#4b5563;\">")
-                        .append("<div style=\"font-size:22px;line-height:1.2;\">").append(s[1]).append("</div>")
+                        .append("<div style=\"font-size:22px;line-height:1.2;\">")
+                        .append(weatherIcon(new String[]{s[1], s[2], s.length > 3 ? s[3] : null}, 28)).append("</div>")
                         .append("<div style=\"font-weight:bold;color:#1f2937;\">").append(escape(s[0])).append("</div>")
                         .append("<div>").append(escape(s[2])).append("</div></td>");
             }
@@ -480,6 +495,20 @@ public class MailTemplates {
                 + " en tu prueba") : "Aska · " + title + (saved == null ? "" : ": te ahorré " + saved);
         return new MailMessage(to, subject, html.toString(), text.toString(), UUID.randomUUID().toString(),
                 trial ? "aska-prueba" : "aska-mes", "Aska de XASKA");
+    }
+
+    /**
+     * El ícono del clima (decisión 307): una imagen propia a 3 veces su tamaño, nítida en Gmail y en pantallas de alta
+     * densidad (Gmail cambia los emojis por imágenes pequeñas que se ven borrosas al agrandarlas). {@code w}: emoji,
+     * nombre y código; sin código queda el emoji.
+     */
+    private String weatherIcon(String[] w, int size) {
+        if (w.length < 3 || w[2] == null || !w[2].matches("[A-Z]+")) {
+            return w[0];
+        }
+        return "<img src=\"" + escape(properties.link("/mail/clima/" + w[2].toLowerCase(Locale.ROOT) + ".png"))
+                + "\" width=\"" + size + "\" height=\"" + size + "\" alt=\"" + escape(w[1])
+                + "\" style=\"display:block;border:0;width:" + size + "px;height:" + size + "px;\">";
     }
 
     /** "Sin diferencia", "Sobran $2.000", "Faltan $1.500". */

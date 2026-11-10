@@ -98,6 +98,7 @@ class DailyDigestIT extends IntegrationTest {
         assertThat(mail.senderName()).isEqualTo("Aska de XASKA");
         assertThat(mail.from("XASKA POS <no-responder@xaska.co>")).isEqualTo("Aska de XASKA <no-responder@xaska.co>");
         assertThat(mail.html()).contains("Tormenta").contains("Pronóstico para mañana")
+                .contains("/mail/clima/storm.png").contains("/mail/clima/sunny.png")
                 .contains("/app?aska=%C2%BFQu%C3%A9+pas%C3%B3+con+la+caja%3F");
         assertThat(mail.text()).contains("⛈️ Tormenta · $0").contains("Caja descuadrada: Faltan $2.000 en Caja 1.")
                 .contains("Ticket: $0").contains("⛈️ Caja: Tormenta").contains("☀️ Cobros y pagos: Soleado")

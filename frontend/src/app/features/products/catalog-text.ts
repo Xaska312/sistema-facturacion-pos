@@ -17,7 +17,8 @@ export interface CatalogEdit {
   unitCode: string;
   taxCode: string;
   cost: number;
-  price: number;
+  /** Nulo mientras no lo escriban (decisión 313: listas y cuadernos sin precios). */
+  price: number | null;
   /** Modo inventario: cantidad para el saldo inicial (null = no se carga). */
   quantity: number | null;
   stockNote: string | null;
@@ -66,11 +67,12 @@ export function priceFor(cost: number, marginPercent: number, taxRate: number, i
 /** Margen sobre el precio sin IVA (%), o null si no se puede calcular. */
 export function marginOf(edit: Pick<CatalogEdit, 'cost' | 'price' | 'taxCode'>, taxes: CatalogOption[],
                          includesTax: boolean): number | null {
-  if (!(edit.price > 0) || !(edit.cost >= 0)) {
+  const price = edit.price ?? 0;
+  if (!(price > 0) || !(edit.cost >= 0)) {
     return null;
   }
   const rate = rateOf(edit.taxCode, taxes);
-  const net = includesTax && rate > 0 ? edit.price / (1 + rate / 100) : edit.price;
+  const net = includesTax && rate > 0 ? price / (1 + rate / 100) : price;
   return Math.round(((net - edit.cost) / net) * 1000) / 10;
 }
 
@@ -88,7 +90,8 @@ export function asNew(edit: CatalogEdit, draft: CatalogDraft): CatalogEdit {
     category: '',
     unitCode: draft.units.some((u) => u.code === 'UND') ? 'UND' : draft.units[0]?.code ?? '',
     taxCode,
-    price: priceFor(edit.cost, draft.margin, rateOf(taxCode, draft.taxes), draft.pricesIncludeTax),
+    price: edit.cost > 0 ? priceFor(edit.cost, draft.margin, rateOf(taxCode, draft.taxes), draft.pricesIncludeTax)
+      : null,
   };
 }
 
@@ -110,8 +113,8 @@ export function rowProblem(edit: CatalogEdit): string | null {
       return 'Falta el nombre.';
     }
   }
-  if (!(edit.price > 0)) {
-    return 'Falta el precio.';
+  if (edit.price === null || !Number.isFinite(edit.price) || edit.price < 0) {
+    return 'Falta el precio: escríbelo (o 0 si aún no lo sabes).';
   }
   if (!(edit.cost >= 0)) {
     return 'El costo no es válido.';
@@ -135,7 +138,7 @@ export function toConfirmed(edits: CatalogEdit[]): CatalogConfirmed[] {
     unitCode: e.unitCode,
     taxCode: e.taxCode,
     cost: e.cost,
-    price: e.price,
+    price: e.price ?? 0,
     supplierCode: e.supplierCode,
     quantity: e.quantity !== null && e.quantity > 0 ? e.quantity : null,
   }));

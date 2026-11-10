@@ -76,4 +76,11 @@ describe('catalog-text (Cargar con Aska)', () => {
     expect(toConfirmed(edits)[1].quantity).toBe(12);
     expect(rowProblem({ ...edits[1], quantity: -1 })).toBe('La cantidad no es válida.');
   });
+
+  it('sin precio en la lista (decisión 313): pide escribirlo, pero acepta 0 a propósito', () => {
+    const e = { ...toEdits(draft())[1], selected: true, price: null };
+    expect(rowProblem(e)).toBe('Falta el precio: escríbelo (o 0 si aún no lo sabes).');
+    expect(rowProblem({ ...e, cost: 0, price: 0 })).toBeNull();
+    expect(marginOf({ cost: 0, price: null, taxCode: 'IVA19' }, taxes, true)).toBeNull();
+  });
 });

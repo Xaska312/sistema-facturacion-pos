@@ -109,9 +109,91 @@ export interface AiTeaser {
   canBuy: boolean;
 }
 
+/** "Invita y gana" (decisión 312). */
+export interface ReferralInvited {
+  tradeName: string;
+  status: 'PENDING' | 'QUALIFIED';
+  createdAt: string;
+  qualifiedAt: string | null;
+}
+
+export interface MyReferrals {
+  code: string;
+  link: string;
+  invited: number;
+  paid: number;
+  monthsEarned: number;
+  list: ReferralInvited[];
+}
+
+/** Aliados (contadores y distribuidores) y referidos en la Consola (decisión 312). */
+export type PartnerKind = 'ACCOUNTANT' | 'DISTRIBUTOR';
+
+export interface Partner {
+  id: string;
+  name: string;
+  kind: PartnerKind;
+  phone: string | null;
+  email: string | null;
+  payoutKey: string | null;
+  note: string | null;
+  active: boolean;
+  code: string | null;
+  referred: number;
+  paid: number;
+  commissionOwed: number;
+}
+
+export interface PartnerInput {
+  name: string;
+  kind: PartnerKind;
+  phone: string | null;
+  email: string | null;
+  payoutKey: string | null;
+  note: string | null;
+  active: boolean;
+}
+
+export interface ReferralRow {
+  referredTenantId: string;
+  referredName: string;
+  code: string;
+  referrerName: string | null;
+  partnerName: string | null;
+  partnerPayoutKey: string | null;
+  status: 'PENDING' | 'QUALIFIED';
+  createdAt: string;
+  qualifiedAt: string | null;
+  firstAmount: number | null;
+  commission: number | null;
+  paidAt: string | null;
+  paidReference: string | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class BillingApi {
   private readonly http = inject(HttpClient);
+
+  referrals(): Observable<MyReferrals> {
+    return this.http.get<MyReferrals>('/api/v1/billing/referrals');
+  }
+
+  adminPartners(): Observable<Partner[]> {
+    return this.http.get<Partner[]>('/api/v1/platform/partners');
+  }
+
+  savePartner(id: string | null, input: PartnerInput): Observable<Partner> {
+    return id ? this.http.put<Partner>(`/api/v1/platform/partners/${id}`, input)
+      : this.http.post<Partner>('/api/v1/platform/partners', input);
+  }
+
+  adminReferrals(): Observable<ReferralRow[]> {
+    return this.http.get<ReferralRow[]>('/api/v1/platform/referrals');
+  }
+
+  markCommissionPaid(tenantId: string, reference: string): Observable<ReferralRow> {
+    return this.http.post<ReferralRow>(`/api/v1/platform/referrals/${tenantId}/paid`, { reference });
+  }
 
   catalog(): Observable<BillingCatalog> {
     return this.http.get<BillingCatalog>('/api/v1/billing');

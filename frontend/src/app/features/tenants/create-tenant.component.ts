@@ -1,3 +1,4 @@
+import { clearReferral, normalizeReferral, readReferral } from '../billing/referral-code';
 import { HttpClient } from '@angular/common/http';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
@@ -123,6 +124,18 @@ export function isActivationCodeRequired(error: unknown): boolean {
             @if (activationCodeError()) {
               <small class="text-danger font-medium" id="start-error">{{ activationCodeError() }}</small>
             }
+            <!-- Decisión 312: código de invitación (llega en el enlace; se puede escribir). -->
+            <label class="flex flex-col gap-1">
+              <span class="text-sm font-medium">Código de invitación <span class="text-muted font-normal">(opcional)</span></span>
+              <input pInputText formControlName="referralCode" id="referralCode" maxlength="20" placeholder="ESQUIN-7KQ"
+                     class="uppercase" autocomplete="off" (input)="referralError.set(null)"
+                     [attr.aria-invalid]="referralError() ? true : null" />
+              @if (referralError()) {
+                <small class="text-danger font-medium">{{ referralError() }}</small>
+              } @else if (form.controls.referralCode.value.trim()) {
+                <small class="text-muted">Te invitaron: en la prueba gratis tienes XASKA IA incluida.</small>
+              }
+            </label>
             <div class="flex flex-col gap-2">
               <span id="type-label" class="text-sm font-medium">Tipo de negocio</span>
               <app-business-type-picker [value]="type()" labelledBy="type-label" (pick)="type.set($event.code)" />
@@ -184,7 +197,9 @@ export class CreateTenantComponent {
     legalName: ['', [Validators.required, Validators.maxLength(200)]],
     slug: ['', [Validators.required, Validators.pattern(/^[a-z][a-z0-9_]{2,40}$/)]],
     activationCode: ['', [Validators.maxLength(40)]],
+    referralCode: [readReferral(), [Validators.maxLength(20)]],
   });
+  readonly referralError = signal<string | null>(null);
 
   constructor() {
     this.http.get<{ trialDays: number; trialAvailable: boolean }>('/api/v1/tenants/signup-terms')
@@ -237,6 +252,8 @@ export class CreateTenantComponent {
     const value = this.form.getRawValue();
     const mode = this.mode();
     const code = mode === 'code' ? value.activationCode.trim() : '';
+    const referral = normalizeReferral(value.referralCode);
+    this.referralError.set(null);
     const payload: CreateTenantRequest = {
       tradeName: value.tradeName,
       legalName: value.legalName,
@@ -244,6 +261,7 @@ export class CreateTenantComponent {
       businessType: this.type(),
       ...(code ? { activationCode: code } : {}),
       ...(mode === 'pay' ? { payNow: true } : {}),
+      ...(referral ? { referralCode: referral } : {}),
     };
 
     this.auth.createTenant(payload).subscribe({
@@ -252,6 +270,7 @@ export class CreateTenantComponent {
           next: () => {
             const annual = this.startPlan?.annual === true;
             clearStartPlan();
+            clearReferral();
             void (mode === 'pay'
               ? this.router.navigate(['/app/planes'], { queryParams: { plan: this.payPlan(), ciclo: annual ? 'anual' : 'mensual' } })
               : this.router.navigate(['/app']));
@@ -263,6 +282,13 @@ export class CreateTenantComponent {
         if (isEmailNotVerified(err)) {
           // La sesión decía "confirmado" pero el servidor no: refresca la cuenta para mostrar el aviso.
           this.auth.reloadUser().subscribe();
+          return;
+        }
+        if (referral && isUnprocessable(err) && /invitaci/i.test(problemMessage(err))) {
+          // Decisión 312: el código de invitación no sirve; el aviso va junto al campo.
+          this.referralError.set(problemMessage(err));
+          this.step.set(1);
+          setTimeout(() => document.getElementById('referralCode')?.focus());
           return;
         }
         if (isActivationCodeRequired(err) || (code !== '' && isUnprocessable(err))) {

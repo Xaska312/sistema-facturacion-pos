@@ -41,3 +41,9 @@ export function saleMessage(sale: Sale): string {
 export function saleWhatsAppLink(sale: Sale): string {
   return `https://wa.me/?text=${encodeURIComponent(saleMessage(sale))}`;
 }
+
+/** Decisión 315: el recibo para la imagen: el nombre del negocio arriba y el resto del mensaje debajo. */
+export function saleTicketImage(sale: Sale): { title: string; lines: string[] } {
+  const lines = saleMessage(sale).split('\n');
+  return { title: sale.receipt.businessName || 'Recibo', lines };
+}

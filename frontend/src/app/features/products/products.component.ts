@@ -97,6 +97,10 @@ import { MANUAL_PRODUCTS_TRIGGER } from '../ai/aska-nudge';
           <p-button [label]="row.active ? 'Desactivar' : 'Activar'" size="small" [text]="true"
                     [icon]="row.active ? 'pi pi-ban' : 'pi pi-check-circle'"
                     [severity]="row.active ? 'danger' : 'success'" (onClick)="toggle(row)" />
+          @if (!row.modelId) {
+            <p-button label="Eliminar" icon="pi pi-trash" size="small" [text]="true" severity="danger"
+                      (onClick)="remove(row)" />
+          }
         }
       </ng-template>
     </app-data-table>
@@ -192,6 +196,18 @@ export class ProductsComponent implements OnInit {
 
   open(product: Product): void {
     void this.router.navigate(['/app/productos', product.id]);
+  }
+
+  /** Decisión 314: lo oculta para siempre; las ventas y reportes anteriores lo conservan. */
+  remove(product: Product): void {
+    this.confirm.ask({
+      header: 'Eliminar producto',
+      message: `¿Eliminar ${product.name}? Ya no aparecerá en ninguna lista ni se podrá vender; las ventas y reportes `
+        + 'anteriores lo conservan. Su SKU y su código de barras quedan libres. No se puede deshacer.',
+      acceptLabel: 'Eliminar producto',
+      danger: true,
+      accept: () => this.api.deleteProduct(product.id).subscribe(() => this.load(this.query)),
+    });
   }
 
   toggle(product: Product): void {

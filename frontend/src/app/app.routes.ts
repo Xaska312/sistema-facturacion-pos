@@ -110,6 +110,12 @@ export const routes: Routes = [
           import('./features/platform/platform-billing.component').then((m) => m.PlatformBillingComponent),
       },
       {
+        path: 'referidos',
+        title: 'Plataforma: referidos y aliados',
+        loadComponent: () =>
+          import('./features/platform/platform-referrals.component').then((m) => m.PlatformReferralsComponent),
+      },
+      {
         path: 'seguridad',
         title: 'Plataforma: eventos de seguridad',
         loadComponent: () =>

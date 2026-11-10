@@ -1,3 +1,4 @@
+import { focusOnDesktop } from '../../shared/touch';
 import { Component, DestroyRef, inject, input, output, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
@@ -438,8 +439,7 @@ export class CartPanelComponent {
     setTimeout(() => {
       // En una línea de precio libre, lo primero que se corrige es el precio.
       const input = (document.getElementById('edit-price') ?? document.getElementById('edit-quantity')) as HTMLInputElement | null;
-      input?.focus();
-      input?.select();
+      focusOnDesktop(input, true);
     }, 0);
   }
 

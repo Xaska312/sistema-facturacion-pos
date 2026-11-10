@@ -205,6 +205,7 @@ export const MANUAL: readonly ManualChapter[] = [
           'La primera vez elige el ancho del papel (80 mm o 58 mm); el navegador lo recuerda en ese equipo.',
           'Para reimprimir una venta anterior, búscala en Ventas, ábrela y toca "Reimprimir".',
           'Con "WhatsApp" le envías al cliente el recibo en texto (productos, total y cómo pagó): eliges el contacto en WhatsApp.',
+          'Con "Imagen" el recibo sale como una foto con letra pareja y alineada (no depende de la letra del celular del cliente): en el celular se abre el menú de compartir para elegir WhatsApp; en el computador se descarga el PNG para adjuntarlo.',
         ],
         tips: [
           'El texto del pie del tiquete (horarios, redes sociales…) se cambia en Configuración → Ajustes.',
@@ -644,7 +645,9 @@ export const MANUAL: readonly ManualChapter[] = [
         tips: [
           'En "Más opciones" están las presentaciones (vender por caja de 24, con su código y precio) y los precios de otras listas.',
           'En Ajustes indica si tus precios ya incluyen el IVA ("Los precios incluyen impuestos").',
-          'Desactivar un producto lo oculta del punto de venta sin borrar su historia.',
+          'Desactivar un producto lo oculta del punto de venta sin borrar su historia; puedes volver a activarlo. '
+            + '"Eliminar" lo quita para siempre de las listas y libera su SKU y su código de barras; las ventas '
+            + 'anteriores lo conservan.',
         ],
         who: 'Propietario, Administrador y Bodeguero.',
       },
@@ -1173,6 +1176,8 @@ export const MANUAL: readonly ManualChapter[] = [
         ],
         tips: [
           'Responde sobre ventas, productos, inventario y vencimientos, fiados, cuentas por pagar y cajas.',
+          'En la prueba gratis de 14 días, arriba verás cuántos días te quedan: tócalo para ver los tres retos (leer una '
+            + 'factura, preguntar qué se agota y cargar tu cuaderno), que se marcan solos al hacerlos.',
           'Cada usuario solo recibe respuestas de lo que su rol le deja ver: un cajero no ve la utilidad del negocio.',
           'Debajo de cada respuesta dice qué consultó. Revisa en Reportes las cifras importantes antes de decidir.',
           'La conversación se borra al cerrar el panel: XASKA no guarda lo que preguntas, solo cuenta cuántas preguntas '
@@ -1201,6 +1206,24 @@ export const MANUAL: readonly ManualChapter[] = [
             + 'cargó, las preguntas y el tiempo que te ahorró (también en Inicio la primera semana del mes).',
         ],
         who: 'El propietario y quien él elija, en negocios con el adicional XASKA IA.',
+      },
+      {
+        id: 'invita-y-gana',
+        title: 'Invita y gana: un mes de XASKA IA por cada negocio',
+        summary: 'Comparte tu código con otros negocios. Cuando uno entre con él y pague su primer mes, te regalamos un '
+          + 'mes de XASKA IA. Tu invitado prueba 14 días gratis con la IA incluida.',
+        steps: [
+          'Entra a Ajustes → Planes y pagos y busca "Invita y gana": ahí está tu código.',
+          'Toca "Compartir por WhatsApp" (el mensaje ya va con tu enlace) o "Copiar enlace".',
+          'Tu invitado se registra con el enlace; si lo escribe a mano, va en "Código de invitación" al crear su negocio.',
+          'Cuando pague su primer mes, te llega un correo y tu mes de XASKA IA queda activo.',
+        ],
+        tips: [
+          'No hay límite: cada negocio que pague te da otro mes, que se suma al que ya tengas.',
+          'Abajo ves a quién invitaste y quién ya pagó.',
+          'Tu propio código no sirve para crear otro negocio tuyo.',
+        ],
+        who: 'El propietario del negocio.',
       },
       {
         id: 'planes-y-pagos',
@@ -1234,7 +1257,10 @@ export const MANUAL: readonly ManualChapter[] = [
         ],
         tips: [
           '¿Tu inventario está en un cuaderno? Elige "Mi inventario" (o en Existencias, "Cargar inventario con Aska"), '
-            + 'tómale foto a cada hoja (hasta 10) y elige la sede: los productos quedan creados con su cantidad.',
+            + 'tómale foto a cada hoja (hasta 10) o sube un Word con las fotos, y elige la sede. Si el Word trae más de '
+            + '10, Aska los lee por tandas: guardas y tocas "Seguir con las fotos 11 a 20".',
+          'Si la lista o el cuaderno no trae precios, Aska saca igual los productos: escribe el precio de cada uno en '
+            + 'la revisión (o 0 si aún no lo sabes).',
           'Los productos que ya tienes conservan su margen: si el costo sube, el precio sube igual. Si baja, el precio se queda.',
           'Si el producto ya tiene movimientos, su costo lo pone el inventario con la próxima compra; aquí se ajusta el precio.',
           'Con el proveedor elegido, Aska recuerda sus códigos para la próxima lista y la próxima factura.',

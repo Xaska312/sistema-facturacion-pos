@@ -72,6 +72,10 @@ public class Product extends AuditableEntity {
     @Column(nullable = false)
     private boolean active;
 
+    /** Eliminado (decisión 314): oculto para siempre; el historial lo conserva. */
+    @Column(name = "deleted_at")
+    private java.time.Instant deletedAt;
+
     /** Modelo al que pertenece esta variante (talla × color, fase 8d); {@code null} en un producto normal. */
     @Column(name = "model_id")
     private UUID modelId;
@@ -188,6 +192,19 @@ public class Product extends AuditableEntity {
 
     public void setActive(boolean active) {
         this.active = active;
+    }
+
+    public boolean isDeleted() {
+        return deletedAt != null;
+    }
+
+    /** Lo oculta para siempre y libera su SKU (decisión 314). */
+    public void markDeleted(String freedSku, java.time.Instant at) {
+        this.active = false;
+        this.sku = freedSku;
+        this.deletedAt = at;
+        // Sus códigos de barras quedan libres para otro producto.
+        barcodes.clear();
     }
 
     /** Costo promedio ponderado calculado por el inventario. */

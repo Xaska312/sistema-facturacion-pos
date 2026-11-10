@@ -68,10 +68,13 @@ public class SubscriptionService implements SubscriptionApi {
     private final Mailer mailer;
     private final MailTemplates templates;
     private final SecurityEventLogger securityEvents;
+    private final org.springframework.context.ApplicationEventPublisher events;
     private final ConcurrentHashMap<UUID, Cached> cache = new ConcurrentHashMap<>();
 
     public SubscriptionService(DataSource dataSource, SubscriptionProperties properties, ActivationCodeService codes,
-                               Mailer mailer, MailTemplates templates, SecurityEventLogger securityEvents) {
+                               Mailer mailer, MailTemplates templates, SecurityEventLogger securityEvents,
+                               org.springframework.context.ApplicationEventPublisher events) {
+        this.events = events;
         this.jdbc = new JdbcTemplate(dataSource);
         this.properties = properties;
         this.codes = codes;
@@ -454,6 +457,9 @@ public class SubscriptionService implements SubscriptionApi {
                 c.method().trim(), blankToNull(c.reference()), blankToNull(c.notes()), Timestamp.from(start),
                 Timestamp.from(end), adminId, Timestamp.from(now));
         evict(tenantId);
+        if (c.amount() != null && c.amount().signum() > 0) {
+            events.publishEvent(new SubscriptionPaid(tenantId, c.amount()));
+        }
         Current updated = load(tenantId).orElseThrow();
         mailer.send(templates.subscriptionPaid(updated.ownerEmail(), updated.ownerName(), updated.tradeName(),
                 updated.plan().name(), end));
@@ -745,7 +751,7 @@ public class SubscriptionService implements SubscriptionApi {
         return (seconds + 86_399) / 86_400;
     }
 
-    private static Instant plusMonths(Instant from, int months) {
+    static Instant plusMonths(Instant from, int months) {
         return from.atZone(BOGOTA).plusMonths(months).toInstant();
     }
 

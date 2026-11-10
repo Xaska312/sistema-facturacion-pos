@@ -118,6 +118,10 @@ class BillingIT extends IntegrationTest {
         api.getWith(s, "/api/v1/ai/teaser").andExpect(jsonPath("$.show").value(false));
         api.getWith(s, "/api/v1/ai/moments").andExpect(jsonPath("$.hasAi").value(true))
                 .andExpect(jsonPath("$.trialAvailable").value(false));
+        // Decisión 311: la bienvenida de la prueba, con los días y los retos sin hacer.
+        api.getWith(s, "/api/v1/ai/trial").andExpect(status().isOk()).andExpect(jsonPath("$.daysLeft").value(14))
+                .andExpect(jsonPath("$.scanned").value(false)).andExpect(jsonPath("$.asked").value(false))
+                .andExpect(jsonPath("$.loaded").value(false));
 
         Session admin = platformAdmin();
         api.putWith(admin, "/api/v1/platform/billing/breb",

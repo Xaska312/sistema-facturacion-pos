@@ -161,6 +161,14 @@ public class ProductController {
         return products.setActive(id, false);
     }
 
+    /** Decisión 314: oculto para siempre; el historial lo conserva. */
+    @org.springframework.web.bind.annotation.DeleteMapping("/api/v1/products/{id}")
+    @org.springframework.web.bind.annotation.ResponseStatus(org.springframework.http.HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasAuthority('products:manage')")
+    public void delete(@PathVariable UUID id) {
+        products.delete(id);
+    }
+
     /** Siguiente código EAN-13 interno (prefijo 29) para asignar a un producto. */
     @PostMapping("/api/v1/barcodes/internal")
     @PreAuthorize("hasAuthority('products:manage')")

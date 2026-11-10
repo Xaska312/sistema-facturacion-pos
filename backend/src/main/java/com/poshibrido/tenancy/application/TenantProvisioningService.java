@@ -52,12 +52,14 @@ public class TenantProvisioningService {
     private final AuditLogger audit;
     private final boolean requireEmailVerification;
     private final SubscriptionApi subscriptions;
+    private final com.poshibrido.subscription.application.ReferralService referrals;
 
     public TenantProvisioningService(TenantRepository tenants, TenantSchemaManager schemaManager,
                                      TenantDataSeeder seeder, MembershipApi memberships, UserApi users,
                                      TenantDirectory directory, PlatformTransactionManager transactionManager,
                                      SecurityEventLogger securityEvents, AuditLogger audit,
                                      SubscriptionApi subscriptions,
+                                     com.poshibrido.subscription.application.ReferralService referrals,
                                      @Value("${app.auth.require-email-verification:true}")
                                      boolean requireEmailVerification) {
         this.tenants = tenants;
@@ -71,6 +73,7 @@ public class TenantProvisioningService {
         this.audit = audit;
         this.requireEmailVerification = requireEmailVerification;
         this.subscriptions = subscriptions;
+        this.referrals = referrals;
     }
 
     public TenantSummary create(UUID ownerId, CreateTenantCommand command) {
@@ -98,6 +101,8 @@ public class TenantProvisioningService {
                     command.tradeName().trim(), command.businessType(), ownerId));
             // Prueba gratis o código de activación; si no hay ninguno de los dos, 422 y no se crea nada.
             subscriptions.startForNewTenant(tenant.getId(), ownerId, command.activationCode(), command.payNow());
+            // Decisión 312: entró con un código de invitación (de otro negocio o de un aliado).
+            referrals.attach(tenant.getId(), ownerId, command.referralCode());
             return tenant;
         });
         return provision(created.getId(), owner);

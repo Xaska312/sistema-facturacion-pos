@@ -21,7 +21,8 @@ import { receiptBytes, saleDate } from '../../core/printing/escpos';
 import { printableLogo } from '../../core/printing/printable-logo';
 import { PrintAgentService } from '../../core/printing/print-agent.service';
 import { AuthService } from '../../core/auth/auth.service';
-import { saleWhatsAppLink } from './sale-text';
+import { saleTicketImage, saleWhatsAppLink } from './sale-text';
+import { shareTicketPng, ticketPng } from '../../shared/ticket-image';
 import { permissionFlag } from '../../core/auth/permission-flag';
 import { LatestRequest } from '../../shared/latest-request';
 import { formatCop } from '../../shared/money';
@@ -91,6 +92,8 @@ const SALE_STATUS: Record<SaleStatus, StatusKey> = { COMPLETED: 'completed', VOI
           <a pButton label="WhatsApp" icon="pi pi-whatsapp" severity="secondary" [outlined]="true" target="_blank"
              rel="noopener noreferrer" [href]="saleWhatsApp(sale)"
              aria-label="Enviar el recibo por WhatsApp (abre WhatsApp)"></a>
+            <p-button label="Imagen" icon="pi pi-image" severity="secondary" [outlined]="true" styleClass="min-h-11"
+                      ariaLabel="Compartir el recibo como imagen" (onClick)="shareImage(sale)" />
         }
         <p-button label="Reimprimir" severity="secondary" (onClick)="print()" />
         <p-button label="Cerrar" (onClick)="detailOpen = false" />
@@ -202,6 +205,20 @@ export class SalesComponent implements OnInit {
       return;
     }
     printReceipt();
+  }
+
+  /** Decisión 315: el recibo como imagen (igual en todos los teléfonos y sin poder editarse). */
+  protected async shareImage(sale: Sale): Promise<void> {
+    const blob = await ticketPng(saleTicketImage(sale));
+    if (!blob) {
+      this.messages.add({ severity: 'warn', summary: 'Imagen', detail: 'Este navegador no pudo crear la imagen.', life: 5000 });
+      return;
+    }
+    const result = await shareTicketPng(blob, `tiquete-${sale.documentNumber}.png`);
+    if (result === 'downloaded') {
+      this.messages.add({ severity: 'success', summary: 'Imagen descargada',
+        detail: 'Adjúntala en WhatsApp o donde la necesites.', life: 5000 });
+    }
   }
 
   /** Recibo en texto para enviarlo por WhatsApp (decisión 261). */
