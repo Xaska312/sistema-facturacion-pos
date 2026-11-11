@@ -674,3 +674,10 @@ Medio de pago `WITHHOLDING` ("Retención", no mueve la caja). En `POST /sales`, 
 | GET | `/withholdings/summary` (mismos filtros) | `finance:read` | `{total, count, pendingCertificates, pendingTotal, byType[], byCustomer[{customerId, name, document, total, count, pendingCertificates, pendingTotal}]}`; sin las de ventas anuladas |
 | GET | `/withholdings.csv` | `finance:read` | Para Excel. Auditoría `REPORT_EXPORTED` |
 | POST | `/withholdings/certificate` | `finance:manage` | `{ids[], received, note?}` (hasta 500). 422 con una reversa o una de venta anulada |
+
+## Estado de resultados (Finanzas parte C, decisión 323)
+
+| Método | Ruta | Permiso | Notas |
+|---|---|---|---|
+| GET | `/finance/income-statement?from=&to=&branchId=` | `finance:read` | Sin fechas: el mes actual hasta hoy (máximo 400 días). `{branchId, branchName, current, previous, lastYear, unpaidRecurring{count, total}}`; cada periodo trae `{from, to, salesCount, salesTotal, tax, netSales, cost, grossProfit, grossMargin, expenses[{categoryId, name, amount}], expensesTotal, operatingProfit, operatingMargin, withheld, hasData}`. `previous` y `lastYear` son nulos si no tienen datos; `withheld` es nulo con `branchId` |
+| GET | `/finance/income-statement.csv` (mismos parámetros) | `finance:read` | Para Excel. Auditoría `REPORT_EXPORTED` |

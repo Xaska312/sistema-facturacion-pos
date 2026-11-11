@@ -118,6 +118,16 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     ],
     terms: ['costo-promedio'],
   },
+  '/app/estado-de-resultados': {
+    manual: 'estado-de-resultados',
+    title: 'Estado de resultados',
+    tips: [
+      'Ventas sin IVA, menos lo que te costó la mercancía, menos tus gastos: eso es lo que ganaste.',
+      'Compara con el periodo anterior y con el año pasado; en verde lo que mejoró y en rojo lo que empeoró.',
+      'Para que el resultado sea real, registra todos tus gastos (también los de banco y Nequi) en Gastos.',
+      '"PDF" abre la hoja para imprimir o guardar como PDF; "Excel" baja la tabla.',
+    ],
+  },
   '/app/retenciones': {
     manual: 'retenciones',
     title: 'Retenciones',

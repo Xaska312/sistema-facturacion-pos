@@ -530,6 +530,14 @@ export const routes: Routes = [
         loadComponent: () => import('./features/purchases/payables.component').then((m) => m.PayablesComponent),
       },
       {
+        path: 'estado-de-resultados',
+        title: 'Estado de resultados',
+        canActivate: [permissionGuard],
+        data: { permission: 'finance:read' },
+        loadComponent: () =>
+          import('./features/finance/income-statement.component').then((m) => m.IncomeStatementComponent),
+      },
+      {
         path: 'retenciones',
         title: 'Retenciones',
         canActivate: [permissionGuard],

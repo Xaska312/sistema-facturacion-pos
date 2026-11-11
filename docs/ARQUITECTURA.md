@@ -126,6 +126,9 @@ Los gastos fijos (decisión 321) no guardan lo pendiente: `RecurringSchedule` ca
 Las retenciones (decisión 322) son una línea de pago con el medio "Retención". Ventas y pedidos le piden a `finance`, por
 `WithholdingApi`, que valide el detalle y lo guarde; `finance` no conoce ventas ni pedidos más que por SQL de lectura.
 
+El estado de resultados (decisión 323) lee las ventas con SQL, como `reporting`, y suma los gastos y las retenciones
+con los servicios de `finance`.
+
 ## Frontend: sistema de diseño
 Los colores viven solo en `frontend/src/styles.css` como tokens CSS (`--surface`, `--text`, `--brand`, `--success`,
 `--warning`, `--danger`…) con su versión oscura bajo `.app-dark`. Tailwind los expone con `@theme`

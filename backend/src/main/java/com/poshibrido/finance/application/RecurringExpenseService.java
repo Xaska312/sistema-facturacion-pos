@@ -188,6 +188,33 @@ public class RecurringExpenseService {
         return new DueSummary(items.size(), overdue, total, items);
     }
 
+    /** Fechas de los gastos fijos prendidos entre {@code from} y {@code to} que no se han pagado ni saltado. */
+    @Transactional(readOnly = true)
+    public DueSummary unpaidBetween(LocalDate from, LocalDate to) {
+        LocalDate today = LocalDate.now(expenses.zone());
+        Set<String> done = new HashSet<>();
+        for (Object row : em.createNativeQuery("""
+                SELECT o.recurring_id, o.due_date FROM recurring_expense_occurrences o
+                LEFT JOIN expenses e ON e.id = o.expense_id
+                WHERE o.due_date BETWEEN ?1 AND ?2 AND (o.status = 'SKIPPED' OR e.status = 'ACTIVE')""")
+                .setParameter(1, Date.valueOf(from)).setParameter(2, Date.valueOf(to)).getResultList()) {
+            Object[] r = (Object[]) row;
+            done.add(r[0] + "|" + toDate(r[1]));
+        }
+        List<DueView> items = new ArrayList<>();
+        for (Object row : em.createNativeQuery(SELECT + " WHERE r.active").getResultList()) {
+            RecurringView r = view((Object[]) row, today);
+            for (LocalDate date : schedule(r).between(from, to)) {
+                if (!done.contains(r.id() + "|" + date)) {
+                    items.add(dueView(r, date, today));
+                }
+            }
+        }
+        items.sort(Comparator.comparing(DueView::dueDate));
+        BigDecimal total = items.stream().map(DueView::amount).reduce(BigDecimal.ZERO, BigDecimal::add);
+        return new DueSummary(items.size(), (int) items.stream().filter(DueView::overdue).count(), total, items);
+    }
+
     /**
      * Registra el gasto de una fecha con lo sugerido y lo que se cambie. Si la fecha ya se pagó con un gasto que se
      * anuló, vuelve a pagarse; con la misma Idempotency-Key, repetir devuelve el mismo gasto.

@@ -1211,6 +1211,37 @@ export const MANUAL: readonly ManualChapter[] = [
           + 'corregir y anular gastos"). Quien opera una caja registra el gasto en efectivo de su caja.',
       },
       {
+        id: 'estado-de-resultados',
+        title: 'Estado de resultados: cuánto ganaste',
+        summary: 'Junta lo que vendiste, lo que te costó y lo que gastaste para decirte si ganaste o perdiste en el mes '
+          + '(o en el rango que elijas), comparado con el mes anterior y con el mismo mes del año pasado.',
+        table: {
+          headers: ['Renglón', 'Qué es'],
+          rows: [
+            ['Ventas', 'Lo que vendiste, sin el IVA (el IVA es de la DIAN). Las ventas anuladas no cuentan.'],
+            ['Costo de lo vendido', 'Lo que te costó la mercancía que vendiste, con el costo promedio de cada producto.'],
+            ['Utilidad bruta', 'Ventas menos costo: lo que te deja vender, antes de pagar los gastos.'],
+            ['Gastos', 'Lo registrado en Gastos en el periodo, por categoría (también los sin clasificar).'],
+            ['Utilidad operativa', 'Utilidad bruta menos gastos: lo que ganaste (o perdiste).'],
+          ],
+        },
+        steps: [
+          'Entra a Estado de resultados (menú Reportes). Por defecto muestra el mes actual; elige "Mes anterior" o un '
+            + 'rango, y la sede si tienes varias.',
+          'Arriba ves lo que vendiste, lo que te quedó y lo que ganaste; debajo, la explicación en palabras.',
+          'En la tabla, cada renglón con la variación frente al periodo anterior y al año pasado (si hay datos).',
+          '"PDF" abre la hoja carta con tu logo para imprimir o guardar como PDF; "Excel" baja la tabla.',
+        ],
+        tips: [
+          'El IVA cobrado y las retenciones que te hicieron salen aparte: no son ingresos ni gastos del negocio.',
+          'Si hay gastos fijos del periodo sin pagar, sale un aviso con cuánto falta; no se restan hasta que los pagues.',
+          'Si un producto no tiene costo, su costo cuenta como cero y la utilidad sale más alta: revisa los costos en '
+            + 'Productos.',
+          'Es una guía con lo registrado en XASKA; no reemplaza los estados financieros de tu contador.',
+        ],
+        who: 'Propietario, Administrador y Contador (permiso "Ver las retenciones (y las finanzas del negocio)").',
+      },
+      {
         id: 'retenciones',
         title: 'Retenciones: cuando el cliente te retiene al pagar',
         summary: 'Algunas empresas (por ejemplo, una constructora que te compra) te pagan menos porque retienen una parte '
