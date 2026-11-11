@@ -132,6 +132,10 @@ con los servicios de `finance`.
 El tablero de Finanzas (decisión 324) no guarda nada: junta el estado de resultados, el flujo de las cajas, los saldos
 de fiados, pedidos y proveedores (por sus servicios de consulta) y calcula el punto de equilibrio en el servidor.
 
+Aska usa las finanzas (decisión 325) desde `ai`, que depende de los servicios de `finance` (como ya dependía de
+`reporting`, `credit` o `purchasing`); `finance` no conoce la IA. Leer un recibo no guarda nada: el formulario del gasto
+llama luego a la API de gastos de siempre.
+
 ## Frontend: sistema de diseño
 Los colores viven solo en `frontend/src/styles.css` como tokens CSS (`--surface`, `--text`, `--brand`, `--success`,
 `--warning`, `--danger`…) con su versión oscura bajo `.app-dark`. Tailwind los expone con `@theme`

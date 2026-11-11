@@ -155,6 +155,7 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
       'Los egresos de caja de antes salen "Sin clasificar": ponles categoría con "Clasificar".',
       'Arriendo, nómina, internet: créalos en "Gastos fijos" y aparecen en "Por pagar" cuando toca.',
       'La mercancía que compras a proveedores va en Compras, no aquí.',
+      'Con XASKA IA, en "Registrar gasto" toca "Leer con Aska": le tomas foto al recibo y se llena solo.',
     ],
   },
   '/app/cuentas-por-pagar': {

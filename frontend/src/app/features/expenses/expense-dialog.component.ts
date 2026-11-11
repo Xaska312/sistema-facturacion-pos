@@ -1,8 +1,10 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, model, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { InputTextModule } from 'primeng/inputtext';
 import { Observable, catchError, from, of, switchMap, tap } from 'rxjs';
+import { AiApi, AskUsage } from '../../core/api/ai.api';
 import { Branch, Party, PaymentMethod } from '../../core/api/api.models';
 import { CashApi } from '../../core/api/cash.api';
 import { Expense, ExpenseCategory, ExpensesApi, RecurringDue, RecurringExpensesApi } from '../../core/api/expenses.api';
@@ -10,6 +12,7 @@ import { OrganizationApi } from '../../core/api/organization.api';
 import { PartiesApi } from '../../core/api/parties.api';
 import { newIdempotencyKey } from '../../core/api/sales.api';
 import { permissionFlag } from '../../core/auth/permission-flag';
+import { problemMessage } from '../../core/errors/problem';
 import { FormDialogComponent } from '../../shared/forms/form-dialog.component';
 import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
 import { shrinkPhoto } from '../../shared/image-shrink';
@@ -17,6 +20,7 @@ import { formatCop } from '../../shared/money';
 import { methodLabel } from '../pos/pos-labels';
 import { businessToday, isoDate } from '../reports/periods';
 import { documentProblem, expenseMethods, expenseNumber, expenseProblem } from './expense-text';
+import { receiptFill, receiptsLeft } from './receipt-read-text';
 import { dueLabel } from './recurring-text';
 
 type Mode = 'new' | 'cash' | 'edit' | 'classify' | 'recurring';
@@ -31,6 +35,8 @@ type Mode = 'new' | 'cash' | 'edit' | 'classify' | 'recurring';
  *   <li>{@code openRecurring}: paga una fecha de un gasto fijo (decisión 321) con lo sugerido, que se puede cambiar.</li>
  * </ul>
  * La clave de idempotencia se crea al abrir: reintentar no registra dos gastos.
+ * Con XASKA IA, "Leer con Aska" (decisión 325) llena el formulario con la foto o el PDF del recibo, que queda como
+ * soporte; la persona revisa y guarda.
  */
 @Component({
   selector: 'app-expense-dialog',
@@ -42,6 +48,30 @@ type Mode = 'new' | 'cash' | 'edit' | 'classify' | 'recurring';
       @if (due(); as d) {
         <p class="text-sm"><strong>{{ d.name }}</strong> · {{ d.categoryName }}
           <span class="block text-xs" [class.text-danger]="d.overdue" [class.text-muted]="!d.overdue">{{ dueText(d) }}</span></p>
+      }
+      @if (canRead()) {
+        <div class="flex flex-col gap-2 rounded-xl border border-brand bg-brand-soft text-brand-soft-fg p-3">
+          <div class="flex flex-wrap items-center gap-2">
+            <label class="inline-flex items-center gap-2 min-h-11 px-3 rounded-lg bg-brand text-brand-contrast hover:bg-brand-hover font-semibold text-sm"
+                   [class.cursor-pointer]="!reading()" [class.opacity-60]="reading()">
+              <i class="pi" [class.pi-sparkles]="!reading()" [class.pi-spin]="reading()" [class.pi-spinner]="reading()"
+                 aria-hidden="true"></i>
+              {{ reading() ? 'Aska está leyendo el recibo…' : 'Leer con Aska' }}
+              <input type="file" class="sr-only" accept="image/jpeg,image/png,image/webp,application/pdf"
+                     [disabled]="reading()" (change)="readReceipt($event)" />
+            </label>
+            <span class="text-xs">Tómale foto al recibo y Aska llena el gasto.
+              @if (readUsage(); as u) { {{ left(u) }} }</span>
+          </div>
+          @if (readError()) {
+            <small class="text-xs text-danger" role="alert">{{ readError() }}</small>
+          }
+          @if (readNotices().length) {
+            <ul class="text-xs list-disc pl-4" role="status">
+              @for (n of readNotices(); track n) { <li>{{ n }}</li> }
+            </ul>
+          }
+        </div>
       }
       @if (takesAmount()) {
         <div class="flex flex-col gap-1">
@@ -159,7 +189,9 @@ export class ExpenseDialogComponent {
   private readonly organization = inject(OrganizationApi);
   private readonly parties = inject(PartiesApi);
   private readonly messages = inject(MessageService);
+  private readonly ai = inject(AiApi);
   private readonly canManage = permissionFlag('expenses:manage');
+  private readonly canAsk = permissionFlag('ai:ask');
   protected readonly canPickSupplier = permissionFlag('parties:read');
 
   readonly visible = model(false);
@@ -174,6 +206,11 @@ export class ExpenseDialogComponent {
   protected readonly suppliers = signal<Party[]>([]);
   protected readonly file = signal<File | null>(null);
   protected readonly fileError = signal<string | null>(null);
+  /** Leer con Aska (decisión 325): tope del mes (null mientras no se sabe o sin XASKA IA), estado y avisos. */
+  protected readonly readUsage = signal<AskUsage | null>(null);
+  protected readonly reading = signal(false);
+  protected readonly readError = signal<string | null>(null);
+  protected readonly readNotices = signal<string[]>([]);
   /** Sin expenses:manage solo se registra en efectivo desde la caja. */
   protected readonly methods = computed(() => expenseMethods(this.allMethods(), !this.canManage()));
 
@@ -239,6 +276,9 @@ export class ExpenseDialogComponent {
     this.note = expense?.note ?? '';
     this.file.set(null);
     this.fileError.set(null);
+    this.reading.set(false);
+    this.readError.set(null);
+    this.readNotices.set([]);
     this.idempotencyKey = newIdempotencyKey('gasto');
     this.load();
     this.visible.set(true);
@@ -246,6 +286,9 @@ export class ExpenseDialogComponent {
 
   /** Categorías cada vez (pueden haber cambiado); medios, sedes y proveedores una sola vez. */
   private load(): void {
+    if (this.canAsk() && (this.mode() === 'new' || this.mode() === 'cash')) {
+      this.ai.expenseReceiptUsage().subscribe({ next: (u) => this.readUsage.set(u), error: () => this.readUsage.set(null) });
+    }
     this.api.categories().subscribe((list) => {
       // Un gasto con una categoría apagada la conserva al corregirlo.
       const current = this.expense();
@@ -285,6 +328,56 @@ export class ExpenseDialogComponent {
     const list = this.methods();
     const wanted = this.mode() === 'cash' ? list.find((m) => m.affectsCash) : list.find((m) => !m.affectsCash);
     return (wanted ?? list[0])?.id ?? '';
+  }
+
+  /** El botón sale en un gasto nuevo (o de la caja) si el negocio tiene XASKA IA con recibos en su plan. */
+  protected canRead(): boolean {
+    const u = this.readUsage();
+    return (this.mode() === 'new' || this.mode() === 'cash') && !!u && u.available && u.limit > 0;
+  }
+
+  protected left(u: AskUsage): string {
+    return receiptsLeft(u.limit, u.used);
+  }
+
+  /** Aska lee el recibo, llena lo que vio y el archivo queda como soporte del gasto. */
+  protected readReceipt(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const picked = input.files?.[0] ?? null;
+    input.value = '';
+    if (!picked || this.reading()) {
+      return;
+    }
+    const problem = documentProblem(picked);
+    if (problem) {
+      this.readError.set(problem);
+      return;
+    }
+    this.reading.set(true);
+    this.readError.set(null);
+    this.readNotices.set([]);
+    from(shrinkPhoto(picked)).pipe(switchMap((small) => this.ai.readExpenseReceipt(small))).subscribe({
+      next: (read) => {
+        this.reading.set(false);
+        this.readUsage.set(read.usage);
+        const fill = receiptFill(read, { fromCash: this.mode() === 'cash', outside: this.outsideCash(),
+          supplierIds: this.suppliers().map((s) => s.id), note: this.note, today: this.today });
+        if (fill.amount !== undefined) { this.amount = fill.amount; }
+        if (fill.categoryId !== undefined) { this.categoryId = fill.categoryId; }
+        if (fill.date !== undefined) { this.date = fill.date; }
+        if (fill.supplierId !== undefined) { this.supplierId = fill.supplierId; }
+        if (fill.reference !== undefined) { this.reference = fill.reference; }
+        if (fill.note !== undefined) { this.note = fill.note; }
+        this.readNotices.set(fill.notices);
+        this.file.set(picked);
+        this.fileError.set(null);
+      },
+      error: (error: unknown) => {
+        this.reading.set(false);
+        this.readError.set(error instanceof HttpErrorResponse && error.status >= 400 && error.status < 500
+          ? problemMessage(error) : 'No me pude conectar. Revisa el internet e intenta de nuevo.');
+      },
+    });
   }
 
   protected selected(): PaymentMethod | undefined {

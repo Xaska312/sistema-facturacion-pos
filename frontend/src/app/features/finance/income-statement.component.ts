@@ -1,4 +1,5 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { Branch } from '../../core/api/api.models';
 import { FinanceApi, IncomeStatement, Statement } from '../../core/api/finance.api';
@@ -135,6 +136,7 @@ export class IncomeStatementComponent implements OnInit {
   private readonly api = inject(FinanceApi);
   private readonly organization = inject(OrganizationApi);
   private readonly auth = inject(AuthService);
+  private readonly route = inject(ActivatedRoute);
   protected readonly logo = inject(BrandingService).logo;
 
   protected readonly period = signal<PeriodSelection>({ period: 'thisMonth', from: null, to: null, branchId: null });
@@ -161,6 +163,10 @@ export class IncomeStatementComponent implements OnInit {
       next: (page) => this.branches.set(page.content.filter((b) => b.active)),
       error: () => this.branches.set([]),
     });
+    // El correo del mes de Aska (decisión 325) abre el mes pasado.
+    if (this.route.snapshot.queryParamMap.get('periodo') === 'mes-pasado') {
+      this.period.set({ period: 'lastMonth', from: null, to: null, branchId: null });
+    }
     this.load();
   }
 

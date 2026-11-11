@@ -1334,7 +1334,8 @@ export const MANUAL: readonly ManualChapter[] = [
             + 'Con "Nueva conversación" empiezas otra.',
         ],
         tips: [
-          'Responde sobre ventas, productos, inventario y vencimientos, fiados, cuentas por pagar y cajas.',
+          'Responde sobre ventas, productos, inventario y vencimientos, fiados, cuentas por pagar, cajas y finanzas: '
+            + 'gastos, cuánto ganaste (estado de resultados), el punto de equilibrio y las retenciones.',
           'En la prueba gratis de 14 días, arriba verás cuántos días te quedan: tócalo para ver los tres retos (leer una '
             + 'factura, preguntar qué se agota y cargar tu cuaderno), que se marcan solos al hacerlos.',
           'Cada usuario solo recibe respuestas de lo que su rol le deja ver: un cajero no ve la utilidad del negocio.',
@@ -1363,8 +1364,34 @@ export const MANUAL: readonly ManualChapter[] = [
           'Toca una de las preguntas del correo o de la tarjeta en Inicio y Aska te la responde de una vez.',
           'El día 1 de cada mes, al dueño le llega "Lo que hiciste con Aska": las facturas que leyó, los productos que '
             + 'cargó, las preguntas y el tiempo que te ahorró (también en Inicio la primera semana del mes).',
+          'Quien ve los gastos recibe también los del día, la ganancia del día ya descontándolos y los gastos fijos '
+            + 'vencidos o que vencen mañana. El correo del día 1 trae además cuánto ganaste el mes pasado y tus gastos '
+            + 'más grandes, con el enlace al Estado de resultados.',
         ],
         who: 'El propietario y quien él elija, en negocios con el adicional XASKA IA.',
+      },
+      {
+        id: 'aska-finanzas',
+        title: 'Aska y tus finanzas: leer recibos y preguntar cuánto ganaste',
+        summary: 'Con XASKA IA, Aska llena el gasto con la foto del recibo y responde preguntas de plata: cuánto '
+          + 'gastaste, cuánto ganaste, cuánto necesitas vender y qué retenciones te hicieron.',
+        steps: [
+          'Al registrar un gasto (en Gastos o con "Egreso" en Mi caja) toca "Leer con Aska" y tómale foto al recibo o '
+            + 'sube el PDF.',
+          'Aska llena el valor, la fecha, la categoría, el proveedor (si ya está creado), la referencia y la nota. '
+            + 'Revisa lo que dice en los avisos y corrige lo que haga falta.',
+          'Toca "Registrar gasto": la foto queda guardada como soporte del gasto.',
+          'Para preguntar, abre Aska y escribe, por ejemplo: "¿Cuánto gané este mes?", "¿En qué se me fue la plata?", '
+            + '"¿Cuánto tengo que vender al día?" o "¿Qué retenciones me hicieron?".',
+        ],
+        tips: [
+          'Leer recibos tiene su propio tope al mes (100; 10 en la prueba gratis). Si Aska no puede leerlo, no se descuenta.',
+          'En Mi caja el gasto queda con la fecha de hoy aunque el recibo diga otra, y el proveedor va en la nota.',
+          'Si la fecha del recibo es futura, casi siempre es la fecha límite de pago: Aska no la pone y te avisa.',
+          'Aska solo responde lo que tu rol deja ver: los gastos con permiso de ver gastos; el estado de resultados, el '
+            + 'tablero y las retenciones con permiso de ver finanzas.',
+        ],
+        who: 'Quien registra gastos (Propietario, Administrador, Contador y el cajero en su caja), con XASKA IA.',
       },
       {
         id: 'invita-y-gana',

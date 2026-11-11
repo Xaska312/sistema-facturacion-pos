@@ -26,7 +26,8 @@ export interface AskAnswer {
 
 /** Punto del Resumen del día (decisión 299). */
 export interface DigestPoint {
-  section: 'SALES' | 'CASH' | 'INVENTORY' | 'MONEY';
+  /** FINANCE (decisión 325): gastos del día, ganancia del día y gastos fijos por vencer. */
+  section: 'SALES' | 'CASH' | 'INVENTORY' | 'MONEY' | 'FINANCE';
   tone: 'good' | 'warning' | 'bad' | 'info';
   title: string;
   detail: string;
@@ -73,6 +74,26 @@ export interface AskaRecap {
   digests: number;
   minutesSaved: number;
   savedLabel: string;
+  /** Recibos de gastos leídos con foto (decisión 325). */
+  receipts?: number;
+}
+
+/**
+ * "Leer con Aska" en el gasto (decisión 325): lo que se leyó del recibo; lo que no se vio va null. Nada se guarda.
+ * supplierId: el proveedor ya creado con ese NIT o nombre.
+ */
+export interface ExpenseReceiptRead {
+  amount: number | null;
+  date: string | null;
+  categoryId: string | null;
+  categoryName: string | null;
+  supplierId: string | null;
+  supplierName: string | null;
+  supplierDocument: string | null;
+  reference: string | null;
+  note: string | null;
+  warnings: string[];
+  usage: AskUsage;
 }
 
 /** La prueba gratis de XASKA IA (decisión 311): días que quedan y los tres retos de la bienvenida. */
@@ -253,5 +274,19 @@ export class AiApi {
 
   catalogUsage(): Observable<AskUsage> {
     return this.http.get<AskUsage>('/api/v1/ai/catalog/usage');
+  }
+
+  /** Aska lee la foto o el PDF del recibo de un gasto (decisión 325). Los 4xx se muestran en el formulario. */
+  readExpenseReceipt(file: File): Observable<ExpenseReceiptRead> {
+    const form = new FormData();
+    form.append('file', file, file.name);
+    return this.http.post<ExpenseReceiptRead>('/api/v1/ai/expenses/read', form,
+      { context: new HttpContext().set(SILENT_CLIENT_ERRORS, true) });
+  }
+
+  /** Recibos leídos este mes; los errores no se muestran (sin XASKA IA el botón no aparece). */
+  expenseReceiptUsage(): Observable<AskUsage> {
+    return this.http.get<AskUsage>('/api/v1/ai/expenses/usage',
+      { context: new HttpContext().set(SILENT_CLIENT_ERRORS, true) });
   }
 }

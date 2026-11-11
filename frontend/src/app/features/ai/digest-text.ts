@@ -7,6 +7,7 @@ export const SECTION_ICON: Record<DigestPoint['section'], XIconName> = {
   CASH: 'cash',
   INVENTORY: 'stock',
   MONEY: 'payables',
+  FINANCE: 'expenses',
 };
 
 /** Etiqueta que se lee junto al color del tono (no depender solo del color). */

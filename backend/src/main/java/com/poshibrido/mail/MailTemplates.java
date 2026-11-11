@@ -405,8 +405,20 @@ public class MailTemplates {
      * gratis, con el tiempo ahorrado estimado ({@code saved}, nulo si no hubo nada) y lo hecho ({@code lines}: emoji y
      * frase en primera persona). Con {@code trialEnds} es el de la prueba: cuándo termina y el botón para quedarse.
      */
+    /**
+     * Cómo le fue al negocio el mes (decisión 325): {@code label} "Ganaste" o "Perdiste" y {@code profit} el valor;
+     * {@code rows} ventas, costo y gastos; {@code topExpenses} las categorías de gasto más grandes.
+     */
+    public record RecapMoney(String label, String profit, List<String[]> rows, List<String[]> topExpenses) {
+    }
+
     public MailMessage askaRecap(String to, String name, String businessName, String title, String saved,
                                  List<String[]> lines, String trialEnds) {
+        return askaRecap(to, name, businessName, title, saved, lines, trialEnds, null);
+    }
+
+    public MailMessage askaRecap(String to, String name, String businessName, String title, String saved,
+                                 List<String[]> lines, String trialEnds, RecapMoney money) {
         String first = name == null || name.isBlank() ? "" : name.trim().split("\\s+")[0];
         String hello = first.isEmpty() ? "Hola," : "Hola, " + first + ",";
         boolean trial = trialEnds != null;
@@ -446,12 +458,41 @@ public class MailTemplates {
                         .append(l[0]).append("</td><td style=\"padding:12px 12px 12px 6px;color:#111827;\">")
                         .append(escape(l[1])).append("</td></tr></table>");
             }
-        } else {
+        } else if (trial) {
             html.append("<p style=\"margin:0 0 12px;\">Te quedan pocos días para probarme. Tres cosas que hago en ")
                     .append("segundos:</p><p style=\"margin:0 0 12px;\">&#129534; Tómale foto a la factura de un ")
                     .append("proveedor en Compras &rarr; Recibir mercancía y la lleno por ti.<br>&#128230; Pásame una ")
                     .append("foto de tu cuaderno de inventario en Productos &rarr; Cargar con Aska.<br>&#128172; ")
                     .append("Pregúntame qué se va a agotar esta semana.</p>");
+        }
+        if (money != null) {
+            String moneyLink = properties.link("/app/estado-de-resultados?periodo=mes-pasado");
+            html.append("<div style=\"margin:18px 0 6px;padding:16px 18px;border:1px solid #e5e7eb;border-radius:14px;\">")
+                    .append("<div style=\"color:#6b7280;font-size:12px;font-weight:bold;letter-spacing:1px;")
+                    .append("text-transform:uppercase;\">Así le fue a tu negocio</div>")
+                    .append("<div style=\"font-size:15px;margin-top:8px;color:#374151;\">").append(escape(money.label()))
+                    .append("</div><div style=\"font-size:30px;font-weight:bold;color:")
+                    .append("Ganaste".equals(money.label()) ? "#047857" : "#b91c1c").append(";line-height:1.2;\">")
+                    .append(escape(money.profit())).append("</div>")
+                    .append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" ")
+                    .append("style=\"margin-top:10px;font-size:14px;\">");
+            for (String[] r : money.rows()) {
+                html.append("<tr><td style=\"padding:4px 0;color:#4b5563;\">").append(escape(r[0]))
+                        .append("</td><td align=\"right\" style=\"padding:4px 0;color:#111827;\">").append(escape(r[1]))
+                        .append("</td></tr>");
+            }
+            html.append("</table>");
+            if (!money.topExpenses().isEmpty()) {
+                html.append("<div style=\"margin-top:10px;font-size:13px;color:#4b5563;\">Tus gastos más grandes: ");
+                List<String> parts = new java.util.ArrayList<>();
+                for (String[] e : money.topExpenses()) {
+                    parts.add(escape(e[0]) + " " + escape(e[1]));
+                }
+                html.append(String.join(" &middot; ", parts)).append("</div>");
+            }
+            html.append("<div style=\"margin-top:12px;\"><a href=\"").append(escape(moneyLink))
+                    .append("\" style=\"color:#4338ca;font-weight:bold;text-decoration:none;\">")
+                    .append("Ver el estado de resultados &rarr;</a></div></div>");
         }
         if (trial) {
             html.append("<div style=\"margin:16px 0 4px;padding:14px 16px;background:#eef2ff;border-left:4px solid ")
@@ -468,8 +509,8 @@ public class MailTemplates {
                 .append("</td></tr>")
                 .append("<tr><td style=\"padding:14px 28px 20px;background:#f5f6fb;font-size:12px;color:#6b7280;")
                 .append("line-height:1.5;\">El tiempo es un estimado de lo que tardaría hacerlo a mano: unos 30 segundos ")
-                .append("por línea de factura, 1 minuto por producto, 5 minutos por pregunta y 10 por pedido revisado o ")
-                .append("por resumen del día. Si los botones no funcionan: ").append(escape(link))
+                .append("por línea de factura, 1 minuto por producto, 2 por recibo de gasto, 5 por pregunta y 10 por pedido ")
+                .append("revisado o por resumen del día. Si los botones no funcionan: ").append(escape(link))
                 .append("<br>Aska es la IA de XASKA POS. Las decisiones siempre son tuyas.</td></tr>")
                 .append("</table></td></tr></table></body></html>");
 
@@ -482,6 +523,17 @@ public class MailTemplates {
                     .append("o pregúntame qué se va a agotar.\n\n");
         }
         lines.forEach(l -> text.append(l[0]).append(" ").append(l[1]).append("\n"));
+        if (money != null) {
+            text.append("\nAsí le fue a tu negocio: ").append(money.label().toLowerCase(Locale.ROOT)).append(" ")
+                    .append(money.profit()).append(".\n");
+            money.rows().forEach(r -> text.append("- ").append(r[0]).append(": ").append(r[1]).append("\n"));
+            if (!money.topExpenses().isEmpty()) {
+                text.append("Tus gastos más grandes: ").append(String.join(", ", money.topExpenses().stream()
+                        .map(e -> e[0] + " " + e[1]).toList())).append(".\n");
+            }
+            text.append("Estado de resultados: ").append(properties.link("/app/estado-de-resultados?periodo=mes-pasado"))
+                    .append("\n");
+        }
         if (trial) {
             text.append("\nTu prueba gratis termina el ").append(trialEnds).append(". Quédate con XASKA IA: ")
                     .append(link).append("\n");
@@ -489,7 +541,8 @@ public class MailTemplates {
             text.append("\nPregúntale a Aska: ").append(link).append("\n");
         }
         text.append("\nGracias por dejarme ayudarte,\nAska, la IA de XASKA\n\n")
-                .append("El tiempo es un estimado: 30 s por línea de factura, 1 min por producto, 5 min por pregunta y ")
+                .append("El tiempo es un estimado: 30 s por línea de factura, 1 min por producto, 2 min por recibo, ")
+                .append("5 min por pregunta y ")
                 .append("10 por pedido revisado o resumen del día.");
         String subject = trial ? "Aska · " + (saved == null ? "Tu prueba termina pronto" : "Te ahorré " + saved
                 + " en tu prueba") : "Aska · " + title + (saved == null ? "" : ": te ahorré " + saved);
@@ -520,7 +573,7 @@ public class MailTemplates {
     }
 
     /** Pesos sin decimales y con punto de miles: $1.248.500. */
-    static String money(BigDecimal value) {
+    public static String money(BigDecimal value) {
         if (value == null) {
             return "—";
         }
