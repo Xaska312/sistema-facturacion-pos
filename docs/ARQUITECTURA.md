@@ -129,6 +129,9 @@ Las retenciones (decisión 322) son una línea de pago con el medio "Retención"
 El estado de resultados (decisión 323) lee las ventas con SQL, como `reporting`, y suma los gastos y las retenciones
 con los servicios de `finance`.
 
+El tablero de Finanzas (decisión 324) no guarda nada: junta el estado de resultados, el flujo de las cajas, los saldos
+de fiados, pedidos y proveedores (por sus servicios de consulta) y calcula el punto de equilibrio en el servidor.
+
 ## Frontend: sistema de diseño
 Los colores viven solo en `frontend/src/styles.css` como tokens CSS (`--surface`, `--text`, `--brand`, `--success`,
 `--warning`, `--danger`…) con su versión oscura bajo `.app-dark`. Tailwind los expone con `@theme`

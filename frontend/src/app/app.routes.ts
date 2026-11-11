@@ -530,6 +530,14 @@ export const routes: Routes = [
         loadComponent: () => import('./features/purchases/payables.component').then((m) => m.PayablesComponent),
       },
       {
+        path: 'finanzas',
+        title: 'Finanzas',
+        canActivate: [permissionGuard],
+        data: { permission: 'finance:read' },
+        loadComponent: () =>
+          import('./features/finance/finance-dashboard.component').then((m) => m.FinanceDashboardComponent),
+      },
+      {
         path: 'estado-de-resultados',
         title: 'Estado de resultados',
         canActivate: [permissionGuard],

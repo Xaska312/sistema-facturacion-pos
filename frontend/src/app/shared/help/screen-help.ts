@@ -118,6 +118,15 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     ],
     terms: ['costo-promedio'],
   },
+  '/app/finanzas': {
+    manual: 'tablero-finanzas',
+    title: 'Finanzas',
+    tips: [
+      'Arriba, lo que vas ganando este mes: ventas sin IVA, menos el costo, menos los gastos.',
+      '"Cuánto necesitas vender" sale de tus gastos y de lo que te deja cada venta: la barra muestra si vas al día.',
+      'Te deben (fiados y pedidos) y debes (proveedores) son a hoy; la plata por medio de pago es del mes.',
+    ],
+  },
   '/app/estado-de-resultados': {
     manual: 'estado-de-resultados',
     title: 'Estado de resultados',

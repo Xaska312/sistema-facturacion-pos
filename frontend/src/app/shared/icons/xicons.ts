@@ -59,6 +59,8 @@ export const XICONS = {
     fill: '<path d="M6 3h12v6H6z"/>' },
   income: { stroke: '<path d="M4 20h16"/><path d="M6 16l4-5 3 3 5-7"/><path d="M15 7h3v3"/>',
     fill: '<path d="M6 16l4-5 3 3 5-7v13H6z"/>' },
+  finance: { stroke: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 15v-3M11 15V9M15 15v-5M19 15v-2"/><path d="M3 18h18"/>',
+    fill: '<rect x="3" y="4" width="18" height="6" rx="2"/>' },
   branches: { stroke: '<path d="M4 21V5l8-2v18M12 8h8v13M2 21h20M7 8h2M7 12h2M7 16h2M15 12h2M15 16h2"/>',
     fill: '<path d="M4 21V5l8-2v18z"/>' },
   registers: { stroke: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8.5 12h.5M12 12h.5M15.5 12h.5M8.5 16h.5M12 16h.5M15.5 16h.5"/>',

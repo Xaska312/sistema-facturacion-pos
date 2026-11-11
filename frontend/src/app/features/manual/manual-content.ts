@@ -1211,6 +1211,32 @@ export const MANUAL: readonly ManualChapter[] = [
           + 'corregir y anular gastos"). Quien opera una caja registra el gasto en efectivo de su caja.',
       },
       {
+        id: 'tablero-finanzas',
+        title: 'Finanzas: el mes de un vistazo',
+        summary: 'La pantalla Finanzas junta lo importante del mes en curso, pensado para leerlo en el celular: cuánto '
+          + 'vas ganando, cuánto necesitas vender al día, lo que te deben, lo que debes, tus gastos y la plata que entró '
+          + 'y salió por cada medio de pago.',
+        table: {
+          headers: ['Parte', 'Qué te dice'],
+          rows: [
+            ['Vas ganando', 'Ventas sin IVA menos el costo de lo vendido menos los gastos del mes, hasta hoy.'],
+            ['Cuánto necesitas vender', 'Punto de equilibrio: tus gastos del mes pasado (o tus gastos fijos, si no hay) '
+              + 'divididos por lo que te deja cada venta (margen de los últimos 30 días), repartidos en los días del '
+              + 'mes. La barra compara lo que llevas con la meta a hoy.'],
+            ['Te deben', 'Lo que deben en fiados y lo que falta por cobrar de los pedidos abiertos, a hoy.'],
+            ['Debes a proveedores', 'Las cuentas por pagar: el total, lo vencido y lo que vence esta semana.'],
+            ['Gastos del mes', 'Lo gastado hasta hoy frente a los mismos días del mes anterior, y los más grandes.'],
+            ['Plata que entró y salió', 'Por medio de pago: entró por ventas, abonos de fiado y anticipos; salió por '
+              + 'gastos y pagos a proveedores.'],
+          ],
+        },
+        tips: [
+          'El fiado y la retención no son plata que entra: no salen en "entró" hasta que el cliente paga.',
+          'Es de todo el negocio (todas las sedes). Para ver una sede, usa el Estado de resultados.',
+        ],
+        who: 'Propietario, Administrador y Contador.',
+      },
+      {
         id: 'estado-de-resultados',
         title: 'Estado de resultados: cuánto ganaste',
         summary: 'Junta lo que vendiste, lo que te costó y lo que gastaste para decirte si ganaste o perdiste en el mes '

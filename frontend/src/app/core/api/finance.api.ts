@@ -65,3 +65,60 @@ export class FinanceApi {
     });
   }
 }
+
+// ---------------------------------------------------------------- tablero (decisión 324)
+
+export interface MethodFlow {
+  paymentMethodId: string;
+  name: string;
+  cash: boolean;
+  in: number;
+  out: number;
+  net: number;
+}
+
+export interface FinanceDashboard {
+  from: string;
+  to: string;
+  netSales: number;
+  grossProfit: number;
+  operatingProfit: number;
+  flow: { in: number; out: number; net: number; byMethod: MethodFlow[] };
+  balances: {
+    creditOwed: number;
+    creditCustomers: number;
+    ordersOwed: number;
+    openOrders: number;
+    suppliersOwed: number;
+    suppliersOverdue: number;
+    suppliersDueSoon: number;
+  };
+  expenses: {
+    thisMonth: number;
+    lastMonth: number;
+    changePercent: number | null;
+    top: { categoryId: string | null; name: string; total: number; count: number }[];
+    unpaidRecurring: number;
+    unpaidRecurringTotal: number;
+  };
+  /** {@code basis}: LAST_MONTH, RECURRING o nulo si no hay con qué calcular. */
+  breakEven: {
+    basis: 'LAST_MONTH' | 'RECURRING' | null;
+    monthlyExpenses: number;
+    grossMargin: number | null;
+    perMonth: number | null;
+    perDay: number | null;
+    averageDailySales: number;
+    monthSales: number;
+    monthTarget: number | null;
+  };
+}
+
+@Injectable({ providedIn: 'root' })
+export class FinanceDashboardApi {
+  private readonly http = inject(HttpClient);
+
+  dashboard(): Observable<FinanceDashboard> {
+    return this.http.get<FinanceDashboard>('/api/v1/finance/dashboard');
+  }
+}

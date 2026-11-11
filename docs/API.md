@@ -681,3 +681,9 @@ Medio de pago `WITHHOLDING` ("Retención", no mueve la caja). En `POST /sales`, 
 |---|---|---|---|
 | GET | `/finance/income-statement?from=&to=&branchId=` | `finance:read` | Sin fechas: el mes actual hasta hoy (máximo 400 días). `{branchId, branchName, current, previous, lastYear, unpaidRecurring{count, total}}`; cada periodo trae `{from, to, salesCount, salesTotal, tax, netSales, cost, grossProfit, grossMargin, expenses[{categoryId, name, amount}], expensesTotal, operatingProfit, operatingMargin, withheld, hasData}`. `previous` y `lastYear` son nulos si no tienen datos; `withheld` es nulo con `branchId` |
 | GET | `/finance/income-statement.csv` (mismos parámetros) | `finance:read` | Para Excel. Auditoría `REPORT_EXPORTED` |
+
+## Tablero de Finanzas (parte D, decisión 324)
+
+| Método | Ruta | Permiso | Notas |
+|---|---|---|---|
+| GET | `/finance/dashboard` | `finance:read` | El mes en curso hasta hoy, todo el negocio: `{from, to, netSales, grossProfit, operatingProfit, flow{in, out, net, byMethod[{paymentMethodId, name, cash, in, out, net}]}, balances{creditOwed, creditCustomers, ordersOwed, openOrders, suppliersOwed, suppliersOverdue, suppliersDueSoon}, expenses{thisMonth, lastMonth, changePercent, top[], unpaidRecurring, unpaidRecurringTotal}, breakEven{basis (LAST_MONTH, RECURRING o nulo), monthlyExpenses, grossMargin, perMonth, perDay, averageDailySales, monthSales, monthTarget}}` |

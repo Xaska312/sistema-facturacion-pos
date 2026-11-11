@@ -22,14 +22,22 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
-/** Estado de resultados (Finanzas parte C, decisión 323), con {@code finance:read}. */
+/** Estado de resultados (Finanzas parte C, decisión 323) y tablero (parte D, decisión 324), con {@code finance:read}. */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/finance")
 public class IncomeStatementController {
 
     private final IncomeStatementService statements;
+    private final com.poshibrido.finance.application.FinanceDashboardService dashboards;
     private final AuditLogger audit;
+
+    /** Tablero de Finanzas (parte D, decisión 324): el mes en curso de todo el negocio. */
+    @GetMapping("/dashboard")
+    @PreAuthorize("hasAuthority('finance:read')")
+    public com.poshibrido.finance.application.FinanceDashboardService.Dashboard dashboard() {
+        return dashboards.dashboard();
+    }
 
     @GetMapping("/income-statement")
     @PreAuthorize("hasAuthority('finance:read')")
