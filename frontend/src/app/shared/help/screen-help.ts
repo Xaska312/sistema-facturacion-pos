@@ -118,6 +118,15 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     ],
     terms: ['costo-promedio'],
   },
+  '/app/retenciones': {
+    manual: 'retenciones',
+    title: 'Retenciones',
+    tips: [
+      'Lo que tus clientes te retuvieron al pagar: lo descuentas al declarar con su certificado.',
+      'Toca un cliente para ver solo sus retenciones; con "Llegó el certificado" las marcas todas de una vez.',
+      'Se registran al cobrar con "El cliente retuvo". Las retenciones habituales de cada cliente se configuran en Clientes.',
+    ],
+  },
   '/app/gastos': {
     manual: 'gastos',
     title: 'Gastos',

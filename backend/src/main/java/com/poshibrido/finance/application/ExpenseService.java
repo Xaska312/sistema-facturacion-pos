@@ -66,7 +66,7 @@ public class ExpenseService {
     static final int MAX_DOCUMENT_BYTES = 5 * 1024 * 1024;
     static final int MAX_EXPORT_ROWS = 20_000;
     private static final Pattern IDEMPOTENCY_KEY = Pattern.compile("^[A-Za-z0-9_\\-]{8,100}$");
-    private static final Set<String> NOT_FOR_EXPENSES = Set.of("CREDIT", "DEPOSIT");
+    private static final Set<String> NOT_FOR_EXPENSES = Set.of("CREDIT", "DEPOSIT", "WITHHOLDING");
 
     /**
      * Gastos registrados más los egresos de caja que nadie ha clasificado (los manuales de antes: sin referencia y

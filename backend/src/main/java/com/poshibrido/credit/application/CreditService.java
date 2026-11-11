@@ -99,7 +99,7 @@ public class CreditService {
         PaymentMethodRef method = c.paymentMethodId() == null ? null : cash.paymentMethods().get(c.paymentMethodId());
         // Ni "Fiado" ni "Anticipo" (decisión 258): un abono es dinero que entra.
         if (method == null || !method.active() || CreditApi.METHOD_CODE.equals(method.code())
-                || "DEPOSIT".equals(method.code())) {
+                || "DEPOSIT".equals(method.code()) || "WITHHOLDING".equals(method.code())) {
             throw new BusinessRuleException("Medio de pago no válido para un abono.");
         }
         String reference = blankToNull(c.reference());

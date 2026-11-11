@@ -530,6 +530,13 @@ export const routes: Routes = [
         loadComponent: () => import('./features/purchases/payables.component').then((m) => m.PayablesComponent),
       },
       {
+        path: 'retenciones',
+        title: 'Retenciones',
+        canActivate: [permissionGuard],
+        data: { permission: 'finance:read' },
+        loadComponent: () => import('./features/finance/withholdings.component').then((m) => m.WithholdingsComponent),
+      },
+      {
         path: 'gastos',
         title: 'Gastos',
         canActivate: [permissionGuard],

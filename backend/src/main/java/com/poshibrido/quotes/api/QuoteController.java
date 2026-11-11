@@ -1,5 +1,6 @@
 package com.poshibrido.quotes.api;
 
+import com.poshibrido.finance.application.WithholdingApi;
 import com.poshibrido.quotes.application.QuoteQueryService;
 import com.poshibrido.quotes.application.QuoteQueryService.Filter;
 import com.poshibrido.quotes.application.QuoteService;
@@ -87,7 +88,8 @@ public class QuoteController {
     public record SalePayment(@NotNull UUID paymentMethodId,
                               @NotNull @DecimalMin(value = "0", inclusive = false)
                               @Digits(integer = 12, fraction = 2) @WholePesos BigDecimal amount,
-                              @Size(max = 60) String reference) {
+                              @Size(max = 60) String reference,
+                              @Size(max = 3) List<WithholdingApi.@NotNull Line> withholdings) {
     }
 
     public record SellRequest(UUID customerId, @Size(max = 10) List<@Valid SalePayment> payments) {
@@ -149,7 +151,8 @@ public class QuoteController {
     public SaleResult sell(@PathVariable UUID id, @Valid @RequestBody SellRequest request,
                            @RequestHeader(name = "Idempotency-Key", required = false) String idempotencyKey) {
         List<PaymentLine> payments = request.payments() == null ? List.of() : request.payments().stream()
-                .map(p -> new PaymentLine(p.paymentMethodId(), p.amount(), p.reference()))
+                .map(p -> new PaymentLine(p.paymentMethodId(), p.amount(), p.reference(),
+                        p.withholdings() == null ? List.of() : p.withholdings()))
                 .toList();
         return service.sell(id, new SellInput(request.customerId(), payments), idempotencyKey);
     }

@@ -1,4 +1,4 @@
-import { Component, inject, input, model, output, signal } from '@angular/core';
+import { Component, computed, inject, input, model, output, signal, viewChild } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import {
   CREDIT_METHOD_CODE,
@@ -8,6 +8,7 @@ import {
   OrderDelivery,
   OrderItem,
   PaymentMethod,
+  WITHHOLDING_METHOD_CODE,
 } from '../../core/api/api.models';
 import { CashApi } from '../../core/api/cash.api';
 import { CreditApi } from '../../core/api/credit.api';
@@ -20,6 +21,16 @@ import { PaymentLinesComponent } from '../pos/payment-lines.component';
 import { newPaymentLine, paymentLinesProblem, toPaymentRequests } from '../pos/payment-lines';
 import { PaymentDraft } from '../pos/sale-math';
 import { deliveryAmounts, sizeText } from './order-text';
+import { WithholdingBoxComponent } from '../finance/withholding-box.component';
+import {
+  NO_WITHHOLDING,
+  TaxBases,
+  WithholdingResult,
+  proportionalBases,
+  sumBases,
+  withholdingPayment,
+  withholdingProblem,
+} from '../finance/withholding-text';
 
 /**
  * Entregar un pedido, todo o una parte (decisión 258): se registra una venta con lo entregado, en tu caja abierta.
@@ -27,7 +38,7 @@ import { deliveryAmounts, sizeText } from './order-text';
  */
 @Component({
   selector: 'app-order-deliver-dialog',
-  imports: [FormDialogComponent, PaymentLinesComponent],
+  imports: [FormDialogComponent, PaymentLinesComponent, WithholdingBoxComponent],
   template: `
     @if (order(); as o) {
       <app-form-dialog [(visible)]="visible" [header]="'Entregar pedido ' + o.number" width="34rem"
@@ -61,8 +72,17 @@ import { deliveryAmounts, sizeText } from './order-text';
         </div>
 
         @if (amounts().remaining > 0) {
-          <app-payment-lines [total]="amounts().remaining" [methods]="payMethods()" [creditAvailable]="creditAvailable()"
-                             [(lines)]="lines" />
+          <!-- Retención del cliente (decisión 322) sobre lo que paga ahora. -->
+          <app-withholding-box [customerId]="o.customerId" [bases]="bases()" [result]="withheld()"
+                               (resultChange)="onWithheld($event)" />
+          @if (withheld().total > 0) {
+            <p class="text-sm flex justify-between"><span>Retiene el cliente</span>
+              <span class="tabular-nums">−{{ cop(withheld().total) }}</span></p>
+          }
+          @if (toPay() > 0) {
+            <app-payment-lines [total]="toPay()" [methods]="payMethods()" [creditAvailable]="creditAvailable()"
+                               [(lines)]="lines" />
+          }
         }
       </app-form-dialog>
     }
@@ -89,6 +109,29 @@ export class OrderDeliverDialogComponent {
   private methodsRequested = false;
   protected readonly cop = formatCop;
   protected readonly size = sizeText;
+  private readonly withholdingBox = viewChild(WithholdingBoxComponent);
+  protected readonly withheld = signal<WithholdingResult>(NO_WITHHOLDING);
+  private withholdingMethodId: string | null = null;
+
+  /** Base e IVA de lo que paga ahora: lo entregado menos lo que cubre el anticipo, en proporción. */
+  protected readonly bases = computed<TaxBases>(() => {
+    const a = this.amounts();
+    const all = sumBases(this.pending().filter((i) => this.chosen().has(i.id)));
+    return proportionalBases(a.remaining, a.total, all.base, all.iva);
+  }, { equal: (x, y) => x.base === y.base && x.iva === y.iva });
+
+  /** Lo que se paga con plata (o fiado): lo que falta menos lo retenido. */
+  protected toPay(): number {
+    return Math.max(0, this.amounts().remaining - this.withheld().total);
+  }
+
+  protected onWithheld(result: WithholdingResult): void {
+    this.withheld.set(result);
+    const lines = this.lines();
+    if (lines.length === 1) {
+      this.lines.set([{ ...lines[0], amount: this.toPay() || null }]);
+    }
+  }
 
   /** Por defecto se entrega todo lo pendiente y se cobra el resto en efectivo. */
   prepare(order: Order): void {
@@ -96,6 +139,8 @@ export class OrderDeliverDialogComponent {
     this.pending.set(pending);
     this.chosen.set(new Set(pending.map((i) => i.id)));
     this.idempotencyKey = newIdempotencyKey('entrega');
+    this.withholdingBox()?.reset();
+    this.withheld.set(NO_WITHHOLDING);
     this.resetLines(this.amountsFor(order).remaining);
     this.credit.set(null);
     if (this.auth.hasPermission('credit:read')) {
@@ -110,9 +155,10 @@ export class OrderDeliverDialogComponent {
     }
     if (!this.methodsRequested) {
       this.methodsRequested = true;
-      this.cash.paymentMethods().subscribe({
+      this.cash.allPaymentMethods().subscribe({
         next: (list) => {
-          this.methods.set(list.filter((m) => m.code !== DEPOSIT_METHOD_CODE));
+          this.withholdingMethodId = list.find((m) => m.code === WITHHOLDING_METHOD_CODE)?.id ?? null;
+          this.methods.set(list.filter((m) => m.code !== DEPOSIT_METHOD_CODE && m.code !== WITHHOLDING_METHOD_CODE));
           if (this.lines().every((l) => !l.methodId)) {
             this.resetLines(this.amounts().remaining);
           }
@@ -138,7 +184,7 @@ export class OrderDeliverDialogComponent {
     this.chosen.set(next);
     // Con un solo medio, el valor sigue a lo que hay que pagar (si quedó por debajo).
     const lines = this.lines();
-    const remaining = this.amounts().remaining;
+    const remaining = this.toPay();
     if (lines.length === 1 && Number(lines[0].amount ?? 0) < remaining) {
       this.lines.set([{ ...lines[0], amount: remaining || null }]);
     }
@@ -173,13 +219,28 @@ export class OrderDeliverDialogComponent {
       return `Quedarían ${formatCop(a.leftover)} de anticipo sin aplicar. Revisa los precios del pedido o cancela lo `
         + 'pendiente para devolverlos.';
     }
-    return a.remaining > 0 ? paymentLinesProblem(a.remaining, this.lines(), this.payMethods(), this.creditAvailable())
+    if (a.remaining <= 0) {
+      return null;
+    }
+    const retention = withholdingProblem(this.withheld());
+    if (retention) {
+      return retention;
+    }
+    if (this.withheld().total > a.remaining) {
+      return 'La retención no puede ser mayor que lo que se cobra.';
+    }
+    return this.toPay() > 0 ? paymentLinesProblem(this.toPay(), this.lines(), this.payMethods(), this.creditAvailable())
       : null;
   }
 
   protected readonly saveRequest = (): Observable<OrderDelivery> => {
     const order = this.order()!;
-    const payments = this.amounts().remaining > 0 ? toPaymentRequests(this.lines(), this.payMethods()) : [];
+    const payments = this.amounts().remaining > 0 && this.toPay() > 0
+      ? toPaymentRequests(this.lines(), this.payMethods()) : [];
+    const retention = this.amounts().remaining > 0 ? withholdingPayment(this.withholdingMethodId, this.withheld()) : null;
+    if (retention) {
+      payments.push(retention);
+    }
     const itemIds = this.pending().filter((i) => this.chosen().has(i.id)).map((i) => i.id);
     return this.api.deliver(order.id, itemIds, payments, this.idempotencyKey)
       .pipe(tap(() => (this.idempotencyKey = newIdempotencyKey('entrega'))));

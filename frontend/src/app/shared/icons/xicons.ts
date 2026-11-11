@@ -55,6 +55,8 @@ export const XICONS = {
     fill: '<circle cx="12" cy="11" r="3.5"/>' },
   expenses: { stroke: '<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10.5h18"/><path d="M12 12.5v4.5M9.8 15l2.2 2.2 2.2-2.2"/>',
     fill: '<path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2.5H3z"/>' },
+  withholdings: { stroke: '<path d="M6 3h12v18l-2-1.5-2 1.5-2-1.5-2 1.5-2-1.5L6 21z"/><path d="M9 15l6-6"/><circle cx="9.5" cy="9.5" r="1.2"/><circle cx="14.5" cy="14.5" r="1.2"/>',
+    fill: '<path d="M6 3h12v6H6z"/>' },
   branches: { stroke: '<path d="M4 21V5l8-2v18M12 8h8v13M2 21h20M7 8h2M7 12h2M7 16h2M15 12h2M15 16h2"/>',
     fill: '<path d="M4 21V5l8-2v18z"/>' },
   registers: { stroke: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8.5 12h.5M12 12h.5M15.5 12h.5M8.5 16h.5M12 16h.5M15.5 16h.5"/>',

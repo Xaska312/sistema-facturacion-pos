@@ -22,6 +22,7 @@ const MODULE_LABEL: Record<string, string> = {
   inventory: 'Inventario',
   purchases: 'Compras',
   expenses: 'Gastos',
+  finance: 'Finanzas',
   pharmacy: 'Farmacia',
   cash: 'Caja',
   sales: 'Ventas',

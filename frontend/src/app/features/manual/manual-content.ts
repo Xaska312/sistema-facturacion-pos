@@ -1211,6 +1211,38 @@ export const MANUAL: readonly ManualChapter[] = [
           + 'corregir y anular gastos"). Quien opera una caja registra el gasto en efectivo de su caja.',
       },
       {
+        id: 'retenciones',
+        title: 'Retenciones: cuando el cliente te retiene al pagar',
+        summary: 'Algunas empresas (por ejemplo, una constructora que te compra) te pagan menos porque retienen una parte '
+          + 'para la DIAN o el municipio: retefuente, reteICA o reteIVA. Esa plata no se pierde: ellos la pagan a tu '
+          + 'nombre y tú la descuentas al declarar con el certificado que te dan. XASKA la registra para que la venta o '
+          + 'el pedido queden pagos, sin deuda del cliente ni faltante en la caja.',
+        steps: [
+          'Al cobrar (en Vender, al vender una cotización, o en el abono o la entrega de un pedido) elige el cliente y '
+            + 'toca "El cliente retuvo".',
+          'Si el cliente tiene sus retenciones en la ficha, aparecen listas con su tarifa. Retefuente y reteICA se '
+            + 'calculan sobre el valor sin IVA; reteIVA, sobre el IVA.',
+          'XASKA resta lo retenido de lo que el cliente paga: cobra solo el resto con efectivo, transferencia u otro '
+            + 'medio, y registra.',
+          'En un abono de pedido escribe lo que de verdad te pagaron: XASKA calcula el abono completo (pagado más '
+            + 'retenido).',
+          'En Retenciones ves cuánto te retuvieron en el periodo, por tipo y por cliente. Cuando llegue el '
+            + 'certificado, toca "Llegó el certificado" en ese cliente. Con "Exportar" lo bajas para tu contador.',
+        ],
+        tips: [
+          'Retenciones habituales: en Clientes, toca "Retenciones" en el cliente y marca las que siempre te hace con '
+            + 'su tarifa (por ejemplo, retefuente 6 %). ReteICA en porcentaje: 9,66 por mil es 0,966 %.',
+          'El cajero solo puede aplicar las retenciones de la ficha del cliente, con su tarifa y la base que calcula '
+            + 'XASKA. Retenciones a otros clientes, o con otra tarifa o base, las registra quien tiene el permiso de '
+            + 'finanzas.',
+          'Si anulas la venta, su retención deja de sumar. Si cancelas un pedido con abonos retenidos, primero se '
+            + 'reversa lo retenido y solo se devuelve el resto.',
+          'La venta conserva su valor completo: la retención no es un descuento.',
+        ],
+        who: 'Cobra con retención quien vende o recibe abonos. Ven el reporte y marcan certificados Propietario, '
+          + 'Administrador y Contador (permisos "Ver las retenciones" y "Registrar cualquier retención…").',
+      },
+      {
         id: 'gastos-fijos',
         title: 'Gastos fijos: arriendo, nómina, servicios',
         summary: 'Lo que pagas siempre (el arriendo cada mes, la nómina cada quincena) lo creas una vez como gasto fijo. '

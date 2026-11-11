@@ -14,6 +14,7 @@ const ENTITIES: Readonly<Record<string, string>> = {
   expense: 'Gasto',
   expense_category: 'Categoría de gasto',
   recurring_expense: 'Gasto fijo',
+  withholding: 'Retención',
   cash_register: 'Caja',
   cash_session: 'Turno de caja',
   category: 'Categoría',
@@ -91,6 +92,9 @@ const ACTIONS: Readonly<Record<string, string>> = {
   EXPENSE_CATEGORY_CREATED: 'Creó una categoría de gasto',
   EXPENSE_CATEGORY_UPDATED: 'Cambió una categoría de gasto',
   RECURRING_EXPENSE_CREATED: 'Creó un gasto fijo',
+  CUSTOMER_WITHHOLDINGS_UPDATED: 'Cambió las retenciones habituales de un cliente',
+  WITHHOLDING_CERTIFICATE_RECEIVED: 'Marcó recibido el certificado de retenciones',
+  WITHHOLDING_CERTIFICATE_CLEARED: 'Desmarcó el certificado de retenciones',
   RECURRING_EXPENSE_UPDATED: 'Cambió un gasto fijo',
   RECURRING_EXPENSE_PAID: 'Pagó un gasto fijo',
   RECURRING_EXPENSE_SKIPPED: 'Marcó que un gasto fijo no se paga en una fecha',
@@ -272,6 +276,10 @@ const FIELDS: Readonly<Record<string, string>> = {
   expenseNumber: 'Número del gasto',
   frequency: 'Frecuencia',
   startsOn: 'Desde',
+  received: 'Recibido',
+  withheld: 'Retenido',
+  withholdingReversed: 'Retención reversada',
+  count: 'Cantidad',
 };
 
 export function entityLabel(entity: string): string {

@@ -1,5 +1,6 @@
 package com.poshibrido.sales.api;
 
+import com.poshibrido.finance.application.WithholdingApi;
 import com.poshibrido.catalog.application.PricingApi.ResolvedPrice;
 import com.poshibrido.pharmacy.application.DispensationRules;
 import com.poshibrido.sales.application.SaleCommands;
@@ -70,7 +71,8 @@ public class SaleController {
     public record PaymentRequest(@NotNull UUID paymentMethodId,
                                  @NotNull @DecimalMin(value = "0", inclusive = false)
                                  @Digits(integer = 12, fraction = 2) @WholePesos BigDecimal amount,
-                                 @Size(max = 60) String reference) {
+                                 @Size(max = 60) String reference,
+                                 @Size(max = 3) List<WithholdingApi.@NotNull Line> withholdings) {
     }
 
     public record CreateSaleRequest(UUID customerId,
@@ -90,7 +92,8 @@ public class SaleController {
                                     .toList(),
                             i.note())).toList(),
                     payments == null ? List.of() : payments.stream()
-                            .map(p -> new SaleCommands.PaymentLine(p.paymentMethodId(), p.amount(), p.reference()))
+                            .map(p -> new SaleCommands.PaymentLine(p.paymentMethodId(), p.amount(), p.reference(),
+                                    p.withholdings() == null ? List.of() : p.withholdings()))
                             .toList(),
                     expectedTotal, notes, null, dispensation == null ? null : dispensation.toData());
         }

@@ -1,5 +1,7 @@
 package com.poshibrido.sales.application;
 
+import com.poshibrido.finance.application.WithholdingApi;
+
 import com.poshibrido.pharmacy.application.DispensationRules;
 import java.math.BigDecimal;
 import java.util.List;
@@ -29,8 +31,17 @@ public final class SaleCommands {
         }
     }
 
-    /** {@code amount} es lo entregado con ese medio (en efectivo puede superar lo que falta: hay cambio). */
-    public record PaymentLine(UUID paymentMethodId, BigDecimal amount, String reference) {
+    /**
+     * {@code amount} es lo entregado con ese medio (en efectivo puede superar lo que falta: hay cambio).
+     * {@code withholdings}: solo en la línea del medio "Retención" (decisión 322), el detalle de lo que retuvo el
+     * cliente.
+     */
+    public record PaymentLine(UUID paymentMethodId, BigDecimal amount, String reference,
+                              List<WithholdingApi.Line> withholdings) {
+
+        public PaymentLine(UUID paymentMethodId, BigDecimal amount, String reference) {
+            this(paymentMethodId, amount, reference, List.of());
+        }
     }
 
     /**

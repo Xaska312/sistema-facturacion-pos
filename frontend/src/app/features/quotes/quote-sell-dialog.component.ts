@@ -1,4 +1,4 @@
-import { Component, inject, input, model, output, signal } from '@angular/core';
+import { Component, computed, inject, input, model, output, signal, viewChild } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import {
   CREDIT_METHOD_CODE,
@@ -7,6 +7,7 @@ import {
   PaymentMethod,
   Quote,
   QuoteSaleResult,
+  WITHHOLDING_METHOD_CODE,
 } from '../../core/api/api.models';
 import { CashApi } from '../../core/api/cash.api';
 import { CreditApi } from '../../core/api/credit.api';
@@ -18,6 +19,15 @@ import { formatCop } from '../../shared/money';
 import { PaymentLinesComponent } from '../pos/payment-lines.component';
 import { newPaymentLine, paymentLinesProblem, toPaymentRequests } from '../pos/payment-lines';
 import { PaymentDraft } from '../pos/sale-math';
+import { WithholdingBoxComponent } from '../finance/withholding-box.component';
+import {
+  NO_WITHHOLDING,
+  TaxBases,
+  WithholdingResult,
+  sumBases,
+  withholdingPayment,
+  withholdingProblem,
+} from '../finance/withholding-text';
 
 /**
  * Vender una cotización con los precios y descuentos cotizados, en la caja abierta de quien vende (decisión 260).
@@ -25,7 +35,7 @@ import { PaymentDraft } from '../pos/sale-math';
  */
 @Component({
   selector: 'app-quote-sell-dialog',
-  imports: [FormDialogComponent, PaymentLinesComponent],
+  imports: [FormDialogComponent, PaymentLinesComponent, WithholdingBoxComponent],
   template: `
     @if (quote(); as q) {
       <app-form-dialog [(visible)]="visible" [header]="'Vender cotización ' + q.number" width="32rem"
@@ -46,8 +56,17 @@ import { PaymentDraft } from '../pos/sale-math';
           </p>
         </div>
 
-        <app-payment-lines [total]="q.total" [methods]="payMethods()" [creditAvailable]="creditAvailable()"
-                           [(lines)]="lines" />
+        <!-- Retención del cliente (decisión 322); solo con un cliente registrado. -->
+        <app-withholding-box [customerId]="q.customerId" [bases]="bases()" [result]="withheld()"
+                             (resultChange)="onWithheld($event)" />
+        @if (withheld().total > 0) {
+          <p class="text-sm flex justify-between"><span>Retiene el cliente</span>
+            <span class="tabular-nums">−{{ cop(withheld().total) }}</span></p>
+        }
+        @if (toPay() > 0) {
+          <app-payment-lines [total]="toPay()" [methods]="payMethods()" [creditAvailable]="creditAvailable()"
+                             [(lines)]="lines" />
+        }
       </app-form-dialog>
     }
   `,
@@ -69,9 +88,29 @@ export class QuoteSellDialogComponent {
   private idempotencyKey = '';
   private methodsRequested = false;
   protected readonly cop = formatCop;
+  private readonly withholdingBox = viewChild(WithholdingBoxComponent);
+  protected readonly withheld = signal<WithholdingResult>(NO_WITHHOLDING);
+  private withholdingMethodId: string | null = null;
+
+  protected readonly bases = computed<TaxBases>(() => sumBases(this.quote()?.items ?? []),
+    { equal: (x, y) => x.base === y.base && x.iva === y.iva });
+
+  protected toPay(): number {
+    return Math.max(0, (this.quote()?.total ?? 0) - this.withheld().total);
+  }
+
+  protected onWithheld(result: WithholdingResult): void {
+    this.withheld.set(result);
+    const lines = this.lines();
+    if (lines.length === 1) {
+      this.lines.set([{ ...lines[0], amount: this.toPay() || null }]);
+    }
+  }
 
   prepare(quote: Quote): void {
     this.idempotencyKey = newIdempotencyKey('cotizacion');
+    this.withholdingBox()?.reset();
+    this.withheld.set(NO_WITHHOLDING);
     this.resetLines(quote.total);
     this.credit.set(null);
     const customerId = quote.customerId;
@@ -87,9 +126,10 @@ export class QuoteSellDialogComponent {
     }
     if (!this.methodsRequested) {
       this.methodsRequested = true;
-      this.cash.paymentMethods().subscribe({
+      this.cash.allPaymentMethods().subscribe({
         next: (list) => {
-          this.methods.set(list.filter((m) => m.code !== DEPOSIT_METHOD_CODE));
+          this.withholdingMethodId = list.find((m) => m.code === WITHHOLDING_METHOD_CODE)?.id ?? null;
+          this.methods.set(list.filter((m) => m.code !== DEPOSIT_METHOD_CODE && m.code !== WITHHOLDING_METHOD_CODE));
           if (this.lines().every((l) => !l.methodId)) {
             this.resetLines(this.quote()?.total ?? 0);
           }
@@ -117,12 +157,25 @@ export class QuoteSellDialogComponent {
   }
 
   protected problem(): string | null {
-    return paymentLinesProblem(this.quote()?.total ?? 0, this.lines(), this.payMethods(), this.creditAvailable());
+    const retention = withholdingProblem(this.withheld());
+    if (retention) {
+      return retention;
+    }
+    if (this.withheld().total > (this.quote()?.total ?? 0)) {
+      return 'La retención no puede ser mayor que el total.';
+    }
+    return this.toPay() > 0 ? paymentLinesProblem(this.toPay(), this.lines(), this.payMethods(), this.creditAvailable())
+      : null;
   }
 
   protected readonly saveRequest = (): Observable<QuoteSaleResult> => {
     const quote = this.quote()!;
-    return this.api.sell(quote.id, null, toPaymentRequests(this.lines(), this.payMethods()), this.idempotencyKey)
+    const payments = this.toPay() > 0 ? toPaymentRequests(this.lines(), this.payMethods()) : [];
+    const retention = withholdingPayment(this.withholdingMethodId, this.withheld());
+    if (retention) {
+      payments.push(retention);
+    }
+    return this.api.sell(quote.id, null, payments, this.idempotencyKey)
       .pipe(tap(() => (this.idempotencyKey = newIdempotencyKey('cotizacion'))));
   };
 }

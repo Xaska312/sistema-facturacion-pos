@@ -48,6 +48,8 @@ const RULES: readonly CapabilityRule[] = [
   { permission: 'ai:ask', text: 'preguntarle a Aska (XASKA IA) sobre el negocio' },
   { permission: 'purchases:pay', text: 'pagar a proveedores' },
   { permission: 'purchases:read', text: 'consultar compras y cuentas por pagar', coveredBy: 'purchases:pay' },
+  { permission: 'finance:manage', text: 'registrar retenciones de cualquier cliente y marcar certificados' },
+  { permission: 'finance:read', text: 'consultar las retenciones', coveredBy: 'finance:manage' },
   { permission: 'expenses:manage', text: 'registrar, corregir y anular gastos' },
   { permission: 'expenses:read', text: 'consultar los gastos del negocio', coveredBy: 'expenses:manage' },
   { permission: 'parties:manage', text: 'registrar clientes y proveedores' },

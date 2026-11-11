@@ -33,6 +33,7 @@ export const MENU: MenuItem[] = [
   { label: 'Historial de caja', route: '/app/caja/historial', icon: 'pi pi-history', glyph: 'cash-history', permission: 'cash:read', section: 'Ventas' },
   { label: 'Reportes', route: '/app/reportes', icon: 'pi pi-chart-bar', glyph: 'reports', permission: 'reports:read', section: 'Reportes' },
   { label: 'Gastos', route: '/app/gastos', icon: 'pi pi-receipt', glyph: 'expenses', permission: 'expenses:read', section: 'Reportes' },
+  { label: 'Retenciones', route: '/app/retenciones', icon: 'pi pi-percentage', glyph: 'withholdings', permission: 'finance:read', section: 'Reportes' },
   {
     label: 'Libro de dispensación',
     route: '/app/farmacia/dispensaciones',

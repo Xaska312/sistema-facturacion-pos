@@ -661,3 +661,16 @@ Informe de caja: `cash.expenses` es ahora el neto de `EXPENSE` y `EXPENSE_VOID`.
 | POST | `/recurring-expenses/{id}/pay` | `expenses:manage` | `{dueDate, amount?, paymentMethodId?, branchId?, date?, supplierId?, reference?, note?}`, `Idempotency-Key` opcional. Lo vacío se toma del gasto fijo; crea el gasto con las reglas de `POST /expenses`. 422 si la fecha no le toca o falta más de una semana; 409 si ya se pagó o se saltó |
 | POST | `/recurring-expenses/{id}/skip` | `expenses:manage` | `{dueDate}`: "este mes no". 409 si ya se pagó o se saltó |
 | DELETE | `/recurring-expenses/{id}/skip/{dueDate}` | `expenses:manage` | Deshace el salto; 404 si no estaba saltada |
+
+## Retenciones (Finanzas parte B, decisión 322)
+
+Medio de pago `WITHHOLDING` ("Retención", no mueve la caja). En `POST /sales`, `POST /quotes/{id}/sell` y `POST /orders/{id}/deliver`, la línea de pago con ese medio lleva `withholdings: [{type, rate?, base?, amount?}]` (`type`: RETEFUENTE, RETEICA o RETEIVA; la suma debe dar el `amount` de la línea). En `POST /orders/{id}/payments`, `withholdings` acompaña al abono y `amount` es lo que pagó el cliente. Sin `finance:manage` solo valen las de la ficha del cliente (403 si no está), con su tarifa y la base que calcula el servidor (422 si el valor no cuadra). `OrderView` trae `pendingTaxBase`, `pendingIva` y por línea `taxBase` e `iva`; `QuoteView` trae `taxBase` e `iva` por línea.
+
+| Método | Ruta | Permiso | Notas |
+|---|---|---|---|
+| GET | `/customers/{id}/withholdings` | `finance:read`, `sales:create`, `orders:create` o `parties:read` | Las habituales: `[{type, rate}]` |
+| PUT | `/customers/{id}/withholdings` | `finance:manage` | `{items: [{type, rate}]}` (reemplaza; vacío = ninguna) |
+| GET | `/withholdings?from=&to=&customerId=&type=&certificate=&includeVoided=&page=&size=` | `finance:read` | `certificate`: PENDING o RECEIVED. Cada una: `{id, date, customerId, customerName, customerDocument, type, base, rate, amount, origin, saleId, orderId, reversal, voided, certificateReceived, certificateNote, certificateAt, createdByName, createdAt}` |
+| GET | `/withholdings/summary` (mismos filtros) | `finance:read` | `{total, count, pendingCertificates, pendingTotal, byType[], byCustomer[{customerId, name, document, total, count, pendingCertificates, pendingTotal}]}`; sin las de ventas anuladas |
+| GET | `/withholdings.csv` | `finance:read` | Para Excel. Auditoría `REPORT_EXPORTED` |
+| POST | `/withholdings/certificate` | `finance:manage` | `{ids[], received, note?}` (hasta 500). 422 con una reversa o una de venta anulada |

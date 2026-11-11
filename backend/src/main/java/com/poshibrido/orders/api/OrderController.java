@@ -1,5 +1,6 @@
 package com.poshibrido.orders.api;
 
+import com.poshibrido.finance.application.WithholdingApi;
 import com.poshibrido.orders.application.OrderQueryService;
 import com.poshibrido.orders.application.OrderQueryService.Filter;
 import com.poshibrido.orders.application.OrderService;
@@ -78,13 +79,15 @@ public class OrderController {
                                  @Digits(integer = 12, fraction = 2) @WholePesos BigDecimal amount,
                                  @NotNull UUID paymentMethodId,
                                  @Size(max = 60) String reference,
-                                 @Size(max = 255) String notes) {
+                                 @Size(max = 255) String notes,
+                                 @Size(max = 3) List<WithholdingApi.@NotNull Line> withholdings) {
     }
 
     public record DeliverPayment(@NotNull UUID paymentMethodId,
                                  @NotNull @DecimalMin(value = "0", inclusive = false)
                                  @Digits(integer = 12, fraction = 2) @WholePesos BigDecimal amount,
-                                 @Size(max = 60) String reference) {
+                                 @Size(max = 60) String reference,
+                                 @Size(max = 3) List<WithholdingApi.@NotNull Line> withholdings) {
     }
 
     public record DeliverRequest(@NotEmpty @Size(max = 100) List<@NotNull UUID> itemIds,
@@ -137,7 +140,8 @@ public class OrderController {
     public OrderView pay(@PathVariable UUID id, @Valid @RequestBody PaymentRequest request,
                          @RequestHeader(name = "Idempotency-Key", required = false) String idempotencyKey) {
         return service.pay(id, new PaymentInput(request.amount(), request.paymentMethodId(), request.reference(),
-                request.notes()), idempotencyKey);
+                request.notes(), request.withholdings() == null ? List.of() : request.withholdings()),
+                idempotencyKey);
     }
 
     /** Entrega como venta (en la caja abierta de quien entrega); requiere además vender. */
@@ -146,7 +150,8 @@ public class OrderController {
     public DeliveryResult deliver(@PathVariable UUID id, @Valid @RequestBody DeliverRequest request,
                                   @RequestHeader(name = "Idempotency-Key", required = false) String idempotencyKey) {
         List<PaymentLine> payments = request.payments() == null ? List.of() : request.payments().stream()
-                .map(p -> new PaymentLine(p.paymentMethodId(), p.amount(), p.reference()))
+                .map(p -> new PaymentLine(p.paymentMethodId(), p.amount(), p.reference(),
+                        p.withholdings() == null ? List.of() : p.withholdings()))
                 .toList();
         return service.deliver(id, new DeliverInput(request.itemIds(), payments), idempotencyKey);
     }

@@ -23,7 +23,7 @@ public final class OrderViews {
     public record ItemView(UUID id, int lineNo, UUID productId, String sku, String productName, String unitCode,
                            String description, BigDecimal width, BigDecimal length, BigDecimal quantity,
                            BigDecimal unitPrice, BigDecimal total, boolean delivered, UUID saleId, String saleNumber,
-                           Instant deliveredAt) {
+                           Instant deliveredAt, BigDecimal taxBase, BigDecimal iva) {
     }
 
     public record PaymentView(UUID id, long entryNo, OrderPaymentType type, BigDecimal amount, String methodCode,
@@ -37,7 +37,7 @@ public final class OrderViews {
                             BigDecimal pendingTotal, BigDecimal deposited, BigDecimal depositAvailable,
                             BigDecimal balanceDue, String createdByName, Instant createdAt, Instant deliveredAt,
                             Instant cancelledAt, String cancelReason, List<ItemView> items,
-                            List<PaymentView> payments) {
+                            List<PaymentView> payments, BigDecimal pendingTaxBase, BigDecimal pendingIva) {
     }
 
     public record OrderRow(UUID id, String number, OrderStatus status, UUID customerId, String customerName,
