@@ -1,7 +1,7 @@
 # Imagen de producción del frontend: build de Angular + Caddy (HTTPS automático, archivos estáticos y proxy al API).
 # Para desarrollo se sigue usando Dockerfile.dev (ng serve).
 
-FROM --platform=$BUILDPLATFORM node:22-alpine AS build
+FROM --platform=$BUILDPLATFORM node:24-alpine AS build
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --no-audit --no-fund
