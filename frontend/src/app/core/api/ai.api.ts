@@ -125,7 +125,7 @@ export interface CatalogMatch {
   by: CatalogMatchBy;
   currentCost: number | null;
   currentPrice: number;
-  /** El costo lo calcula el inventario (ya tiene movimientos): la lista no lo cambia. */
+  /** El costo lo calcula el inventario (ya tiene movimientos); la lista igual lo cambia, con su renglón en el kardex (decisión 334). */
   costLocked: boolean;
 }
 

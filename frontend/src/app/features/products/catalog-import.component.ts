@@ -254,11 +254,7 @@ type Filter = 'ALL' | 'CREATE' | 'UPDATE' | 'CHECK' | 'SKIP';
                   }
                   <td class="py-2 px-2 text-right">
                     <input type="number" min="0" step="any" class="field w-28 text-right" [(ngModel)]="e.cost"
-                           (ngModelChange)="touch()" [disabled]="e.match?.costLocked === true"
-                           [attr.aria-label]="'Costo de ' + e.name" />
-                    @if (e.match?.costLocked) {
-                      <span class="block text-xs text-muted mt-1 max-w-36 ml-auto">El costo lo pone el inventario con la próxima compra.</span>
-                    }
+                           (ngModelChange)="touch()" [attr.aria-label]="'Costo de ' + e.name" />
                   </td>
                   <td class="py-2 px-2 text-right">
                     <input type="number" min="0" step="100" class="field w-28 text-right font-semibold" [(ngModel)]="e.price"

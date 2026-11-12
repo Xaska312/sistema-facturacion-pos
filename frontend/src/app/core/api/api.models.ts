@@ -291,7 +291,7 @@ export interface Product {
   taxType: TaxType | null;
   taxRate: number | null;
   cost: number;
-  /** El costo lo calcula el inventario (promedio ponderado): no se edita. */
+  /** El costo lo calcula el inventario (promedio ponderado); igual se puede cambiar a mano (decisión 334). */
   costLocked: boolean;
   salePrice: number;
   trackInventory: boolean;
@@ -416,7 +416,9 @@ export type MovementType =
   | 'TRANSFER_IN'
   | 'RETURN'
   | 'DISPOSAL'
-  | 'SUPPLIER_RETURN';
+  | 'SUPPLIER_RETURN'
+  /** Cambio del costo a mano o por importación (decisión 334): cantidad 0. */
+  | 'COST_CHANGE';
 export type InventoryDocumentType = 'INITIAL' | 'ADJUSTMENT' | 'TRANSFER' | 'COUNT' | 'DISPOSAL';
 export type Direction = 'IN' | 'OUT';
 

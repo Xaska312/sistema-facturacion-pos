@@ -14,7 +14,9 @@ public enum MovementType {
     /** Baja de vencidos o averiados (Fase 13-3). */
     DISPOSAL(false),
     /** Devolución al proveedor de lo comprado (Fase 13-3). */
-    SUPPLIER_RETURN(false);
+    SUPPLIER_RETURN(false),
+    /** Cambio del costo a mano o por importación (decisión 334): cantidad 0, solo deja el rastro en el kardex. */
+    COST_CHANGE(false);
 
     private final boolean entry;
 

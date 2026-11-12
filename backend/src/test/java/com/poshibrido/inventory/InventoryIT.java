@@ -87,24 +87,37 @@ class InventoryIT extends IntegrationTest {
         assertLedgerConsistent(owner);
         api.getWith(s, "/api/v1/inventory/consistency").andExpect(jsonPath("$.consistent").value(true));
 
-        // El costo ya lo maneja el inventario: no se edita a mano
+        // Decisión 334: el costo lo maneja el inventario pero sí se cambia a mano, con su renglón en el kardex
         assertThat((Boolean) JsonPath.read(body(api.getWith(s, "/api/v1/products/" + product)), "$.costLocked")).isTrue();
         String edit = """
                 {"sku":"GAS-1","name":"Producto GAS-1","baseUnitId":"%s","taxId":"%s","cost":%s,"salePrice":2100,
                  "trackInventory":true,"conversions":[{"unitId":"%s","factor":12}]}
                 """;
-        api.putWith(s, "/api/v1/products/" + product, edit.formatted(UND, IVA19, "999", CJ)).andExpect(status().is(422));
-        api.putWith(s, "/api/v1/products/" + product, edit.formatted(UND, IVA19, "1333.33", CJ)).andExpect(status().isOk());
+        api.putWith(s, "/api/v1/products/" + product, edit.formatted(UND, IVA19, "1500", CJ)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.cost").value(1500));
+        String afterEdit = body(api.getWith(s, "/api/v1/inventory/kardex?productId=" + product + "&branchId=" + principal));
+        assertThat((String) JsonPath.read(afterEdit, "$.content[0].type")).isEqualTo("COST_CHANGE");
+        assertNumber(afterEdit, "$.content[0].quantity", "0");
+        assertNumber(afterEdit, "$.content[0].balanceAfter", "20");
+        assertNumber(afterEdit, "$.content[0].unitCost", "1500");
+        // Sin cambiar el costo no se agrega otro renglón
+        api.putWith(s, "/api/v1/products/" + product, edit.formatted(UND, IVA19, "1500", CJ)).andExpect(status().isOk());
+        assertThat(JsonPath.<List<String>>read(body(api.getWith(s, "/api/v1/inventory/kardex?productId=" + product
+                + "&branchId=" + principal)), "$.content[*].type")).filteredOn("COST_CHANGE"::equals).hasSize(1);
         // Con movimientos, la unidad base no cambia (los saldos están en esa unidad)
-        api.putWith(s, "/api/v1/products/" + product, edit.formatted(KG, IVA19, "1333.33", CJ)).andExpect(status().is(422));
-        // La importación CSV tampoco cambia el costo promedio
+        api.putWith(s, "/api/v1/products/" + product, edit.formatted(KG, IVA19, "1500", CJ)).andExpect(status().is(422));
+        // La importación también cambia el costo (decisión 334)
         String csv = """
                 sku,nombre,unidad,impuesto,precio,costo
-                GAS-1,Producto GAS-1,UND,IVA19,2100,500
+                GAS-1,Producto GAS-1,UND,IVA19,2100,1400
                 """;
         api.upload(s, "/api/v1/products/import", csv.getBytes(StandardCharsets.UTF_8), "dryRun", "false")
                 .andExpect(jsonPath("$.applied").value(true));
-        assertNumber(body(api.getWith(s, "/api/v1/products/" + product)), "$.cost", "1333.33");
+        assertNumber(body(api.getWith(s, "/api/v1/products/" + product)), "$.cost", "1400");
+        assertThat(JsonPath.<List<String>>read(body(api.getWith(s, "/api/v1/inventory/kardex?productId=" + product
+                + "&branchId=" + principal)), "$.content[*].type")).filteredOn("COST_CHANGE"::equals).hasSize(2);
+        assertLedgerConsistent(owner);
+        api.getWith(s, "/api/v1/inventory/consistency").andExpect(jsonPath("$.consistent").value(true));
     }
 
     @Test

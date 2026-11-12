@@ -12,6 +12,7 @@ export const MOVEMENT_LABEL: Record<MovementType, string> = {
   RETURN: 'Devolución',
   DISPOSAL: 'Baja (vencido o averiado)',
   SUPPLIER_RETURN: 'Devolución al proveedor',
+  COST_CHANGE: 'Cambio de costo',
 };
 
 export const DOCUMENT_LABEL: Record<InventoryDocumentType, string> = {

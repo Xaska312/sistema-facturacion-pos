@@ -1069,6 +1069,7 @@ export const MANUAL: readonly ManualChapter[] = [
           'Pon una existencia mínima a los productos que no deben agotarse: aparecen en las alertas del inicio.',
           'El kardex de un producto muestra cada entrada y salida, con la existencia y el costo después de cada una.',
           'El costo se calcula como costo promedio y con él se calculan la utilidad y el valor del inventario.',
+          'Si el costo quedó mal o subió, cámbialo en el producto (o con un Excel o Cargar con Aska): desde ahí el promedio sigue con el nuevo, queda un renglón "Cambio de costo" en el kardex y las ventas anteriores no cambian. Debajo ves el margen y, si bajó, el precio que lo recupera.',
         ],
       },
     ],

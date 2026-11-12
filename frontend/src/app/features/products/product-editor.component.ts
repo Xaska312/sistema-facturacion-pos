@@ -7,6 +7,9 @@ import { InputTextModule } from 'primeng/inputtext';
 import { EMPTY, Observable, catchError, forkJoin, map, of, switchMap } from 'rxjs';
 import { Category, PriceList, Product, Tax, Unit } from '../../core/api/api.models';
 import { CatalogApi } from '../../core/api/catalog.api';
+import { OrganizationApi } from '../../core/api/organization.api';
+import { AuthService } from '../../core/auth/auth.service';
+import { priceFor } from './catalog-text';
 import { formatCop } from '../../shared/money';
 import { barcodeGroup, conversionGroup, fillForm, listPriceGroup, productForm, skuFromName, toInput } from './product-form';
 import { ConfirmService } from '../../shared/confirm';
@@ -68,14 +71,25 @@ import { MedicineSectionComponent } from './medicine-section.component';
           </label>
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">Costo (lo que te cuesta a ti)</span>
-            <input pInputText appPesos="2" formControlName="cost"
-                   [readonly]="product()?.costLocked === true" />
+            <input pInputText appPesos="2" formControlName="cost" />
             @if (product()?.costLocked) {
               <small class="text-muted">
-                <app-term term="costo-promedio">Costo promedio</app-term> ponderado, calculado por el inventario.
+                <app-term term="costo-promedio">Costo promedio</app-term> que calcula el inventario. Si lo cambias, desde
+                ahí sigue con el nuevo y queda en el kardex; las ventas anteriores no cambian.
               </small>
             } @else {
               <small class="text-muted">Opcional. Sirve para saber cuánto ganas.</small>
+            }
+            <!-- Decisión 334: el margen con el costo de ahora y, si bajó, el precio que lo recupera. -->
+            @if (costAdvice(); as a) {
+              <small class="flex flex-wrap items-center gap-2" role="status">
+                <span>Margen: <strong>{{ a.now }} %</strong>@if (a.before !== null && a.before !== a.now) { (antes {{ a.before }} %)}</span>
+                @if (a.suggested) {
+                  <button type="button" class="text-brand font-medium hover:underline min-h-8"
+                          (click)="form.patchValue({ salePrice: a.suggested })">
+                    Usar {{ formatCop(a.suggested) }} para volver al {{ a.before }} %</button>
+                }
+              </small>
             }
           </label>
           <label class="flex flex-col gap-1">
@@ -296,6 +310,35 @@ export class ProductEditorComponent implements OnInit, HasUnsavedChanges {
   private readonly moments = inject(AskaMomentsState);
   /** Parámetro de ruta :id (ausente en /nuevo). */
   readonly id = input<string>();
+  private readonly organization = inject(OrganizationApi);
+  private readonly authService = inject(AuthService);
+  /** Si los precios del negocio incluyen IVA (para el margen, decisión 334); sin permiso de ver ajustes, sí. */
+  private readonly includesTax = signal(true);
+
+  /**
+   * Margen con el costo que está en el formulario y el de antes (el guardado); si el margen bajó, el precio que lo
+   * recupera, redondeado hacia arriba a $100 (decisión 334). Null si no hay precio o costo.
+   */
+  protected costAdvice(): { now: number; before: number | null; suggested: number | null } | null {
+    const v = this.form.getRawValue();
+    const rate = this.taxes().find((t) => t.id === v.taxId)?.rate ?? 0;
+    const price = Number(v.salePrice ?? 0);
+    const cost = Number(v.cost ?? 0);
+    if (!(price > 0) || !(cost > 0) || v.openPrice) {
+      return null;
+    }
+    const margin = (c: number) => {
+      const net = this.includesTax() && rate > 0 ? price / (1 + rate / 100) : price;
+      return Math.round(((net - c) / net) * 1000) / 10;
+    };
+    const saved = this.product();
+    const before = saved && saved.cost > 0 && Number(saved.salePrice) === price ? margin(Number(saved.cost)) : null;
+    const now = margin(cost);
+    const suggested = before !== null && before > 0 && before < 100 && now < before - 1
+      ? priceFor(cost, before, rate, this.includesTax())
+      : null;
+    return { now, before, suggested };
+  }
   /** Datos para empezar el producto desde la factura de un proveedor (decisión 290): ?nombre=…&codigo=…&costo=… */
   readonly nombre = input<string>();
   readonly codigo = input<string>();
@@ -354,6 +397,9 @@ export class ProductEditorComponent implements OnInit, HasUnsavedChanges {
   }
 
   ngOnInit(): void {
+    if (this.authService.hasPermission('settings:read')) {
+      this.organization.settings().subscribe({ next: (s) => this.includesTax.set(s.pricesIncludeTax), error: () => undefined });
+    }
     forkJoin({
       categories: this.api.categories(),
       units: this.api.units(),

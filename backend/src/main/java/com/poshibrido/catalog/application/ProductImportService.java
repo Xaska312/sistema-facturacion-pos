@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -251,8 +252,10 @@ public class ProductImportService {
                 Product product = existing.get(row.sku());
                 // En una actualización, las columnas ausentes conservan el valor actual del producto.
                 boolean keepUnit = product != null && !columns.containsKey("unidad");
-                // El costo de un producto con movimientos lo calcula el inventario: el archivo no lo cambia.
-                boolean keepCost = product != null && (product.isCostLocked() || !columns.containsKey("costo"));
+                // Decisión 334: el archivo también cambia el costo de un producto con movimientos (con su renglón en el
+                // kardex); sin la columna "costo" se conserva.
+                boolean keepCost = product != null && !columns.containsKey("costo");
+                BigDecimal oldCost = product == null ? null : product.getCost();
                 // Con existencias no se deja de controlar el inventario (QA INV-3): el archivo no lo apaga.
                 boolean keepTracking = product != null && (!columns.containsKey("controla_inventario")
                         || (product.isTrackInventory() && !row.trackInventory() && stock.hasStock(product.getId())));
@@ -272,6 +275,11 @@ public class ProductImportService {
                     products.save(product);
                 } else {
                     product.apply(data);
+                    if (product.isCostLocked() && oldCost != null
+                            && data.cost().setScale(2, RoundingMode.HALF_UP).compareTo(oldCost) != 0) {
+                        stock.recordCostChange(product.getId(), oldCost, data.cost().setScale(2, RoundingMode.HALF_UP),
+                                ProductService.costReason("por importación", oldCost, data.cost()));
+                    }
                     if (row.barcode() != null) {
                         product.addBarcodeIfMissing(row.barcode());
                     }
