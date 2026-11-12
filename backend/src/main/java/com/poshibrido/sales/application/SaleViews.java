@@ -60,12 +60,12 @@ public final class SaleViews {
                            UUID createdBy, String createdByName, Instant voidedAt, UUID voidedBy,
                            String voidedByName, String voidReason, List<ItemView> items, List<PaymentView> payments,
                            List<TaxView> taxes, ReceiptHeader receipt, TipView tip, String splitLabel,
-                           List<SaleView> together) {
+                           List<SaleView> together, String offlineNumber) {
     }
 
     /** Lo que la pantalla de venta necesita del negocio (sin requerir permisos de configuración). */
     public record PosConfig(boolean pricesIncludeTax, BigDecimal maxDiscountPercent, boolean allowNegativeStock,
                             String currency, String receiptFooter, String businessName, UUID finalConsumerId,
-                            int tipPercent) {
+                            int tipPercent, String receiptHeader) {
     }
 }

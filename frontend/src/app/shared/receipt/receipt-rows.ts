@@ -2,7 +2,7 @@ import { Sale } from '../../core/api/api.models';
 import { formatCop, formatQuantity } from '../money';
 import { documentShortLabel } from '../document-types';
 import { splitSummary } from './split-receipt';
-import { businessLines } from './doc-header';
+import { businessLines, offlineLines } from './doc-header';
 
 /**
  * El tiquete de venta como lista de renglones (decisión 326), para dibujarlo como imagen igual al impreso. Sigue el
@@ -64,8 +64,9 @@ export function receiptRows(sale: Sale): ReceiptRow[] {
       if (t.taxAmount > 0) pair(`${t.taxType} ${q(t.taxRate)} %`, cop(t.taxAmount));
     }
   };
-  const head = (title: string) => {
+  const head = (title: string, extra: string[] = []) => {
     text(title, { center: true, bold: true, gap: true });
+    for (const line of extra) text(line, { center: true, bold: true });
     text(receiptDate(sale));
     text(`Caja ${r.registerCode} · ${sale.createdByName}`);
     text(`Cliente: ${sale.customerName}`);
@@ -94,7 +95,7 @@ export function receiptRows(sale: Sale): ReceiptRow[] {
     for (const p of split.payments) pair(p.methodName, cop(p.tendered));
     if (split.change > 0) pair('Cambio', cop(split.change), { bold: true });
   } else {
-    head(`Tiquete ${sale.documentNumber}`);
+    head(`Tiquete ${sale.documentNumber}`, offlineLines(sale));
     if (sale.status === 'VOIDED') {
       text('*** VENTA ANULADA ***', { center: true, bold: true, gap: true });
       if (sale.voidReason) text(sale.voidReason, { center: true });

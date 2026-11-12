@@ -205,6 +205,7 @@ export const MANUAL: readonly ManualChapter[] = [
           'La primera vez elige el ancho del papel (80 mm o 58 mm); el navegador lo recuerda en ese equipo.',
           'Para reimprimir una venta anterior, búscala en Ventas, ábrela y toca "Reimprimir".',
           'Con "Enviar" le mandas el recibo al cliente: "WhatsApp (texto)" abre WhatsApp con los productos, el total y cómo pagó, y eliges el contacto; "Imagen del tiquete" lo manda como una foto igual al tiquete impreso, con tu logo (en el celular se abre el menú de compartir; en el computador se descarga el PNG para adjuntarlo).',
+          'Si se va el internet, sigue vendiendo: arriba sale "Sin conexión". Busca con el lector o F2 en la copia del catálogo que guarda el equipo, cobra en efectivo, tarjeta o transferencia e imprime: el tiquete sale con un número provisional y "Pendiente de enviar". Cuando vuelve el internet las ventas se envían solas y toman su número oficial. Sin conexión no se fía, no se aplica retención, se vende a Consumidor final y la caja se cierra cuando hayan llegado todas las ventas.',
         ],
         tips: [
           'El texto del pie del tiquete (horarios, redes sociales…) se cambia en Configuración → Ajustes.',

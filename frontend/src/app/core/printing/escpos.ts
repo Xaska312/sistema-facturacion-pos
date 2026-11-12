@@ -2,7 +2,7 @@ import { Sale } from '../api/api.models';
 import { documentShortLabel } from '../../shared/document-types';
 import { formatCop, formatQuantity } from '../../shared/money';
 import { splitSummary } from '../../shared/receipt/split-receipt';
-import { businessLines } from '../../shared/receipt/doc-header';
+import { businessLines, offlineLines } from '../../shared/receipt/doc-header';
 
 /**
  * Tiquete en comandos ESC/POS para la impresora térmica (decisión 286): lo arma la app y XASKA Impresora lo manda tal
@@ -253,7 +253,12 @@ export function receiptBytes(s: Sale, o: ReceiptOptions): Uint8Array {
   for (const extra of businessLines(s.receipt)) {
     p.lines(wrap(extra, w));
   }
-  p.line().bold(true).line(split ? (s.notes ?? 'Cuenta') : 'Tiquete ' + s.documentNumber).bold(false).align('left');
+  p.line().bold(true).line(split ? (s.notes ?? 'Cuenta') : 'Tiquete ' + s.documentNumber);
+  // Decisión 332: venta hecha sin internet.
+  for (const line of split ? [] : offlineLines(s)) {
+    p.lines(wrap(line, w));
+  }
+  p.bold(false).align('left');
   p.line(o.date);
   p.lines(wrap(`Caja ${s.receipt.registerCode ?? ''} · ${s.createdByName ?? ''}`, w));
   p.lines(wrap('Cliente: ' + s.customerName, w));

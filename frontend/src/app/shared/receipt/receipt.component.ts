@@ -6,7 +6,7 @@ import { ReceiptWidth, printableMm } from './receipt-prefs';
 import { documentShortLabel } from '../document-types';
 import { splitSummary } from './split-receipt';
 import { receiptDate, receiptDocument } from './receipt-rows';
-import { businessLines } from './doc-header';
+import { businessLines, offlineLines } from './doc-header';
 
 /**
  * Tiquete de venta para impresora térmica de 58 u 80 mm. El mismo componente sirve de vista previa y, con la
@@ -64,6 +64,10 @@ import { businessLines } from './doc-header';
         }
       } @else {
         <p class="center bold mt">Tiquete {{ s.documentNumber }}</p>
+        <!-- Decisión 332: venta hecha sin internet. -->
+        @for (line of offlineLines(); track $index) {
+          <p class="center bold">{{ line }}</p>
+        }
         <p>{{ date() }}</p>
         <p>Caja {{ s.receipt.registerCode }} · {{ s.createdByName }}</p>
         <p>Cliente: {{ s.customerName }}</p>
@@ -157,6 +161,7 @@ export class ReceiptComponent {
 
   protected readonly date = computed(() => receiptDate(this.sale()));
   protected readonly businessLines = computed(() => businessLines(this.sale().receipt));
+  protected readonly offlineLines = computed(() => offlineLines(this.sale()));
 
   /** "PASSPORT" → "PA" (fase 8a). */
   protected readonly shortDocType = computed(() => documentShortLabel(this.sale().customerDocumentType));

@@ -40,3 +40,14 @@ export function maxLines(max: number): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null =>
     headerLines(control.value as string | null).length > max ? { tooManyLines: { max } } : null;
 }
+
+/**
+ * Renglones de una venta hecha sin internet (decisión 332): mientras no llega al servidor, que está pendiente; ya
+ * enviada, con qué número provisional salió el tiquete que tiene el cliente.
+ */
+export function offlineLines(sale: { pendingSync?: boolean; offlineNumber?: string | null }): string[] {
+  if (sale.pendingSync) {
+    return ['*** SIN CONEXIÓN ***', 'Pendiente de enviar al sistema'];
+  }
+  return sale.offlineNumber ? [`Vendida sin conexión: ${sale.offlineNumber}`] : [];
+}

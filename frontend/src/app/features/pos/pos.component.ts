@@ -78,6 +78,10 @@ import { POS_TOUR } from './pos-tour';
 import { PosHeaderComponent } from './pos-header.component';
 import { ProductGridComponent } from './product-grid.component';
 import { SearchRow, groupSearchResults, searchRows } from './pos-cards';
+import { OfflineCatalogService } from '../../core/offline/offline-catalog.service';
+import { OfflineSalesService, isNetworkError } from '../../core/offline/offline-sales.service';
+import { OfflineBarComponent } from './offline-bar.component';
+import { offlineSale } from './offline-sale';
 import { VariantPickerComponent } from './variant-picker.component';
 import {
   CartLine,
@@ -87,6 +91,8 @@ import {
   cartTotals,
   cashSuggestions,
   lineKey,
+  linePrice,
+  modifierSummary,
   parseScan,
   paymentsMissingReference,
   quantity4,
@@ -131,13 +137,15 @@ const STOCK_PAGES = 5;
  */
 @Component({
   selector: 'app-pos',
-  imports: [ReceiptSendComponent, WithholdingBoxComponent, FormsModule, PesosInputDirective, ButtonModule, DialogModule, InputTextModule, SkeletonModule, HasPermissionDirective,
+  imports: [OfflineBarComponent, ReceiptSendComponent, WithholdingBoxComponent, FormsModule, PesosInputDirective, ButtonModule, DialogModule, InputTextModule, SkeletonModule, HasPermissionDirective,
     ReceiptComponent, PosHeaderComponent, ProductGridComponent, CartPanelComponent, OpenCashComponent,
     VariantPickerComponent, NewCustomerDialogComponent, ModifierPickerComponent],
   template: `
     <div class="min-h-dvh md:h-dvh flex flex-col gap-3 p-3 bg-ground">
       <app-pos-header [businessName]="config()?.businessName ?? ''" [session]="session()"
                       [userName]="auth.user()?.fullName ?? ''" [online]="online()" (help)="openHelp()" />
+      <!-- Decisión 332: sin conexión se sigue vendiendo; las ventas se envían solas al volver el internet. -->
+      <app-offline-bar class="empty:hidden" />
 
       @if (sessionError()) {
         <div class="flex-1 flex flex-col items-center justify-center gap-3 p-6 text-center" role="alert">
@@ -588,9 +596,10 @@ const STOCK_PAGES = 5;
       @if (missingRefs.length > 0) {
         <p class="text-danger text-sm mt-2" role="alert">Escribe la referencia del pago con {{ methodShortName(payments[missingRefs[0]].methodId) }}.</p>
       }
-      @if (!online()) {
+      @if (offline()) {
         <p class="mt-2 rounded-lg bg-warning-soft text-warning-soft-fg text-sm p-2" role="alert">
-          Sin conexión: revisa la red. Si reintentas el mismo cobro no se registra dos veces.
+          Sin conexión: la venta se guarda en este equipo con un número provisional y se envía sola cuando vuelva el
+          internet. Sin conexión no se fía, no se aplica retención y se vende a Consumidor final.
         </p>
       }
       <ng-template #footer>
@@ -922,6 +931,10 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   private readonly messages = inject(MessageService);
   private readonly confirm = inject(ConfirmService);
   protected readonly online = inject(OnlineService).online;
+  private readonly offlineCatalog = inject(OfflineCatalogService);
+  private readonly offlineSales = inject(OfflineSalesService);
+  /** Sin conexión de verdad (decisión 332): sin red o el servidor sin responder. */
+  protected readonly offline = this.offlineSales.offline;
   private readonly tours = inject(TourService);
   private tourTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -1026,6 +1039,9 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
       this.customer.update((c) => (c.id ? c : { ...c, id: config.finalConsumerId }));
     });
     this.loadSession();
+    // Decisión 332: la copia del catálogo y las ventas sin conexión que hayan quedado en este equipo.
+    void this.offlineSales.prepare();
+    void this.offlineCatalog.prepare(this.online());
     this.cash.allPaymentMethods().subscribe((methods) => {
       this.withholdingMethodId = methods.find((m) => m.code === WITHHOLDING_METHOD_CODE)?.id ?? null;
       this.methods.set(methods.filter((m) => m.code !== WITHHOLDING_METHOD_CODE));
@@ -1167,6 +1183,10 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
       return;
     }
     this.code = '';
+    if (this.offline()) {
+      this.scanOffline(parsed.code, parsed.quantity);
+      return;
+    }
     this.pendingLookups++;
     this.sales.lookup(parsed.code, this.customer().priceListId)
       .pipe(finalize(() => this.lookupDone()))
@@ -1174,6 +1194,12 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
         // Etiqueta de báscula (fase 8e): la cantidad viene en el código (peso, o precio ÷ precio del producto).
         next: (found) => this.addScanned(found, parsed.quantity),
         error: (error: unknown) => {
+          if (isNetworkError(error)) {
+            // Se fue el internet (decisión 332): se busca en la copia del catálogo de este equipo.
+            this.offlineSales.noteNetworkError();
+            this.scanOffline(parsed.code, parsed.quantity);
+            return;
+          }
           this.payWhenReady = false; // el producto no llegó: no se abre el cobro solo
           const notFound = error instanceof HttpErrorResponse && error.status === 404;
           this.messages.add({
@@ -1184,6 +1210,24 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
           this.focusScanner();
         },
       });
+  }
+
+  /** Sin conexión (decisión 332): el código se busca en la copia del catálogo de este equipo. */
+  private scanOffline(code: string, quantity: number): void {
+    const found = this.offlineCatalog.lookup(code);
+    if (!found) {
+      this.payWhenReady = false;
+      this.messages.add({
+        severity: 'warn',
+        summary: 'Sin conexión',
+        detail: this.offlineCatalog.ready()
+          ? `"${code}" no está en la copia del catálogo de este equipo. Usa F2 para buscar por nombre.`
+          : 'Este equipo aún no tiene la copia del catálogo: se baja sola la próxima vez que haya internet.',
+      });
+      this.focusScanner();
+      return;
+    }
+    this.addScanned(found, quantity);
   }
 
   /**
@@ -1430,6 +1474,15 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
     if (!text) {
       return;
     }
+    if (this.offline()) {
+      // Sin conexión (decisión 332): en la copia del catálogo; cada talla sale como un producto.
+      this.searchRows.set(this.offlineCatalog.search(text).map((i): SearchRow => ({
+        kind: 'product', id: i.productId,
+        product: { id: i.productId, sku: i.sku, name: i.name, salePrice: i.price, openPrice: i.openPrice } as Product,
+      })));
+      this.searched.set(true);
+      return;
+    }
     // Productos sin tallas y modelos por nombre (una fila por modelo, aunque tenga muchas tallas). Si no hay nada, se
     // busca entre las tallas (p. ej. el SKU o el código de una talla) y se juntan por modelo.
     forkJoin({
@@ -1471,6 +1524,10 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   }
 
   private addById(productId: string): void {
+    if (this.offline()) {
+      this.addOffline(productId);
+      return;
+    }
     this.pendingLookups++;
     this.sales.price(productId, null, this.customer().id || null)
       .pipe(finalize(() => this.lookupDone()))
@@ -1479,8 +1536,28 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
           this.searchOpen = false;
           this.addLine(price, 1);
         },
-        error: () => (this.payWhenReady = false),
+        error: (error: unknown) => {
+          if (isNetworkError(error)) {
+            this.offlineSales.noteNetworkError();
+            this.addOffline(productId);
+            return;
+          }
+          this.payWhenReady = false;
+        },
       });
+  }
+
+  /** Sin conexión (decisión 332): el precio de la copia del catálogo. */
+  private addOffline(productId: string): void {
+    const price = this.offlineCatalog.price(productId, null);
+    if (!price) {
+      this.payWhenReady = false;
+      this.messages.add({ severity: 'warn', summary: 'Sin conexión',
+        detail: 'Ese producto no está en la copia del catálogo de este equipo.' });
+      return;
+    }
+    this.searchOpen = false;
+    this.addLine(price, 1);
   }
 
   openCustomers(): void {
@@ -1993,6 +2070,14 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
       dispensation: toDispensationInput(this.dispensing(), this.rx),
     };
     this.idempotencyKey ??= newIdempotencyKey('sale');
+    if (this.offline()) {
+      if (this.tab()) {
+        this.messages.add({ severity: 'warn', summary: 'Sin conexión', detail: 'Para cobrar una cuenta de mesa se necesita internet.' });
+        return;
+      }
+      void this.saveOffline(input);
+      return;
+    }
     this.saving.set(true);
     const charging = this.tab();
     const request = charging
@@ -2028,6 +2113,13 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
       },
       error: (error: unknown) => {
         this.saving.set(false);
+        if (isNetworkError(error) && !charging) {
+          // Se fue el internet al cobrar (decisión 332): la venta se guarda en el equipo con la misma clave, así que si
+          // alcanzó a llegar al servidor no se registra dos veces.
+          this.offlineSales.noteNetworkError();
+          void this.saveOffline(input);
+          return;
+        }
         if (error instanceof HttpErrorResponse && error.status === 422) {
           // Si cerraron la caja compartida donde vendía (decisión 256), se vuelve a la apertura sin perder el carrito.
           this.cash.current().pipe(catchError(() => of(undefined))).subscribe((current) => {
@@ -2046,6 +2138,81 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
         // Un error de red conserva la clave: reintentar no duplica la venta.
       },
     });
+  }
+
+  /** Lo que no se puede cobrar sin conexión (decisión 332), o null. */
+  private offlineProblem(input: SaleInput): string | null {
+    if (input.customerId) {
+      return 'Sin conexión se vende a Consumidor final: quita el cliente o espera el internet.';
+    }
+    if (input.payments.some((p) => this.methodCode(p.paymentMethodId) === CREDIT_METHOD_CODE)) {
+      return 'El fiado necesita internet para revisar el cupo del cliente.';
+    }
+    if (input.payments.some((p) => p.paymentMethodId === this.withholdingMethodId)) {
+      return 'La retención necesita internet.';
+    }
+    if (input.dispensation) {
+      return 'La venta bajo fórmula necesita internet.';
+    }
+    return null;
+  }
+
+  /**
+   * Venta sin conexión (decisión 332): se guarda en el equipo con un número provisional y se imprime; se envía sola al
+   * volver el internet con la misma clave. Las adiciones van en la nota y en el precio de la línea.
+   */
+  private async saveOffline(input: SaleInput): Promise<void> {
+    const session = this.session();
+    const config = this.config();
+    const user = this.auth.user();
+    const key = this.idempotencyKey;
+    if (!session || !config || !user || !key) {
+      return;
+    }
+    const problem = this.offlineProblem(input);
+    if (problem) {
+      this.messages.add({ severity: 'warn', summary: 'Sin conexión', detail: problem, life: 7000 });
+      return;
+    }
+    this.saving.set(true);
+    try {
+      const number = await this.offlineSales.nextNumber(session.cashRegisterId, session.registerCode ?? 'CAJA');
+      const soldAt = new Date().toISOString();
+      const lines = this.lines();
+      const offlineInput: SaleInput = {
+        ...input,
+        items: lines.map((l) => ({
+          productId: l.productId,
+          unitId: l.unitId,
+          quantity: l.quantity,
+          discountPercent: l.discountPercent > 0 ? l.discountPercent : null,
+          unitPrice: linePrice(l),
+          ...(l.modifiers?.length || l.note
+            ? { note: [modifierSummary(l), l.note ?? ''].filter((t) => t.trim()).join(' · ').slice(0, 200) }
+            : {}),
+        })),
+        offline: { number, soldAt },
+      };
+      const sale = offlineSale({
+        id: `offline:${key}`, number, soldAt, input: offlineInput, lines, payments: this.payments,
+        methods: this.methods(), config, session, userId: user.id, userName: user.fullName,
+        taxOf: (l) => {
+          const p = this.offlineCatalog.price(l.productId, l.unitId);
+          return { taxId: p?.taxId ?? `rate-${l.taxRate}`, taxType: p?.taxType ?? 'IVA' };
+        },
+      });
+      await this.offlineSales.enqueue({ key, input: offlineInput, sale });
+      this.payOpen = false;
+      this.lastSale.set(sale);
+      this.resetSale();
+      this.receiptOpen = true;
+      void this.afterSale(sale);
+    } catch {
+      this.messages.add({ severity: 'error', summary: 'No se guardó la venta',
+        detail: 'Este equipo no pudo guardarla. Anótala a mano y regístrala cuando vuelva el internet.', life: 10000 });
+    } finally {
+      this.saving.set(false);
+    }
   }
 
   /** Al cerrar el tiquete del cobro de una cuenta, de vuelta a las mesas. */

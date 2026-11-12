@@ -1,8 +1,8 @@
 import { HttpClient, HttpContext, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { SILENT_CLIENT_ERRORS } from '../errors/error.interceptor';
-import { PageResponse, PosConfig, ProductLookup, Sale, SaleInput, SaleRow, SaleStatus } from './api.models';
+import { SILENT_ALL_ERRORS, SILENT_CLIENT_ERRORS } from '../errors/error.interceptor';
+import { OfflineCatalog, PageResponse, PosConfig, ProductLookup, Sale, SaleInput, SaleRow, SaleStatus } from './api.models';
 import { pageParams } from './organization.api';
 
 export interface SaleFilters {
@@ -49,6 +49,21 @@ export class SalesApi {
   create(input: SaleInput, idempotencyKey: string): Observable<Sale> {
     return this.http.post<Sale>('/api/v1/sales', input, {
       headers: new HttpHeaders({ 'Idempotency-Key': idempotencyKey }),
+    });
+  }
+
+  /** Copia del catálogo para vender sin internet (decisión 332); sin avisos si falla. */
+  offlineCatalog(): Observable<OfflineCatalog> {
+    return this.http.get<OfflineCatalog>('/api/v1/sales/offline-catalog', {
+      context: new HttpContext().set(SILENT_ALL_ERRORS, true),
+    });
+  }
+
+  /** Envía una venta hecha sin internet (decisión 332); los errores los muestra la cola, no un aviso. */
+  sendOffline(input: SaleInput, idempotencyKey: string): Observable<Sale> {
+    return this.http.post<Sale>('/api/v1/sales', input, {
+      headers: new HttpHeaders({ 'Idempotency-Key': idempotencyKey }),
+      context: new HttpContext().set(SILENT_ALL_ERRORS, true),
     });
   }
 

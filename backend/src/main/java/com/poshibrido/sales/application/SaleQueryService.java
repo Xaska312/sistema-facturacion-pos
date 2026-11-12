@@ -85,7 +85,8 @@ public class SaleQueryService {
     public PosConfig posConfig() {
         BusinessSettings cfg = settings.current();
         return new PosConfig(cfg.pricesIncludeTax(), cfg.maxDiscountPercent(), cfg.allowNegativeStock(),
-                cfg.currency(), cfg.receiptFooter(), businessName(), CustomerApi.FINAL_CONSUMER_ID, cfg.tipPercent());
+                cfg.currency(), cfg.receiptFooter(), businessName(), CustomerApi.FINAL_CONSUMER_ID, cfg.tipPercent(),
+                cfg.receiptHeader());
     }
 
     /** Precio vigente de un producto en una unidad para el cliente indicado (consumidor final si es nulo). */
@@ -207,7 +208,7 @@ public class SaleQueryService {
                 s.getTaxTotal(), s.getTotal(), s.getPaidTotal(), s.getChangeAmount(), s.getNotes(), s.getCreatedBy(),
                 names.get(s.getCreatedBy()), s.getVoidedAt(), s.getVoidedBy(),
                 s.getVoidedBy() == null ? null : names.get(s.getVoidedBy()), s.getVoidReason(), itemViews,
-                paymentViews, taxViews, receipt, tip(id, methods), splitLabel, together);
+                paymentViews, taxViews, receipt, tip(id, methods), splitLabel, together, s.getOfflineNumber());
     }
 
     /** Propina de la venta (Fase 12b-5), si tiene. */

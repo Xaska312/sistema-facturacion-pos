@@ -107,6 +107,14 @@ public class Sale {
     @Column(name = "voided_at")
     private Instant voidedAt;
 
+    /** Número provisional del tiquete si se vendió sin internet (decisión 332). */
+    @Column(name = "offline_number")
+    private String offlineNumber;
+
+    /** Cuándo llegó al servidor una venta hecha sin internet (decisión 332); created_at es cuando se vendió. */
+    @Column(name = "offline_synced_at")
+    private Instant offlineSyncedAt;
+
     @Column(name = "voided_by")
     private UUID voidedBy;
 
@@ -157,6 +165,18 @@ public class Sale {
         s.createdBy = d.createdBy();
         s.createdAt = Instant.now();
         return s;
+    }
+
+    /**
+     * Venta hecha sin internet (decisión 332): queda con el número provisional y la hora en que se vendió en el equipo,
+     * si es creíble (no en el futuro ni de hace más de 7 días; si no, la de llegada).
+     */
+    public void markOffline(String number, Instant soldAt, Instant now) {
+        this.offlineNumber = number;
+        this.offlineSyncedAt = now;
+        if (soldAt != null && !soldAt.isAfter(now.plusSeconds(300)) && soldAt.isAfter(now.minus(java.time.Duration.ofDays(7)))) {
+            this.createdAt = soldAt;
+        }
     }
 
     /** Número visible del tiquete, p. ej. {@code POS-12}. */

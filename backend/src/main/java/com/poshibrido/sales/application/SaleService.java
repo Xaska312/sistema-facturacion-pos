@@ -175,6 +175,32 @@ public class SaleService {
     }
 
     /**
+     * Venta hecha sin internet (decisión 332) que el equipo envía al volver la conexión: se respeta el precio con el
+     * que se cobró (aunque haya cambiado), no frena por existencias (se avisa al dueño en la auditoría) y queda con la
+     * fecha y el número provisional del tiquete. La {@code Idempotency-Key} es la misma con la que se guardó en el
+     * equipo, así que reenviarla no duplica la venta.
+     */
+    public SaleView createOffline(Create command, String idempotencyKey, SaleCommands.Offline offline) {
+        UUID actor = CurrentActor.requireUserId();
+        String key = requireKey(idempotencyKey);
+        Optional<UUID> existing = findByKey(key, actor);
+        if (existing.isPresent()) {
+            return queries.sale(existing.get());
+        }
+        UUID id;
+        try {
+            id = tx.execute(status -> register(command, key, actor, Options.offline(offline)));
+        } catch (RuntimeException ex) {
+            Optional<UUID> winner = findByKey(key, actor);
+            if (winner.isPresent()) {
+                return queries.sale(winner.get());
+            }
+            throw ex;
+        }
+        return queries.sale(id);
+    }
+
+    /**
      * Venta de la entrega de un pedido por encargo (decisión 258): las líneas llevan el precio acordado en el pedido
      * (no el de la lista) y su descripción, y {@code depositApplied} se paga con "Anticipo" (exactamente ese valor: el
      * pedido lo descuenta de lo anticipado). Corre dentro de la transacción del pedido (que ya lo tiene bloqueado). La
@@ -227,13 +253,22 @@ public class SaleService {
      * del producto); {@code depositApplied}: lo que se paga con "Anticipo" (solo en la entrega de un pedido).
      */
     private record Options(boolean agreedPrices, boolean fromOrder, List<String> names, BigDecimal depositApplied,
-                           boolean allowTip) {
-        static final Options POS = new Options(false, false, null, BigDecimal.ZERO, false);
+                           boolean allowTip, SaleCommands.Offline offline) {
+        static final Options POS = new Options(false, false, null, BigDecimal.ZERO, false, null);
         /** Cobro de una cuenta de mesa: como el POS, y admite propina (Fase 12b-5). */
-        static final Options TAB = new Options(false, false, null, BigDecimal.ZERO, true);
+        static final Options TAB = new Options(false, false, null, BigDecimal.ZERO, true, null);
 
         Options(boolean agreedPrices, boolean fromOrder, List<String> names, BigDecimal depositApplied) {
-            this(agreedPrices, fromOrder, names, depositApplied, false);
+            this(agreedPrices, fromOrder, names, depositApplied, false, null);
+        }
+
+        /** Venta sin internet (decisión 332): el precio cobrado manda, como un precio acordado. */
+        static Options offline(SaleCommands.Offline offline) {
+            return new Options(true, false, null, BigDecimal.ZERO, false, offline);
+        }
+
+        boolean isOffline() {
+            return offline != null;
         }
     }
 
@@ -272,8 +307,9 @@ public class SaleService {
         DispensationRules.Checked dispensed = dispensation.check(lineProducts, productNames, c.dispensation(),
                 options == Options.POS, java.time.LocalDate.now(java.time.ZoneId.of(cfg.timezone())));
         Totals totals = Totals.of(priced);
-        if (!changes.isEmpty() || (c.expectedTotal() != null
-                && c.expectedTotal().setScale(2, RoundingMode.HALF_UP).compareTo(totals.total()) != 0)) {
+        // Sin internet (decisión 332) el cliente ya pagó lo que vio: no se frena por diferencias de redondeo.
+        if (!options.isOffline() && (!changes.isEmpty() || (c.expectedTotal() != null
+                && c.expectedTotal().setScale(2, RoundingMode.HALF_UP).compareTo(totals.total()) != 0))) {
             throw new PriceChangedException(changes, c.expectedTotal(), totals.total());
         }
 
@@ -386,6 +422,9 @@ public class SaleService {
                 customer.documentNumber(), customer.verificationDigit(), customer.name(), customer.priceListId(),
                 cfg.pricesIncludeTax(), totals.gross(), totals.discount(), totals.base(), totals.tax(), totals.total(),
                 settlement.paidTotal(), settlement.change(), priced.size(), blankToNull(c.notes()), key, actor));
+        if (options.isOffline()) {
+            sale.markOffline(options.offline().number(), options.offline().soldAt(), Instant.now());
+        }
         em.persist(sale);
 
         Map<UUID, BigDecimal[]> byTax = new LinkedHashMap<>();
@@ -429,7 +468,7 @@ public class SaleService {
                 if (l.price().trackInventory()) {
                     // Con lotes, FEFO: primero lo que no tiene lote, luego el que vence primero; nunca un vencido.
                     stock.postOut(session.branchId(), l.line().productId(), MovementType.SALE, l.baseQuantity(),
-                            cfg.allowNegativeStock(), false, REFERENCE_TYPE, saleId, label);
+                            cfg.allowNegativeStock() || options.isOffline(), false, REFERENCE_TYPE, saleId, label);
                 }
             }
         }
@@ -464,6 +503,10 @@ public class SaleService {
         after.put("items", priced.size());
         after.put("customerId", customer.id());
         after.put("cashSessionId", session.id());
+        if (options.isOffline()) {
+            after.put("offlineNumber", options.offline().number());
+            after.put("offlineSoldAt", options.offline().soldAt());
+        }
         if (tipMethod != null) {
             after.put("tip", tipAmount);
             after.put("tipMethod", tipMethod.code());
@@ -504,7 +547,8 @@ public class SaleService {
             if (options.agreedPrices()) {
                 // Pedido por encargo o cotización: manda el precio acordado.
                 BigDecimal agreed = line.expectedUnitPrice();
-                if (agreed == null || agreed.signum() <= 0) {
+                // Sin internet se aceptan productos en 0 (regalos): ya se entregaron.
+                if (agreed == null || agreed.signum() < 0 || (agreed.signum() == 0 && !options.isOffline())) {
                     throw new BusinessRuleException("Falta el precio de " + price.name() + ".");
                 }
                 price = price.withTypedPrice(agreed.setScale(2, RoundingMode.HALF_UP));
