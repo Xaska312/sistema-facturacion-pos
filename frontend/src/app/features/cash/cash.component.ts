@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
@@ -28,12 +28,16 @@ import { CASH_MOVEMENT_LABEL } from './labels';
 import { TermComponent } from '../../shared/help/term.component';
 import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
 import { permissionFlag } from '../../core/auth/permission-flag';
+import { ExpenseDialogComponent } from '../expenses/expense-dialog.component';
 
-/** Mi caja: abrir con base, registrar ingresos/egresos/retiros y cerrar con arqueo ciego. */
+/**
+ * Mi caja: abrir con base, registrar ingresos, egresos (gastos con categoría, decisión 320) y retiros, y cerrar con
+ * arqueo ciego.
+ */
 @Component({
   selector: 'app-cash',
   imports: [TermComponent, SkeletonModule, FormsModule, PesosInputDirective, RouterLink, DatePipe, ButtonModule, DialogModule, InputTextModule, HasPermissionDirective,
-    CashReportDialogComponent, PageHeaderComponent, DataTableComponent, CellTemplateDirective],
+    CashReportDialogComponent, PageHeaderComponent, DataTableComponent, CellTemplateDirective, ExpenseDialogComponent],
   template: `
     <app-page-header title="Mi caja" description="Abre tu caja con la base de efectivo, registra ingresos o retiros y ciérrala al final del turno.">
       <a *hasPermission="'cash:read'" pButton routerLink="/app/caja/historial" label="Historial de caja" icon="pi pi-history"
@@ -58,7 +62,7 @@ import { permissionFlag } from '../../core/auth/permission-flag';
           <div class="flex flex-wrap gap-2 items-start">
             <a *hasPermission="'sales:create'" routerLink="/pos"><p-button label="Ir a vender" /></a>
             <p-button label="Ingreso" severity="secondary" [outlined]="true" (onClick)="openMovement('INCOME')" />
-            <p-button label="Egreso" severity="secondary" [outlined]="true" (onClick)="openMovement('EXPENSE')" />
+            <p-button label="Egreso" severity="secondary" [outlined]="true" (onClick)="expenseDialog()?.openCash()" />
             @if (s.mine || canAudit()) {
               <p-button label="Retiro" severity="secondary" [outlined]="true" (onClick)="openMovement('WITHDRAWAL')" />
             }
@@ -168,6 +172,9 @@ import { permissionFlag } from '../../core/auth/permission-flag';
       </ng-template>
     </p-dialog>
 
+    <!-- El egreso es un gasto con categoría (decisión 320): sale del efectivo de esta caja. -->
+    <app-expense-dialog (saved)="onExpenseSaved()" />
+
     <!-- Al cerrar se abre solo: ticket para imprimir y resumen por WhatsApp. -->
     <app-cash-report-dialog [(visible)]="reportOpen" [report]="report()" />
   `,
@@ -191,6 +198,7 @@ export class CashComponent implements OnInit {
   protected readonly report = signal<CashReport | null>(null);
   protected readonly saving = signal(false);
   protected readonly canAudit = permissionFlag('cash:audit');
+  protected readonly expenseDialog = viewChild(ExpenseDialogComponent);
   /** Cajas compartidas que otra persona ya abrió (decisión 256). */
   protected readonly joinable = computed(() =>
     this.registers().filter((r) => r.busy && r.shared && r.openSessionId !== null));
@@ -289,6 +297,15 @@ export class CashComponent implements OnInit {
     this.movementReason = '';
     this.movementKey = newIdempotencyKey('cash');
     this.movementOpen = true;
+  }
+
+  /** El gasto ya sacó el efectivo de la caja: se vuelven a pedir los movimientos. */
+  onExpenseSaved(): void {
+    const s = this.session();
+    this.messages.add({ severity: 'success', summary: 'Gasto registrado', life: 3000 });
+    if (s) {
+      this.cash.movements(s.id).subscribe((list) => this.movements.set([...list].reverse()));
+    }
   }
 
   movementTitle(): string {

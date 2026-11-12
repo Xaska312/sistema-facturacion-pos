@@ -5,6 +5,7 @@ import com.poshibrido.cash.application.CashApi;
 import com.poshibrido.cash.application.CashApi.OpenSession;
 import com.poshibrido.cash.application.CashApi.PaymentMethodRef;
 import com.poshibrido.credit.application.CreditApi;
+import com.poshibrido.finance.application.WithholdingApi;
 import com.poshibrido.orders.application.OrderApi;
 import com.poshibrido.catalog.application.InventoryCatalogApi;
 import com.poshibrido.catalog.application.InventoryCatalogApi.StockProduct;
@@ -116,6 +117,10 @@ public class SaleService {
     /** Reglas de la dispensación (Fase 13-4); se inyecta aparte para no alargar el constructor. */
     @org.springframework.beans.factory.annotation.Autowired
     private DispensationRules dispensation;
+
+    /** Retenciones del cliente (decisión 322). */
+    @org.springframework.beans.factory.annotation.Autowired
+    private WithholdingApi withholdings;
 
     public SaleService(CashApi cash, CreditApi credit, OrderApi orders, StockLedger ledger, PricingApi pricing,
                        InventoryCatalogApi catalog, ModifierApi modifiers, CustomerApi customers,
@@ -281,11 +286,21 @@ public class SaleService {
         List<PaymentMethodRef> usedMethods = new ArrayList<>();
         List<PaymentInput> inputs = new ArrayList<>();
         int creditIndex = -1;
+        int withholdingIndex = -1;
         boolean depositSeen = false;
         for (PaymentLine p : paymentLines) {
             PaymentMethodRef method = p.paymentMethodId() == null ? null : methods.get(p.paymentMethodId());
             if (method == null || !method.active()) {
                 throw new BusinessRuleException("Medio de pago no válido.");
+            }
+            if (WithholdingApi.METHOD_CODE.equals(method.code())) {
+                // Retención (decisión 322): una sola línea, con su detalle; se valida cuando se conocen los totales.
+                if (withholdingIndex >= 0) {
+                    throw new BusinessRuleException("Usa una sola línea de Retención con todo su detalle.");
+                }
+                withholdingIndex = usedMethods.size();
+            } else if (p.withholdings() != null && !p.withholdings().isEmpty()) {
+                throw new BusinessRuleException("El detalle de una retención va en la línea de Retención.");
             }
             if (CreditApi.METHOD_CODE.equals(method.code())) {
                 // Con el módulo de fiados apagado (decisión 267) no se fía; las cuentas que ya hay se conservan.
@@ -331,9 +346,14 @@ public class SaleService {
             }
             tipMethod = c.tip().paymentMethodId() == null ? null : methods.get(c.tip().paymentMethodId());
             if (tipMethod == null || !tipMethod.active() || CreditApi.METHOD_CODE.equals(tipMethod.code())
-                    || DEPOSIT_METHOD.equals(tipMethod.code())) {
+                    || DEPOSIT_METHOD.equals(tipMethod.code()) || WithholdingApi.METHOD_CODE.equals(tipMethod.code())) {
                 throw new BusinessRuleException("Elige con qué se paga la propina (efectivo, tarjeta o transferencia).");
             }
+        }
+        List<WithholdingApi.Line> withheld = List.of();
+        if (withholdingIndex >= 0) {
+            withheld = withholdings.check(c.customerId(), withholdingBases(priced, totals, options.depositApplied()),
+                    paymentLines.get(withholdingIndex).withholdings(), paymentLines.get(withholdingIndex).amount());
         }
         Settlement settlement;
         try {
@@ -399,6 +419,9 @@ public class SaleService {
             PaymentMethodRef method = usedMethods.get(i);
             em.persist(SalePayment.of(saleId, i + 1, method.id(), method.code(), method.affectsCash(),
                     applied.get(i), SaleCalculator.money(p.amount()), blankToNull(p.reference())));
+            if (i == withholdingIndex) {
+                withholdings.recordForSale(saleId, i + 1, customer.id(), withheld);
+            }
         }
 
         if (stock != null) {
@@ -652,6 +675,22 @@ public class SaleService {
                               BigDecimal quantity, BigDecimal baseQuantity, BigDecimal discount,
                               LineAmounts amounts, BigDecimal unitPrice, ModifierChoices.Result modifiers,
                               String note) {
+    }
+
+    /**
+     * Base de las retenciones (decisión 322): la base gravable y el IVA de lo que se paga ahora, en proporción a lo que
+     * no cubre el anticipo de un pedido (ese ya pudo tener su retención al abonarse).
+     */
+    private static WithholdingApi.Bases withholdingBases(List<PricedLine> priced, Totals totals, BigDecimal deposit) {
+        BigDecimal iva = priced.stream().filter(l -> l.price().taxType() == com.poshibrido.catalog.domain.TaxType.IVA)
+                .map(l -> l.amounts().tax()).reduce(BigDecimal.ZERO, BigDecimal::add);
+        if (totals.total().signum() <= 0) {
+            return new WithholdingApi.Bases(BigDecimal.ZERO, BigDecimal.ZERO);
+        }
+        BigDecimal payable = totals.total().subtract(deposit == null ? BigDecimal.ZERO : deposit).max(BigDecimal.ZERO);
+        return new WithholdingApi.Bases(
+                totals.base().multiply(payable).divide(totals.total(), 0, RoundingMode.HALF_UP),
+                iva.multiply(payable).divide(totals.total(), 0, RoundingMode.HALF_UP));
     }
 
     private record Totals(BigDecimal gross, BigDecimal discount, BigDecimal base, BigDecimal tax, BigDecimal total) {

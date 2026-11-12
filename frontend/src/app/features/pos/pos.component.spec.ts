@@ -14,6 +14,7 @@ import { ModifiersApi, PosModifierCatalog } from '../../core/api/modifiers.api';
 import { PartiesApi } from '../../core/api/parties.api';
 import { PharmacyApi } from '../../core/api/pharmacy.api';
 import { SalesApi } from '../../core/api/sales.api';
+import { WithholdingsApi } from '../../core/api/withholdings.api';
 import { AuthService } from '../../core/auth/auth.service';
 import { BrandingService } from '../../core/theme/branding.service';
 import { ConfirmOptions, ConfirmService } from '../../shared/confirm';
@@ -58,9 +59,10 @@ describe('PosComponent: celular, pausar venta y cliente nuevo', () => {
     sales = jasmine.createSpyObj<SalesApi>('SalesApi', ['config', 'lookup', 'price', 'create']);
     sales.config.and.returnValue(of(config));
     sales.price.and.callFake((productId: string) => of(lookup(productId, 3000)));
-    const cash = jasmine.createSpyObj<CashApi>('CashApi', ['current', 'paymentMethods']);
+    const cash = jasmine.createSpyObj<CashApi>('CashApi', ['current', 'paymentMethods', 'allPaymentMethods']);
     cash.current.and.returnValue(of(session));
     cash.paymentMethods.and.returnValue(of([]));
+    cash.allPaymentMethods.and.returnValue(of([]));
     const catalog = jasmine.createSpyObj<CatalogApi>('CatalogApi',
       ['units', 'categories', 'products', 'productModels', 'productModel', 'product']);
     catalog.units.and.returnValue(of([]));
@@ -84,6 +86,8 @@ describe('PosComponent: celular, pausar venta y cliente nuevo', () => {
         provideRouter([]),
         { provide: SalesApi, useValue: sales },
         { provide: CashApi, useValue: cash },
+        // Decisión 322: la caja de retenciones pregunta las retenciones habituales del cliente.
+        { provide: WithholdingsApi, useValue: { usual: () => of([]) } },
         { provide: CatalogApi, useValue: catalog },
         { provide: InventoryApi, useValue: inventory },
         { provide: PartiesApi, useValue: parties },

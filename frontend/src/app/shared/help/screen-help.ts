@@ -33,7 +33,7 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     title: 'Mi caja',
     tips: [
       'Abre la caja al empezar el turno contando el efectivo del cajón (la base).',
-      'Registra como ingreso o egreso el efectivo que entra o sale sin ser una venta (por ejemplo, pagar un domicilio).',
+      'Registra como ingreso el efectivo que entra sin ser una venta, y como egreso lo que pagas con la caja (un domicilio, un arreglo): eliges en qué se gastó y queda en Gastos.',
       'Un retiro es dinero que sacas para guardarlo; no es un gasto.',
       'Al cerrar, cuenta billetes y monedas y escribe el total: el sistema calcula si cuadra.',
     ],
@@ -117,6 +117,44 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
       'Revisa cada producto, anota lote y vencimiento y rechaza lo que llegó mal: nada se guarda hasta registrar.',
     ],
     terms: ['costo-promedio'],
+  },
+  '/app/finanzas': {
+    manual: 'tablero-finanzas',
+    title: 'Finanzas',
+    tips: [
+      'Arriba, lo que vas ganando este mes: ventas sin IVA, menos el costo, menos los gastos.',
+      '"Cuánto necesitas vender" sale de tus gastos y de lo que te deja cada venta: la barra muestra si vas al día.',
+      'Te deben (fiados y pedidos) y debes (proveedores) son a hoy; la plata por medio de pago es del mes.',
+    ],
+  },
+  '/app/estado-de-resultados': {
+    manual: 'estado-de-resultados',
+    title: 'Estado de resultados',
+    tips: [
+      'Ventas sin IVA, menos lo que te costó la mercancía, menos tus gastos: eso es lo que ganaste.',
+      'Compara con el periodo anterior y con el año pasado; en verde lo que mejoró y en rojo lo que empeoró.',
+      'Para que el resultado sea real, registra todos tus gastos (también los de banco y Nequi) en Gastos.',
+      '"PDF" abre la hoja para imprimir o guardar como PDF; "Excel" baja la tabla.',
+    ],
+  },
+  '/app/retenciones': {
+    manual: 'retenciones',
+    title: 'Retenciones',
+    tips: [
+      'Lo que tus clientes te retuvieron al pagar: lo descuentas al declarar con su certificado.',
+      'Toca un cliente para ver solo sus retenciones; con "Llegó el certificado" las marcas todas de una vez.',
+      'Se registran al cobrar con "El cliente retuvo". Las retenciones habituales de cada cliente se configuran en Clientes.',
+    ],
+  },
+  '/app/gastos': {
+    manual: 'gastos',
+    title: 'Gastos',
+    tips: [
+      'Lo que pagas en efectivo va en Mi caja con "Egreso"; lo que pagas por banco, Nequi o tarjeta, aquí con "Registrar gasto". La mercancía va en Compras.',
+      'Toca una categoría en "En qué se fue la plata" para ver solo sus gastos; los egresos de caja de antes salen "Sin clasificar".',
+      'Arriendo, nómina, internet: créalos en "Gastos fijos" y aparecen en "Por pagar" cuando toca.',
+      'Con XASKA IA, en "Registrar gasto" toca "Leer con Aska": le tomas foto al recibo y se llena solo.',
+    ],
   },
   '/app/cuentas-por-pagar': {
     manual: 'cuentas-por-pagar',

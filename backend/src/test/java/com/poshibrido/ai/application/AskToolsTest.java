@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /** Herramientas y conversación de "Pregúntale a tu negocio" (decisión 296). */
 class AskToolsTest {
 
-    private final AskTools tools = new AskTools(null, null, null, null, null, null, null);
+    private final AskTools tools = new AskTools(null, null, null, null, null, null, null, null, null, null, null);
 
     private static List<String> names(List<Map<String, Object>> definitions) {
         return definitions.stream().map(d -> String.valueOf(d.get("name"))).toList();
@@ -23,7 +23,11 @@ class AskToolsTest {
     void offersOnlyWhatThePersonCanSee() {
         assertThat(names(tools.definitions(Set.of("sales:read")))).containsExactly("sucursales", "mis_ventas_hoy");
         assertThat(names(tools.definitions(Set.of("reports:read", "inventory:read", "credit:read", "purchases:read",
-                "cash:read", "sales:read")))).hasSize(AskTools.TOOLS.size());
+                "cash:read", "sales:read", "expenses:read", "finance:read")))).hasSize(AskTools.TOOLS.size());
+        // Decisión 325: gastos con expenses:read; estado de resultados, tablero y retenciones con finance:read.
+        assertThat(names(tools.definitions(Set.of("expenses:read")))).containsExactly("sucursales", "gastos");
+        assertThat(names(tools.definitions(Set.of("finance:read")))).containsExactly("sucursales", "estado_resultados",
+                "tablero_finanzas", "retenciones");
         // Si la IA pide algo que la persona no puede ver, se niega sin consultar.
         AskTools.Outcome denied = tools.run("fiados", Map.of(), Set.of("sales:read"));
         assertThat(denied.error()).isTrue();

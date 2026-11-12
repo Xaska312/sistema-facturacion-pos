@@ -1,5 +1,6 @@
 package com.poshibrido.orders.application;
 
+import com.poshibrido.finance.application.WithholdingApi;
 import com.poshibrido.audit.application.AuditLogger;
 import com.poshibrido.cash.application.CashApi;
 import com.poshibrido.cash.application.CashApi.OpenSession;
@@ -87,6 +88,13 @@ public class OrderService {
     @PersistenceContext
     private EntityManager em;
 
+    /** Retenciones del cliente (decisión 322) y la base gravable de lo pendiente del pedido. */
+    @org.springframework.beans.factory.annotation.Autowired
+    private WithholdingApi withholdings;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private OrderTaxes taxes;
+
     public OrderService(OrderRepository orders, OrderItemRepository items, OrderPaymentRepository payments,
                         OrderQueryService queries, CustomerApi customers, PricingApi pricing,
                         InventoryCatalogApi catalog, BusinessSettingsApi settings, DocumentSequences sequences,
@@ -117,7 +125,13 @@ public class OrderService {
                              List<ItemInput> items) {
     }
 
-    public record PaymentInput(BigDecimal amount, UUID paymentMethodId, String reference, String notes) {
+    /** {@code withholdings}: lo que el cliente retuvo de este abono (decisión 322); {@code amount} es lo que pagó. */
+    public record PaymentInput(BigDecimal amount, UUID paymentMethodId, String reference, String notes,
+                               List<WithholdingApi.Line> withholdings) {
+
+        public PaymentInput(BigDecimal amount, UUID paymentMethodId, String reference, String notes) {
+            this(amount, paymentMethodId, reference, notes, List.of());
+        }
     }
 
     /** {@code payments}: cómo se paga lo que el anticipo no cubre (como en el POS: efectivo con cambio, fiado…). */
@@ -242,8 +256,16 @@ public class OrderService {
         }
         Optional<OpenSession> session = cash.lockOpenSessionOf(actor);
         requireSessionFor(method, session, "recibir anticipos");
+        // Retención del cliente sobre el abono (decisión 322): la base es el abono completo (lo pagado más lo retenido).
+        List<WithholdingApi.Line> withheld = List.of();
+        BigDecimal withheldTotal = BigDecimal.ZERO;
+        if (in.withholdings() != null && !in.withholdings().isEmpty()) {
+            withheld = withholdings.checkOnPayment(order.getCustomerId(), gross -> taxes.bases(orderId, gross), amount,
+                    in.withholdings());
+            withheldTotal = withheld.stream().map(WithholdingApi.Line::amount).reduce(BigDecimal.ZERO, BigDecimal::add);
+        }
         BigDecimal due = pendingTotal(orderId).subtract(payments.available(orderId));
-        if (amount.compareTo(due) > 0) {
+        if (amount.add(withheldTotal).compareTo(due) > 0) {
             throw new BusinessRuleException(due.signum() <= 0
                     ? "El pedido " + order.documentNumber() + " ya está pago."
                     : "El anticipo no puede ser mayor que lo que falta por pagar: $ " + pesos(due) + ".");
@@ -252,6 +274,14 @@ public class OrderService {
         OrderPayment payment = OrderPayment.record(new OrderPayment.Data(orderId, OrderPaymentType.DEPOSIT, amount,
                 method.id(), method.code(), reference, clean(in.notes(), 255), sessionId, null, key, actor));
         em.persist(payment);
+        if (withheldTotal.signum() > 0) {
+            PaymentMethodRef retention = withholdingMethod();
+            OrderPayment retained = OrderPayment.record(new OrderPayment.Data(orderId, OrderPaymentType.DEPOSIT,
+                    withheldTotal, retention.id(), retention.code(), null, "Retención del cliente", null, null, null,
+                    actor));
+            em.persist(retained);
+            withholdings.recordForOrderPayment(orderId, retained.getId(), order.getCustomerId(), withheld);
+        }
         if (method.affectsCash()) {
             cash.recordOrderPaymentCash(sessionId, amount, payment.getId(), "Anticipo " + order.documentNumber());
         }
@@ -259,6 +289,9 @@ public class OrderService {
         after.put("amount", amount);
         after.put("method", method.code());
         after.put("cashSessionId", sessionId);
+        if (withheldTotal.signum() > 0) {
+            after.put("withheld", withheldTotal);
+        }
         audit.log("ORDER_PAYMENT_RECEIVED", "order", orderId, null, after);
     }
 
@@ -420,6 +453,19 @@ public class OrderService {
                         + (refundOnly ? "cancelado." : "entregado."));
             }
             UUID refundSession = null;
+            // Lo retenido en los abonos nunca entró como plata: se reversa primero (decisión 322) y solo el resto
+            // se devuelve con el medio elegido.
+            BigDecimal reversed = available.signum() > 0 ? available.min(withholdings.orderWithheld(orderId))
+                    : BigDecimal.ZERO;
+            if (reversed.signum() > 0) {
+                PaymentMethodRef retention = withholdingMethod();
+                OrderPayment back = OrderPayment.record(new OrderPayment.Data(orderId, OrderPaymentType.REFUND,
+                        reversed, retention.id(), retention.code(), null, "Reversa de la retención", null, null, null,
+                        actor));
+                em.persist(back);
+                withholdings.reverseForOrder(orderId, back.getId(), reversed);
+                available = available.subtract(reversed);
+            }
             if (available.signum() > 0) {
                 if (in.refundMethodId() == null) {
                     throw new BusinessRuleException("Hay $ " + pesos(available) + " de anticipo: elige cómo se "
@@ -451,6 +497,9 @@ public class OrderService {
             Map<String, Object> after = new LinkedHashMap<>();
             after.put("reason", refundOnly ? reason : order.getCancelReason());
             after.put("refunded", available.max(BigDecimal.ZERO));
+            if (reversed.signum() > 0) {
+                after.put("withholdingReversed", reversed);
+            }
             after.put("refundCashSessionId", refundSession);
             audit.log(refundOnly ? "ORDER_DEPOSIT_REFUNDED" : "ORDER_CANCELLED", "order", orderId, null, after);
         });
@@ -555,10 +604,16 @@ public class OrderService {
     }
 
     /** Medio para recibir o devolver dinero: ni "Fiado" ni "Anticipo". */
+    /** El medio "Retención" (decisión 322); existe en todos los negocios desde V48. */
+    private PaymentMethodRef withholdingMethod() {
+        return cash.paymentMethods().values().stream().filter(m -> WithholdingApi.METHOD_CODE.equals(m.code()))
+                .findFirst().orElseThrow(() -> new BusinessRuleException("Falta el medio de pago Retención."));
+    }
+
     private PaymentMethodRef moneyMethod(UUID methodId) {
         PaymentMethodRef method = methodId == null ? null : cash.paymentMethods().get(methodId);
         if (method == null || !method.active() || CREDIT_METHOD.equals(method.code())
-                || DEPOSIT_METHOD.equals(method.code())) {
+                || DEPOSIT_METHOD.equals(method.code()) || WithholdingApi.METHOD_CODE.equals(method.code())) {
             throw new BusinessRuleException("Medio de pago no válido.");
         }
         return method;

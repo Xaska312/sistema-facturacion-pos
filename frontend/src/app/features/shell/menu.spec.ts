@@ -24,8 +24,9 @@ describe('visibleMenu', () => {
   it('el propietario ve toda la configuración', () => {
     const labels = visibleMenu(() => true).map((m) => m.label);
     expect(labels).toEqual(['Inicio', 'Vender', 'Mesas', 'Cocina', 'Comandas', 'Mi caja', 'Ventas', 'Fiados', 'Pedidos', 'Cotizaciones', 'Historial de caja',
-      'Reportes',
-      'Libro de dispensación', 'Propinas', 'Auditoría', 'Productos', 'Adiciones', 'Ajustes de catálogo', 'Existencias', 'Movimientos', 'Vencimientos', 'Temperatura y calidad', 'Compras', 'Qué comprar', 'Cuentas por pagar', 'Clientes', 'Proveedores', 'Sucursales', 'Cajas', 'Usuarios',
+      'Reportes', 'Libro de dispensación', 'Propinas', 'Auditoría',
+      'Finanzas', 'Estado de resultados', 'Gastos', 'Retenciones',
+      'Productos', 'Adiciones', 'Ajustes de catálogo', 'Existencias', 'Movimientos', 'Vencimientos', 'Temperatura y calidad', 'Compras', 'Qué comprar', 'Cuentas por pagar', 'Clientes', 'Proveedores', 'Sucursales', 'Cajas', 'Usuarios',
       'Roles y permisos', 'Ajustes']);
   });
 
@@ -41,7 +42,8 @@ describe('visibleMenu', () => {
 describe('withHeadings', () => {
   it('pone el título de sección solo en el primer elemento del grupo', () => {
     const headings = withHeadings(MENU).map((e) => e.heading);
-    expect(headings).toEqual([null, 'Ventas', null, null, null, null, null, null, null, null, null, 'Reportes', null, null, null, 'Catálogo', null, null, 'Inventario', null, null, null, null, null, null,
+    expect(headings).toEqual([null, 'Ventas', null, null, null, null, null, null, null, null, null, 'Reportes', null, null, null,
+      'Finanzas', null, null, null, 'Catálogo', null, null, 'Inventario', null, null, null, null, null, null,
       'Terceros', null, 'Configuración', null, null, null, null]);
   });
 });

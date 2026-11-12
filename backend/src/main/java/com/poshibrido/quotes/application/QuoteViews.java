@@ -20,7 +20,8 @@ public final class QuoteViews {
 
     public record ItemView(UUID id, int lineNo, UUID productId, String sku, String productName, String unitCode,
                            String description, BigDecimal width, BigDecimal length, BigDecimal quantity,
-                           BigDecimal unitPrice, BigDecimal discountPercent, BigDecimal total) {
+                           BigDecimal unitPrice, BigDecimal discountPercent, BigDecimal total, BigDecimal taxBase,
+                           BigDecimal iva) {
     }
 
     public record QuoteView(UUID id, String number, QuoteStatus status, boolean expired, UUID customerId,

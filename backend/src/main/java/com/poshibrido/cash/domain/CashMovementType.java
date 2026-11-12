@@ -22,7 +22,9 @@ public enum CashMovementType {
     /** Entrega de propinas al equipo desde la caja. */
     TIP_PAYOUT(false),
     /** Pago en efectivo a un proveedor desde la caja (Fase 13-2). */
-    SUPPLIER_PAYMENT(false);
+    SUPPLIER_PAYMENT(false),
+    /** Efectivo que vuelve a la caja al anular un gasto pagado desde ella (decisión 320). */
+    EXPENSE_VOID(true);
 
     private final boolean entry;
 

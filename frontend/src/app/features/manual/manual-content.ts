@@ -601,11 +601,18 @@ export const MANUAL: readonly ManualChapter[] = [
           headers: ['Movimiento', 'Cuándo usarlo'],
           rows: [
             ['Ingreso', 'Entra efectivo que no es una venta (por ejemplo, te dan sencillo).'],
-            ['Egreso', 'Pagas algo con el efectivo de la caja (un domicilio, un arreglo).'],
+            ['Egreso', 'Pagas algo con el efectivo de la caja (un domicilio, un arreglo). Es un gasto: eliges en qué '
+              + 'se gastó y, si quieres, le tomas foto al recibo.'],
             ['Retiro', 'Sacas dinero para guardarlo o consignarlo. No es un gasto.'],
           ],
         },
-        steps: ['En "Mi caja", toca "Ingreso", "Egreso" o "Retiro", escribe el valor y el motivo, y guarda.'],
+        steps: [
+          'Ingreso o retiro: en "Mi caja" toca el botón, escribe el valor y el motivo, y guarda.',
+          'Egreso: toca "Egreso", escribe cuánto fue, elige en qué se gastó (servicios, transporte, insumos…), agrega una '
+            + 'nota o la foto del recibo si quieres, y toca "Registrar gasto". El efectivo sale de la caja y el gasto '
+            + 'queda en Gastos con su categoría.',
+        ],
+        tips: ['No se puede sacar más efectivo del que debería haber en la caja.'],
       },
       {
         id: 'cerrar-caja',
@@ -1164,6 +1171,158 @@ export const MANUAL: readonly ManualChapter[] = [
     icon: 'pi pi-chart-bar',
     sections: [
       {
+        id: 'gastos',
+        title: 'Gastos del negocio',
+        summary: 'Anota todo lo que paga el negocio para funcionar (arriendo, servicios, nómina, transporte, arreglos) y '
+          + 'mira en qué se va la plata. Cada gasto lleva una categoría; puede salir del efectivo de la caja o pagarse '
+          + 'por banco, Nequi, Bre-B o tarjeta.',
+        table: {
+          headers: ['Cómo se pagó', 'Dónde se registra y qué pasa con la caja'],
+          rows: [
+            ['En efectivo', 'En "Mi caja", con el botón "Egreso". Sale de tu caja abierta y aparece en su cierre como '
+              + 'egreso.'],
+            ['Por banco, Nequi, Bre-B o tarjeta', 'En Gastos, con "Registrar gasto". No toca la caja y puedes ponerle '
+              + 'la fecha en que lo pagaste.'],
+          ],
+        },
+        steps: [
+          'Entra a Gastos y toca "Registrar gasto".',
+          'Escribe cuánto fue y elige en qué se gastó y con qué se pagó.',
+          'Si no fue en efectivo, elige la sede y la fecha. La referencia, el proveedor, la nota y la foto o el PDF del '
+            + 'recibo son opcionales.',
+          'Toca "Registrar gasto". Arriba ves cuánto gastaste en el periodo y, en "En qué se fue la plata", el total de '
+            + 'cada categoría; toca una para ver solo sus gastos.',
+          'Con "Exportar" bajas el listado para Excel.',
+        ],
+        tips: [
+          'Categorías: con el botón "Categorías" agregas las tuyas, las renombras o apagas las que no uses. Una '
+            + 'apagada deja de ofrecerse, pero los gastos que la usaron la conservan.',
+          'Sin clasificar: los egresos de caja de antes no tenían categoría. Aparecen como "Sin clasificar"; toca '
+            + '"Clasificar" para ponérsela. Eso no mueve otra vez la caja.',
+          'Corregir: puedes cambiar la categoría, el proveedor, la nota y la fecha. El valor y el medio de pago no se '
+            + 'cambian: si te equivocaste, anula el gasto y regístralo de nuevo.',
+          'Anular: pide el motivo y el gasto deja de sumar. Si salió de una caja, el efectivo vuelve a ella, y por eso '
+            + 'solo se puede anular mientras esa caja siga abierta.',
+          'La mercancía que les compras a los proveedores no va aquí: se registra en Compras, porque ya cuenta como '
+            + 'costo de lo que vendes.',
+          'Un retiro de caja (sacar plata para guardarla o consignarla) tampoco es un gasto.',
+        ],
+        who: 'Propietario, Administrador y Contador ven y registran gastos (permisos "Ver los gastos" y "Registrar, '
+          + 'corregir y anular gastos"). Quien opera una caja registra el gasto en efectivo de su caja.',
+      },
+      {
+        id: 'tablero-finanzas',
+        title: 'Finanzas: el mes de un vistazo',
+        summary: 'La pantalla Finanzas junta lo importante del mes en curso, pensado para leerlo en el celular: cuánto '
+          + 'vas ganando, cuánto necesitas vender al día, lo que te deben, lo que debes, tus gastos y la plata que entró '
+          + 'y salió por cada medio de pago.',
+        table: {
+          headers: ['Parte', 'Qué te dice'],
+          rows: [
+            ['Vas ganando', 'Ventas sin IVA menos el costo de lo vendido menos los gastos del mes, hasta hoy.'],
+            ['Cuánto necesitas vender', 'Punto de equilibrio: tus gastos del mes pasado (o tus gastos fijos, si no hay) '
+              + 'divididos por lo que te deja cada venta (margen de los últimos 30 días), repartidos en los días del '
+              + 'mes. La barra compara lo que llevas con la meta a hoy.'],
+            ['Te deben', 'Lo que deben en fiados y lo que falta por cobrar de los pedidos abiertos, a hoy.'],
+            ['Debes a proveedores', 'Las cuentas por pagar: el total, lo vencido y lo que vence esta semana.'],
+            ['Gastos del mes', 'Lo gastado hasta hoy frente a los mismos días del mes anterior, y los más grandes.'],
+            ['Plata que entró y salió', 'Por medio de pago: entró por ventas, abonos de fiado y anticipos; salió por '
+              + 'gastos y pagos a proveedores.'],
+          ],
+        },
+        tips: [
+          'El fiado y la retención no son plata que entra: no salen en "entró" hasta que el cliente paga.',
+          'Es de todo el negocio (todas las sedes). Para ver una sede, usa el Estado de resultados.',
+        ],
+        who: 'Propietario, Administrador y Contador.',
+      },
+      {
+        id: 'estado-de-resultados',
+        title: 'Estado de resultados: cuánto ganaste',
+        summary: 'Junta lo que vendiste, lo que te costó y lo que gastaste para decirte si ganaste o perdiste en el mes '
+          + '(o en el rango que elijas), comparado con el mes anterior y con el mismo mes del año pasado.',
+        table: {
+          headers: ['Renglón', 'Qué es'],
+          rows: [
+            ['Ventas', 'Lo que vendiste, sin el IVA (el IVA es de la DIAN). Las ventas anuladas no cuentan.'],
+            ['Costo de lo vendido', 'Lo que te costó la mercancía que vendiste, con el costo promedio de cada producto.'],
+            ['Utilidad bruta', 'Ventas menos costo: lo que te deja vender, antes de pagar los gastos.'],
+            ['Gastos', 'Lo registrado en Gastos en el periodo, por categoría (también los sin clasificar).'],
+            ['Utilidad operativa', 'Utilidad bruta menos gastos: lo que ganaste (o perdiste).'],
+          ],
+        },
+        steps: [
+          'Entra a Estado de resultados (menú Reportes). Por defecto muestra el mes actual; elige "Mes anterior" o un '
+            + 'rango, y la sede si tienes varias.',
+          'Arriba ves lo que vendiste, lo que te quedó y lo que ganaste; debajo, la explicación en palabras.',
+          'En la tabla, cada renglón con la variación frente al periodo anterior y al año pasado (si hay datos).',
+          '"PDF" abre la hoja carta con tu logo para imprimir o guardar como PDF; "Excel" baja la tabla.',
+        ],
+        tips: [
+          'El IVA cobrado y las retenciones que te hicieron salen aparte: no son ingresos ni gastos del negocio.',
+          'Si hay gastos fijos del periodo sin pagar, sale un aviso con cuánto falta; no se restan hasta que los pagues.',
+          'Si un producto no tiene costo, su costo cuenta como cero y la utilidad sale más alta: revisa los costos en '
+            + 'Productos.',
+          'Es una guía con lo registrado en XASKA; no reemplaza los estados financieros de tu contador.',
+        ],
+        who: 'Propietario, Administrador y Contador (permiso "Ver las retenciones (y las finanzas del negocio)").',
+      },
+      {
+        id: 'retenciones',
+        title: 'Retenciones: cuando el cliente te retiene al pagar',
+        summary: 'Algunas empresas (por ejemplo, una constructora que te compra) te pagan menos porque retienen una parte '
+          + 'para la DIAN o el municipio: retefuente, reteICA o reteIVA. Esa plata no se pierde: ellos la pagan a tu '
+          + 'nombre y tú la descuentas al declarar con el certificado que te dan. XASKA la registra para que la venta o '
+          + 'el pedido queden pagos, sin deuda del cliente ni faltante en la caja.',
+        steps: [
+          'Al cobrar (en Vender, al vender una cotización, o en el abono o la entrega de un pedido) elige el cliente y '
+            + 'toca "El cliente retuvo".',
+          'Si el cliente tiene sus retenciones en la ficha, aparecen listas con su tarifa. Retefuente y reteICA se '
+            + 'calculan sobre el valor sin IVA; reteIVA, sobre el IVA.',
+          'XASKA resta lo retenido de lo que el cliente paga: cobra solo el resto con efectivo, transferencia u otro '
+            + 'medio, y registra.',
+          'En un abono de pedido escribe lo que de verdad te pagaron: XASKA calcula el abono completo (pagado más '
+            + 'retenido).',
+          'En Retenciones ves cuánto te retuvieron en el periodo, por tipo y por cliente. Cuando llegue el '
+            + 'certificado, toca "Llegó el certificado" en ese cliente. Con "Exportar" lo bajas para tu contador.',
+        ],
+        tips: [
+          'Retenciones habituales: en Clientes, toca "Retenciones" en el cliente y marca las que siempre te hace con '
+            + 'su tarifa (por ejemplo, retefuente 6 %). ReteICA en porcentaje: 9,66 por mil es 0,966 %.',
+          'El cajero solo puede aplicar las retenciones de la ficha del cliente, con su tarifa y la base que calcula '
+            + 'XASKA. Retenciones a otros clientes, o con otra tarifa o base, las registra quien tiene el permiso de '
+            + 'finanzas.',
+          'Si anulas la venta, su retención deja de sumar. Si cancelas un pedido con abonos retenidos, primero se '
+            + 'reversa lo retenido y solo se devuelve el resto.',
+          'La venta conserva su valor completo: la retención no es un descuento.',
+        ],
+        who: 'Cobra con retención quien vende o recibe abonos. Ven el reporte y marcan certificados Propietario, '
+          + 'Administrador y Contador (permisos "Ver las retenciones" y "Registrar cualquier retención…").',
+      },
+      {
+        id: 'gastos-fijos',
+        title: 'Gastos fijos: arriendo, nómina, servicios',
+        summary: 'Lo que pagas siempre (el arriendo cada mes, la nómina cada quincena) lo creas una vez como gasto fijo. '
+          + 'XASKA te avisa cuando toca, en Gastos y en Inicio, y lo registras con un toque.',
+        steps: [
+          'En Gastos toca "Gastos fijos" y luego "Nuevo gasto fijo".',
+          'Escribe el nombre y el valor de cada pago, y elige cada cuánto se paga: cada mes (un día, por ejemplo el 5) '
+            + 'o cada quincena (el 15 y el último día del mes).',
+          'Elige la categoría, con qué lo pagas normalmente, la sede y desde cuándo. Toca "Crear gasto fijo".',
+          'Desde una semana antes de cada fecha aparece en "Por pagar" (arriba en Gastos) y en Inicio. Toca "Pagar": '
+            + 'todo viene listo y puedes cambiar el valor, el medio, la fecha o subir el recibo. Toca "Registrar pago".',
+        ],
+        tips: [
+          'Si un mes no se paga (por ejemplo, no hubo nómina extra), toca "Este mes no" ("Esta quincena no" en los '
+            + 'quincenales). Si te equivocaste, toca "Deshacer".',
+          'Si pones una fecha de inicio en el pasado, te muestra lo que quedó sin pagar (hasta 3 meses atrás).',
+          'En los meses cortos, un gasto del día 31 se avisa el último día del mes.',
+          'Si anulas el gasto de un pago, esa fecha vuelve a quedar por pagar.',
+          'Para dejar de recibir avisos, apágalo en "Gastos fijos". Lo que ya pagaste sigue en Gastos.',
+        ],
+        who: 'Lo ven quienes ven los gastos; lo crean, lo pagan y lo saltan Propietario, Administrador y Contador.',
+      },
+      {
         id: 'pregunta-ia',
         title: 'Pregúntale a Aska, la IA de XASKA',
         summary: 'Escribe una pregunta como "¿cuánto vendí hoy?" o "¿qué se me vence este mes?" y Aska la responde '
@@ -1175,7 +1334,8 @@ export const MANUAL: readonly ManualChapter[] = [
             + 'Con "Nueva conversación" empiezas otra.',
         ],
         tips: [
-          'Responde sobre ventas, productos, inventario y vencimientos, fiados, cuentas por pagar y cajas.',
+          'Responde sobre ventas, productos, inventario y vencimientos, fiados, cuentas por pagar, cajas y finanzas: '
+            + 'gastos, cuánto ganaste (estado de resultados), el punto de equilibrio y las retenciones.',
           'En la prueba gratis de 14 días, arriba verás cuántos días te quedan: tócalo para ver los tres retos (leer una '
             + 'factura, preguntar qué se agota y cargar tu cuaderno), que se marcan solos al hacerlos.',
           'Cada usuario solo recibe respuestas de lo que su rol le deja ver: un cajero no ve la utilidad del negocio.',
@@ -1204,8 +1364,34 @@ export const MANUAL: readonly ManualChapter[] = [
           'Toca una de las preguntas del correo o de la tarjeta en Inicio y Aska te la responde de una vez.',
           'El día 1 de cada mes, al dueño le llega "Lo que hiciste con Aska": las facturas que leyó, los productos que '
             + 'cargó, las preguntas y el tiempo que te ahorró (también en Inicio la primera semana del mes).',
+          'Quien ve los gastos recibe también los del día, la ganancia del día ya descontándolos y los gastos fijos '
+            + 'vencidos o que vencen mañana. El correo del día 1 trae además cuánto ganaste el mes pasado y tus gastos '
+            + 'más grandes, con el enlace al Estado de resultados.',
         ],
         who: 'El propietario y quien él elija, en negocios con el adicional XASKA IA.',
+      },
+      {
+        id: 'aska-finanzas',
+        title: 'Aska y tus finanzas: leer recibos y preguntar cuánto ganaste',
+        summary: 'Con XASKA IA, Aska llena el gasto con la foto del recibo y responde preguntas de plata: cuánto '
+          + 'gastaste, cuánto ganaste, cuánto necesitas vender y qué retenciones te hicieron.',
+        steps: [
+          'Al registrar un gasto (en Gastos o con "Egreso" en Mi caja) toca "Leer con Aska" y tómale foto al recibo o '
+            + 'sube el PDF.',
+          'Aska llena el valor, la fecha, la categoría, el proveedor (si ya está creado), la referencia y la nota. '
+            + 'Revisa lo que dice en los avisos y corrige lo que haga falta.',
+          'Toca "Registrar gasto": la foto queda guardada como soporte del gasto.',
+          'Para preguntar, abre Aska y escribe, por ejemplo: "¿Cuánto gané este mes?", "¿En qué se me fue la plata?", '
+            + '"¿Cuánto tengo que vender al día?" o "¿Qué retenciones me hicieron?".',
+        ],
+        tips: [
+          'Leer recibos tiene su propio tope al mes (100; 10 en la prueba gratis). Si Aska no puede leerlo, no se descuenta.',
+          'En Mi caja el gasto queda con la fecha de hoy aunque el recibo diga otra, y el proveedor va en la nota.',
+          'Si la fecha del recibo es futura, casi siempre es la fecha límite de pago: Aska no la pone y te avisa.',
+          'Aska solo responde lo que tu rol deja ver: los gastos con permiso de ver gastos; el estado de resultados, el '
+            + 'tablero y las retenciones con permiso de ver finanzas.',
+        ],
+        who: 'Quien registra gastos (Propietario, Administrador, Contador y el cajero en su caja), con XASKA IA.',
       },
       {
         id: 'invita-y-gana',

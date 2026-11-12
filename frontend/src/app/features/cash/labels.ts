@@ -14,6 +14,7 @@ export const CASH_MOVEMENT_LABEL: Record<CashMovementType, string> = {
   TIP_VOID: 'Propina devuelta',
   TIP_PAYOUT: 'Reparto de propinas',
   SUPPLIER_PAYMENT: 'Pago a proveedor',
+  EXPENSE_VOID: 'Gasto anulado',
 };
 
 export const SESSION_STATUS_LABEL: Record<CashSessionStatus, string> = {

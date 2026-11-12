@@ -1,4 +1,6 @@
 import { focusOnDesktop } from '../../shared/touch';
+import { WithholdingBoxComponent } from '../finance/withholding-box.component';
+import { NO_WITHHOLDING, TaxBases, WithholdingResult, withholdingPayment } from '../finance/withholding-text';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, ElementRef, HostListener, OnDestroy, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -10,6 +12,7 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { catchError, finalize, forkJoin, map, of, switchMap } from 'rxjs';
 import {
   CREDIT_METHOD_CODE,
+  WITHHOLDING_METHOD_CODE,
   DEPOSIT_METHOD_CODE,
   CashSession,
   CreditAccount,
@@ -129,7 +132,7 @@ const STOCK_PAGES = 5;
  */
 @Component({
   selector: 'app-pos',
-  imports: [FormsModule, PesosInputDirective, ButtonModule, DialogModule, InputTextModule, SkeletonModule, HasPermissionDirective,
+  imports: [WithholdingBoxComponent, FormsModule, PesosInputDirective, ButtonModule, DialogModule, InputTextModule, SkeletonModule, HasPermissionDirective,
     ReceiptComponent, PosHeaderComponent, ProductGridComponent, CartPanelComponent, OpenCashComponent,
     VariantPickerComponent, NewCustomerDialogComponent, ModifierPickerComponent],
   template: `
@@ -486,6 +489,14 @@ const STOCK_PAGES = 5;
         </fieldset>
       }
 
+      @if (!tab()) {
+        <!-- Retención del cliente (decisión 322): lo retenido no se recibe, se resta de lo que se cobra. -->
+        <app-withholding-box class="block mb-3" [customerId]="withholdingCustomer()" [bases]="withholdingBases()"
+                             [result]="withheld()" (resultChange)="onWithheld($event)" />
+        @if (withheld().total > 0) {
+          <p class="text-sm -mt-1 mb-3">Retiene {{ cop(withheld().total) }}: el cliente paga {{ cop(due()) }}.</p>
+        }
+      }
       <div class="flex items-center justify-between gap-2 mb-2">
         <p id="pay-methods" class="text-sm font-medium">{{ mixed ? 'Agregar otro medio' : 'Medio de pago' }}</p>
         @if (payMethods().length > 1) {
@@ -877,7 +888,19 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   protected readonly tip = computed(() => (this.tab()
     ? tipAmount(this.tipChoice(), this.totals().base, this.tipPercent(), this.customTip()) : 0));
   /** Lo que se recibe: la cuenta más la propina. */
-  protected readonly due = computed(() => this.totals().total + this.tip());
+  /** Lo que se recibe: la cuenta más la propina, menos lo que retuvo el cliente (decisión 322). */
+  protected readonly due = computed(() => this.totals().total + this.tip() - this.withheld().total);
+  protected readonly withheld = signal<WithholdingResult>(NO_WITHHOLDING);
+  private readonly withholdingBox = viewChild(WithholdingBoxComponent);
+  private withholdingMethodId: string | null = null;
+  /** Base e IVA de la venta, para las retenciones. */
+  protected readonly withholdingBases = computed<TaxBases>(() => ({ base: this.totals().base, iva: this.totals().tax }),
+    { equal: (x, y) => x.base === y.base && x.iva === y.iva });
+  /** El cliente de la venta para las retenciones (nadie si es consumidor final). */
+  protected readonly withholdingCustomer = computed(() => {
+    const id = this.customer().id;
+    return id && id !== this.config()?.finalConsumerId ? id : null;
+  });
   protected readonly parts = computed(() => equalParts(this.due(), this.splitParts()));
   /** Cambia cuando cambian los pagos (no son una señal) para recalcular con qué se paga la propina. */
   private readonly paymentsRevision = signal(0);
@@ -1008,7 +1031,10 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
       this.customer.update((c) => (c.id ? c : { ...c, id: config.finalConsumerId }));
     });
     this.loadSession();
-    this.cash.paymentMethods().subscribe((methods) => this.methods.set(methods));
+    this.cash.allPaymentMethods().subscribe((methods) => {
+      this.withholdingMethodId = methods.find((m) => m.code === WITHHOLDING_METHOD_CODE)?.id ?? null;
+      this.methods.set(methods.filter((m) => m.code !== WITHHOLDING_METHOD_CODE));
+    });
     this.catalog.units().subscribe((units) =>
       this.decimalUnits.set(new Set(units.filter((u) => u.allowsDecimals).map((u) => u.id))));
     if (this.auth.hasPermission('module:modifiers')) {
@@ -1743,6 +1769,8 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
     this.tipChoice.set(this.tab() && this.tipPercent() > 0 ? 'suggested' : 'none');
     this.customTip.set(null);
     this.tipMethod.set(null);
+    this.withholdingBox()?.reset();
+    this.withheld.set(NO_WITHHOLDING);
     this.payments = cash ? [this.draft(cash, this.due())] : [];
     this.paymentsRevision.update((n) => n + 1);
     this.idempotencyKey ??= newIdempotencyKey('sale');
@@ -1827,6 +1855,15 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
     this.payments = [this.draft(method, this.due())];
     this.paymentsRevision.update((n) => n + 1);
     this.focusPayment();
+  }
+
+  /** Cambió la retención: con un solo medio, el valor sigue a lo que falta por cobrar. */
+  protected onWithheld(result: WithholdingResult): void {
+    this.withheld.set(result);
+    if (this.payments.length === 1) {
+      this.payments = [{ ...this.payments[0], amount: this.due() }];
+      this.paymentsRevision.update((n) => n + 1);
+    }
   }
 
   setMixed(on: boolean): void {
@@ -1951,11 +1988,11 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
         ...(l.modifiers?.length ? { modifiers: l.modifiers.map((m) => ({ optionId: m.optionId, quantity: m.quantity })) } : {}),
         ...(l.note ? { note: l.note } : {}),
       })),
-      payments: this.payments.map((p) => ({
+      payments: [...this.payments.map((p) => ({
         paymentMethodId: p.methodId,
         amount: Number(p.amount),
         reference: p.reference.trim() || null,
-      })),
+      })), ...(this.tab() ? [] : [withholdingPayment(this.withholdingMethodId, this.withheld())].filter((p) => p !== null))],
       expectedTotal: this.totals().total,
       notes: null,
       dispensation: toDispensationInput(this.dispensing(), this.rx),

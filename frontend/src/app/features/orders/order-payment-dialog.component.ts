@@ -1,4 +1,4 @@
-import { Component, inject, input, model, output, signal } from '@angular/core';
+import { Component, inject, input, model, output, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
 import { Observable, tap } from 'rxjs';
@@ -12,6 +12,15 @@ import { FormDialogComponent } from '../../shared/forms/form-dialog.component';
 import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
 import { formatCop } from '../../shared/money';
 import { methodLabel } from '../pos/pos-labels';
+import { WithholdingBoxComponent } from '../finance/withholding-box.component';
+import {
+  NO_WITHHOLDING,
+  TaxBases,
+  WithholdingResult,
+  proportionalBases,
+  toWithholdingLines,
+  withholdingProblem,
+} from '../finance/withholding-text';
 
 /**
  * Anticipo o abono a un pedido (decisión 258). En efectivo entra a la caja abierta de quien lo recibe, el día que se
@@ -19,7 +28,7 @@ import { methodLabel } from '../pos/pos-labels';
  */
 @Component({
   selector: 'app-order-payment-dialog',
-  imports: [FormsModule, InputTextModule, PesosInputDirective, FormDialogComponent],
+  imports: [FormsModule, InputTextModule, PesosInputDirective, FormDialogComponent, WithholdingBoxComponent],
   template: `
     @if (order(); as o) {
       <app-form-dialog [(visible)]="visible" [header]="'Anticipo al pedido ' + o.number" width="28rem"
@@ -28,13 +37,20 @@ import { methodLabel } from '../pos/pos-labels';
                        (saved)="paid.emit($any($event))">
         <p class="text-sm">Falta por pagar <strong class="tabular-nums">{{ cop(o.balanceDue) }}</strong></p>
         <div class="flex flex-col gap-1">
-          <label for="order-amount" class="text-sm font-medium">Valor</label>
+          <label for="order-amount" class="text-sm font-medium">{{ withheld().total > 0 ? 'Lo que pagó el cliente' : 'Valor' }}</label>
           <input id="order-amount" appPesos class="h-12 border rounded-lg px-3 text-xl text-right tabular-nums"
                  [(ngModel)]="amount" name="amount" />
           @if (remaining() !== null) {
             <small class="text-xs text-muted">Quedaría faltando {{ cop(remaining()) }}</small>
           }
         </div>
+        <!-- Retención del cliente (decisión 322): el abono completo es lo pagado más lo retenido. -->
+        <app-withholding-box [customerId]="o.customerId" [paid]="paidAmount()" [basesOf]="basesOf"
+                             [(result)]="withheld" />
+        @if (withheld().total > 0) {
+          <p class="text-sm">Abono completo <strong class="tabular-nums">{{ cop(gross()) }}</strong>
+            <span class="text-muted">({{ cop(paidAmount()) }} pagado + {{ cop(withheld().total) }} retenido)</span></p>
+        }
         <fieldset class="flex flex-col gap-1">
           <legend class="text-sm font-medium mb-1">Medio de pago</legend>
           <div class="flex flex-wrap gap-2">
@@ -90,6 +106,22 @@ export class OrderPaymentDialogComponent {
   private idempotencyKey = '';
   private methodsRequested = false;
   protected readonly cop = formatCop;
+  private readonly withholdingBox = viewChild(WithholdingBoxComponent);
+  protected readonly withheld = signal<WithholdingResult>(NO_WITHHOLDING);
+
+  /** Bases de un abono completo, en proporción a lo que falta entregar del pedido. */
+  protected readonly basesOf = (gross: number): TaxBases => {
+    const o = this.order();
+    return o ? proportionalBases(gross, o.pendingTotal, o.pendingTaxBase, o.pendingIva) : { base: 0, iva: 0 };
+  };
+
+  protected paidAmount(): number {
+    return Number(this.amount ?? 0);
+  }
+
+  protected gross(): number {
+    return this.paidAmount() + this.withheld().total;
+  }
 
   /** Prepara un anticipo nuevo: por defecto la mitad de lo que falta (lo usual), en efectivo si tiene caja. */
   prepare(order: Order): void {
@@ -98,6 +130,8 @@ export class OrderPaymentDialogComponent {
     this.reference = '';
     this.notes = '';
     this.idempotencyKey = newIdempotencyKey('anticipo');
+    this.withholdingBox()?.reset();
+    this.withheld.set(NO_WITHHOLDING);
     if (!this.methodsRequested) {
       this.methodsRequested = true;
       this.cash.paymentMethods().subscribe({
@@ -126,7 +160,7 @@ export class OrderPaymentDialogComponent {
 
   protected remaining(): number | null {
     const due = this.order()?.balanceDue ?? 0;
-    const amount = Number(this.amount ?? 0);
+    const amount = this.gross();
     return amount > 0 && amount <= due ? due - amount : null;
   }
 
@@ -136,8 +170,12 @@ export class OrderPaymentDialogComponent {
     if (!(amount > 0)) {
       return 'Escribe el valor del anticipo.';
     }
-    if (amount > due) {
+    if (this.gross() > due) {
       return `El anticipo no puede ser mayor que lo que falta por pagar (${formatCop(due)}).`;
+    }
+    const retention = withholdingProblem(this.withheld());
+    if (retention) {
+      return retention;
     }
     const method = this.selected();
     if (!method) {
@@ -157,6 +195,7 @@ export class OrderPaymentDialogComponent {
       paymentMethodId: this.methodId,
       reference: method && !method.affectsCash ? this.reference.trim() || null : null,
       notes: this.notes.trim() || null,
+      withholdings: toWithholdingLines(this.withheld()),
     }, this.idempotencyKey).pipe(tap(() => (this.idempotencyKey = newIdempotencyKey('anticipo'))));
   };
 }

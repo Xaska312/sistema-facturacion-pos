@@ -770,7 +770,8 @@ public class PurchaseService {
 
     private PaymentMethodRef requireMethod(UUID methodId) {
         PaymentMethodRef m = methodId == null ? null : cash.paymentMethods().get(methodId);
-        if (m == null || !m.active() || "CREDIT".equals(m.code())) {
+        if (m == null || !m.active() || "CREDIT".equals(m.code()) || "DEPOSIT".equals(m.code())
+                || "WITHHOLDING".equals(m.code())) {
             throw new BusinessRuleException("Elige el medio con que pagaste (efectivo, transferencia…).");
         }
         return m;

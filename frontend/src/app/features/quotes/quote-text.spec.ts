@@ -28,9 +28,10 @@ const quote = (overrides: Partial<Quote> = {}): Quote => ({
   items: [
     { id: 'i1', lineNo: 1, productId: 'p1', sku: 'GRA', productName: 'Granito', unitCode: 'M2',
       description: 'Mesón cocina', width: 2.4, length: 0.6, quantity: 1.44, unitPrice: 300000, discountPercent: 10,
-      total: 388800 },
+      total: 388800, taxBase: 388800, iva: 0 },
     { id: 'i2', lineNo: 2, productId: 'p2', sku: 'INST', productName: 'Instalación', unitCode: 'UND',
-      description: null, width: null, length: null, quantity: 1, unitPrice: 150000, discountPercent: 0, total: 150000 },
+      description: null, width: null, length: null, quantity: 1, unitPrice: 150000, discountPercent: 0, total: 150000,
+      taxBase: 150000, iva: 0 },
   ],
   ...overrides,
 });

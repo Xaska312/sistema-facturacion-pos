@@ -3,6 +3,10 @@ package com.poshibrido.ai.application;
 import com.poshibrido.cash.application.CashQueryService;
 import com.poshibrido.cash.domain.CashSessionStatus;
 import com.poshibrido.credit.application.CreditQueryService;
+import com.poshibrido.finance.application.ExpenseService;
+import com.poshibrido.finance.application.FinanceDashboardService;
+import com.poshibrido.finance.application.IncomeStatementService;
+import com.poshibrido.finance.application.WithholdingService;
 import com.poshibrido.inventory.application.InventoryQueryService;
 import com.poshibrido.inventory.application.LotQueryService;
 import com.poshibrido.organization.application.BranchService;
@@ -51,6 +55,10 @@ public class AskTools {
     private final PurchaseService purchases;
     private final CashQueryService cash;
     private final BranchService branches;
+    private final ExpenseService expenses;
+    private final IncomeStatementService incomeStatement;
+    private final FinanceDashboardService financeDashboard;
+    private final WithholdingService withholdings;
 
     @PersistenceContext
     private EntityManager em;
@@ -66,6 +74,10 @@ public class AskTools {
             "description", "Fecha final AAAA-MM-DD (incluida). Sin ella, igual a desde o hoy.");
     private static final Map<String, Object> SUCURSAL = Map.of("type", "string",
             "description", "Nombre o código de la sucursal. Sin ella, todas.");
+    private static final Map<String, Object> DESDE_MES = Map.of("type", "string",
+            "description", "Fecha inicial AAAA-MM-DD (incluida). Sin ella, el primer día del mes en curso.");
+    private static final Map<String, Object> HASTA_MES = Map.of("type", "string",
+            "description", "Fecha final AAAA-MM-DD (incluida). Sin ella, hoy.");
 
     static final List<Tool> TOOLS = List.of(
             new Tool("sucursales", null, "Sucursales", "Lista las sucursales activas del negocio.",
@@ -132,7 +144,33 @@ public class AskTools {
                     "Turnos de caja abiertos o cerrados en un rango, con lo esperado, lo contado y la diferencia.",
                     schema(Map.of("estado", Map.of("type", "string", "enum", List.of("abiertas", "cerradas")),
                             "desde", DESDE, "hasta", HASTA, "sucursal", SUCURSAL)),
-                    (t, in) -> t.cashSessions(in)));
+                    (t, in) -> t.cashSessions(in)),
+            // Finanzas (decisión 325).
+            new Tool("gastos", "expenses:read", "Gastos",
+                    "Gastos registrados en un rango (sin los anulados): total, cuánto salió de la caja, por categoría, "
+                            + "por medio de pago y los más grandes. Con buscar, solo los que coinciden en nota, "
+                            + "proveedor o referencia.",
+                    schema(Map.of("desde", DESDE_MES, "hasta", HASTA_MES, "sucursal", SUCURSAL,
+                            "buscar", Map.of("type", "string", "description", "Texto a buscar en los gastos."))),
+                    (t, in) -> t.expenseReport(in)),
+            new Tool("estado_resultados", "finance:read", "Estado de resultados",
+                    "Ganancia del negocio en un rango: ventas sin IVA, costo de lo vendido, utilidad bruta, gastos "
+                            + "por categoría y utilidad operativa, comparado con el periodo anterior y el mismo "
+                            + "periodo del año pasado. Avisa los gastos fijos sin pagar del periodo.",
+                    schema(Map.of("desde", DESDE_MES, "hasta", HASTA_MES, "sucursal", SUCURSAL)),
+                    (t, in) -> t.incomeStatement.report(date(in.get("desde")), date(in.get("hasta")), t.branch(in))),
+            new Tool("tablero_finanzas", "finance:read", "Tablero de finanzas y punto de equilibrio",
+                    "El mes en curso: ventas, utilidad, flujo de dinero (entradas y salidas por medio de pago), lo "
+                            + "que deben los clientes (fiados y pedidos), lo que se debe a proveedores, gastos contra "
+                            + "el mes pasado, gastos fijos por pagar y el punto de equilibrio (cuánto hay que vender "
+                            + "al mes y al día para cubrir los gastos).",
+                    schema(Map.of()), (t, in) -> t.financeDashboard.dashboard()),
+            new Tool("retenciones", "finance:read", "Retenciones",
+                    "Retenciones que los clientes le hicieron al negocio en un rango: total por tipo (retefuente, "
+                            + "reteIVA, reteICA), por cliente y los certificados que faltan por recibir.",
+                    schema(Map.of("desde", DESDE_MES, "hasta", HASTA_MES)),
+                    (t, in) -> t.withholdings.summary(new WithholdingService.Filter(date(in.get("desde")),
+                            date(in.get("hasta")), null, null, null, false))));
 
     /** Las herramientas que la persona puede usar, en el formato de la API. */
     public List<Map<String, Object>> definitions(Set<String> permissions) {
@@ -336,6 +374,26 @@ public class AskTools {
         LocalDate from = date(in.get("desde"));
         LocalDate to = date(in.get("hasta"));
         return cash.search(null, branch(in), status, null, from, to == null ? from : to, 0, 20).getContent();
+    }
+
+    private Object expenseReport(Map<String, Object> in) {
+        ExpenseService.Filter f = expenses.normalize(new ExpenseService.Filter(date(in.get("desde")),
+                date(in.get("hasta")), null, branch(in), null, null, null, false, false, text(in.get("buscar"))));
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("resumen", expenses.summary(f));
+        m.put("masGrandes", expenses.list(f, 0, 100).content().stream()
+                .sorted((a, b) -> b.amount().compareTo(a.amount())).limit(15).map(e -> {
+                    Map<String, Object> r = new LinkedHashMap<>();
+                    r.put("fecha", e.date());
+                    r.put("categoria", e.categoryName() == null ? "Sin clasificar" : e.categoryName());
+                    r.put("valor", e.amount());
+                    r.put("medioPago", e.paymentMethodName());
+                    r.put("salioDeCaja", e.fromCash());
+                    r.put("proveedor", e.supplierName());
+                    r.put("nota", e.note());
+                    return r;
+                }).toList());
+        return m;
     }
 
     // ------------------------------------------------------------------ apoyo

@@ -1,7 +1,7 @@
 import { BusinessType } from '../../core/api/api.models';
 import { XIconName } from '../../shared/icons/xicons';
 
-export type MenuSection = 'Ventas' | 'Reportes' | 'Catálogo' | 'Inventario' | 'Terceros' | 'Configuración';
+export type MenuSection = 'Ventas' | 'Reportes' | 'Finanzas' | 'Catálogo' | 'Inventario' | 'Terceros' | 'Configuración';
 
 export interface MenuItem {
   label: string;
@@ -43,6 +43,11 @@ export const MENU: MenuItem[] = [
   },
   { label: 'Propinas', route: '/app/propinas', icon: 'pi pi-heart', glyph: 'tips', permission: 'tips:manage', section: 'Reportes' },
   { label: 'Auditoría', route: '/app/auditoria', icon: 'pi pi-eye', glyph: 'audit', permission: 'audit:read', section: 'Reportes' },
+  // Finanzas (decisiones 320 a 324): el tablero, el estado de resultados, los gastos y las retenciones.
+  { label: 'Finanzas', route: '/app/finanzas', icon: 'pi pi-wallet', glyph: 'finance', permission: 'finance:read', section: 'Finanzas' },
+  { label: 'Estado de resultados', route: '/app/estado-de-resultados', icon: 'pi pi-chart-line', glyph: 'income', permission: 'finance:read', section: 'Finanzas' },
+  { label: 'Gastos', route: '/app/gastos', icon: 'pi pi-receipt', glyph: 'expenses', permission: 'expenses:read', section: 'Finanzas' },
+  { label: 'Retenciones', route: '/app/retenciones', icon: 'pi pi-percentage', glyph: 'withholdings', permission: 'finance:read', section: 'Finanzas' },
   { label: 'Productos', route: '/app/productos', icon: 'pi pi-box', glyph: 'products', permission: 'products:read', section: 'Catálogo' },
   { label: 'Adiciones', route: '/app/adiciones', icon: 'pi pi-plus-circle', glyph: 'modifiers', permission: 'modifiers:manage', section: 'Catálogo' },
   { label: 'Ajustes de catálogo', route: '/app/catalogo', icon: 'pi pi-tags', glyph: 'catalog', permission: 'products:manage', section: 'Catálogo' },

@@ -602,11 +602,13 @@ Todo con `pharmacy:quality` y el módulo Medicamentos. `branchId` opcional (la p
 | GET/POST/PUT | `/platform/partners`, `/platform/partners/{id}` | administrador | Decisión 312: aliados (contadores y distribuidores) con su código y comisión por pagar |
 | GET | `/platform/referrals` | administrador | Decisión 312: negocios que entraron con un código |
 | POST | `/platform/referrals/{tenantId}/paid` | administrador | Decisión 312: comisión del aliado pagada `{reference}` |
-| GET | `/ai/digest/latest` | `ai:ask` | Decisión 299: el último Resumen del día (hoy o ayer) `{date, headline, points: [{section: SALES\|CASH\|INVENTORY\|MONEY, tone: good\|warning\|bad\|info, title, detail}], figures: [{label, value}], createdAt, weather: SUNNY\|PARTLY\|CLOUDY\|RAIN\|STORM\|QUIET, forecast, followUps: [string]}` (decisión 307: clima, pronóstico y preguntas solo con `reports:read`) solo con las secciones que permite el rol (ventas: `reports:read`, caja: `cash:read`, inventario: `inventory:read`, plata: `credit:read` o `purchases:read`); 204 si no hay |
+| GET | `/ai/digest/latest` | `ai:ask` | Decisión 299: el último Resumen del día (hoy o ayer) `{date, headline, points: [{section: SALES\|CASH\|INVENTORY\|MONEY\|FINANCE (decisión 325), tone: good\|warning\|bad\|info, title, detail}], figures: [{label, value}], createdAt, weather: SUNNY\|PARTLY\|CLOUDY\|RAIN\|STORM\|QUIET, forecast, followUps: [string]}` (decisión 307: clima, pronóstico y preguntas solo con `reports:read`) solo con las secciones que permite el rol (ventas: `reports:read`, caja: `cash:read`, inventario: `inventory:read`, plata: `credit:read` o `purchases:read`); 204 si no hay |
 | GET/PUT | `/ai/digest/settings` | `ai:ask` y `settings:manage` | `{enabled, sendTime (HH:mm), recipients[] (usuarios además del propietario)}`; GET trae además `limit` y `used` del mes |
 | POST | `/ai/catalog/read` | `products:manage` y `ai:ask` | Decisión 300, "Cargar con Aska": multipart `files` (un Excel, CSV o PDF de hasta 20 páginas, o hasta 10 fotos JPG/PNG; 10 MB c/u), `supplierId?`, `margin?` (0–90, 30 por defecto), `inventory=true` y `branchId` para el inventario del negocio (decisión 306: cada fila trae `quantity` y `stockNote`). No guarda nada → `{rows: [{rowId, description, supplierCode, barcode, listCost, taxRate, match: {productId, sku, name, by: MEMORY\|BARCODE\|SKU\|NAME, currentCost, currentPrice, costLocked} \| null, proposal: {action: CREATE\|UPDATE\|SKIP, sku, name, category, unitCode, taxCode, cost (sin IVA), price, marginPercent}}], units[], taxes[], categories[], pricesIncludeTax, margin, warnings[], usage}`. 422 si no hay XASKA IA, tope del mes, archivo no válido o ilegible (no descuenta) |
 | POST | `/ai/catalog/apply` | `products:manage` y `ai:ask` | `{supplierId?, branchId?, rows: [{productId? (nulo = crear), sku, name, barcode?, category?, unitCode, taxCode, cost, price, supplierCode?, quantity?}] (1–500)}` → `{report, stocked}`: el reporte del importador de productos y cuántos quedaron con saldo inicial (con cantidades necesita `inventory:adjust`; todo en una transacción) (todo o nada; los existentes conservan nombre, unidad, impuesto y categoría). Con proveedor, recuerda sus códigos |
 | GET | `/ai/catalog/usage` | `products:manage` y `ai:ask` | `{available, limit, used}` de las listas leídas del mes |
+| POST | `/ai/expenses/read` | `ai:ask` y (`expenses:manage` o `cash:operate`) | Decisión 325, "Leer con Aska" en el gasto: multipart `file` (foto JPG/PNG o PDF de hasta 5 páginas; 10 MB). No guarda nada → `{amount, date, categoryId, categoryName, supplierId (proveedor activo con ese NIT/cédula o nombre exacto), supplierName, supplierDocument, reference, note, warnings[], usage}`; lo que no se vio va nulo (una fecha futura no se pone). Tope propio al mes `EXPENSE_READS` (100; 10 en la prueba). 422 sin XASKA IA, tope del mes, archivo no válido o recibo ilegible (no descuenta) |
+| GET | `/ai/expenses/usage` | `ai:ask` y (`expenses:manage` o `cash:operate`) | `{available, limit, used}` de los recibos leídos del mes |
 | GET | `/public/pricing` | Público | Decisión 303: `{plans[], addons[] (a la venta), trialDays}` para la página de precios; caché 5 min |
 | GET | `/billing/qr` | `settings:manage` | El QR del banco (imagen) para pagar por Bre-B |
 | PUT / DELETE | `/platform/billing/breb/qr` | Administrador de plataforma | Multipart `file` (PNG o JPG hasta 2 MB), se guarda tal cual; `breb.hasQr` |
@@ -627,3 +629,63 @@ Todo con `pharmacy:quality` y el módulo Medicamentos. `branchId` opcional (la p
 | GET/PUT | `/business-profile` | — | Traen `allowedModules` y `planName`; PUT da 422 si se prende un módulo que el plan no incluye |
 
 Funciones (`features`): `PURCHASES`, `DIRECT_PRINT`, `AUDIT`, `TRANSFERS`, `ZONE_REGISTERS` y el adicional `AI` (XASKA IA, solo como extra; `entitled.maxInvoiceScans` es 0 sin él); en el token, `plan:purchases`, `plan:direct-print`… `POST /cash-registers` y activar una caja dan 422 al pasar el límite de cajas.
+
+## Gastos (Finanzas parte A, decisión 320)
+
+Un gasto pagado con un medio que entra al efectivo sale de la caja abierta de quien lo registra; con otro medio no toca la caja. Los egresos manuales de caja sin clasificar salen en el listado con `unclassified: true`, sin `number` y con el `id` del movimiento de caja.
+
+| Método | Ruta | Permiso | Notas |
+|---|---|---|---|
+| GET | `/expense-categories?includeInactive=` | `expenses:read`, `expenses:manage` o `cash:operate` | `[{id, name, active, sortOrder}]` |
+| POST | `/expense-categories` | `expenses:manage` | `{name}`. 409 si el nombre ya existe (sin distinguir mayúsculas); máximo 60 |
+| PUT | `/expense-categories/{id}` | `expenses:manage` | `{name?, active?}`: renombrar, apagar o prender |
+| GET | `/expenses?from=&to=&categoryId=&branchId=&supplierId=&paymentMethodId=&source=&unclassified=&includeVoided=&q=&page=&size=` | `expenses:read` | Sin fechas, del día 1 del mes a hoy. `source`: `CASH` u `OTHER`. `q` busca en la nota y la referencia. Cada gasto: `{id, number, date, categoryId, categoryName, branchId, branchName, supplierId, supplierName, amount, paymentMethodId, paymentMethodName, fromCash, cashSessionOpen, reference, note, status (ACTIVE o VOID), voidReason, unclassified, hasDocument, createdByName, createdAt}` |
+| GET | `/expenses/summary` (mismos filtros, sin `includeVoided`) | `expenses:read` | `{from, to, total, count, cashTotal, otherTotal, unclassifiedCount, unclassifiedTotal, byCategory[{categoryId, name, total, count}], byMethod[]}`; los anulados nunca suman |
+| GET | `/expenses.csv` (mismos filtros) | `expenses:read` | Para Excel, máximo 20.000 filas. Auditoría `REPORT_EXPORTED` |
+| GET | `/expenses/{id}` | `expenses:read` | El gasto |
+| POST | `/expenses` | `expenses:manage` o `cash:operate` | `{amount, categoryId, paymentMethodId, branchId?, date?, supplierId?, reference?, note?}`, `Idempotency-Key` opcional. En efectivo: la sede y la fecha son las de la caja (422 sin caja abierta o si pasa de lo que hay); crea el movimiento `EXPENSE`. Con otro medio: `branchId` obligatorio y `date` no futura. Con solo `cash:operate`, 403 si no es en efectivo |
+| PUT | `/expenses/{id}` | `expenses:manage` | `{categoryId, date?, supplierId?, reference?, note?}`. La fecha de un gasto en efectivo no cambia (422) |
+| POST | `/expenses/{id}/void` | `expenses:manage` | `{reason}`. Si salió de una caja crea `EXPENSE_VOID`; 422 si esa caja ya se cerró. 409 si ya estaba anulado |
+| POST | `/expenses/unclassified/{movementId}/classify` | `expenses:manage` | `{categoryId, supplierId?, note?}`: crea el gasto de un egreso de caja de antes, sin mover la caja. 409 si ya se clasificó |
+| POST | `/expenses/{id}/document` | `expenses:manage` o `cash:operate` | Multipart `file`: JPG, PNG o PDF de hasta 5 MB. Lo sube quien registró el gasto o quien tiene `expenses:manage`; reemplaza el anterior |
+| GET | `/expenses/{id}/document` | `expenses:read` | Descarga el soporte (siempre como adjunto) |
+
+Informe de caja: `cash.expenses` es ahora el neto de `EXPENSE` y `EXPENSE_VOID`.
+
+## Gastos fijos (Finanzas parte A2, decisión 321)
+
+| Método | Ruta | Permiso | Notas |
+|---|---|---|---|
+| GET | `/recurring-expenses` | `expenses:read` | Todos, primero los prendidos: `{id, name, categoryId, categoryName, branchId, branchName, supplierId, supplierName, amount, paymentMethodId, paymentMethodName, fromCash, frequency (MONTHLY o BIWEEKLY), dayOfMonth, startsOn, note, active, nextDue}` |
+| GET | `/recurring-expenses/due` | `expenses:read` | `{count, overdueCount, total, items[{recurringId, name, dueDate, overdue, daysUntil, frequency, …lo sugerido}]}`: fechas sin pagar ni saltar de los prendidos, de 3 meses atrás a 7 días adelante, de la más antigua a la más reciente |
+| POST | `/recurring-expenses` | `expenses:manage` | `{name, amount, categoryId, branchId, paymentMethodId, frequency, dayOfMonth (1–31, solo MONTHLY), startsOn?, supplierId?, note?}`. 409 si el nombre ya existe; máximo 100 |
+| PUT | `/recurring-expenses/{id}` | `expenses:manage` | Lo mismo más `active` (apagar o prender). Lo ya pagado no cambia |
+| POST | `/recurring-expenses/{id}/pay` | `expenses:manage` | `{dueDate, amount?, paymentMethodId?, branchId?, date?, supplierId?, reference?, note?}`, `Idempotency-Key` opcional. Lo vacío se toma del gasto fijo; crea el gasto con las reglas de `POST /expenses`. 422 si la fecha no le toca o falta más de una semana; 409 si ya se pagó o se saltó |
+| POST | `/recurring-expenses/{id}/skip` | `expenses:manage` | `{dueDate}`: "este mes no". 409 si ya se pagó o se saltó |
+| DELETE | `/recurring-expenses/{id}/skip/{dueDate}` | `expenses:manage` | Deshace el salto; 404 si no estaba saltada |
+
+## Retenciones (Finanzas parte B, decisión 322)
+
+Medio de pago `WITHHOLDING` ("Retención", no mueve la caja). En `POST /sales`, `POST /quotes/{id}/sell` y `POST /orders/{id}/deliver`, la línea de pago con ese medio lleva `withholdings: [{type, rate?, base?, amount?}]` (`type`: RETEFUENTE, RETEICA o RETEIVA; la suma debe dar el `amount` de la línea). En `POST /orders/{id}/payments`, `withholdings` acompaña al abono y `amount` es lo que pagó el cliente. Sin `finance:manage` solo valen las de la ficha del cliente (403 si no está), con su tarifa y la base que calcula el servidor (422 si el valor no cuadra). `OrderView` trae `pendingTaxBase`, `pendingIva` y por línea `taxBase` e `iva`; `QuoteView` trae `taxBase` e `iva` por línea.
+
+| Método | Ruta | Permiso | Notas |
+|---|---|---|---|
+| GET | `/customers/{id}/withholdings` | `finance:read`, `sales:create`, `orders:create` o `parties:read` | Las habituales: `[{type, rate}]` |
+| PUT | `/customers/{id}/withholdings` | `finance:manage` | `{items: [{type, rate}]}` (reemplaza; vacío = ninguna) |
+| GET | `/withholdings?from=&to=&customerId=&type=&certificate=&includeVoided=&page=&size=` | `finance:read` | `certificate`: PENDING o RECEIVED. Cada una: `{id, date, customerId, customerName, customerDocument, type, base, rate, amount, origin, saleId, orderId, reversal, voided, certificateReceived, certificateNote, certificateAt, createdByName, createdAt}` |
+| GET | `/withholdings/summary` (mismos filtros) | `finance:read` | `{total, count, pendingCertificates, pendingTotal, byType[], byCustomer[{customerId, name, document, total, count, pendingCertificates, pendingTotal}]}`; sin las de ventas anuladas |
+| GET | `/withholdings.csv` | `finance:read` | Para Excel. Auditoría `REPORT_EXPORTED` |
+| POST | `/withholdings/certificate` | `finance:manage` | `{ids[], received, note?}` (hasta 500). 422 con una reversa o una de venta anulada |
+
+## Estado de resultados (Finanzas parte C, decisión 323)
+
+| Método | Ruta | Permiso | Notas |
+|---|---|---|---|
+| GET | `/finance/income-statement?from=&to=&branchId=` | `finance:read` | Sin fechas: el mes actual hasta hoy (máximo 400 días). `{branchId, branchName, current, previous, lastYear, unpaidRecurring{count, total}}`; cada periodo trae `{from, to, salesCount, salesTotal, tax, netSales, cost, grossProfit, grossMargin, expenses[{categoryId, name, amount}], expensesTotal, operatingProfit, operatingMargin, withheld, hasData}`. `previous` y `lastYear` son nulos si no tienen datos; `withheld` es nulo con `branchId` |
+| GET | `/finance/income-statement.csv` (mismos parámetros) | `finance:read` | Para Excel. Auditoría `REPORT_EXPORTED` |
+
+## Tablero de Finanzas (parte D, decisión 324)
+
+| Método | Ruta | Permiso | Notas |
+|---|---|---|---|
+| GET | `/finance/dashboard` | `finance:read` | El mes en curso hasta hoy, todo el negocio: `{from, to, netSales, grossProfit, operatingProfit, flow{in, out, net, byMethod[{paymentMethodId, name, cash, in, out, net}]}, balances{creditOwed, creditCustomers, ordersOwed, openOrders, suppliersOwed, suppliersOverdue, suppliersDueSoon}, expenses{thisMonth, lastMonth, changePercent, top[], unpaidRecurring, unpaidRecurringTotal}, breakEven{basis (LAST_MONTH, RECURRING o nulo), monthlyExpenses, grossMargin, perMonth, perDay, averageDailySales, monthSales, monthTarget}}` |

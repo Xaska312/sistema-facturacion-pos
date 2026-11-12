@@ -64,4 +64,17 @@ public interface CashApi {
      * que haya ese efectivo (sin decir cuánto hay: cierre ciego). Devuelve la sesión de caja.
      */
     UUID recordSupplierPaymentCash(UUID actorId, BigDecimal amount, UUID paymentId, String label);
+
+    /**
+     * Gasto en efectivo (decisión 320) desde la caja abierta de quien lo registra (la suya o la compartida donde
+     * vende): la bloquea para salidas y exige que haya ese efectivo (sin decir cuánto hay: cierre ciego). Devuelve la
+     * sesión de caja.
+     */
+    OpenSession recordExpenseCash(UUID actorId, BigDecimal amount, UUID expenseId, String label);
+
+    /**
+     * Devuelve a la caja el efectivo de un gasto anulado ({@code amount} positivo). Solo si esa sesión sigue abierta;
+     * si ya se cerró, falla con un mensaje para el usuario.
+     */
+    void recordExpenseVoidCash(UUID sessionId, BigDecimal amount, UUID expenseId, String label);
 }

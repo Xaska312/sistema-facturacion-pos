@@ -55,6 +55,7 @@ public class QuoteQueryService {
     private final MemberDirectory members;
     private final BusinessSettingsApi settings;
     private final TenantApi tenants;
+    private final com.poshibrido.orders.application.OrderTaxes taxes;
 
     @PersistenceContext
     private EntityManager em;
@@ -152,10 +153,13 @@ public class QuoteQueryService {
         List<ItemView> items = new ArrayList<>();
         for (Object row : itemQuery.getResultList()) {
             Object[] r = (Object[]) row;
+            // Base gravable e IVA de la línea (decisión 322): base de las retenciones al vender la cotización.
+            com.poshibrido.orders.application.OrderTaxes.Amounts amounts = taxes.line(Rows.uuid(r[2]),
+                    Rows.decimal(r[10]), Rows.decimal(r[9]), Rows.decimal(r[11]));
             items.add(new ItemView(Rows.uuid(r[0]), (int) Rows.lng(r[1]), Rows.uuid(r[2]), Rows.str(r[3]),
                     Rows.str(r[4]), Rows.str(r[5]), Rows.str(r[6]), r[7] == null ? null : Rows.decimal(r[7]),
                     r[8] == null ? null : Rows.decimal(r[8]), Rows.decimal(r[9]), Rows.decimal(r[10]),
-                    Rows.decimal(r[11]), Rows.decimal(r[12])));
+                    Rows.decimal(r[11]), Rows.decimal(r[12]), amounts.base(), amounts.iva()));
         }
 
         Map<UUID, String> names = members.displayNames(Set.of(Rows.uuid(h[15])));

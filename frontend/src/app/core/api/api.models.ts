@@ -1,3 +1,4 @@
+import { WithholdingLine } from './withholdings.api';
 import type { DispensationInput } from './pharmacy.api';
 
 /** Modelos de la API (espejo de los DTO del backend). */
@@ -549,7 +550,8 @@ export type CashMovementType =
   | 'TIP'
   | 'TIP_VOID'
   | 'TIP_PAYOUT'
-  | 'SUPPLIER_PAYMENT';
+  | 'SUPPLIER_PAYMENT'
+  | 'EXPENSE_VOID';
 export type ManualCashMovementType = 'INCOME' | 'EXPENSE' | 'WITHDRAWAL';
 
 export interface PaymentMethod {
@@ -1255,6 +1257,12 @@ export const CREDIT_METHOD_CODE = 'CREDIT';
 export const DEPOSIT_METHOD_CODE = 'DEPOSIT';
 
 /**
+ * Código del medio de pago "Retención" (decisión 322): lo que el cliente retuvo. No sale en las listas de medios
+ * ({@code CashApi.paymentMethods}); se agrega con el recuadro de retención.
+ */
+export const WITHHOLDING_METHOD_CODE = 'WITHHOLDING';
+
+/**
  * Cuenta de fiado de un cliente. {@code balance} positivo = debe; negativo = saldo a favor. {@code available}: lo que
  * todavía se le puede fiar. La deuda por antigüedad supone que los abonos pagan primero lo más viejo.
  */
@@ -1339,6 +1347,9 @@ export interface OrderItem {
   saleId: string | null;
   saleNumber: string | null;
   deliveredAt: string | null;
+  /** Base gravable e IVA de la línea pendiente (nulos si ya se entregó): base de las retenciones (decisión 322). */
+  taxBase: number | null;
+  iva: number | null;
 }
 
 export interface OrderPayment {
@@ -1386,6 +1397,9 @@ export interface Order {
   cancelReason: string | null;
   items: OrderItem[];
   payments: OrderPayment[];
+  /** Base gravable e IVA de lo que falta entregar (decisión 322). */
+  pendingTaxBase: number;
+  pendingIva: number;
 }
 
 export interface OrderRow {
@@ -1434,12 +1448,16 @@ export interface OrderPaymentInput {
   paymentMethodId: string;
   reference: string | null;
   notes: string | null;
+  /** Lo que el cliente retuvo de este abono (decisión 322); {@code amount} es lo que pagó. */
+  withholdings?: WithholdingLine[];
 }
 
 export interface OrderDeliverPayment {
   paymentMethodId: string;
   amount: number;
   reference: string | null;
+  /** Solo en la línea "Retención" (decisión 322). */
+  withholdings?: WithholdingLine[];
 }
 
 export interface OrderDelivery {
@@ -1468,6 +1486,9 @@ export interface QuoteItem {
   unitPrice: number;
   discountPercent: number;
   total: number;
+  /** Base gravable e IVA de la línea (decisión 322). */
+  taxBase: number;
+  iva: number;
 }
 
 /** Cotización para un cliente registrado ({@code customerId}) o para un prospecto (nombre y teléfono). */

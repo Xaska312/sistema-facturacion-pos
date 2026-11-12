@@ -14,4 +14,9 @@ describe('Lo que hiciste con Aska (decisión 309)', () => {
     ]);
     expect(recapLines(base)).toEqual([]);
   });
+
+  it('cuenta los recibos de gastos leídos (decisión 325)', () => {
+    expect(recapLines({ ...base, receipts: 2 }).map((l) => l.text))
+      .toEqual(['Leí 2 recibos de tus gastos y llené el formulario por ti.']);
+  });
 });

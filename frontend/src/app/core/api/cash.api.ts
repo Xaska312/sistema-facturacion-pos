@@ -10,6 +10,7 @@ import {
   PageResponse,
   PaymentMethod,
   RegisterOption,
+  WITHHOLDING_METHOD_CODE,
 } from './api.models';
 import { pageParams } from './organization.api';
 import { SILENT_CLIENT_ERRORS } from '../errors/error.interceptor';
@@ -26,7 +27,13 @@ export interface CashSessionFilters {
 export class CashApi {
   private readonly http = inject(HttpClient);
 
+  /** Medios para cobrar y pagar. Sin "Retención" (decisión 322): esa la agrega el recuadro de retención. */
   paymentMethods(): Observable<PaymentMethod[]> {
+    return this.allPaymentMethods().pipe(map((list) => list.filter((m) => m.code !== WITHHOLDING_METHOD_CODE)));
+  }
+
+  /** Todos los medios, también "Retención". */
+  allPaymentMethods(): Observable<PaymentMethod[]> {
     return this.http.get<PaymentMethod[]>('/api/v1/payment-methods');
   }
 

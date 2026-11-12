@@ -53,6 +53,7 @@ public class OrderQueryService {
 
     private final MemberDirectory members;
     private final BusinessSettingsApi settings;
+    private final OrderTaxes taxes;
 
     @PersistenceContext
     private EntityManager em;
@@ -160,19 +161,27 @@ public class OrderQueryService {
         List<ItemView> items = new ArrayList<>();
         BigDecimal delivered = BigDecimal.ZERO;
         BigDecimal pending = BigDecimal.ZERO;
+        BigDecimal pendingBase = BigDecimal.ZERO;
+        BigDecimal pendingIva = BigDecimal.ZERO;
         for (Object row : itemQuery.getResultList()) {
             Object[] r = (Object[]) row;
             boolean isDelivered = r[12] != null;
             BigDecimal total = Rows.decimal(r[11]);
+            // Base e IVA de lo pendiente (decisión 322): base de las retenciones de abonos y entregas.
+            OrderTaxes.Amounts amounts = isDelivered ? null
+                    : taxes.line(Rows.uuid(r[2]), Rows.decimal(r[10]), Rows.decimal(r[9]));
             if (isDelivered) {
                 delivered = delivered.add(total);
             } else {
                 pending = pending.add(total);
+                pendingBase = pendingBase.add(amounts.base());
+                pendingIva = pendingIva.add(amounts.iva());
             }
             items.add(new ItemView(Rows.uuid(r[0]), (int) Rows.lng(r[1]), Rows.uuid(r[2]), Rows.str(r[3]),
                     Rows.str(r[4]), Rows.str(r[5]), Rows.str(r[6]), r[7] == null ? null : Rows.decimal(r[7]),
                     r[8] == null ? null : Rows.decimal(r[8]), Rows.decimal(r[9]), Rows.decimal(r[10]), total,
-                    isDelivered, Rows.uuid(r[12]), Rows.str(r[13]), Rows.instant(r[14])));
+                    isDelivered, Rows.uuid(r[12]), Rows.str(r[13]), Rows.instant(r[14]),
+                    amounts == null ? null : amounts.base(), amounts == null ? null : amounts.iva()));
         }
 
         Query paymentQuery = em.createNativeQuery("""
@@ -222,7 +231,7 @@ public class OrderQueryService {
                 status == OrderStatus.OPEN && due.isBefore(today()), Rows.str(h[10]), Rows.str(h[11]),
                 Rows.decimal(h[12]), delivered, pending, deposited, available, balanceDue,
                 names.get(Rows.uuid(h[13])), Rows.instant(h[14]), Rows.instant(h[15]), Rows.instant(h[16]),
-                Rows.str(h[17]), items, payments);
+                Rows.str(h[17]), items, payments, pendingBase, pendingIva);
     }
 
     private void bindList(Query query, Filter filter, String search) {

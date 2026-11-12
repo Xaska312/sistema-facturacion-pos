@@ -4,6 +4,8 @@ import com.poshibrido.ai.application.AnthropicMessages.AiUnavailableException;
 import com.poshibrido.cash.application.CashQueryService;
 import com.poshibrido.cash.domain.CashSessionStatus;
 import com.poshibrido.credit.application.CreditQueryService;
+import com.poshibrido.finance.application.ExpenseService;
+import com.poshibrido.finance.application.RecurringExpenseService;
 import com.poshibrido.identity.application.UserApi;
 import com.poshibrido.identity.application.UserSummary;
 import com.poshibrido.inventory.application.InventoryQueryService;
@@ -55,6 +57,8 @@ import java.util.UUID;
  * (ventas y utilidad frente a ayer y a la semana pasada, caja, inventario, fiados y proveedores) y Aska escribe un
  * titular, los puntos que piden atención y las cifras clave. Se guarda (uno por fecha) para la tarjeta de Inicio y se
  * envía por correo al propietario y a quien él elija; cada persona ve solo las secciones que su rol le deja ver.
+ * Desde la decisión 325 también trae los gastos del día, la ganancia del día descontándolos y los gastos fijos vencidos
+ * o que vencen mañana (sección FINANCE).
  * Solo cuenta en el tope del mes si salió bien.
  */
 @Slf4j
@@ -70,7 +74,8 @@ public class DailyDigestService {
             "SALES", List.of("reports:read"),
             "CASH", List.of("cash:read"),
             "INVENTORY", List.of("inventory:read"),
-            "MONEY", List.of("credit:read", "purchases:read"));
+            "MONEY", List.of("credit:read", "purchases:read"),
+            "FINANCE", List.of("expenses:read", "finance:read"));
 
     private final AnthropicMessages ai;
     private final ReportQueryService reports;
@@ -79,6 +84,8 @@ public class DailyDigestService {
     private final CreditQueryService credit;
     private final PurchaseService purchases;
     private final CashQueryService cash;
+    private final ExpenseService expenses;
+    private final RecurringExpenseService recurring;
     private final BusinessSettingsApi settings;
     private final SubscriptionApi subscriptions;
     private final TenantApi tenants;
@@ -92,7 +99,8 @@ public class DailyDigestService {
 
     public DailyDigestService(AnthropicMessages ai, ReportQueryService reports, InventoryQueryService inventory,
                               LotQueryService lots, CreditQueryService credit, PurchaseService purchases,
-                              CashQueryService cash, BusinessSettingsApi settings, SubscriptionApi subscriptions,
+                              CashQueryService cash, ExpenseService expenses, RecurringExpenseService recurring,
+                              BusinessSettingsApi settings, SubscriptionApi subscriptions,
                               TenantApi tenants, UserApi users, MailTemplates templates, Mailer mailer,
                               PlatformTransactionManager transactionManager) {
         this.ai = ai;
@@ -102,6 +110,8 @@ public class DailyDigestService {
         this.credit = credit;
         this.purchases = purchases;
         this.cash = cash;
+        this.expenses = expenses;
+        this.recurring = recurring;
         this.settings = settings;
         this.subscriptions = subscriptions;
         this.tenants = tenants;
@@ -362,7 +372,35 @@ public class DailyDigestService {
             var p = purchases.payables(null);
             return Map.of("totalDebido", p.totalDue(), "vencido", p.overdue(), "venceEn7Dias", p.dueSoon());
         });
+        section(facts, "gastos", () -> expenseFacts(day));
         return facts;
+    }
+
+    /** Gastos del día, la ganancia del día ya descontándolos y los gastos fijos vencidos o que vencen mañana. */
+    public Map<String, Object> expenseFacts(LocalDate day) {
+        var today = expenses.summary(new ExpenseService.Filter(day, day, null, null, null, null, null, false, false, null));
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("totalHoy", today.total());
+        m.put("cantidadHoy", today.count());
+        m.put("porCategoria", today.byCategory().stream().limit(5)
+                .map(c -> Map.of("categoria", c.name(), "valor", c.total())).toList());
+        if (today.unclassifiedCount() > 0) {
+            m.put("egresosDeCajaSinClasificar", today.unclassifiedCount());
+        }
+        BigDecimal profit = reports.summary(new ReportFilter(reports.period(day, day), null, null)).profit();
+        profit = profit == null ? BigDecimal.ZERO : profit;
+        m.put("utilidadBrutaVentas", profit);
+        m.put("gananciaDelDia", profit.subtract(today.total()));
+        LocalDate tomorrow = day.plusDays(1);
+        var due = recurring.due().items().stream().filter(d -> !d.dueDate().isAfter(tomorrow)).toList();
+        m.put("fijosVencidos", due.stream().filter(d -> d.dueDate().isBefore(day)).map(DailyDigestService::dueFact).toList());
+        m.put("fijosVencenHoyOMañana", due.stream().filter(d -> !d.dueDate().isBefore(day))
+                .map(DailyDigestService::dueFact).toList());
+        return m;
+    }
+
+    private static Map<String, Object> dueFact(RecurringExpenseService.DueView d) {
+        return Map.of("nombre", d.name(), "fecha", d.dueDate().toString(), "valor", d.amount());
     }
 
     private static void section(Map<String, Object> facts, String name, java.util.function.Supplier<Object> data) {
@@ -386,7 +424,9 @@ public class DailyDigestService {
                 - points: de 2 a 6 puntos, primero lo que pide atención. section: SALES (ventas, utilidad, ticket, lo \
                 más vendido, frente a ayer y al mismo día de la semana pasada), CASH (descuadres, cajas abiertas hace \
                 mucho, anulaciones por encima de lo normal), INVENTORY (bajo el mínimo, vencidos y por vencer), MONEY \
-                (fiados vencidos, facturas de proveedores vencidas o por vencer). tone: good, warning, bad o info. \
+                (fiados vencidos, facturas de proveedores vencidas o por vencer), FINANCE (gastos del día y \
+                gananciaDelDia = utilidad de las ventas menos los gastos del día; gastos fijos vencidos o que vencen \
+                hoy o mañana, con nombre y valor). tone: good, warning, bad o info. \
                 title de máximo 50 caracteres y detail de máximo 200, con cifras.
                 - figures: de 2 a 4 cifras clave de ventas (etiqueta corta y valor); la primera, las ventas del día.
                 - forecast: una frase para mañana con pronosticoManana (por ejemplo "Los domingos sueles vender 30 % \
@@ -409,7 +449,7 @@ public class DailyDigestService {
 
     static Map<String, Object> schema() {
         Map<String, Object> point = Map.of("type", "object", "properties", Map.of(
-                        "section", Map.of("type", "string", "enum", List.of("SALES", "CASH", "INVENTORY", "MONEY")),
+                        "section", Map.of("type", "string", "enum", List.of("SALES", "CASH", "INVENTORY", "MONEY", "FINANCE")),
                         "tone", Map.of("type", "string", "enum", List.of("good", "warning", "bad", "info")),
                         "title", Map.of("type", "string"), "detail", Map.of("type", "string")),
                 "required", List.of("section", "tone", "title", "detail"), "additionalProperties", false);
@@ -551,7 +591,7 @@ public class DailyDigestService {
             Set<String> perms = permissions(userId);
             List<String[]> sections = new ArrayList<>();
             for (String[] s : List.of(new String[]{"CASH", "Caja"}, new String[]{"INVENTORY", "Inventario"},
-                    new String[]{"MONEY", "Cobros y pagos"})) {
+                    new String[]{"MONEY", "Cobros y pagos"}, new String[]{"FINANCE", "Gastos"})) {
                 if (SECTION_PERMISSIONS.get(s[0]).stream().anyMatch(perms::contains)) {
                     var w = DigestWeather.section(s[0], mine.points());
                     sections.add(new String[]{s[1], w.emoji(), w.label(), w.code()});

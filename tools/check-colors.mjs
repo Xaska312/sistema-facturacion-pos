@@ -22,6 +22,7 @@ const ALLOWED_FILES = new Set([
   'features/orders/order-receipt.component.ts', // comprobante de pedido: mismo papel que el tiquete
   'features/orders/order-document.component.ts', // pedido en hoja carta (PDF): negro sobre blanco
   'features/quotes/quote-document.component.ts', // cotización en PDF: se imprime siempre en negro sobre blanco
+  'features/finance/income-statement-document.component.ts', // estado de resultados en PDF (decisión 323): negro sobre blanco
   'features/cash/cash-ticket.component.ts', // ticket del cierre de caja: mismo papel que el tiquete
   'features/kitchen/comanda-print.ts', // comanda de cocina (Fase 12b-3): mismo papel que el tiquete
   'shared/ticket-image.ts', // recibo como imagen PNG (decisión 315): negro sobre blanco como el tiquete

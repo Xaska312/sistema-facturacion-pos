@@ -18,6 +18,7 @@ com.poshibrido
   cash/          medios de pago, sesiones de caja, movimientos de efectivo, informe X/Z
   sales/         ventas (tiquete POS), cálculo, pagos, consecutivos, anulación, eventos
   reporting/     reportes y tablero (solo lectura, SQL nativo sobre las tablas del negocio), CSV
+  finance/       finanzas: gastos con categorías (decisión 320); usa la caja por CashApi
   location/      catálogo DIVIPOLA (departamentos y municipios)       -> platform.*
   audit/         registro de auditoría (audit_log del negocio)
 ```
@@ -111,6 +112,29 @@ que implementa el módulo de ventas.
 rango y `costs` = costo de lo vendido por venta) sobre la conexión del negocio actual. No escribe ni llama a otros
 módulos. Las fechas se agrupan con `created_at AT TIME ZONE <zona del negocio>`. Los CSV se arman con
 `shared/csv/CsvWriter` (Excel en español). En el frontend, todas las gráficas pasan por `shared/charts/chart.component` (Chart.js, UX-3).
+
+## Finanzas: gastos (decisión 320)
+`finance` guarda los gastos (`expenses`) con su categoría. Un gasto en efectivo le pide a la caja, por `CashApi`, que
+saque la plata de la sesión abierta de quien lo registra (movimiento `EXPENSE` con referencia al gasto) y, al anularlo,
+que la devuelva (`EXPENSE_VOID`); con otro medio de pago no toca la caja. La caja no conoce los gastos. El listado une
+`expenses` con los egresos manuales de caja sin clasificar, así los de antes aparecen sin copiarlos. Los pagos a
+proveedores por mercancía no son gastos: ya entran como costo de lo vendido.
+
+Los gastos fijos (decisión 321) no guardan lo pendiente: `RecurringSchedule` calcula las fechas y
+`recurring_expense_occurrences` solo guarda las pagadas (con su gasto) y las saltadas. Pagar uno crea un gasto normal.
+
+Las retenciones (decisión 322) son una línea de pago con el medio "Retención". Ventas y pedidos le piden a `finance`, por
+`WithholdingApi`, que valide el detalle y lo guarde; `finance` no conoce ventas ni pedidos más que por SQL de lectura.
+
+El estado de resultados (decisión 323) lee las ventas con SQL, como `reporting`, y suma los gastos y las retenciones
+con los servicios de `finance`.
+
+El tablero de Finanzas (decisión 324) no guarda nada: junta el estado de resultados, el flujo de las cajas, los saldos
+de fiados, pedidos y proveedores (por sus servicios de consulta) y calcula el punto de equilibrio en el servidor.
+
+Aska usa las finanzas (decisión 325) desde `ai`, que depende de los servicios de `finance` (como ya dependía de
+`reporting`, `credit` o `purchasing`); `finance` no conoce la IA. Leer un recibo no guarda nada: el formulario del gasto
+llama luego a la API de gastos de siempre.
 
 ## Frontend: sistema de diseño
 Los colores viven solo en `frontend/src/styles.css` como tokens CSS (`--surface`, `--text`, `--brand`, `--success`,

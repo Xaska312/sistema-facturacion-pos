@@ -1,4 +1,5 @@
-import { Component, OnInit, computed, inject, input, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, input, signal, viewChild } from '@angular/core';
+import { CustomerWithholdingsDialogComponent } from '../finance/customer-withholdings-dialog.component';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
@@ -24,7 +25,8 @@ import { LatestRequest } from '../../shared/latest-request';
 /** Clientes o proveedores (según {@code kind} en los datos de la ruta). */
 @Component({
   selector: 'app-parties',
-  imports: [RouterLink, TermComponent, FormsModule, PesosInputDirective, ButtonModule, InputTextModule, DataTableComponent, PageHeaderComponent, FormDialogComponent],
+  imports: [RouterLink, TermComponent, FormsModule, PesosInputDirective, ButtonModule, InputTextModule, DataTableComponent, PageHeaderComponent, FormDialogComponent,
+    CustomerWithholdingsDialogComponent],
   template: `
     <app-page-header [title]="isCustomers() ? 'Clientes' : 'Proveedores'"
                      [description]="isCustomers()
@@ -51,6 +53,10 @@ import { LatestRequest } from '../../shared/latest-request';
       <ng-template #actions let-row>
         @if (isCustomers() && canReadCredit() && !row.system && row.creditLimit > 0) {
           <a pButton [routerLink]="['/app/fiados', row.id]" label="Fiado" icon="pi pi-book" size="small" [text]="true"></a>
+        }
+        @if (isCustomers() && canManageFinance() && !row.system) {
+          <p-button label="Retenciones" icon="pi pi-percentage" size="small" [text]="true"
+                    (onClick)="withholdings()?.open(row)" />
         }
         @if (canManage() && !row.system) {
           <p-button label="Editar" icon="pi pi-pencil" size="small" [text]="true" (onClick)="openEdit(row)" />
@@ -167,6 +173,8 @@ import { LatestRequest } from '../../shared/latest-request';
         }
       </div>
     </app-form-dialog>
+
+    <app-customer-withholdings-dialog />
   `,
 })
 export class PartiesComponent implements OnInit {
@@ -180,6 +188,9 @@ export class PartiesComponent implements OnInit {
   private readonly organization = inject(OrganizationApi);
   private readonly confirm = inject(ConfirmService);
   protected readonly canManage = permissionFlag('parties:manage');
+  /** Retenciones habituales del cliente (decisión 322). */
+  protected readonly canManageFinance = permissionFlag('finance:manage');
+  protected readonly withholdings = viewChild(CustomerWithholdingsDialogComponent);
   protected readonly canManageCredit = permissionFlag('credit:manage');
   protected readonly canReadCredit = permissionFlag('credit:read');
 

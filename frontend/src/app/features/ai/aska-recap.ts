@@ -16,6 +16,10 @@ export function recapLines(r: AskaRecap): { emoji: string; text: string }[] {
   if (r.reviews > 0) {
     out.push({ emoji: '🛒', text: `Revisé ${plural(r.reviews, 'pedido', 'pedidos')} antes de que compraras.` });
   }
+  if ((r.receipts ?? 0) > 0) {
+    // Decisión 325.
+    out.push({ emoji: '📎', text: `Leí ${plural(r.receipts ?? 0, 'recibo', 'recibos')} de tus gastos y llené el formulario por ti.` });
+  }
   if (r.digests > 0) {
     out.push({ emoji: '☀️', text: `Te conté cómo te fue ${plural(r.digests, 'día', 'días')} en el Resumen del día.` });
   }
