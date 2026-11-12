@@ -12,5 +12,5 @@ import java.math.BigDecimal;
 public record BusinessSettings(boolean allowNegativeStock, boolean pricesIncludeTax, String timezone,
                                String currency, String receiptFooter, BigDecimal maxDiscountPercent,
                                boolean cashCloseEmail, int quoteValidityDays, String quoteTerms,
-                               int tipPercent, int expiryAlertMonths) {
+                               int tipPercent, int expiryAlertMonths, String receiptHeader) {
 }

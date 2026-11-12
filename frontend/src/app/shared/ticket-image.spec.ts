@@ -48,6 +48,12 @@ describe('Tiquete como imagen (decisiones 315 y 326)', () => {
     expect(texts.at(-1)).toBe('Comprobante interno de venta');
   });
 
+  it('usa el encabezado del dueño en lugar de la dirección de la sede (decisión 331)', () => {
+    const sale = { ...SALE, receipt: { ...SALE.receipt, branchAddress: 'Calle 10', header: 'NIT: 1006122824-9\nCel: 3155145472' } } as Sale;
+    const texts = receiptRows(sale).slice(0, 5).map((r) => (r.kind === 'text' ? r.text : ''));
+    expect(texts).toEqual(['XASKA', 'Sede principal', 'NIT: 1006122824-9', 'Cel: 3155145472', 'Tiquete POS-60']);
+  });
+
   it('marca la venta anulada', () => {
     const rows = receiptRows({ ...SALE, status: 'VOIDED', voidReason: 'Devolución' } as Sale);
     expect(rows.some((r) => r.kind === 'text' && r.text === '*** VENTA ANULADA ***')).toBeTrue();

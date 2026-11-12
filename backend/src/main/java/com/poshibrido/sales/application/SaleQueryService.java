@@ -199,7 +199,7 @@ public class SaleQueryService {
         ReceiptHeader receipt = new ReceiptHeader(businessName(), branch == null ? null : branch.name(),
                 branch == null ? null : branch.address(), branch == null ? null : branch.phone(),
                 register == null ? null : register.code(), register == null ? null : register.name(),
-                cfg.receiptFooter(), cfg.timezone());
+                cfg.receiptFooter(), cfg.timezone(), cfg.receiptHeader());
         return new SaleView(s.getId(), s.documentNumber(), s.getPrefix(), s.getNumber(), s.getStatus(),
                 s.getCreatedAt(), s.getBranchId(), s.getCashRegisterId(), s.getCashSessionId(), s.getCustomerId(),
                 s.getCustomerDocumentType(), s.getCustomerDocumentNumber(), s.getCustomerVerificationDigit(),

@@ -1,4 +1,5 @@
-import { Component, inject, input, model } from '@angular/core';
+import { Component, inject, input, model, signal } from '@angular/core';
+import { BrandingApi } from '../../core/api/branding.api';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { CashReport } from '../../core/api/api.models';
@@ -21,7 +22,7 @@ import { cashSummaryWhatsApp } from './cash-ticket-text';
               [breakpoints]="{ '640px': '100vw' }">
       @if (report(); as r) {
         <app-cash-report [report]="r" />
-        <app-cash-ticket class="receipt-print-root" [report]="r" [businessName]="businessName()" [width]="width"
+        <app-cash-ticket class="receipt-print-root" [report]="r" [businessName]="businessName()" [headerText]="headerText()" [width]="width"
                          [logo]="brandLogo()" />
       }
       <ng-template #footer>
@@ -42,6 +43,12 @@ export class CashReportDialogComponent {
   protected readonly brandLogo = inject(BrandingService).logo;
 
   readonly visible = model(false);
+  /** Encabezado libre del negocio para el ticket (decisión 331); si no carga, el ticket sale sin él. */
+  protected readonly headerText = signal<string | null>(null);
+
+  constructor() {
+    inject(BrandingApi).header().subscribe({ next: (h) => this.headerText.set(h.header ?? null), error: () => undefined });
+  }
   readonly report = input<CashReport | null>(null);
   /** Ancho del papel guardado en este equipo (el mismo del tiquete de venta). */
   protected readonly width = loadReceiptWidth();

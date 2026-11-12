@@ -1,4 +1,5 @@
 import { Component, computed, input } from '@angular/core';
+import { headerLines } from '../../shared/receipt/doc-header';
 import { Order } from '../../core/api/api.models';
 import { formatDay, sizeText } from './order-text';
 import { formatDateTime } from '../../shared/format';
@@ -19,6 +20,10 @@ import { ReceiptWidth, printableMm } from '../../shared/receipt/receipt-prefs';
         <img [src]="src" alt="" class="logo" />
       }
       <p class="center bold">{{ businessName() }}</p>
+      <!-- Encabezado del dueño (decisión 331): NIT, dirección, celular… -->
+      @for (line of lines(); track $index) {
+        <p class="center">{{ line }}</p>
+      }
       <p class="center bold mt">Pedido {{ o.number }}</p>
       <p>Fecha: {{ dateTime(o.createdAt) }}</p>
       <p>Cliente: {{ o.customerName }}</p>
@@ -73,6 +78,9 @@ import { ReceiptWidth, printableMm } from '../../shared/receipt/receipt-prefs';
 export class OrderReceiptComponent {
   readonly order = input.required<Order>();
   readonly businessName = input('');
+  /** Encabezado libre del negocio (decisión 331). */
+  readonly headerText = input<string | null | undefined>(null);
+  protected readonly lines = computed(() => headerLines(this.headerText()));
   readonly width = input<ReceiptWidth>(80);
   protected readonly printable = computed(() => printableMm(this.width()));
   readonly logo = input<string | null>(null);

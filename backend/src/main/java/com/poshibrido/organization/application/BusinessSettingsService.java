@@ -30,6 +30,9 @@ public class BusinessSettingsService implements BusinessSettingsApi {
     static final String TIMEZONE = "timezone";
     static final String CURRENCY = "currency";
     static final String RECEIPT_FOOTER = "receipt_footer";
+    /** Encabezado libre de los documentos (decisión 331): NIT, dirección, celular… un dato por renglón. */
+    static final String RECEIPT_HEADER = "receipt_header";
+    static final int MAX_HEADER_LINES = 8;
     static final String MAX_DISCOUNT_PERCENT = "max_discount_percent";
     static final String CASH_CLOSE_EMAIL = "cash_close_email";
     static final String QUOTE_VALIDITY_DAYS = "quote_validity_days";
@@ -43,7 +46,7 @@ public class BusinessSettingsService implements BusinessSettingsApi {
 
     private static final BusinessSettings DEFAULTS = new BusinessSettings(false, true, "America/Bogota", "COP",
             "Gracias por su compra", BigDecimal.ZERO.setScale(2), true, 15,
-            "Precios sujetos a cambio después de la fecha de validez.", 10, 3);
+            "Precios sujetos a cambio después de la fecha de validez.", 10, 3, "");
 
     private final BusinessSettingRepository repository;
     private final AuditLogger audit;
@@ -64,7 +67,8 @@ public class BusinessSettingsService implements BusinessSettingsApi {
                 integer(values, QUOTE_VALIDITY_DAYS, DEFAULTS.quoteValidityDays()),
                 values.getOrDefault(QUOTE_TERMS, DEFAULTS.quoteTerms()),
                 integer(values, TIP_PERCENT, DEFAULTS.tipPercent()),
-                integer(values, EXPIRY_ALERT_MONTHS, DEFAULTS.expiryAlertMonths()));
+                integer(values, EXPIRY_ALERT_MONTHS, DEFAULTS.expiryAlertMonths()),
+                values.getOrDefault(RECEIPT_HEADER, DEFAULTS.receiptHeader()));
     }
 
     @Transactional
@@ -79,6 +83,7 @@ public class BusinessSettingsService implements BusinessSettingsApi {
         put(rows, PRICES_INCLUDE_TAX, ValueType.BOOLEAN, Boolean.toString(requested.pricesIncludeTax()), actor);
         put(rows, TIMEZONE, ValueType.STRING, requested.timezone(), actor);
         put(rows, CURRENCY, ValueType.STRING, requested.currency(), actor);
+        put(rows, RECEIPT_HEADER, ValueType.STRING, cleanHeader(requested.receiptHeader()), actor);
         put(rows, RECEIPT_FOOTER, ValueType.STRING, requested.receiptFooter() == null ? "" : requested.receiptFooter().trim(), actor);
         put(rows, MAX_DISCOUNT_PERCENT, ValueType.DECIMAL,
                 requested.maxDiscountPercent().setScale(2, RoundingMode.HALF_UP).toPlainString(), actor);
@@ -130,9 +135,25 @@ public class BusinessSettingsService implements BusinessSettingsApi {
         if (s.expiryAlertMonths() < 1 || s.expiryAlertMonths() > 12) {
             throw new BusinessRuleException("El aviso de vencimiento va de 1 a 12 meses.");
         }
+        String header = cleanHeader(s.receiptHeader());
+        if (header.length() > 500) {
+            throw new BusinessRuleException("El encabezado de los documentos supera 500 caracteres.");
+        }
+        if (header.lines().count() > MAX_HEADER_LINES) {
+            throw new BusinessRuleException("El encabezado de los documentos admite hasta " + MAX_HEADER_LINES + " renglones.");
+        }
         if (s.quoteTerms() != null && s.quoteTerms().length() > 1000) {
             throw new BusinessRuleException("Las condiciones de las cotizaciones superan 1.000 caracteres.");
         }
+    }
+
+    /** Quita espacios de cada renglón y los renglones vacíos; null queda en "". */
+    static String cleanHeader(String header) {
+        if (header == null) {
+            return "";
+        }
+        return header.lines().map(String::strip).filter(l -> !l.isEmpty())
+                .collect(Collectors.joining("\n"));
     }
 
     private static boolean bool(Map<String, String> values, String key, boolean fallback) {
@@ -164,6 +185,7 @@ public class BusinessSettingsService implements BusinessSettingsApi {
         map.put(PRICES_INCLUDE_TAX, s.pricesIncludeTax());
         map.put(TIMEZONE, s.timezone());
         map.put(CURRENCY, s.currency());
+        map.put(RECEIPT_HEADER, s.receiptHeader());
         map.put(RECEIPT_FOOTER, s.receiptFooter());
         map.put(MAX_DISCOUNT_PERCENT, s.maxDiscountPercent());
         map.put(CASH_CLOSE_EMAIL, s.cashCloseEmail());

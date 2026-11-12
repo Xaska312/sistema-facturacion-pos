@@ -21,6 +21,7 @@ import { describeCapabilities, firstName, greeting, quickActions } from './capab
 import { MENU, isFloorOnly } from './menu';
 import { DigestCardComponent } from '../ai/digest-card.component';
 import { AskaTeaserComponent } from '../ai/aska-teaser.component';
+import { HeaderReminderComponent } from '../settings/header-reminder.component';
 
 /** Dato de una baldosa del inicio (se llena cuando llega su consulta; si falla, no aparece). */
 interface Tile {
@@ -44,7 +45,7 @@ export function glyphFor(route: string): XIconName {
 @Component({
   selector: 'app-home',
   imports: [AskaRecapCardComponent, RouterLink, SkeletonModule, XIconComponent, DashboardComponent, MyDayComponent, StockAlertsComponent,
-    FirstStepsComponent, RecurringAlertComponent, OrdersAlertComponent, QualityAlertComponent, DigestCardComponent, AskaTeaserComponent],
+    FirstStepsComponent, RecurringAlertComponent, OrdersAlertComponent, QualityAlertComponent, DigestCardComponent, AskaTeaserComponent, HeaderReminderComponent],
   template: `
     <h1 class="sr-only">{{ title }}</h1>
     @if (hero(); as h) {
@@ -104,6 +105,8 @@ export function glyphFor(route: string): XIconName {
 
     <!-- Gastos fijos vencidos o de esta semana (decisión 321); no ocupa espacio si no hay. -->
     <app-recurring-alert class="block mb-5 empty:hidden" />
+    <!-- Decisión 331: invitar al dueño a escribir el encabezado de sus documentos. -->
+    <app-header-reminder class="block mb-5 empty:hidden" />
 
     <!-- Droguería: temperatura de la mañana o de la tarde por registrar (decisión 287). -->
     <app-quality-alert class="block mb-5 empty:hidden" />

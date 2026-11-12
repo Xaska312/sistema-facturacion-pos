@@ -34,6 +34,8 @@ public class SettingsController {
             @NotBlank @Size(max = 60) String timezone,
             @NotBlank @Size(min = 3, max = 3) String currency,
             @Size(max = 500) String receiptFooter,
+            /** Encabezado libre de los documentos (decisión 331). Sin dato se conserva el actual. */
+            @Size(max = 600) String receiptHeader,
             @NotNull @DecimalMin("0") @DecimalMax("100") @Digits(integer = 3, fraction = 2) BigDecimal maxDiscountPercent,
             /** Resumen del cierre de caja al correo del dueño (decisión 253). Sin dato se conserva el actual. */
             Boolean cashCloseEmail,
@@ -64,9 +66,10 @@ public class SettingsController {
         int tipPercent = request.tipPercent() == null ? current.tipPercent() : request.tipPercent();
         int expiryAlertMonths = request.expiryAlertMonths() == null ? current.expiryAlertMonths()
                 : request.expiryAlertMonths();
+        String receiptHeader = request.receiptHeader() == null ? current.receiptHeader() : request.receiptHeader();
         return service.update(new BusinessSettings(request.allowNegativeStock(), request.pricesIncludeTax(),
                 request.timezone().trim(), request.currency().trim(), request.receiptFooter(),
                 request.maxDiscountPercent(), cashCloseEmail, quoteValidityDays, quoteTerms, tipPercent,
-                expiryAlertMonths));
+                expiryAlertMonths, receiptHeader));
     }
 }

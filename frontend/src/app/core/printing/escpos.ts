@@ -2,6 +2,7 @@ import { Sale } from '../api/api.models';
 import { documentShortLabel } from '../../shared/document-types';
 import { formatCop, formatQuantity } from '../../shared/money';
 import { splitSummary } from '../../shared/receipt/split-receipt';
+import { businessLines } from '../../shared/receipt/doc-header';
 
 /**
  * Tiquete en comandos ESC/POS para la impresora térmica (decisión 286): lo arma la app y XASKA Impresora lo manda tal
@@ -248,10 +249,9 @@ export function receiptBytes(s: Sale, o: ReceiptOptions): Uint8Array {
     p.align('left').image(o.logo).line();
   }
   p.align('center').bold(true).big(true).lines(wrap(s.receipt.businessName ?? '', w)).big(false).bold(false);
-  for (const extra of [s.receipt.branchName, s.receipt.branchAddress, s.receipt.branchPhone ? 'Tel. ' + s.receipt.branchPhone : null]) {
-    if (extra) {
-      p.lines(wrap(extra, w));
-    }
+  // Sede y encabezado del dueño (decisión 331) o, sin él, dirección y teléfono de la sede.
+  for (const extra of businessLines(s.receipt)) {
+    p.lines(wrap(extra, w));
   }
   p.line().bold(true).line(split ? (s.notes ?? 'Cuenta') : 'Tiquete ' + s.documentNumber).bold(false).align('left');
   p.line(o.date);

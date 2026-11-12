@@ -21,6 +21,7 @@ import { PageHeaderComponent } from '../../shared/page-header.component';
 import { BrandingSectionComponent } from './branding-section.component';
 import { PrinterSectionComponent } from './printer-section.component';
 import { BusinessProfileSectionComponent } from './business-profile-section.component';
+import { maxLines } from '../../shared/receipt/doc-header';
 
 /** Zonas horarias de Colombia y vecinas más usadas; el backend acepta cualquier zona IANA válida. */
 export const TIMEZONES = ['America/Bogota', 'America/Panama', 'America/Lima', 'America/Guayaquil', 'America/Caracas'];
@@ -194,6 +195,19 @@ const TIMEZONE_LABEL: Record<string, string> = {
             </span>
           </label>
         </div>
+        <!-- Decisión 331: un solo campo libre para el encabezado de tiquetes, pedidos, cotizaciones e informes. -->
+        <label id="encabezado" class="flex flex-col gap-1 scroll-mt-24">
+          <span class="text-sm font-medium">Encabezado de los documentos</span>
+          <textarea formControlName="receiptHeader" rows="4" maxlength="500" class="border rounded px-2 py-2"
+                    aria-describedby="header-help" [placeholder]="headerPlaceholder"></textarea>
+          <span id="header-help" class="text-xs text-muted">En este apartado puedes poner información relevante de tu
+            negocio a tu gusto, como dirección, teléfono, NIT. Marca cada información en un renglón separado para
+            mejorar la vista en tus documentos. Sale debajo del nombre del negocio en tiquetes, pedidos, cotizaciones e
+            informes de caja (hasta 8 renglones).</span>
+          @if (form.controls.receiptHeader.errors?.['tooManyLines']) {
+            <span class="text-xs text-danger">Usa máximo 8 renglones.</span>
+          }
+        </label>
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Pie del recibo</span>
           <textarea formControlName="receiptFooter" rows="3" maxlength="500" class="border rounded px-2 py-2"
@@ -323,6 +337,7 @@ const TIMEZONE_LABEL: Record<string, string> = {
   `,
 })
 export class SettingsComponent implements OnInit {
+  protected readonly headerPlaceholder = 'NIT: 1006122824-9\nCra. 138 #7-45 Ceiba\nCel: 3155145472';
   private readonly api = inject(OrganizationApi);
   private readonly subscriptionApi = inject(SubscriptionApi);
   private readonly messages = inject(MessageService);
@@ -361,6 +376,7 @@ export class SettingsComponent implements OnInit {
     timezone: ['America/Bogota', Validators.required],
     currency: ['COP', Validators.required],
     maxDiscountPercent: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
+    receiptHeader: ['', [Validators.maxLength(500), maxLines(8)]],
     receiptFooter: ['', Validators.maxLength(500)],
     cashCloseEmail: [true],
     quoteValidityDays: [15, [Validators.required, Validators.min(1), Validators.max(365)]],
@@ -372,6 +388,10 @@ export class SettingsComponent implements OnInit {
   ngOnInit(): void {
     this.api.settings().subscribe((settings) => {
       this.form.reset(settings);
+      // Decisión 331: el aviso de Inicio trae aquí (#encabezado) para escribir el encabezado.
+      if (globalThis.location?.hash === '#encabezado') {
+        setTimeout(() => globalThis.document?.getElementById('encabezado')?.scrollIntoView({ block: 'center' }));
+      }
     });
     this.subscriptionApi.current().subscribe({
       next: (s) => this.sub.set(s),

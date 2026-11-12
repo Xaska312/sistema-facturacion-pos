@@ -1,4 +1,5 @@
-import { Component, input } from '@angular/core';
+import { Component, computed, input } from '@angular/core';
+import { businessLines } from '../../shared/receipt/doc-header';
 import { Order } from '../../core/api/api.models';
 import { BusinessHeader } from '../../core/api/branding.api';
 import { formatDate } from '../../shared/format';
@@ -22,11 +23,9 @@ import { formatDay } from './order-text';
           }
           <div>
             <p class="business">{{ header()?.businessName || businessName() }}</p>
-            @if (header()?.branchAddress) {
-              <p>{{ header()!.branchAddress }}</p>
-            }
-            @if (header()?.branchPhone) {
-              <p>Tel. {{ header()!.branchPhone }}</p>
+            <!-- Encabezado del dueño (decisión 331) o dirección y teléfono de la sede. -->
+            @for (line of headerLines(); track $index) {
+              <p>{{ line }}</p>
             }
           </div>
         </div>
@@ -136,6 +135,7 @@ import { formatDay } from './order-text';
 export class OrderDocumentComponent {
   readonly order = input.required<Order>();
   readonly header = input<BusinessHeader | null>(null);
+  protected readonly headerLines = computed(() => businessLines(this.header() ?? {}, false));
   /** Nombre del negocio de la sesión, por si no llegó el encabezado. */
   readonly businessName = input('');
   readonly logo = input<string | null>(null);

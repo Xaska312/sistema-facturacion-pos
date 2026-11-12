@@ -193,6 +193,8 @@ export interface BusinessSettings {
   timezone: string;
   currency: string;
   receiptFooter: string;
+  /** Encabezado libre de los documentos (decisión 331): NIT, dirección, celular…, un dato por renglón. */
+  receiptHeader: string;
   maxDiscountPercent: number;
   /** Resumen de cada cierre de caja al correo del dueño (decisión 253). */
   cashCloseEmail: boolean;
@@ -737,6 +739,8 @@ export interface ReceiptHeader {
   registerName: string | null;
   footer: string | null;
   timezone: string | null;
+  /** Encabezado libre del negocio (decisión 331): reemplaza la dirección y el teléfono de la sede. */
+  header?: string | null;
 }
 
 export interface Sale {
@@ -1542,6 +1546,8 @@ export interface QuoteConfig {
   businessName: string;
   branchAddress: string | null;
   branchPhone: string | null;
+  /** Encabezado libre del negocio (decisión 331). */
+  header?: string | null;
 }
 
 export interface QuoteItemInput {

@@ -2,6 +2,7 @@ import { Sale } from '../../core/api/api.models';
 import { formatCop, formatQuantity } from '../money';
 import { documentShortLabel } from '../document-types';
 import { splitSummary } from './split-receipt';
+import { businessLines } from './doc-header';
 
 /**
  * El tiquete de venta como lista de renglones (decisión 326), para dibujarlo como imagen igual al impreso. Sigue el
@@ -45,9 +46,7 @@ export function receiptRows(sale: Sale): ReceiptRow[] {
   const r = sale.receipt;
 
   text(r.businessName ?? '', { center: true, bold: true });
-  if (r.branchName) text(r.branchName, { center: true });
-  if (r.branchAddress) text(r.branchAddress, { center: true });
-  if (r.branchPhone) text(`Tel. ${r.branchPhone}`, { center: true });
+  for (const line of businessLines(r)) text(line, { center: true });
 
   const lines = (part: Sale) => {
     for (const item of part.items) {

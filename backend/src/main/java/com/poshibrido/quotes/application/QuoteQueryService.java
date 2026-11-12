@@ -73,7 +73,7 @@ public class QuoteQueryService {
                 "SELECT address, phone FROM branches WHERE active ORDER BY created_at, code LIMIT 1").getResultList();
         Object[] b = branch.isEmpty() ? new Object[2] : branch.get(0);
         return new QuoteConfig(cfg.quoteValidityDays(), cfg.quoteTerms(), cfg.pricesIncludeTax(),
-                cfg.maxDiscountPercent(), businessName, (String) b[0], (String) b[1]);
+                cfg.maxDiscountPercent(), businessName, (String) b[0], (String) b[1], cfg.receiptHeader());
     }
 
     @Transactional(readOnly = true)

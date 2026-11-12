@@ -171,7 +171,7 @@ import { PAYMENT_LABEL, dueLabel, formatDay, orderBadge, orderWhatsAppLink, size
         }
       </section>
 
-      <app-order-receipt class="receipt-print-root" [order]="o" [businessName]="businessName()" [width]="width"
+      <app-order-receipt class="receipt-print-root" [order]="o" [businessName]="businessName()" [headerText]="header()?.header" [width]="width"
                          [logo]="brandLogo()" />
       <app-order-document class="receipt-print-root order-doc-root" [order]="o" [header]="header()"
                           [businessName]="businessName()" [logo]="brandLogo()" />

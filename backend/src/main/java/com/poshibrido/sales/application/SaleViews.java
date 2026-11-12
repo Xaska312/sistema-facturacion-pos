@@ -42,9 +42,13 @@ public final class SaleViews {
                           BigDecimal taxAmount) {
     }
 
-    /** Encabezado del tiquete. */
+    /**
+     * Encabezado del tiquete. {@code header}: el texto libre del negocio (NIT, dirección, celular…, decisión 331);
+     * si no está vacío reemplaza la dirección y el teléfono de la sede.
+     */
     public record ReceiptHeader(String businessName, String branchName, String branchAddress, String branchPhone,
-                                String registerCode, String registerName, String footer, String timezone) {
+                                String registerCode, String registerName, String footer, String timezone,
+                                String header) {
     }
 
     public record SaleView(UUID id, String documentNumber, String prefix, long number, SaleStatus status,

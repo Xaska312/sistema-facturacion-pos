@@ -1522,6 +1522,7 @@ export const MANUAL: readonly ManualChapter[] = [
         tips: [
           'Permitir vender sin existencias: útil si aún no tienes el inventario exacto.',
           'Los precios incluyen impuestos: márcalo si el precio de venta que escribes ya trae el IVA.',
+          'Encabezado de los documentos: lo que sale debajo del nombre del negocio en tiquetes, pedidos, cotizaciones e informes de caja. Escribe un dato por renglón y en el orden que quieras (por ejemplo NIT, dirección y celular). Si lo dejas vacío, sale la dirección y el teléfono de la sede.',
           'Pie del recibo: el texto que sale al final de cada tiquete.',
           'Enviarme el resumen de cada cierre de caja: llega al correo del dueño cada vez que se cierra una caja.',
           'Marca: sube tu logo (sale en el encabezado y en el tiquete) y elige el color de la app entre los de la paleta; toca un color para verlo antes de guardarlo.',

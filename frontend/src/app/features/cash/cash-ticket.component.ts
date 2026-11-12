@@ -1,4 +1,5 @@
 import { Component, computed, input } from '@angular/core';
+import { headerLines } from '../../shared/receipt/doc-header';
 import { CashReport } from '../../core/api/api.models';
 import { formatCop } from '../../shared/money';
 import { ReceiptWidth, printableMm } from '../../shared/receipt/receipt-prefs';
@@ -18,6 +19,10 @@ import { differenceLabel } from './labels';
         <img [src]="src" alt="" class="logo" />
       }
       <p class="center bold">{{ businessName() }}</p>
+      <!-- Encabezado del dueño (decisión 331): NIT, dirección, celular… -->
+      @for (line of lines(); track $index) {
+        <p class="center">{{ line }}</p>
+      }
       <p class="center bold mt">{{ title() }}</p>
       <p>Caja {{ r.session.registerCode }}{{ r.session.branchName ? ' · ' + r.session.branchName : '' }}</p>
       <p>Abrió: {{ r.session.openedByName }}</p>
@@ -88,6 +93,9 @@ import { differenceLabel } from './labels';
 export class CashTicketComponent {
   readonly report = input.required<CashReport>();
   readonly businessName = input('');
+  /** Encabezado libre del negocio (decisión 331). */
+  readonly headerText = input<string | null | undefined>(null);
+  protected readonly lines = computed(() => headerLines(this.headerText()));
   readonly width = input<ReceiptWidth>(80);
   protected readonly printable = computed(() => printableMm(this.width()));
   readonly logo = input<string | null>(null);
