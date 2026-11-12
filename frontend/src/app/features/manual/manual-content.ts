@@ -206,6 +206,7 @@ export const MANUAL: readonly ManualChapter[] = [
           'Para reimprimir una venta anterior, búscala en Ventas, ábrela y toca "Reimprimir".',
           'Con "Enviar" le mandas el recibo al cliente: "WhatsApp (texto)" abre WhatsApp con los productos, el total y cómo pagó, y eliges el contacto; "Imagen del tiquete" lo manda como una foto igual al tiquete impreso, con tu logo (en el celular se abre el menú de compartir; en el computador se descarga el PNG para adjuntarlo).',
           'Si se va el internet, sigue vendiendo: arriba sale "Sin conexión". Busca con el lector o F2 en la copia del catálogo que guarda el equipo, cobra en efectivo, tarjeta o transferencia e imprime: el tiquete sale con un número provisional y "Pendiente de enviar". Cuando vuelve el internet las ventas se envían solas y toman su número oficial. Sin conexión no se fía, no se aplica retención, se vende a Consumidor final y la caja se cierra cuando hayan llegado todas las ventas.',
+          'El equipo donde tienes la caja abierta también abre Vender sin internet (por ejemplo, si se reinició el computador durante el corte), hasta 24 horas después de la última vez que tuvo conexión. Al cerrar la caja o la sesión, el equipo lo olvida.',
         ],
         tips: [
           'El texto del pie del tiquete (horarios, redes sociales…) se cambia en Configuración → Ajustes.',

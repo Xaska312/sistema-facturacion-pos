@@ -25,6 +25,7 @@ import { DataTableComponent } from '../../shared/table/data-table.component';
 import { ColumnDef } from '../../shared/table/table';
 import { CashReportDialogComponent } from './cash-report-dialog.component';
 import { OfflineSalesService } from '../../core/offline/offline-sales.service';
+import { clearOfflineBoot } from '../../core/offline/offline-boot';
 import { CASH_MOVEMENT_LABEL } from './labels';
 import { TermComponent } from '../../shared/help/term.component';
 import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
@@ -374,6 +375,8 @@ export class CashComponent implements OnInit {
         this.saving.set(false);
         this.closeOpen = false;
         this.messages.add({ severity: 'success', summary: 'Caja cerrada' });
+        // Decisión 333: con la caja cerrada este equipo ya no abre Vender sin internet.
+        clearOfflineBoot();
         this.report.set(report);
         this.reportOpen = true;
         this.movements.set([]);

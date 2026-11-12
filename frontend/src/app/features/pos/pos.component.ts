@@ -2,7 +2,8 @@ import { focusOnDesktop } from '../../shared/touch';
 import { WithholdingBoxComponent } from '../finance/withholding-box.component';
 import { NO_WITHHOLDING, TaxBases, WithholdingResult, withholdingPayment } from '../finance/withholding-text';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, ElementRef, HostListener, OnDestroy, OnInit, computed, inject, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, OnInit, computed, effect, inject, signal, viewChild } from '@angular/core';
+import { clearOfflineBoot, readOfflineBoot, saveOfflineBoot } from '../../core/offline/offline-boot';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
@@ -993,6 +994,39 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   protected readonly stock = signal<ReadonlyMap<string, number>>(new Map());
   /** Unidades que admiten decimales: solo ahí se ofrece "vender por valor" (fase 8e). */
   protected readonly decimalUnits = signal<ReadonlySet<string>>(new Set());
+  /** Todos los medios de pago (también Retención), para recordarlos en el equipo de la caja (decisión 333). */
+  private readonly allMethods = signal<PaymentMethod[]>([]);
+
+  /**
+   * Decisión 333: con la caja abierta y conexión, este equipo recuerda lo necesario para abrir Vender sin internet
+   * (quién vende, la caja, los ajustes y los medios de pago; sin token ni contraseña). Vale 24 horas.
+   */
+  private readonly rememberForOffline = effect(() => {
+    const session = this.session();
+    const config = this.config();
+    const methods = this.allMethods();
+    const identity = this.auth.identity?.();
+    const tenant = this.auth.currentTenant?.();
+    if (!session || !config || methods.length === 0 || !identity || !tenant || this.offline()) {
+      return;
+    }
+    saveOfflineBoot({
+      savedAt: Date.now(), user: identity.user, claims: identity.claims, tenant, session, config, methods,
+      decimalUnitIds: [...this.decimalUnits()],
+    });
+  });
+
+  /** Lo que este equipo recuerda de la caja de este usuario en este negocio, si vale (decisión 333). */
+  private myBoot(): ReturnType<typeof readOfflineBoot> {
+    const boot = readOfflineBoot();
+    return boot && boot.user.id === this.auth.user()?.id && boot.claims.tid === this.auth.tenantId?.() ? boot : null;
+  }
+
+  private applyMethods(methods: PaymentMethod[]): void {
+    this.allMethods.set(methods);
+    this.withholdingMethodId = methods.find((m) => m.code === WITHHOLDING_METHOD_CODE)?.id ?? null;
+    this.methods.set(methods.filter((m) => m.code !== WITHHOLDING_METHOD_CODE));
+  }
 
   protected readonly totals = computed(() => cartTotals(this.lines(), this.config()?.pricesIncludeTax ?? true));
   protected readonly shortages = computed(() => stockShortages(this.lines(), this.stock()));
@@ -1038,14 +1072,19 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
       this.config.set(config);
       this.customer.update((c) => (c.id ? c : { ...c, id: config.finalConsumerId }));
     });
+    // Decisión 333: lo que recuerda este equipo sirve mientras responde el servidor (o si no responde).
+    const boot = this.myBoot();
+    if (boot) {
+      this.config.update((c) => c ?? boot.config);
+      this.customer.update((c) => (c.id ? c : { ...c, id: boot.config.finalConsumerId }));
+      this.applyMethods(boot.methods);
+      this.decimalUnits.set(new Set(boot.decimalUnitIds));
+    }
     this.loadSession();
     // Decisión 332: la copia del catálogo y las ventas sin conexión que hayan quedado en este equipo.
     void this.offlineSales.prepare();
     void this.offlineCatalog.prepare(this.online());
-    this.cash.allPaymentMethods().subscribe((methods) => {
-      this.withholdingMethodId = methods.find((m) => m.code === WITHHOLDING_METHOD_CODE)?.id ?? null;
-      this.methods.set(methods.filter((m) => m.code !== WITHHOLDING_METHOD_CODE));
-    });
+    this.cash.allPaymentMethods().subscribe((methods) => this.applyMethods(methods));
     this.catalog.units().subscribe((units) =>
       this.decimalUnits.set(new Set(units.filter((u) => u.allowsDecimals).map((u) => u.id))));
     if (this.auth.hasPermission('module:modifiers')) {
@@ -1068,9 +1107,22 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
           this.loadTabFromUrl();
           this.focusScanner();
           this.offerTour();
+        } else {
+          // Sin caja abierta: este equipo ya no abre Vender sin internet (decisión 333).
+          clearOfflineBoot();
         }
       },
-      error: () => this.sessionError.set(true),
+      error: (error: unknown) => {
+        // Sin conexión (decisión 333): se sigue con la caja que recuerda este equipo.
+        const boot = isNetworkError(error) ? this.myBoot() : null;
+        if (boot) {
+          this.offlineSales.noteNetworkError();
+          this.session.set(boot.session);
+          this.focusScanner();
+          return;
+        }
+        this.sessionError.set(true);
+      },
     });
   }
 
