@@ -21,8 +21,7 @@ import { receiptBytes, saleDate } from '../../core/printing/escpos';
 import { printableLogo } from '../../core/printing/printable-logo';
 import { PrintAgentService } from '../../core/printing/print-agent.service';
 import { AuthService } from '../../core/auth/auth.service';
-import { saleTicketImage, saleWhatsAppLink } from './sale-text';
-import { shareTicketPng, ticketPng } from '../../shared/ticket-image';
+import { ReceiptSendComponent } from './receipt-send.component';
 import { permissionFlag } from '../../core/auth/permission-flag';
 import { LatestRequest } from '../../shared/latest-request';
 import { formatCop } from '../../shared/money';
@@ -37,7 +36,7 @@ const SALE_STATUS: Record<SaleStatus, StatusKey> = { COMPLETED: 'completed', VOI
 /** Historial de ventas: detalle, reimpresión del tiquete y anulación (permiso sales:void). */
 @Component({
   selector: 'app-sales',
-  imports: [FormsModule, ButtonModule, DialogModule, InputTextModule, DataTableComponent, HasPermissionDirective,
+  imports: [ReceiptSendComponent, FormsModule, ButtonModule, DialogModule, InputTextModule, DataTableComponent, HasPermissionDirective,
     ReceiptComponent, PageHeaderComponent, FormDialogComponent],
   template: `
     <app-page-header title="Ventas" description="Todas las ventas registradas: detalle, reimpresión del tiquete y anulación." />
@@ -82,21 +81,19 @@ const SALE_STATUS: Record<SaleStatus, StatusKey> = { COMPLETED: 'completed', VOI
         </div>
       }
       <ng-template #footer>
-        @if (detail(); as sale) {
-          @if (sale.status === 'COMPLETED') {
-            <p-button *hasPermission="'sales:void'" label="Anular" severity="danger" [text]="true"
-                      (onClick)="openVoid()" />
+        <!-- Decisión 326: Anular a la izquierda y Enviar (WhatsApp o imagen), Reimprimir y Cerrar a la derecha. -->
+        <div class="w-full flex flex-wrap items-center justify-end gap-2">
+          @if (detail(); as sale) {
+            @if (sale.status === 'COMPLETED') {
+              <p-button *hasPermission="'sales:void'" label="Anular" severity="danger" [text]="true"
+                        (onClick)="openVoid()" />
+            }
+            <span class="flex-1"></span>
+            <app-receipt-send [sale]="sale" [logo]="brandLogo()" />
           }
-        }
-        @if (detail(); as sale) {
-          <a pButton label="WhatsApp" icon="pi pi-whatsapp" severity="secondary" [outlined]="true" target="_blank"
-             rel="noopener noreferrer" [href]="saleWhatsApp(sale)"
-             aria-label="Enviar el recibo por WhatsApp (abre WhatsApp)"></a>
-            <p-button label="Imagen" icon="pi pi-image" severity="secondary" [outlined]="true" styleClass="min-h-11"
-                      ariaLabel="Compartir el recibo como imagen" (onClick)="shareImage(sale)" />
-        }
-        <p-button label="Reimprimir" severity="secondary" (onClick)="print()" />
-        <p-button label="Cerrar" (onClick)="detailOpen = false" />
+          <p-button label="Reimprimir" icon="pi pi-print" severity="secondary" styleClass="min-h-11" (onClick)="print()" />
+          <p-button label="Cerrar" styleClass="min-h-11" (onClick)="detailOpen = false" />
+        </div>
       </ng-template>
     </p-dialog>
 
@@ -205,25 +202,6 @@ export class SalesComponent implements OnInit {
       return;
     }
     printReceipt();
-  }
-
-  /** Decisión 315: el recibo como imagen (igual en todos los teléfonos y sin poder editarse). */
-  protected async shareImage(sale: Sale): Promise<void> {
-    const blob = await ticketPng(saleTicketImage(sale));
-    if (!blob) {
-      this.messages.add({ severity: 'warn', summary: 'Imagen', detail: 'Este navegador no pudo crear la imagen.', life: 5000 });
-      return;
-    }
-    const result = await shareTicketPng(blob, `tiquete-${sale.documentNumber}.png`);
-    if (result === 'downloaded') {
-      this.messages.add({ severity: 'success', summary: 'Imagen descargada',
-        detail: 'Adjúntala en WhatsApp o donde la necesites.', life: 5000 });
-    }
-  }
-
-  /** Recibo en texto para enviarlo por WhatsApp (decisión 261). */
-  protected saleWhatsApp(sale: Sale): string {
-    return saleWhatsAppLink(sale);
   }
 
   openVoid(): void {

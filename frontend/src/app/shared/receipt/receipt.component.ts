@@ -5,12 +5,13 @@ import { formatCop, formatQuantity } from '../money';
 import { ReceiptWidth, printableMm } from './receipt-prefs';
 import { documentShortLabel } from '../document-types';
 import { splitSummary } from './split-receipt';
+import { receiptDate, receiptDocument } from './receipt-rows';
 
 /**
  * Tiquete de venta para impresora térmica de 58 u 80 mm. El mismo componente sirve de vista previa y, con la
  * clase {@code receipt-print-root}, de área de impresión (@media print en styles.css). Se arma al ancho imprimible
  * (72 o 48 mm) y con letra sin serifas gruesa: el driver convierte la página en puntos y una letra delgada sale
- * gris claro en algunas impresoras (decisión 289).
+ * gris claro en algunas impresoras (decisión 289). Su copia como imagen está en receipt-rows.ts (decisión 326).
  */
 @Component({
   selector: 'app-receipt',
@@ -158,26 +159,10 @@ export class ReceiptComponent {
   protected readonly split = computed(() => splitSummary(this.sale()));
   protected readonly q = formatQuantity;
 
-  protected readonly date = computed(() => {
-    const s = this.sale();
-    try {
-      return new Intl.DateTimeFormat('es-CO', {
-        dateStyle: 'short',
-        timeStyle: 'short',
-        timeZone: s.receipt.timezone ?? undefined,
-      }).format(new Date(s.createdAt));
-    } catch {
-      return new Date(s.createdAt).toLocaleString('es-CO');
-    }
-  });
+  protected readonly date = computed(() => receiptDate(this.sale()));
 
   /** "PASSPORT" → "PA" (fase 8a). */
   protected readonly shortDocType = computed(() => documentShortLabel(this.sale().customerDocumentType));
 
-  protected readonly document = computed(() => {
-    const s = this.sale();
-    return s.customerVerificationDigit === null
-      ? s.customerDocumentNumber
-      : `${s.customerDocumentNumber}-${s.customerVerificationDigit}`;
-  });
+  protected readonly document = computed(() => receiptDocument(this.sale()));
 }

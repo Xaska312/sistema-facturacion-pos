@@ -204,8 +204,7 @@ export const MANUAL: readonly ManualChapter[] = [
           'Al terminar la venta toca "Imprimir tiquete".',
           'La primera vez elige el ancho del papel (80 mm o 58 mm); el navegador lo recuerda en ese equipo.',
           'Para reimprimir una venta anterior, búscala en Ventas, ábrela y toca "Reimprimir".',
-          'Con "WhatsApp" le envías al cliente el recibo en texto (productos, total y cómo pagó): eliges el contacto en WhatsApp.',
-          'Con "Imagen" el recibo sale como una foto con letra pareja y alineada (no depende de la letra del celular del cliente): en el celular se abre el menú de compartir para elegir WhatsApp; en el computador se descarga el PNG para adjuntarlo.',
+          'Con "Enviar" le mandas el recibo al cliente: "WhatsApp (texto)" abre WhatsApp con los productos, el total y cómo pagó, y eliges el contacto; "Imagen del tiquete" lo manda como una foto igual al tiquete impreso, con tu logo (en el celular se abre el menú de compartir; en el computador se descarga el PNG para adjuntarlo).',
         ],
         tips: [
           'El texto del pie del tiquete (horarios, redes sociales…) se cambia en Configuración → Ajustes.',
