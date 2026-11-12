@@ -18,8 +18,18 @@ com.poshibrido
   cash/          medios de pago, sesiones de caja, movimientos de efectivo, informe X/Z
   sales/         ventas (tiquete POS), cálculo, pagos, consecutivos, anulación, eventos
   reporting/     reportes y tablero (solo lectura, SQL nativo sobre las tablas del negocio), CSV
-  finance/       finanzas: gastos con categorías (decisión 320); usa la caja por CashApi
-  location/      catálogo DIVIPOLA (departamentos y municipios)       -> platform.*
+  finance/       finanzas: gastos, gastos fijos, retenciones, estado de resultados y tablero (decisiones 320–325)
+  credit/        fiado con cupo y abonos (decisión 255)
+  orders/        pedidos por encargo con anticipos y entregas (decisión 258)
+  quotes/        cotizaciones (decisión 260)
+  dining/        restaurante: mesas, cuentas, comandas, cocina en tiempo real (Fase 12b)
+  purchasing/    compras, recepción de facturas (XML de la DIAN o leídas con IA), cuentas por pagar, qué comprar
+  pharmacy/      droguería: dispensación, calidad e informe de la visita (Fase 13)
+  ai/            XASKA IA (Aska): preguntas, resumen del día, cargar catálogo e inventario, lectura de recibos
+  subscription/  planes, suscripciones, extras y topes de XASKA IA                 -> platform.*
+  billing/       planes y pagos con Bre-B, precios públicos, referidos y aliados   -> platform.*
+  mail/          correos (plantillas, envío)
+  location/      catálogo DIVIPOLA: los 33 departamentos y los 1.122 municipios (decisión 328) -> platform.*
   audit/         registro de auditoría (audit_log del negocio)
 ```
 Los módulos se hablan por interfaces públicas (`TenantApi`, `UserApi`, `MembershipApi`, `SessionApi`,
@@ -92,6 +102,10 @@ caso de uso (ajuste, traslado, conteo; luego venta y compra)
 Invariante, verificada por `GET /inventory/consistency` y por los tests: para cada saldo,
 `quantity = Σ movimientos = balance_after del último movimiento`.
 
+Cambio de costo (decisión 334): el costo de un producto que ya maneja el inventario también se cambia a mano o por
+importación; el catálogo llama a `StockPresence.recordCostChange`, que deja un movimiento `COST_CHANGE` con cantidad 0
+en cada sede con saldo (el invariante no cambia) y el promedio sigue desde el costo nuevo.
+
 ## Venta: una sola transacción
 ```
 POST /sales (Idempotency-Key) ── ¿clave ya usada? ──▶ devuelve esa venta
@@ -135,6 +149,11 @@ de fiados, pedidos y proveedores (por sus servicios de consulta) y calcula el pu
 Aska usa las finanzas (decisión 325) desde `ai`, que depende de los servicios de `finance` (como ya dependía de
 `reporting`, `credit` o `purchasing`); `finance` no conoce la IA. Leer un recibo no guarda nada: el formulario del gasto
 llama luego a la API de gastos de siempre.
+
+## Frontend: versiones
+Angular 21 con PrimeNG 21 (licencia MIT) y `@primeuix/themes`, TypeScript 5.9, zone.js, Karma y Jasmine; Node 24 en
+Docker y CI (decisiones 329–330). Desde la 22, PrimeNG pide una licencia con llave anual: antes de subir a Angular 22
+se reemplazan sus componentes por componentes propios.
 
 ## Frontend: sistema de diseño
 Los colores viven solo en `frontend/src/styles.css` como tokens CSS (`--surface`, `--text`, `--brand`, `--success`,
@@ -208,6 +227,20 @@ Programa de Windows en Go (`frontend/print-agent`, sin dependencias) que escucha
 orígenes de XASKA y manda los bytes ESC/POS en RAW a la cola de Windows. La app arma el tiquete
 (`core/printing/escpos.ts`) y le habla con `fetch` (nunca con `HttpClient`, para que el token no salga del navegador).
 "Abrir cajón" primero queda en la auditoría (`POST /cash/drawer-openings`) y luego manda el pulso.
+
+## Vender sin internet (decisiones 332–333)
+```
+Vender ──(con conexión)──▶ GET /sales/offline-catalog ──▶ IndexedDB (copia del catálogo por negocio, cada 10 min)
+       └─ con la caja abierta ─▶ localStorage: la caja recordada (usuario, permisos, caja, ajustes, medios; sin token, 24 h)
+Sin conexión (navegador sin red o 0/502–504):
+   lector, F2 y precio ─▶ copia del catálogo
+   cobrar ─▶ cola en IndexedDB {Idempotency-Key, venta con `offline: {number, soldAt}`} ─▶ tiquete "SIN CONEXIÓN"
+Al volver la conexión (y cada 30 s): POST /sales en orden con la misma clave (no duplica);
+   error de red → espera; 4xx → "con problema" con el motivo y "Reintentar" (nunca se borra sola)
+```
+`@angular/service-worker` (`ngsw-config.json`, solo en producción) guarda la app; si al abrirla la renovación del
+token no llega al servidor y hay una caja recordada vigente, `AuthService.restore` abre la sesión sin token y la app va
+a Vender. La primera petición con conexión recibe 401, el interceptor renueva el token con la cookie y repite.
 
 ## Producción
 Un servidor con `docker compose` (`deploy/docker-compose.prod.yml`): **web** (Caddy con la app Angular compilada:

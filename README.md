@@ -1,6 +1,6 @@
 # POS SaaS Híbrido — Monorepo
 
-**XASKA POS**: POS web multi-negocio para comercios, restaurantes y droguerías en Colombia. Backend Spring Boot 4.1 (Java 21) + PostgreSQL 16, frontend Angular 19 + PrimeNG 19 + Tailwind 4, y un programa pequeño de Windows (Go) para imprimir directo en la térmica. En producción en https://app.xaska.co.
+**XASKA POS**: POS web multi-negocio para comercios, restaurantes y droguerías en Colombia. Backend Spring Boot 4.1 (Java 21) + PostgreSQL 16, frontend Angular 21 + PrimeNG 21 + Tailwind 4, y un programa pequeño de Windows (Go) para imprimir directo en la térmica. En producción en https://app.xaska.co.
 
 - Arquitectura: [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md)
 - API: [`docs/API.md`](docs/API.md)
@@ -32,11 +32,17 @@
 | Seguridad y carga | ✅ Pruebas de seguridad, carga y uso real y sus correcciones (276–277) |
 | 13 — Farmacia | ✅ 13-1 ficha del medicamento y catálogo CUM, 13-2 compras, 13-3 lotes y vencimientos, 13-4 dispensación, 13-6 temperatura, eventos adversos e informe; Droguería abierta (279–282, 287). ⏳ 13-5 control especial |
 | Planes | ✅ Emprende, Negocio y Empresa con extras desde la consola; Términos 1.2 y Política 1.2 (decisión 288) |
+| XASKA IA (Aska) | ✅ Adicional pagado: facturas con foto, preguntas, qué comprar, resumen del día, cargar catálogo e inventario, avisos y prueba gratis (295–313) |
+| Planes y pagos | ✅ Bre-B con comprobante revisado por Aska, registro abierto, precios públicos, precio fundador, referidos y aliados (302–305, 312) |
+| Finanzas | ✅ Gastos, gastos fijos, retenciones, estado de resultados, tablero y Aska (320–325) |
+| Celular y documentos | ✅ Modo teléfono, recibo como imagen y botón Enviar, encabezado libre de los documentos, todos los municipios (314–315, 326–328, 331) |
+| Angular 21 | ✅ Frontend en Angular 21 y PrimeNG 21 (MIT) con Node 24 (329–330). ⏳ Angular 22: antes, reemplazar PrimeNG (licencia nueva) |
+| Vender sin internet | ✅ Copia del catálogo, cola de ventas con número provisional y la app que abre sin conexión en el equipo de la caja (332–333) |
 | Facturación electrónica | ⏳ Pendiente (espera al contador) |
 
 ## Requisitos
 - **Docker Desktop** (o Docker Engine + Compose). Debe estar en estado *Engine running* antes de levantar el proyecto o correr los tests.
-- Para desarrollar fuera de Docker: **JDK 21** (con `JAVA_HOME` configurado) y **Node 22**.
+- Para desarrollar fuera de Docker: **JDK 21** (con `JAVA_HOME` configurado) y **Node 24** (el mismo de Docker y CI: el `package-lock.json` lo genera npm 11).
 - **No hace falta instalar Maven**: el proyecto trae el Maven Wrapper (`mvnw` / `mvnw.cmd`).
 
 ## Primera vez (una sola vez por equipo)
@@ -86,7 +92,7 @@ node tools/demo/seed-demo.mjs
 ```
 Sin Node instalado, con Docker:
 ```powershell
-docker run --rm -v "${PWD}/tools:/tools" -e POS_API=http://host.docker.internal:8080 -e MAILPIT_URL=http://host.docker.internal:8025 node:22-alpine node /tools/demo/seed-demo.mjs
+docker run --rm -v "${PWD}/tools:/tools" -e POS_API=http://host.docker.internal:8080 -e MAILPIT_URL=http://host.docker.internal:8025 node:24-alpine node /tools/demo/seed-demo.mjs
 ```
 Como crea un negocio sin código de activación, antes pon `SUBSCRIPTION_TRIAL_WITHOUT_CODE=true` en tu `.env` y
 `docker compose up -d` (quítalo después: por defecto todo negocio nuevo pide código). Usuarios (contraseña `DemoPos2026`): `dueno@tienda-demo.test`, `cajero@tienda-demo.test`, `vendedor@tienda-demo.test`,
@@ -401,6 +407,33 @@ Pendiente: 13-5 control especial (necesita una muestra del Anexo 13).
 traslados, caja por zona) y límites de sedes, cajas y usuarios; el administrador le da extras a un negocio desde la
 consola. Básico y Pro quedan como planes anteriores para los clientes de antes.
 
+**XASKA IA (295–313).** Aska es la IA de XASKA, un adicional pagado con topes al mes: ingresar la mercancía con la
+foto o el PDF de la factura (295, 301), "Pregúntale a tu negocio" (296), qué comprar con revisión (297), el Resumen del
+día con clima, pronóstico y preguntas (299, 307, 310), cargar el catálogo de la lista del proveedor o del cuaderno, con
+o sin precios y desde un Word con fotos (300, 306, 313), avisos en el momento justo (308), "Lo que hiciste con Aska"
+(309) y la bienvenida de la prueba gratis (311).
+
+**Planes y pagos (302–305, 312).** Pago por Bre-B con comprobante que revisa Aska y aprueba el administrador, registro
+abierto con prueba o pago, precios públicos en `/precios`, QR de Bre-B, precio fundador y referidos: 1 mes de XASKA IA
+por cada negocio invitado que pague y 20 % del primer pago para contadores y distribuidores.
+
+**Finanzas (320–325).** Gastos con categorías desde la caja o fuera de ella, gastos fijos, retenciones que hace el
+cliente (por ejemplo el 6 %), estado de resultados, tablero de finanzas y Aska que explica el mes.
+
+**Celular y documentos (314–315, 326–328, 331).** Modo teléfono, eliminar productos y categorías, recibo como imagen
+igual al tiquete con el botón "Enviar", encabezado libre de los documentos (NIT, dirección, celular), consola de
+plataforma en el celular y los 1.122 municipios del DANE.
+
+**Angular 21 (329–330).** Un salto a la vez (19 → 20 → 21) con PrimeNG 21 y `@primeuix/themes`; Node 24 en Docker y
+CI. Angular 22 queda para después de reemplazar PrimeNG, que desde la 22 pide una licencia con llave anual.
+
+**Vender sin internet (332–333).** Vender guarda una copia del catálogo; sin conexión cobra con número provisional
+(`CAJA-1-SC0007`), imprime y envía las ventas solas al volver el internet sin duplicarlas. El equipo de la caja abre
+la app sin conexión hasta 24 horas (service worker y la caja recordada, sin token).
+
+**Costo (334).** El costo de un producto con movimientos se cambia a mano o por importación, con su renglón "Cambio de
+costo" en el kardex y el margen con una sugerencia de precio.
+
 | Qué | Test |
 |---|---|
 | Fiado, caja compartida, pedidos, cotizaciones | `CreditIT`, `CashIT`, `OrdersIT`, `QuotesIT` |
@@ -409,4 +442,9 @@ consola. Básico y Pro quedan como planes anteriores para los clientes de antes.
 | Droguería | `MedicinesIT`, `PurchasesIT`, `LotsIT`, `DispensationIT`, `QualityIT` |
 | Planes y extras | `PlansIT`, `SubscriptionIT` |
 | XASKA Impresora | `frontend/print-agent` (`go test ./...`) y `escpos.spec` |
+| XASKA IA | `InvoiceScanIT`, `AskIT`, `PurchaseSuggestionIT`, `DailyDigestIT`, `CatalogImportIT`, `AskaRecapIT`, `BillingIT` |
+| Planes, pagos y referidos | `BillingIT`, `ReferralIT`, `BillingServiceTest`, `ReferralServiceTest` |
+| Documentos y municipios | `DocumentHeaderIT`, `OrganizationIT`, `ticket-image.spec`, `doc-header.spec` |
+| Sin internet | `OfflineSalesIT`, `offline-catalog.spec`, `offline-sale.spec`, `offline-boot.spec` |
+| Costo y eliminar productos | `InventoryIT`, `ProductDeleteIT` |
 

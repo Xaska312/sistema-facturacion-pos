@@ -4,7 +4,7 @@ Cada decisión o suposición que se aparta del prompt maestro, o lo precisa, que
 
 ## Fase 0 — Esqueleto
 
-1. **Versiones.** Java 21 LTS + Spring Boot 4.1.1 (Spring Framework 7, Spring Security 7, Hibernate 7, Jackson 3) + Angular 19 + PrimeNG 19 + Tailwind 4. El prompt pedía Boot 3.5.x; el equipo eligió Boot 4.1.1 manteniendo Java 21 (Boot 4 lo soporta). La versión de Java es la misma en `pom.xml`, `Dockerfile` y CI.
+1. **Versiones.** Java 21 LTS + Spring Boot 4.1.1 (Spring Framework 7, Spring Security 7, Hibernate 7, Jackson 3) + Angular 19 + PrimeNG 19 + Tailwind 4. (Hoy el frontend va en Angular 21 + PrimeNG 21 con Node 24: decisiones 329 y 330.) El prompt pedía Boot 3.5.x; el equipo eligió Boot 4.1.1 manteniendo Java 21 (Boot 4 lo soporta). La versión de Java es la misma en `pom.xml`, `Dockerfile` y CI.
 2. **Monorepo.** `backend/`, `frontend/`, `docs/`, `docker-compose.yml`, `.github/workflows/ci.yml`.
 3. **Errores.** `GlobalExceptionHandler` único con `ProblemDetail` (RFC 9457). Nunca se expone `ex.getMessage()` de excepciones técnicas.
 
