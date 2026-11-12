@@ -1,5 +1,9 @@
 import { Component, inject } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { filter, map } from 'rxjs';
+import { MenuItem } from 'primeng/api';
+import { MenuModule } from 'primeng/menu';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { TooltipModule } from 'primeng/tooltip';
 import { AuthService } from '../../core/auth/auth.service';
 import { XaskaLogoComponent } from '../../shared/brand/xaska-logo.component';
@@ -14,21 +18,22 @@ import { PLATFORM_MENU } from './platform-menu';
  */
 @Component({
   selector: 'app-platform-layout',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, TooltipModule, XaskaLogoComponent, XIconComponent],
+  imports: [MenuModule, RouterOutlet, RouterLink, RouterLinkActive, TooltipModule, XaskaLogoComponent, XIconComponent],
   template: `
     <!-- overflow-x-clip y min-w-0: nada ensancha la página en el celular (se veía con zoom y la barra se rompía). -->
     <div class="min-h-screen flex flex-col bg-ground overflow-x-clip">
       <header class="sticky top-0 z-30 h-16 shrink-0 flex items-center gap-2 sm:gap-3 px-3 md:px-6 bg-surface/85 backdrop-blur border-b border-line">
         <a routerLink="/plataforma" class="shrink-0 rounded-lg" aria-label="Consola de plataforma: inicio">
-          <!-- En el celular solo el símbolo; el nombre completo desde tableta. -->
-          <app-xaska-logo class="hidden sm:inline-flex" [wordmark]="true" />
-          <app-xaska-logo class="sm:hidden" />
+          <!-- En el celular solo el símbolo; el nombre completo desde tableta. Envueltos en un span porque el logo
+               trae su propio inline-flex y le ganaba a "hidden": salían los dos (decisión 327). -->
+          <span class="hidden sm:inline-flex"><app-xaska-logo [wordmark]="true" /></span>
+          <span class="inline-flex sm:hidden"><app-xaska-logo /></span>
         </a>
         <span class="platform-tag">Plataforma</span>
         <span class="flex-1 min-w-0"></span>
         <span class="text-sm text-muted hidden md:inline truncate min-w-0">{{ auth.user()?.email }}</span>
         <button type="button" class="back-button" (click)="back()" aria-label="Volver a mis negocios">
-          <i class="pi pi-arrow-left text-xs" aria-hidden="true"></i><span class="hidden sm:inline">Mis negocios</span><span class="sm:hidden">Negocios</span>
+          <i class="pi pi-arrow-left text-xs" aria-hidden="true"></i><span class="hidden sm:inline">Mis negocios</span>
         </button>
       </header>
 
@@ -37,15 +42,22 @@ import { PLATFORM_MENU } from './platform-menu';
       </main>
     </div>
 
+    <!-- Decisión 327: en el celular las 4 primeras secciones y "Más" con el resto, para que el dock quepa. -->
     <nav class="dock" aria-label="Consola de plataforma">
-      @for (item of menu; track item.route) {
+      @for (item of menu; track item.route; let i = $index) {
         <a [routerLink]="item.route" routerLinkActive="dock-item--active" ariaCurrentWhenActive="page" class="dock-item"
-           [pTooltip]="item.label" tooltipPosition="top" [showDelay]="300">
+           [class.dock-item--extra]="i >= mainCount" [pTooltip]="item.label" tooltipPosition="top" [showDelay]="300">
           <app-xicon [name]="item.glyph" [size]="26" />
           <span class="dock-label">{{ item.label }}</span>
         </a>
       }
+      <button type="button" class="dock-item dock-more" [class.dock-item--active]="extraActive()" aria-haspopup="menu"
+              aria-label="Más secciones" (click)="moreMenu.toggle($event)">
+        <i class="pi pi-ellipsis-h" aria-hidden="true"></i>
+        <span class="dock-label">Más</span>
+      </button>
     </nav>
+    <p-menu #moreMenu [model]="moreItems" [popup]="true" appendTo="body" />
   `,
   styles: `
     .platform-tag {
@@ -70,6 +82,12 @@ import { PLATFORM_MENU } from './platform-menu';
       flex-shrink: 0;
     }
     .back-button:hover { background: var(--surface-border); }
+    @media (max-width: 639px) { .back-button { padding: 0; width: 2.75rem; justify-content: center; } }
+    .dock-more { display: none; }
+    @media (max-width: 639px) {
+      .dock-item--extra { display: none; }
+      .dock-more { display: inline-flex; }
+    }
     .dock {
       position: fixed;
       left: 50%;
@@ -127,6 +145,19 @@ export class PlatformLayoutComponent {
   protected readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   protected readonly menu = PLATFORM_MENU;
+  /** Secciones que caben en el dock del celular; el resto va en "Más". */
+  protected readonly mainCount = 4;
+  protected readonly moreItems: MenuItem[] = PLATFORM_MENU.slice(this.mainCount)
+    .map((item) => ({ label: item.label, routerLink: item.route }));
+  private readonly url = toSignal(this.router.events.pipe(
+    filter((e) => e instanceof NavigationEnd),
+    map(() => this.router.url),
+  ), { initialValue: this.router.url });
+  /** "Más" se resalta cuando la pantalla abierta es una de las que guarda. */
+  protected extraActive(): boolean {
+    const url = this.url();
+    return PLATFORM_MENU.slice(this.mainCount).some((item) => url.startsWith(item.route));
+  }
 
   back(): void {
     void this.router.navigate(['/negocios']);
