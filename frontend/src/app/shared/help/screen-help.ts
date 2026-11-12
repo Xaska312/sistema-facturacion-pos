@@ -150,11 +150,9 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     manual: 'gastos',
     title: 'Gastos',
     tips: [
-      'Aquí va lo que paga el negocio para funcionar. Lo que pagas en efectivo se registra en Mi caja con "Egreso"; lo que pagas por banco, Nequi o tarjeta, aquí con "Registrar gasto".',
-      'Toca una categoría en "En qué se fue la plata" para ver solo sus gastos.',
-      'Los egresos de caja de antes salen "Sin clasificar": ponles categoría con "Clasificar".',
+      'Lo que pagas en efectivo va en Mi caja con "Egreso"; lo que pagas por banco, Nequi o tarjeta, aquí con "Registrar gasto". La mercancía va en Compras.',
+      'Toca una categoría en "En qué se fue la plata" para ver solo sus gastos; los egresos de caja de antes salen "Sin clasificar".',
       'Arriendo, nómina, internet: créalos en "Gastos fijos" y aparecen en "Por pagar" cuando toca.',
-      'La mercancía que compras a proveedores va en Compras, no aquí.',
       'Con XASKA IA, en "Registrar gasto" toca "Leer con Aska": le tomas foto al recibo y se llena solo.',
     ],
   },

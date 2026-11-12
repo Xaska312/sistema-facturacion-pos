@@ -377,7 +377,7 @@ public class DailyDigestService {
     }
 
     /** Gastos del día, la ganancia del día ya descontándolos y los gastos fijos vencidos o que vencen mañana. */
-    Map<String, Object> expenseFacts(LocalDate day) {
+    public Map<String, Object> expenseFacts(LocalDate day) {
         var today = expenses.summary(new ExpenseService.Filter(day, day, null, null, null, null, null, false, false, null));
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("totalHoy", today.total());

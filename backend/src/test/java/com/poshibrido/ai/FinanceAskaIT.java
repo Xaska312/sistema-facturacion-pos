@@ -3,6 +3,7 @@ package com.poshibrido.ai;
 import com.jayway.jsonpath.JsonPath;
 import com.poshibrido.ai.application.AnthropicMessages;
 import com.poshibrido.ai.application.AskaRecapService;
+import com.poshibrido.ai.application.DailyDigestService;
 import com.poshibrido.mail.MailTemplates;
 import com.poshibrido.support.IntegrationTest;
 import com.poshibrido.support.TestApi;
@@ -54,6 +55,8 @@ class FinanceAskaIT extends IntegrationTest {
     private AskaRecapService recaps;
     @Autowired
     private MailTemplates templates;
+    @Autowired
+    private DailyDigestService digests;
 
     private static Map<String, Object> usage() {
         return Map.of("input_tokens", 900, "output_tokens", 80);
@@ -191,7 +194,8 @@ class FinanceAskaIT extends IntegrationTest {
         ArgumentCaptor<Map<String, Object>> digest = ArgumentCaptor.forClass(Map.class);
         verify(ai).send(digest.capture());
         assertThat(String.valueOf(digest.getValue().get("messages"))).contains("gastos").contains("gananciaDelDia")
-                .contains("fijosVencidos").contains("fijosVencenHoyOMañana").contains("Servicios públicos");
+                .contains("fijosVencidos").contains("fijosVencenHoyOMañana");
+        // Antes del mediodía el resumen es del día anterior: los datos del día se prueban con la fecha del gasto.
         assertThat(String.valueOf(digest.getValue().get("system"))).contains("FINANCE");
         // El cajero no ve los gastos del día.
         api.getWith(cashier, "/api/v1/ai/digest/latest").andExpect(status().is2xxSuccessful());
@@ -201,6 +205,12 @@ class FinanceAskaIT extends IntegrationTest {
                 owner.tenantId());
         try {
             TenantContext.set(new TenantRef(owner.tenantId(), owner.slug(), schema));
+            // Los gastos del Resumen del día, con la fecha del gasto (el resumen de la mañana es del día anterior).
+            Map<String, Object> facts = digests.expenseFacts(today);
+            assertThat(new java.math.BigDecimal(String.valueOf(facts.get("totalHoy")))).isEqualByComparingTo("50000");
+            assertThat(new java.math.BigDecimal(String.valueOf(facts.get("gananciaDelDia"))))
+                    .isEqualByComparingTo("-50000");
+            assertThat(String.valueOf(facts.get("porCategoria"))).contains("Servicios públicos");
             AskaRecapService.Recap recap = recaps.month(YearMonth.now(ZoneId.of("America/Bogota")));
             assertThat(recap.receipts()).isEqualTo(2);
             assertThat(AskaRecapService.lines(recap)).extracting(l -> l[1])
