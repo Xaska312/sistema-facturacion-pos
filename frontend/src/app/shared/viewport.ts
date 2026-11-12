@@ -1,5 +1,4 @@
-import { DOCUMENT } from '@angular/common';
-import { DestroyRef, Injectable, inject, signal } from '@angular/core';
+import { DestroyRef, Injectable, inject, signal, DOCUMENT } from '@angular/core';
 
 /** Punto de quiebre "md" de Tailwind (768 px): por debajo, las tablas se muestran como tarjetas. */
 export const DESKTOP_QUERY = '(min-width: 768px)';

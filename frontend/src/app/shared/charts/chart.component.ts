@@ -1,5 +1,4 @@
-import { DOCUMENT } from '@angular/common';
-import { Component, DestroyRef, ElementRef, computed, effect, inject, input, untracked, viewChild } from '@angular/core';
+import { Component, DestroyRef, ElementRef, computed, effect, inject, input, untracked, viewChild, DOCUMENT } from '@angular/core';
 import {
   ArcElement,
   BarController,
