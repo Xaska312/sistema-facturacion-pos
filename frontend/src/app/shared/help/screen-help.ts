@@ -488,7 +488,7 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     tips: [
       'El tipo de negocio y sus módulos deciden lo que ves en el dock y en el inicio; solo el dueño los cambia.',
       'Indica si tus precios ya incluyen el IVA y si se puede vender sin existencias.',
-      'El pie del recibo sale al final de cada tiquete (por ejemplo, horarios o redes sociales).',
+      'El encabezado de los documentos sale debajo del nombre del negocio (un dato por renglón: NIT, dirección, celular) y el pie del recibo al final de cada tiquete (horarios o redes sociales).',
       'Si eres el dueño, al final puedes eliminar el negocio: queda suspendido y sus datos se conservan.',
     ],
   },

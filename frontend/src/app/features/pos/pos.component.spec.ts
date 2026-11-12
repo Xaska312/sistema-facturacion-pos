@@ -21,6 +21,8 @@ import { ConfirmOptions, ConfirmService } from '../../shared/confirm';
 import { TourService } from '../../shared/tour/tour.service';
 import { heldKey } from './held-sales';
 import { PosComponent } from './pos.component';
+import { OfflineCatalogService } from '../../core/offline/offline-catalog.service';
+import { OfflineSalesService } from '../../core/offline/offline-sales.service';
 
 const config: PosConfig = {
   pricesIncludeTax: true, maxDiscountPercent: 0, allowNegativeStock: false, currency: 'COP', receiptFooter: null,
@@ -99,6 +101,13 @@ describe('PosComponent: celular, pausar venta y cliente nuevo', () => {
         { provide: MessageService, useValue: jasmine.createSpyObj<MessageService>('MessageService', ['add']) },
         { provide: TourService, useValue: jasmine.createSpyObj<TourService>('TourService', ['offer', 'start']) },
         { provide: BrandingService, useValue: { logo: signal<string | null>(null) } },
+        // Decisión 332: el modo sin conexión tiene sus pruebas aparte; aquí siempre hay conexión.
+        {
+          provide: OfflineSalesService,
+          useValue: { offline: signal(false), pending: signal(0), failed: signal([]), syncing: signal(false),
+            prepare: () => Promise.resolve(), noteNetworkError: () => undefined },
+        },
+        { provide: OfflineCatalogService, useValue: { prepare: () => Promise.resolve(), ready: signal(false) } },
         {
           provide: AuthService,
           useValue: {

@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { provideServiceWorker } from '@angular/service-worker';
 import { provideRouter } from '@angular/router';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
@@ -8,7 +9,8 @@ describe('AppComponent', () => {
   it('se crea con el toast global y el router-outlet', async () => {
     await TestBed.configureTestingModule({
       imports: [AppComponent],
-      providers: [provideRouter([]), provideNoopAnimations(), MessageService, ConfirmationService],
+      providers: [provideRouter([]), provideNoopAnimations(), MessageService, ConfirmationService,
+        provideServiceWorker('ngsw-worker.js', { enabled: false })],
     }).compileComponents();
 
     const fixture = TestBed.createComponent(AppComponent);

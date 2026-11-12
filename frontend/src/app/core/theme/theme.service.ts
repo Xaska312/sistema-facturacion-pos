@@ -1,5 +1,4 @@
-import { DOCUMENT } from '@angular/common';
-import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
+import { DestroyRef, Injectable, computed, inject, signal, DOCUMENT } from '@angular/core';
 import { UI_PREF_KEYS, readUiPref, writeUiPref } from '../../shared/ui-prefs';
 import { DARK_CLASS, ThemeMode, isDarkMode, parseThemeMode } from './theme-mode';
 

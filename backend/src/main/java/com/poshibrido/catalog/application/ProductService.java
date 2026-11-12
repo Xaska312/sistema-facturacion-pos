@@ -124,10 +124,11 @@ public class ProductService {
             throw new BusinessRuleException("No se puede cambiar la unidad base de un producto que ya tiene "
                     + "movimientos de inventario.");
         }
-        if (product.isCostLocked() && data.cost().setScale(2, RoundingMode.HALF_UP).compareTo(product.getCost()) != 0) {
-            throw new BusinessRuleException("El costo de este producto lo calcula el inventario (promedio ponderado) "
-                    + "y no se puede editar a mano.");
-        }
+        // Decisión 334: el costo de un producto con movimientos sí se cambia a mano; el promedio sigue desde ahí y queda
+        // el rastro en el kardex.
+        BigDecimal oldCost = product.getCost();
+        BigDecimal newCost = data.cost().setScale(2, RoundingMode.HALF_UP);
+        boolean costChanged = product.isCostLocked() && newCost.compareTo(oldCost) != 0;
         if (product.isTrackInventory() && !data.trackInventory() && stock.hasStock(id)) {
             // Si no, el saldo quedaba congelado: las ventas sin control no lo descuentan y al volver a activarlo
             // aparecían existencias que ya no están (QA INV-3).
@@ -137,6 +138,9 @@ public class ProductService {
         product.apply(data);
         apply(product, command, refs);
         syncListPrices(product, command.listPrices(), refs);
+        if (costChanged) {
+            stock.recordCostChange(id, oldCost, newCost, costReason("a mano", oldCost, newCost));
+        }
         ProductView view = toView(product, refs, listItems.findByProduct(id));
         audit.log("PRODUCT_UPDATED", "product", id, before, snapshot(view));
         return view;
@@ -387,5 +391,12 @@ public class ProductService {
 
     static String escapeLike(String value) {
         return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+    }
+
+    /** "Cambio de costo a mano: $1.000 → $1.200" (decisión 334). */
+    static String costReason(String how, BigDecimal from, BigDecimal to) {
+        java.text.NumberFormat cop = java.text.NumberFormat.getNumberInstance(java.util.Locale.of("es", "CO"));
+        cop.setMaximumFractionDigits(2);
+        return "Cambio de costo " + how + ": $" + cop.format(from) + " → $" + cop.format(to);
     }
 }

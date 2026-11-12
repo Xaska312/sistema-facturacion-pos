@@ -45,7 +45,7 @@ public final class QuoteViews {
      */
     public record QuoteConfig(int validityDays, String terms, boolean pricesIncludeTax,
                               BigDecimal maxDiscountPercent, String businessName, String branchAddress,
-                              String branchPhone) {
+                              String branchPhone, String header) {
     }
 
     /** {@code saleId}: la venta registrada al vender la cotización. */

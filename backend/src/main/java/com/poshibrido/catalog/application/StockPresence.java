@@ -9,4 +9,10 @@ import java.util.UUID;
 public interface StockPresence {
 
     boolean hasStock(UUID productId);
+
+    /**
+     * Cambio del costo de un producto que ya maneja el inventario (decisión 334): deja un renglón "Cambio de costo" en el
+     * kardex de cada sede donde tiene saldo, sin mover existencias.
+     */
+    void recordCostChange(UUID productId, java.math.BigDecimal oldCost, java.math.BigDecimal newCost, String reason);
 }

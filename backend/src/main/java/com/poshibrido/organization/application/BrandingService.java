@@ -38,6 +38,7 @@ public class BrandingService {
 
     private final AuditLogger audit;
     private final TenantApi tenants;
+    private final BusinessSettingsApi settings;
 
     @PersistenceContext
     private EntityManager em;
@@ -50,7 +51,8 @@ public class BrandingService {
      * Encabezado de los documentos para el cliente (pedido, cotización): nombre comercial y nombre, dirección y teléfono
      * de la sede activa más antigua (la principal). Decisión 261.
      */
-    public record BusinessHeader(String businessName, String branchName, String branchAddress, String branchPhone) {
+    public record BusinessHeader(String businessName, String branchName, String branchAddress, String branchPhone,
+                                 String header) {
     }
 
     @Transactional(readOnly = true)
@@ -61,7 +63,8 @@ public class BrandingService {
                 "SELECT name, address, phone FROM branches WHERE active ORDER BY created_at, code LIMIT 1")
                 .getResultList();
         Object[] b = rows.isEmpty() ? new Object[3] : rows.getFirst();
-        return new BusinessHeader(businessName, (String) b[0], (String) b[1], (String) b[2]);
+        return new BusinessHeader(businessName, (String) b[0], (String) b[1], (String) b[2],
+                settings.current().receiptHeader());
     }
 
     @Transactional(readOnly = true)

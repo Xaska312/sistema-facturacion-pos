@@ -16,6 +16,8 @@ export interface BusinessHeader {
   branchName: string | null;
   branchAddress: string | null;
   branchPhone: string | null;
+  /** Encabezado libre del negocio (decisión 331): reemplaza la dirección y el teléfono de la sede. */
+  header?: string | null;
 }
 
 @Injectable({ providedIn: 'root' })

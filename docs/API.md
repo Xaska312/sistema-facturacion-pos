@@ -128,8 +128,8 @@ Enviar deja `KITCHEN_SENT` (cuenta, comandas y productos); las estaciones, `KITC
 ### Ajustes del negocio
 | Método | Ruta | Permiso | Descripción |
 |---|---|---|---|
-| GET | `/settings` | `settings:read` | `{allowNegativeStock, pricesIncludeTax, timezone, currency, receiptFooter, maxDiscountPercent, cashCloseEmail, quoteValidityDays, quoteTerms}` |
-| PUT | `/settings` | `settings:manage` | Mismo cuerpo, todos los campos. 422 zona horaria inválida o moneda distinta de COP; 400 descuento fuera de 0–100 |
+| GET | `/settings` | `settings:read` | `{allowNegativeStock, pricesIncludeTax, timezone, currency, receiptHeader, receiptFooter, maxDiscountPercent, cashCloseEmail, quoteValidityDays, quoteTerms, tipPercent, expiryAlertMonths}` |
+| PUT | `/settings` | `settings:manage` | Mismo cuerpo. Sin dato se conservan `receiptHeader`, `cashCloseEmail`, `quoteValidityDays`, `quoteTerms`, `tipPercent` y `expiryAlertMonths`. `receiptHeader` (decisión 331): encabezado libre de los documentos, un dato por renglón (se guardan sin espacios sobrantes ni renglones vacíos), hasta 500 caracteres y 8 renglones (422). 422 zona horaria inválida o moneda distinta de COP; 400 descuento fuera de 0–100 |
 
 ### Usuarios, roles e invitaciones
 | Método | Ruta | Permiso | Descripción |
@@ -167,11 +167,13 @@ Leer: `products:read`. Modificar: `products:manage`.
 |---|---|---|
 | GET | `/products?search=&categoryId=&includeInactive=&page=&size=&sort=name,asc` | Busca por nombre, SKU o código exacto |
 | GET | `/products/{id}` | Producto con presentaciones, códigos y precios por lista |
-| POST | `/products` · PUT `/products/{id}` | Cuerpo completo (abajo). 409 SKU o código repetido; 422 referencias inválidas |
+| POST | `/products` · PUT `/products/{id}` | Cuerpo completo (abajo). 409 SKU o código repetido; 422 referencias inválidas. Decisión 334: el costo se puede cambiar aunque el producto ya tenga movimientos (`costLocked`); el promedio sigue desde el nuevo y queda un movimiento `COST_CHANGE` en el kardex de cada sede con saldo. Con movimientos, la unidad base no cambia (422) |
 | POST | `/products/{id}/activate` · `/deactivate` | |
+| DELETE | `/products/{id}` | Decisión 314: el producto queda oculto para siempre (fuera de listas, búsquedas, ventas y lecturas); su SKU pasa a `SKU~xxxxxxxx` y sus códigos de barras quedan libres. Las ventas, compras y reportes lo conservan. 204. Las tallas se eliminan desde su modelo |
+| DELETE | `/categories/{id}` | Decisión 314: solo si no tiene productos (los eliminados la sueltan), subcategorías ni modelos activos (422); quita sus asignaciones a cartas, estaciones de cocina y adiciones. 204 |
 | GET | `/products/lookup?code=&priceListId=` | Código de barras o SKU → `{productId, sku, name, unitId, unitCode, factor, price, fromList, taxType, taxRate, trackInventory}`. 404 si no existe, 422 si está inactivo |
 | POST | `/barcodes/internal` | `{barcode}` EAN-13 interno libre (prefijo 29) |
-| POST | `/products/import?dryRun=true` (multipart `file`: plantilla de Excel `.xlsx` o CSV) | Reporte `{totalRows, toCreate, toUpdate, newCategories, errors[{row, message}], applied}`. Con `dryRun=false` importa solo si no hay errores. El Excel se reconoce por el contenido (zip) y se lee su primera hoja |
+| POST | `/products/import?dryRun=true` (multipart `file`: plantilla de Excel `.xlsx` o CSV) | Reporte `{totalRows, toCreate, toUpdate, newCategories, errors[{row, message}], applied}`. Con `dryRun=false` importa solo si no hay errores. Con la columna `costo`, también cambia el costo de los productos con movimientos (decisión 334, `COST_CHANGE` "por importación"); sin ella, se conserva. El Excel se reconoce por el contenido (zip) y se lee su primera hoja |
 | POST | `/products/from-invoice` | Decisión 301 (`products:manage` y `purchases:receive`): crea de una vez lo que falta de la factura. `{items: [{lineNo, sku (o prefijo del modelo), name, category?, unitCode (simples), taxCode, cost, price, barcode?, sizeScaleId?, color?, sizes?: [{size, quantity}]}] (1–200)}`; con `sizes` crea (o completa, si ya existe el prefijo) un modelo con tallas (requiere `module:variants`). Todo o nada; la categoría se crea si no existe → `{lines: [{lineNo, products: [{productId, sku, name, unitId, size, quantity}]}]}`. 422 con el nombre de la línea que falló |
 | GET | `/products/import/template` | Plantilla `plantilla-productos.xlsx`: hoja *Productos* (encabezados, 2 ejemplos, listas de unidad, impuesto y sí/no con los códigos activos del negocio) e *Instrucciones* (`products:manage`) |
 | GET/POST | `/categories` · PUT `/categories/{id}` · POST `/{id}/activate`·`/deactivate` | Árbol con `parentId`; nombre único entre hermanas; sin ciclos |
@@ -210,7 +212,7 @@ Cantidades siempre en unidad base del producto en las respuestas.
 | GET | `/inventory/balance?branchId=&productId=` | Saldo de un producto en una sucursal |
 | GET | `/inventory/alerts?branchId=` | Productos en o por debajo del mínimo (todas las sucursales si no se indica) |
 | PUT | `/inventory/stock-levels` | `{branchId, productId, minStock, maxStock}` (null = sin límite; 422 si máximo < mínimo) |
-| GET | `/inventory/kardex?productId=&branchId=&from=&to=&page=&size=` | Movimientos, el más reciente primero. Fechas `AAAA-MM-DD` en la zona horaria del negocio |
+| GET | `/inventory/kardex?productId=&branchId=&from=&to=&page=&size=` | Movimientos, el más reciente primero. Fechas `AAAA-MM-DD` en la zona horaria del negocio. `type` `COST_CHANGE` (decisión 334): cambio de costo con cantidad 0, el costo nuevo en `unitCost` y el anterior en `reason` |
 | GET | `/inventory/documents?type=&branchId=&page=&size=` · `/inventory/documents/{id}` | Documentos con sus líneas |
 | GET | `/inventory/consistency` | `{consistent, mismatches[]}`: compara cada saldo con la suma de sus movimientos. Pide `inventory:adjust` y comparte el cupo de consultas pesadas (429) |
 | POST | `/inventory/initial-balances` | `{branchId, notes, lines}`. 409 si el producto ya tiene movimientos en la sucursal |
@@ -243,7 +245,8 @@ Operar: `cash:operate`. Historial: `cash:read` (sin él, cada usuario ve solo su
 | POST | `/sales/{id}/void` | `sales:void` | `{reason}` → venta anulada. 409 si ya lo estaba; 422 si hay que devolver efectivo y no hay caja abierta |
 | GET | `/sales?from=&to=&branchId=&status=&cashSessionId=&search=&page=&size=` | `sales:read` | `search`: número (`POS-12` o `12`) o nombre/documento del cliente |
 | GET | `/sales/{id}` | `sales:read` | Venta con ítems, pagos, impuestos y encabezado del tiquete |
-| GET | `/sales/config` | `sales:create` | `{pricesIncludeTax, maxDiscountPercent, allowNegativeStock, currency, receiptFooter, businessName, finalConsumerId}` |
+| GET | `/sales/config` | `sales:create` | `{pricesIncludeTax, maxDiscountPercent, allowNegativeStock, currency, receiptFooter, businessName, finalConsumerId, tipPercent, receiptHeader}` |
+| GET | `/sales/offline-catalog` | `sales:create` | Decisión 332, copia del catálogo para vender sin internet: `{generatedAt, items: [{productId, sku, name, unitId, unitCode, factor, price (general), taxId, taxType, taxRate, trackInventory, openPrice, allowsDecimals, codes[] (SKU y códigos de barras de esa presentación)}]}`, una fila por producto activo y presentación; sin los medicamentos bajo fórmula |
 | GET | `/sales/price?productId=&unitId=&customerId=` | `sales:create` o `tables:operate` | Precio vigente para el cliente (el mesero lo usa al pedir desde la mesa, decisión 293) |
 
 Cuerpo de venta:
@@ -252,8 +255,10 @@ Cuerpo de venta:
   "items": [{ "productId": "<id>", "unitId": null, "quantity": 2, "discountPercent": null, "unitPrice": 2000 }],
   "payments": [{ "paymentMethodId": "<CARD>", "amount": 20000, "reference": "APR-123" },
                { "paymentMethodId": "<CASH>", "amount": 10000 }],
-  "expectedTotal": 25000, "notes": null }
+  "expectedTotal": 25000, "notes": null,
+  "offline": null }
 ```
+- `offline` (decisión 332): `{number (≤40), soldAt}` en una venta hecha sin internet que el equipo envía al volver la conexión, con la misma `Idempotency-Key` con la que se guardó. Se respeta el `unitPrice` enviado (acepta 0), no frena por existencias ni por diferencias del total, y `createdAt` queda en `soldAt` si es creíble (no futura ni de hace más de 7 días). La venta devuelve `offlineNumber`; la auditoría guarda el número provisional.
 - `customerId` nulo = consumidor final. `unitId` nulo = unidad base. `unitPrice` y `expectedTotal` (opcionales) son lo que mostró la pantalla: si difieren de lo que calcula el servidor → **409** con `changes[{line, sku, name, expectedPrice, currentPrice}]`, `expectedTotal` y `currentTotal`.
 - Pagos: `amount` es lo entregado. La suma debe cubrir el total; tarjeta y transferencia no pueden superarlo (el cambio solo sale del efectivo).
 - 422: sin caja abierta, existencias insuficientes (indica producto y disponible), cantidades con decimales en unidades enteras, pagos inválidos. 403: descuento por encima del límite sin `sales:discount`.
@@ -396,7 +401,7 @@ Color de una paleta cerrada y logo pequeño. Leer: cualquier miembro del negocio
 | Método | Ruta | Descripción |
 |---|---|---|
 | GET | `/branding` | `{color, logo (data URL o null), updatedAt}`. `color` ∈ turquesa (por defecto), azul, indigo, violeta, rosa, naranja, verde, grafito |
-| GET | `/branding/header` | Cualquier miembro (decisión 261): `{businessName, branchName, branchAddress, branchPhone}` para el encabezado de los documentos del cliente (pedido en hoja carta); la sede es la activa más antigua |
+| GET | `/branding/header` | Cualquier miembro (decisión 261): `{businessName, branchName, branchAddress, branchPhone, header}` para el encabezado de los documentos del cliente (pedido, informe de caja); la sede es la activa más antigua. `header` (decisión 331): el encabezado libre del negocio; si no está vacío, los documentos lo muestran en lugar de la dirección y el teléfono |
 | PUT | `/branding/color` | `{color}` → 422 si no es de la paleta |
 | PUT | `/branding/logo` | `{dataUrl}` (`data:image/…;base64,…`, máximo 150 KB de imagen). El tipo se comprueba por la firma del archivo: solo PNG, JPEG o WebP (422 para SVG u otros) |
 | DELETE | `/branding/logo` | Quita el logo |
@@ -604,7 +609,7 @@ Todo con `pharmacy:quality` y el módulo Medicamentos. `branchId` opcional (la p
 | POST | `/platform/referrals/{tenantId}/paid` | administrador | Decisión 312: comisión del aliado pagada `{reference}` |
 | GET | `/ai/digest/latest` | `ai:ask` | Decisión 299: el último Resumen del día (hoy o ayer) `{date, headline, points: [{section: SALES\|CASH\|INVENTORY\|MONEY\|FINANCE (decisión 325), tone: good\|warning\|bad\|info, title, detail}], figures: [{label, value}], createdAt, weather: SUNNY\|PARTLY\|CLOUDY\|RAIN\|STORM\|QUIET, forecast, followUps: [string]}` (decisión 307: clima, pronóstico y preguntas solo con `reports:read`) solo con las secciones que permite el rol (ventas: `reports:read`, caja: `cash:read`, inventario: `inventory:read`, plata: `credit:read` o `purchases:read`); 204 si no hay |
 | GET/PUT | `/ai/digest/settings` | `ai:ask` y `settings:manage` | `{enabled, sendTime (HH:mm), recipients[] (usuarios además del propietario)}`; GET trae además `limit` y `used` del mes |
-| POST | `/ai/catalog/read` | `products:manage` y `ai:ask` | Decisión 300, "Cargar con Aska": multipart `files` (un Excel, CSV o PDF de hasta 20 páginas, o hasta 10 fotos JPG/PNG; 10 MB c/u), `supplierId?`, `margin?` (0–90, 30 por defecto), `inventory=true` y `branchId` para el inventario del negocio (decisión 306: cada fila trae `quantity` y `stockNote`). No guarda nada → `{rows: [{rowId, description, supplierCode, barcode, listCost, taxRate, match: {productId, sku, name, by: MEMORY\|BARCODE\|SKU\|NAME, currentCost, currentPrice, costLocked} \| null, proposal: {action: CREATE\|UPDATE\|SKIP, sku, name, category, unitCode, taxCode, cost (sin IVA), price, marginPercent}}], units[], taxes[], categories[], pricesIncludeTax, margin, warnings[], usage}`. 422 si no hay XASKA IA, tope del mes, archivo no válido o ilegible (no descuenta) |
+| POST | `/ai/catalog/read` | `products:manage` y `ai:ask` | Decisión 300, "Cargar con Aska": multipart `files` (un Excel, CSV o PDF de hasta 20 páginas, un Word `.docx` con fotos —se leen de a 10 con `fromPhoto`, decisión 313— o hasta 10 fotos JPG/PNG; 10 MB c/u), `supplierId?`, `margin?` (0–90, 30 por defecto), `inventory=true` y `branchId` para el inventario del negocio (decisión 306: cada fila trae `quantity` y `stockNote`). No guarda nada → `{rows: [{rowId, description, supplierCode, barcode, listCost, taxRate, match: {productId, sku, name, by: MEMORY\|BARCODE\|SKU\|NAME, currentCost, currentPrice, costLocked} \| null, proposal: {action: CREATE\|UPDATE\|SKIP, sku, name, category, unitCode, taxCode, cost (sin IVA), price, marginPercent}}], units[], taxes[], categories[], pricesIncludeTax, margin, warnings[], usage, photos?: {from, to, total}}`. Las filas sin precio ni costo se conservan con `price` nulo ("Falta el precio", decisión 313); `apply` las rechaza (422) hasta que se escriba. 422 si no hay XASKA IA, tope del mes, archivo no válido o ilegible (no descuenta) |
 | POST | `/ai/catalog/apply` | `products:manage` y `ai:ask` | `{supplierId?, branchId?, rows: [{productId? (nulo = crear), sku, name, barcode?, category?, unitCode, taxCode, cost, price, supplierCode?, quantity?}] (1–500)}` → `{report, stocked}`: el reporte del importador de productos y cuántos quedaron con saldo inicial (con cantidades necesita `inventory:adjust`; todo en una transacción) (todo o nada; los existentes conservan nombre, unidad, impuesto y categoría). Con proveedor, recuerda sus códigos |
 | GET | `/ai/catalog/usage` | `products:manage` y `ai:ask` | `{available, limit, used}` de las listas leídas del mes |
 | POST | `/ai/expenses/read` | `ai:ask` y (`expenses:manage` o `cash:operate`) | Decisión 325, "Leer con Aska" en el gasto: multipart `file` (foto JPG/PNG o PDF de hasta 5 páginas; 10 MB). No guarda nada → `{amount, date, categoryId, categoryName, supplierId (proveedor activo con ese NIT/cédula o nombre exacto), supplierName, supplierDocument, reference, note, warnings[], usage}`; lo que no se vio va nulo (una fecha futura no se pone). Tope propio al mes `EXPENSE_READS` (100; 10 en la prueba). 422 sin XASKA IA, tope del mes, archivo no válido o recibo ilegible (no descuenta) |

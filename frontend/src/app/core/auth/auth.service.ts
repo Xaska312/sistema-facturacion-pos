@@ -10,6 +10,7 @@ import {
 } from '../api/api.models';
 import { AccessClaims, decodeAccessToken } from './jwt';
 import { REFRESH_LOCK } from './refresh-lock';
+import { OfflineBoot, clearOfflineBoot, readOfflineBoot } from '../offline/offline-boot';
 
 export type RefreshOutcome = 'renewed' | 'tenant-changed' | 'expired' | 'unreachable';
 
@@ -35,6 +36,11 @@ export class AuthService {
   private refreshInFlight: Observable<RefreshOutcome> | null = null;
 
   readonly user = computed(() => this.session()?.user ?? null);
+  /**
+   * La app abrió sin internet con lo que recordaba el equipo (decisión 333): no hay token; la primera petición que
+   * llegue al servidor lo renueva con la cookie y esto vuelve a false.
+   */
+  readonly offlineBoot = signal(false);
   readonly isAuthenticated = computed(() => this.session() !== null);
   readonly tenantId = computed(() => this.session()?.claims.tid ?? null);
   readonly hasTenant = computed(() => this.tenantId() !== null);
@@ -162,13 +168,34 @@ export class AuthService {
     if (this.isAuthenticated()) {
       return of(true);
     }
-    return this.refresh().pipe(
-      tap((ok) => {
-        if (ok) {
+    return this.renew().pipe(
+      map((outcome) => {
+        if (outcome === 'renewed' || outcome === 'tenant-changed') {
           this.loadTenants().subscribe();
+          return true;
         }
+        // Sin conexión (decisión 333): si este equipo tiene la caja abierta de alguien, se abre Vender sin internet.
+        const boot = outcome === 'unreachable' ? readOfflineBoot() : null;
+        if (boot) {
+          this.enterOffline(boot);
+          return true;
+        }
+        return false;
       }),
     );
+  }
+
+  /** Abre la sesión recordada sin token (decisión 333). */
+  enterOffline(boot: OfflineBoot): void {
+    this.session.set({ accessToken: '', claims: boot.claims, user: boot.user });
+    this.tenantList.set([boot.tenant]);
+    this.offlineBoot.set(true);
+  }
+
+  /** Usuario y permisos de la sesión, para recordarlos en el equipo de la caja (decisión 333). */
+  identity(): { user: UserSummary; claims: AccessClaims } | null {
+    const s = this.session();
+    return s && !this.offlineBoot() ? { user: s.user, claims: s.claims } : null;
   }
 
   loadTenants(): Observable<TenantSummary[]> {
@@ -206,6 +233,9 @@ export class AuthService {
   clear(): void {
     this.session.set(null);
     this.tenantList.set([]);
+    this.offlineBoot.set(false);
+    // Sesión cerrada o vencida: el equipo ya no abre Vender sin internet con esos datos (decisión 333).
+    clearOfflineBoot();
   }
 
   private applySession(response: SessionResponse): void {
@@ -214,6 +244,11 @@ export class AuthService {
       this.clear();
       return;
     }
+    const wasOffline = this.offlineBoot();
     this.session.set({ accessToken: response.accessToken, claims, user: response.user });
+    this.offlineBoot.set(false);
+    if (wasOffline) {
+      this.loadTenants().subscribe({ error: () => undefined });
+    }
   }
 }

@@ -185,6 +185,22 @@ _Administrador de plataforma y un dueño de prueba_
 | ☐ | 76 | Darle extras desde la consola (un módulo, una función y una caja) y volver a entrar. | Aparece lo dado; el negocio ve los extras en Ajustes → Suscripción, sin la nota interna. |
 | ☐ | 77 | Un negocio con plan Básico o Pro (anterior). | Tiene todo y en Ajustes dice hasta cuándo se mantiene su precio. |
 
+## 14. Documentos, celular, sin internet y costo (decisiones 326–334)
+
+_Dueño y un cajero, con la impresora térmica y un celular_
+
+| OK | # | Prueba | Resultado esperado |
+|---|---|---|---|
+| ☐ | 78 | Ajustes → Recibo: escribir el encabezado (NIT, dirección y celular en renglones) y guardar. | Sale debajo del nombre del negocio en el tiquete (pantalla, térmica e imagen), el pedido, la cotización y el informe de caja; Inicio deja de recordarlo. |
+| ☐ | 79 | Abrir una venta en Ventas y tocar Enviar → Imagen del tiquete (en el celular y en el PC). | Botones ordenados; la imagen es igual al tiquete con el logo; en el celular abre el menú de compartir, en el PC descarga el PNG. |
+| ☐ | 80 | Encabezado y consola de plataforma en el celular. | Un solo logo, el perfil siempre a la vista; en la consola el dock con "Más". |
+| ☐ | 81 | Crear un tercero o una sede en el Tolima. | Están los 47 municipios (Piedras, Espinal, Mariquita…). |
+| ☐ | 82 | Con la caja abierta, desconectar el wifi y vender con el lector, con F2 y en efectivo. | "Sin conexión. Sigues vendiendo…"; el tiquete sale con `CAJA-1-SC0001` y "Pendiente de enviar". Fiado, retención y cliente distinto de Consumidor final avisan que necesitan internet. |
+| ☐ | 83 | Intentar cerrar la caja con ventas sin enviar; luego reconectar. | No deja cerrar; al volver el internet las ventas se envían solas y aparecen en Ventas con su número oficial y "Vendida sin conexión". |
+| ☐ | 84 | En la imagen de producción: con la caja abierta, quitar el internet, cerrar y volver a abrir el navegador. | Abre directo en Vender sin conexión; al volver el internet se renueva la sesión y se envían las ventas. Después de cerrar la caja ya no abre sin internet. |
+| ☐ | 85 | Publicar una versión nueva con equipos abiertos. | Sale "Hay una versión nueva de XASKA" con Actualizar; no recarga sola. |
+| ☐ | 86 | Cambiar el costo de un producto con ventas y revisar su kardex. | Se guarda; muestra el margen y, si bajó, sugiere el precio; el kardex tiene "Cambio de costo" con antes y después; las ventas pasadas no cambian. |
+
 ## Hallazgos
 
 Anota aquí lo que no salió como se esperaba (número de prueba, qué pasó, captura) y compártelo para corregirlo antes de abrir.

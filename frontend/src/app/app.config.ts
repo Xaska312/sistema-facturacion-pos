@@ -1,5 +1,6 @@
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { ApplicationConfig, inject, provideAppInitializer, provideZoneChangeDetection } from '@angular/core';
+import { ApplicationConfig, inject, isDevMode, provideAppInitializer, provideZoneChangeDetection } from '@angular/core';
+import { provideServiceWorker } from '@angular/service-worker';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { TitleStrategy, provideRouter, withComponentInputBinding } from '@angular/router';
 import { ConfirmationService, MessageService } from 'primeng/api';
@@ -41,6 +42,18 @@ export const appConfig: ApplicationConfig = {
     }),
     // Recupera la sesión (cookie de refresh) antes de evaluar las rutas, para que al recargar
     // la página los guards vean el negocio ya seleccionado.
-    provideAppInitializer(() => firstValueFrom(inject(AuthService).restore())),
+    provideAppInitializer(async () => {
+      const auth = inject(AuthService);
+      await firstValueFrom(auth.restore());
+      // Decisión 333: abrió sin internet con la caja recordada en este equipo: directo a Vender.
+      if (auth.offlineBoot() && !globalThis.location?.pathname.startsWith('/pos')) {
+        globalThis.history?.replaceState(null, '', '/pos');
+      }
+    }),
+    // Decisión 333: la app queda guardada en el equipo (abre sin internet); en desarrollo no se usa.
+    provideServiceWorker('ngsw-worker.js', {
+      enabled: !isDevMode(),
+      registrationStrategy: 'registerWhenStable:30000',
+    }),
   ],
 };

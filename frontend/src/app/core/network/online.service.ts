@@ -1,5 +1,4 @@
-import { DOCUMENT } from '@angular/common';
-import { DestroyRef, Injectable, inject, signal } from '@angular/core';
+import { DestroyRef, Injectable, inject, signal, DOCUMENT } from '@angular/core';
 
 /**
  * Conexión del navegador como signal (eventos online/offline). Es una pista para el usuario: el navegador puede

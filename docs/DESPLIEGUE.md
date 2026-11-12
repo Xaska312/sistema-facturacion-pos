@@ -278,6 +278,15 @@ actualizar (paso 11).
 | Logo en la impresión directa (292) | Solo la imagen **web**. XASKA Impresora no cambia |
 | Mesero solo mesas (293) | Negocio V37: el rol Mesero deja de cobrar (solo si nadie lo había editado). Avísales a los restaurantes cuyos meseros cobran |
 | Cartas por piso (294) | Negocio V38. Se configuran en Mesas → Configurar → Cartas por piso (plan Empresa) |
+| Vender sin internet (332, 333) | Negocio V50. Reconstruye la imagen **web**: la app queda guardada en el equipo (service worker). Después de cada actualización, los equipos ven "Hay una versión nueva de XASKA" con **Actualizar** (no recarga sola); si nadie lo toca, entra al volver a abrir la app. El Caddyfile ya sirve `ngsw-worker.js` y `ngsw.json` sin caché |
+| Cambiar el costo (334) | Negocio V51 (movimiento `COST_CHANGE` en el kardex). Nada que configurar |
+| Encabezado de los documentos (331) | Nada que configurar: cada dueño lo escribe en Ajustes (Inicio se lo recuerda) |
+| Municipios (328) | Plataforma V26: los 1.122 municipios del DANE. Nada que configurar |
+| Angular 21 y Node 24 (329, 330) | Reconstruye la imagen **web** (ahora con Node 24, el mismo del PC de desarrollo; con Node 22 el `npm ci` rechaza el `package-lock.json`) |
+| Finanzas (320–325) | Negocio V46–V49 y plataforma V25 (gastos, gastos fijos, retenciones y lectura de recibos con Aska, tope `EXPENSE_READS`). Revisa los permisos de Finanzas en los roles personalizados |
+| Modo teléfono y eliminar (314) | Negocio V45. Nada que configurar |
+| Referidos y aliados (312) | Plataforma V24. Crea los aliados (contadores y distribuidores) en la consola → Referidos con su llave Bre-B. Falta un párrafo de referidos en los Términos |
+| Lo que hiciste con Aska (309) | Negocio V44. La tarea revisa cada hora qué correos del mes o del final de la prueba tocan (`app.ai.recap-schedule`) |
 | Registro abierto y QR (303) | Plataforma V23. **Cambia el comportamiento:** `SUBSCRIPTION_TRIAL_WITHOUT_CODE` ahora es `true` por defecto: cualquiera que se registre en app.xaska.co crea su negocio con la prueba gratis (una por cuenta) o lo crea para pagar ya. Si en el `.env` tienes `SUBSCRIPTION_TRIAL_WITHOUT_CODE=false`, quítalo o ponlo en `true`. Sube el QR del banco en la consola → Pagos. Página pública: `app.xaska.co/precios` |
 | Planes y pagos con Bre-B (302) | Plataforma V22. **Antes de anunciarlo:** en la consola → Pagos pon tu llave Bre-B, el titular y el banco (sin eso los negocios no pueden armar pedidos) y revisa los precios de los adicionales (XASKA IA 39.900 de partida). Revisa los comprobantes en Pagos → Por revisar |
 | Cargar con Aska (300) | Plataforma V21 y negocio V43. Tope por defecto: 20 listas al mes (consola → Planes → XASKA IA). Nada más que configurar |

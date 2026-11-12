@@ -204,8 +204,9 @@ export const MANUAL: readonly ManualChapter[] = [
           'Al terminar la venta toca "Imprimir tiquete".',
           'La primera vez elige el ancho del papel (80 mm o 58 mm); el navegador lo recuerda en ese equipo.',
           'Para reimprimir una venta anterior, búscala en Ventas, ábrela y toca "Reimprimir".',
-          'Con "WhatsApp" le envías al cliente el recibo en texto (productos, total y cómo pagó): eliges el contacto en WhatsApp.',
-          'Con "Imagen" el recibo sale como una foto con letra pareja y alineada (no depende de la letra del celular del cliente): en el celular se abre el menú de compartir para elegir WhatsApp; en el computador se descarga el PNG para adjuntarlo.',
+          'Con "Enviar" le mandas el recibo al cliente: "WhatsApp (texto)" abre WhatsApp con los productos, el total y cómo pagó, y eliges el contacto; "Imagen del tiquete" lo manda como una foto igual al tiquete impreso, con tu logo (en el celular se abre el menú de compartir; en el computador se descarga el PNG para adjuntarlo).',
+          'Si se va el internet, sigue vendiendo: arriba sale "Sin conexión". Busca con el lector o F2 en la copia del catálogo que guarda el equipo, cobra en efectivo, tarjeta o transferencia e imprime: el tiquete sale con un número provisional y "Pendiente de enviar". Cuando vuelve el internet las ventas se envían solas y toman su número oficial. Sin conexión no se fía, no se aplica retención, se vende a Consumidor final y la caja se cierra cuando hayan llegado todas las ventas.',
+          'El equipo donde tienes la caja abierta también abre Vender sin internet (por ejemplo, si se reinició el computador durante el corte), hasta 24 horas después de la última vez que tuvo conexión. Al cerrar la caja o la sesión, el equipo lo olvida.',
         ],
         tips: [
           'El texto del pie del tiquete (horarios, redes sociales…) se cambia en Configuración → Ajustes.',
@@ -1068,6 +1069,7 @@ export const MANUAL: readonly ManualChapter[] = [
           'Pon una existencia mínima a los productos que no deben agotarse: aparecen en las alertas del inicio.',
           'El kardex de un producto muestra cada entrada y salida, con la existencia y el costo después de cada una.',
           'El costo se calcula como costo promedio y con él se calculan la utilidad y el valor del inventario.',
+          'Si el costo quedó mal o subió, cámbialo en el producto (o con un Excel o Cargar con Aska): desde ahí el promedio sigue con el nuevo, queda un renglón "Cambio de costo" en el kardex y las ventas anteriores no cambian. Debajo ves el margen y, si bajó, el precio que lo recupera.',
         ],
       },
     ],
@@ -1523,6 +1525,7 @@ export const MANUAL: readonly ManualChapter[] = [
         tips: [
           'Permitir vender sin existencias: útil si aún no tienes el inventario exacto.',
           'Los precios incluyen impuestos: márcalo si el precio de venta que escribes ya trae el IVA.',
+          'Encabezado de los documentos: lo que sale debajo del nombre del negocio en tiquetes, pedidos, cotizaciones e informes de caja. Escribe un dato por renglón y en el orden que quieras (por ejemplo NIT, dirección y celular). Si lo dejas vacío, sale la dirección y el teléfono de la sede.',
           'Pie del recibo: el texto que sale al final de cada tiquete.',
           'Enviarme el resumen de cada cierre de caja: llega al correo del dueño cada vez que se cierra una caja.',
           'Marca: sube tu logo (sale en el encabezado y en el tiquete) y elige el color de la app entre los de la paleta; toca un color para verlo antes de guardarlo.',

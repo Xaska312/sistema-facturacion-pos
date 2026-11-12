@@ -48,6 +48,13 @@ public final class SaleCommands {
      * Propina voluntaria (Fase 12b-5): aparte de la venta (no suma al total ni lleva impuestos). Se paga con uno de los
      * medios de la venta: los pagos cubren el total más la propina. {@code suggestedPercent}: el sugerido si se aceptó.
      */
+    /**
+     * Venta hecha sin internet (decisión 332): el número provisional del tiquete ("C1-0007") y cuándo se vendió en el
+     * equipo.
+     */
+    public record Offline(String number, java.time.Instant soldAt) {
+    }
+
     public record Tip(BigDecimal amount, UUID paymentMethodId, Integer suggestedPercent) {
     }
 

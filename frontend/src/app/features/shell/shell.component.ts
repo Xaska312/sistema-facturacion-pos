@@ -45,8 +45,11 @@ interface ThemeOption extends PrimeMenuItem {
 
     <div class="min-h-screen flex flex-col">
       <header class="sticky top-0 z-30 h-16 shrink-0 flex items-center gap-2 px-3 md:px-6 bg-surface/85 backdrop-blur border-b border-line">
-        <a routerLink="/app" class="shrink-0 mr-2 rounded-lg" aria-label="Ir al inicio">
-          <app-xaska-logo [wordmark]="true" [tag]="true" label="XASKA POS" />
+        <a routerLink="/app" class="shrink-0 sm:mr-2 rounded-lg" aria-label="Ir al inicio">
+          <!-- Decisión 327: en el celular solo el símbolo, para que quepan las píldoras y el perfil. El span es porque
+               el logo trae su propio inline-flex y le ganaba a "hidden". -->
+          <span class="hidden sm:inline-flex"><app-xaska-logo [wordmark]="true" [tag]="true" label="XASKA POS" /></span>
+          <span class="inline-flex sm:hidden"><app-xaska-logo label="XASKA POS" /></span>
         </a>
 
         <nav aria-label="Ruta de navegación" class="flex-1 min-w-0">
@@ -209,7 +212,13 @@ interface ThemeOption extends PrimeMenuItem {
     .plan-pill-late { color: var(--color-danger-soft-fg); background: var(--color-danger-soft); border-color: var(--color-danger); font-weight: 600; }
     .plan-pill-late .plan-pill-dot { background: var(--color-danger); animation: plan-pill-pulse 1.4s ease-in-out infinite; }
     @keyframes plan-pill-pulse { 0%, 100% { box-shadow: 0 0 0 0 var(--color-danger); } 50% { box-shadow: 0 0 0 5px transparent; } }
-    @media (max-width: 639px) { .plan-pill-detail, .plan-pill-ai { display: none; } }
+    @media (max-width: 639px) {
+      .plan-pill-detail, .plan-pill-ai { display: none; }
+      /* Decisión 327: la píldora cede espacio (el nombre del plan se corta) y el perfil nunca se sale. */
+      .plan-pill { min-width: 0; flex-shrink: 1; max-width: 7.5rem; padding: 0 0.625rem; }
+      .plan-pill > .font-bold { overflow: hidden; text-overflow: ellipsis; }
+      .trial-pill { padding: 0 0.5rem; }
+    }
     @media (prefers-reduced-motion: reduce) { .plan-pill-late .plan-pill-dot { animation: none; } }
     .skip-link {
       position: fixed;
@@ -289,6 +298,7 @@ interface ThemeOption extends PrimeMenuItem {
       gap: 0.5rem;
       min-height: 2.5rem;
       padding: 0.25rem 0.5rem 0.25rem 0.25rem;
+      flex-shrink: 0;
       border-radius: 9999px;
     }
     .user-button:hover { background: var(--surface-alt); }

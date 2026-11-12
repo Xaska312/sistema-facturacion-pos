@@ -5,12 +5,14 @@ import { formatCop, formatQuantity } from '../money';
 import { ReceiptWidth, printableMm } from './receipt-prefs';
 import { documentShortLabel } from '../document-types';
 import { splitSummary } from './split-receipt';
+import { receiptDate, receiptDocument } from './receipt-rows';
+import { businessLines, offlineLines } from './doc-header';
 
 /**
  * Tiquete de venta para impresora térmica de 58 u 80 mm. El mismo componente sirve de vista previa y, con la
  * clase {@code receipt-print-root}, de área de impresión (@media print en styles.css). Se arma al ancho imprimible
  * (72 o 48 mm) y con letra sin serifas gruesa: el driver convierte la página en puntos y una letra delgada sale
- * gris claro en algunas impresoras (decisión 289).
+ * gris claro en algunas impresoras (decisión 289). Su copia como imagen está en receipt-rows.ts (decisión 326).
  */
 @Component({
   selector: 'app-receipt',
@@ -22,14 +24,9 @@ import { splitSummary } from './split-receipt';
         <img [src]="src" alt="" class="logo" />
       }
       <p class="center bold">{{ s.receipt.businessName }}</p>
-      @if (s.receipt.branchName) {
-        <p class="center">{{ s.receipt.branchName }}</p>
-      }
-      @if (s.receipt.branchAddress) {
-        <p class="center">{{ s.receipt.branchAddress }}</p>
-      }
-      @if (s.receipt.branchPhone) {
-        <p class="center">Tel. {{ s.receipt.branchPhone }}</p>
+      <!-- Sede y encabezado del dueño (decisión 331) o, sin él, dirección y teléfono de la sede. -->
+      @for (line of businessLines(); track $index) {
+        <p class="center">{{ line }}</p>
       }
       @if (split(); as sp) {
         <!-- Cobro partido entre cajas (decisión 294): una venta por carta, un solo tiquete. -->
@@ -67,6 +64,10 @@ import { splitSummary } from './split-receipt';
         }
       } @else {
         <p class="center bold mt">Tiquete {{ s.documentNumber }}</p>
+        <!-- Decisión 332: venta hecha sin internet. -->
+        @for (line of offlineLines(); track $index) {
+          <p class="center bold">{{ line }}</p>
+        }
         <p>{{ date() }}</p>
         <p>Caja {{ s.receipt.registerCode }} · {{ s.createdByName }}</p>
         <p>Cliente: {{ s.customerName }}</p>
@@ -158,26 +159,12 @@ export class ReceiptComponent {
   protected readonly split = computed(() => splitSummary(this.sale()));
   protected readonly q = formatQuantity;
 
-  protected readonly date = computed(() => {
-    const s = this.sale();
-    try {
-      return new Intl.DateTimeFormat('es-CO', {
-        dateStyle: 'short',
-        timeStyle: 'short',
-        timeZone: s.receipt.timezone ?? undefined,
-      }).format(new Date(s.createdAt));
-    } catch {
-      return new Date(s.createdAt).toLocaleString('es-CO');
-    }
-  });
+  protected readonly date = computed(() => receiptDate(this.sale()));
+  protected readonly businessLines = computed(() => businessLines(this.sale().receipt));
+  protected readonly offlineLines = computed(() => offlineLines(this.sale()));
 
   /** "PASSPORT" → "PA" (fase 8a). */
   protected readonly shortDocType = computed(() => documentShortLabel(this.sale().customerDocumentType));
 
-  protected readonly document = computed(() => {
-    const s = this.sale();
-    return s.customerVerificationDigit === null
-      ? s.customerDocumentNumber
-      : `${s.customerDocumentNumber}-${s.customerVerificationDigit}`;
-  });
+  protected readonly document = computed(() => receiptDocument(this.sale()));
 }

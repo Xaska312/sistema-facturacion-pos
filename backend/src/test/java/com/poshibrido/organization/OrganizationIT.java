@@ -125,9 +125,15 @@ class OrganizationIT extends IntegrationTest {
         List<String> codes = JsonPath.read(departments, "$[*].code");
         assertThat(codes).hasSize(33).contains("05", "11", "76", "88");
 
-        api.getWith(owner.tenant(), "/api/v1/locations/departments/05/cities")
+        // Todos los municipios del DANE (decisión 328), en orden alfabético: Antioquia empieza por Abejorral.
+        String antioquia = api.getWith(owner.tenant(), "/api/v1/locations/departments/05/cities")
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].code").value("05001"));
+                .andExpect(jsonPath("$[0].name").value("Abejorral"))
+                .andReturn().getResponse().getContentAsString();
+        assertThat(JsonPath.<List<String>>read(antioquia, "$[*].code")).hasSize(125).contains("05001");
+        String tolima = api.getWith(owner.tenant(), "/api/v1/locations/departments/73/cities")
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertThat(JsonPath.<List<String>>read(tolima, "$[*].name")).hasSize(47).contains("Ibagué", "Piedras");
         api.getWith(owner.tenant(), "/api/v1/locations/cities/11001")
                 .andExpect(jsonPath("$.departmentName").value("Bogotá, D.C."));
         api.getWith(owner.tenant(), "/api/v1/locations/cities/00000").andExpect(status().isNotFound());

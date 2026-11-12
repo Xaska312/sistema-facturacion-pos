@@ -3,6 +3,7 @@ package com.poshibrido.sales.api;
 import com.poshibrido.finance.application.WithholdingApi;
 import com.poshibrido.catalog.application.PricingApi.ResolvedPrice;
 import com.poshibrido.pharmacy.application.DispensationRules;
+import com.poshibrido.sales.application.OfflineCatalogService;
 import com.poshibrido.sales.application.SaleCommands;
 import com.poshibrido.sales.application.SaleQueryService;
 import com.poshibrido.sales.application.ModifierChoices;
@@ -53,6 +54,7 @@ public class SaleController {
 
     private final SaleService service;
     private final SaleQueryService queries;
+    private final OfflineCatalogService offlineCatalog;
 
     public record ItemRequest(@NotNull UUID productId, UUID unitId,
                               @NotNull @DecimalMin(value = "0", inclusive = false)
@@ -80,7 +82,9 @@ public class SaleController {
                                     @Size(max = 10) List<@Valid @NotNull PaymentRequest> payments,
                                     @DecimalMin("0") @Digits(integer = 12, fraction = 2) BigDecimal expectedTotal,
                                     @Size(max = 255) String notes,
-                                    @Valid DispensationRequest dispensation) {
+                                    @Valid DispensationRequest dispensation,
+                                    /** Venta hecha sin internet que el equipo envía al volver la conexión (decisión 332). */
+                                    @Valid OfflineRequest offline) {
 
         SaleCommands.Create toCommand() {
             return new SaleCommands.Create(customerId,
@@ -112,11 +116,19 @@ public class SaleController {
     public record VoidRequest(@NotBlank @Size(max = 200) String reason) {
     }
 
+    /** Número provisional del tiquete y cuándo se vendió en el equipo sin internet (decisión 332). */
+    public record OfflineRequest(@NotBlank @Size(max = 40) String number, @NotNull java.time.Instant soldAt) {
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAuthority('sales:create')")
     public SaleView create(@Valid @RequestBody CreateSaleRequest request,
                            @RequestHeader(name = "Idempotency-Key", required = false) String idempotencyKey) {
+        if (request.offline() != null) {
+            return service.createOffline(request.toCommand(), idempotencyKey,
+                    new SaleCommands.Offline(request.offline().number().trim(), request.offline().soldAt()));
+        }
         return service.create(request.toCommand(), idempotencyKey);
     }
 
@@ -152,6 +164,13 @@ public class SaleController {
     @PreAuthorize("hasAuthority('sales:create')")
     public PosConfig config() {
         return queries.posConfig();
+    }
+
+    /** Copia del catálogo para vender sin internet (decisión 332). */
+    @GetMapping("/offline-catalog")
+    @PreAuthorize("hasAuthority('sales:create')")
+    public OfflineCatalogService.Catalog offlineCatalog() {
+        return offlineCatalog.current();
     }
 
     /** Precio vigente para el cliente (al cambiar de cliente o de presentación en el carrito). */

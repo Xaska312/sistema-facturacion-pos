@@ -193,6 +193,8 @@ export interface BusinessSettings {
   timezone: string;
   currency: string;
   receiptFooter: string;
+  /** Encabezado libre de los documentos (decisión 331): NIT, dirección, celular…, un dato por renglón. */
+  receiptHeader: string;
   maxDiscountPercent: number;
   /** Resumen de cada cierre de caja al correo del dueño (decisión 253). */
   cashCloseEmail: boolean;
@@ -289,7 +291,7 @@ export interface Product {
   taxType: TaxType | null;
   taxRate: number | null;
   cost: number;
-  /** El costo lo calcula el inventario (promedio ponderado): no se edita. */
+  /** El costo lo calcula el inventario (promedio ponderado); igual se puede cambiar a mano (decisión 334). */
   costLocked: boolean;
   salePrice: number;
   trackInventory: boolean;
@@ -414,7 +416,9 @@ export type MovementType =
   | 'TRANSFER_IN'
   | 'RETURN'
   | 'DISPOSAL'
-  | 'SUPPLIER_RETURN';
+  | 'SUPPLIER_RETURN'
+  /** Cambio del costo a mano o por importación (decisión 334): cantidad 0. */
+  | 'COST_CHANGE';
 export type InventoryDocumentType = 'INITIAL' | 'ADJUSTMENT' | 'TRANSFER' | 'COUNT' | 'DISPOSAL';
 export type Direction = 'IN' | 'OUT';
 
@@ -737,6 +741,8 @@ export interface ReceiptHeader {
   registerName: string | null;
   footer: string | null;
   timezone: string | null;
+  /** Encabezado libre del negocio (decisión 331): reemplaza la dirección y el teléfono de la sede. */
+  header?: string | null;
 }
 
 export interface Sale {
@@ -779,6 +785,10 @@ export interface Sale {
   splitLabel?: string | null;
   /** Todas las partes del mismo cobro, en orden (también esta); null si no se partió. */
   together?: Sale[] | null;
+  /** Número provisional si se vendió sin internet (decisión 332). */
+  offlineNumber?: string | null;
+  /** Venta hecha sin internet que aún no llega al servidor (solo en el equipo, decisión 332). */
+  pendingSync?: boolean;
 }
 
 export interface SaleTip {
@@ -797,6 +807,8 @@ export interface PosConfig {
   finalConsumerId: string;
   /** Propina sugerida al cobrar una mesa (Fase 12b-5); 0 = no se sugiere. */
   tipPercent?: number;
+  /** Encabezado libre del negocio (decisión 331), para el tiquete hecho sin internet (decisión 332). */
+  receiptHeader?: string | null;
 }
 
 export interface SaleItemInput {
@@ -825,7 +837,8 @@ export interface SaleInput {
   expectedTotal: number | null;
   notes: string | null;
   /** Confirmación de la fórmula (Fase 13-4) si la venta lleva medicamentos bajo fórmula. */
-  dispensation?: DispensationInput | null;
+  dispensation?: DispensationInput | null;  /** Venta hecha sin internet que el equipo envía al volver la conexión (decisión 332). */
+  offline?: { number: string; soldAt: string } | null;
 }
 
 /** Detalle del 409 cuando cambiaron precios. */
@@ -1542,6 +1555,8 @@ export interface QuoteConfig {
   businessName: string;
   branchAddress: string | null;
   branchPhone: string | null;
+  /** Encabezado libre del negocio (decisión 331). */
+  header?: string | null;
 }
 
 export interface QuoteItemInput {
@@ -1574,4 +1589,28 @@ export interface QuoteToOrderInput {
 export interface QuoteSaleResult {
   quote: Quote;
   saleId: string;
+}
+
+/** Copia del catálogo para vender sin internet (decisión 332): cada producto en cada presentación. */
+export interface OfflineCatalogItem {
+  productId: string;
+  sku: string;
+  name: string;
+  unitId: string;
+  unitCode: string;
+  factor: number;
+  price: number;
+  taxId: string;
+  taxType: TaxType;
+  taxRate: number;
+  trackInventory: boolean;
+  openPrice: boolean;
+  allowsDecimals: boolean;
+  /** SKU y códigos de barras que encuentran esta presentación. */
+  codes: string[];
+}
+
+export interface OfflineCatalog {
+  generatedAt: string;
+  items: OfflineCatalogItem[];
 }

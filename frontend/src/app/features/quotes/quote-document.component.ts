@@ -1,4 +1,5 @@
-import { Component, input } from '@angular/core';
+import { Component, computed, input } from '@angular/core';
+import { businessLines } from '../../shared/receipt/doc-header';
 import { Quote, QuoteConfig } from '../../core/api/api.models';
 import { formatDay } from '../orders/order-text';
 import { formatDate } from '../../shared/format';
@@ -22,11 +23,9 @@ import { partyName, partyPhone } from './quote-text';
           }
           <div>
             <p class="business">{{ config()?.businessName }}</p>
-            @if (config()?.branchAddress) {
-              <p>{{ config()!.branchAddress }}</p>
-            }
-            @if (config()?.branchPhone) {
-              <p>Tel. {{ config()!.branchPhone }}</p>
+            <!-- Encabezado del dueño (decisión 331) o dirección y teléfono de la sede. -->
+            @for (line of headerLines(); track $index) {
+              <p>{{ line }}</p>
             }
           </div>
         </div>
@@ -140,6 +139,7 @@ import { partyName, partyPhone } from './quote-text';
 export class QuoteDocumentComponent {
   readonly quote = input.required<Quote>();
   readonly config = input<QuoteConfig | null>(null);
+  protected readonly headerLines = computed(() => businessLines(this.config() ?? {}, false));
   readonly logo = input<string | null>(null);
 
   protected readonly cop = formatCop;

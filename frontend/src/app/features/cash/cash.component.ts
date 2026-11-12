@@ -24,6 +24,8 @@ import { CellTemplateDirective } from '../../shared/table/cell-template.directiv
 import { DataTableComponent } from '../../shared/table/data-table.component';
 import { ColumnDef } from '../../shared/table/table';
 import { CashReportDialogComponent } from './cash-report-dialog.component';
+import { OfflineSalesService } from '../../core/offline/offline-sales.service';
+import { clearOfflineBoot } from '../../core/offline/offline-boot';
 import { CASH_MOVEMENT_LABEL } from './labels';
 import { TermComponent } from '../../shared/help/term.component';
 import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
@@ -340,7 +342,23 @@ export class CashComponent implements OnInit {
     });
   }
 
+  private readonly offlineSales = inject(OfflineSalesService);
+
   openClose(): void {
+    // Decisión 332: primero tienen que llegar las ventas hechas sin conexión en este equipo, si no, el cierre no cuadra.
+    void this.offlineSales.prepare().then(() => {
+      const waiting = this.offlineSales.pending() + this.offlineSales.failed().length;
+      if (waiting > 0) {
+        this.messages.add({ severity: 'warn', summary: 'Ventas sin enviar', life: 8000,
+          detail: `Hay ${waiting} venta${waiting === 1 ? '' : 's'} hecha${waiting === 1 ? '' : 's'} sin conexión en este equipo que aún no llega${waiting === 1 ? '' : 'n'} al sistema. Espera el internet (o revísalas en Vender) y cierra la caja después.` });
+        void this.offlineSales.sync();
+        return;
+      }
+      this.startClose();
+    });
+  }
+
+  private startClose(): void {
     this.countedAmount = null;
     this.closingNotes = '';
     this.closeOpen = true;
@@ -357,6 +375,8 @@ export class CashComponent implements OnInit {
         this.saving.set(false);
         this.closeOpen = false;
         this.messages.add({ severity: 'success', summary: 'Caja cerrada' });
+        // Decisión 333: con la caja cerrada este equipo ya no abre Vender sin internet.
+        clearOfflineBoot();
         this.report.set(report);
         this.reportOpen = true;
         this.movements.set([]);
