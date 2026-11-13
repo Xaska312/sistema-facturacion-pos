@@ -11,6 +11,32 @@
 
 @custom-variant dark (&:where(.app-dark, .app-dark *));
 
+/*
+ * Medidas y movimiento de los componentes propios de shared/ui (decisión 335; reemplazan a PrimeNG por fases).
+ * Hoy tienen los valores que ya usa la app (se ve igual). La fase E (dirección "Orgánica", aprobada por el usuario)
+ * cambia solo estos valores: esquinas 14/12/24 px, presión con rebote, sombra del color del negocio y halo de foco.
+ */
+:root {
+  --ui-radius-control: 10px; /* botones y campos */
+  --ui-radius-field: 10px;
+  --ui-radius-overlay: 14px; /* menús, popovers, avisos */
+  --ui-radius-dialog: 22px;
+  --ui-press: none; /* transformación al presionar */
+  --ui-release: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ui-duration: 0.15s;
+  --ui-lift: none; /* transformación al pasar el mouse */
+  --ui-shadow-primary: none;
+  --ui-shadow-primary-hover: none;
+  --ui-focus: 0 0 0 2px var(--focus-ring);
+}
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --ui-duration: 0.01ms;
+    --ui-press: none;
+    --ui-lift: none;
+  }
+}
+
 /* Identidad XASKA: Plus Jakarta Sans, servida desde el mismo dominio (la CSP no permite fuentes externas).
    Licencia SIL OFL 1.1 (public/fonts/OFL.txt). */
 @font-face {
