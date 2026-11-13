@@ -43,6 +43,8 @@ import { MANUAL_PRODUCTS_TRIGGER } from '../ai/aska-nudge';
       @if (canManage()) {
         <a appButton routerLink="/app/productos/importar" label="Importar desde Excel" icon="pi pi-file-excel" severity="secondary"
            [outlined]="true"></a>
+        <a appButton routerLink="/app/productos/revisar-costos" label="Revisar costos con IVA" icon="pi pi-percentage"
+           severity="secondary" [text]="true"></a>
         <a appButton routerLink="/app/productos/nuevo" label="Nuevo producto" icon="pi pi-plus"></a>
       }
     </app-page-header>

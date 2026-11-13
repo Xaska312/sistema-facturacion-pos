@@ -167,6 +167,15 @@ const TIMEZONE_LABEL: Record<string, string> = {
           <span><span class="font-medium">Los precios incluyen impuestos</span>
             <span class="block text-sm text-muted">El precio de venta ya trae el IVA incluido.</span></span>
         </label>
+        <!-- Decisión 348 -->
+        <label class="flex items-start gap-3">
+          <input type="checkbox" class="mt-1" formControlName="costsIncludeTax" />
+          <span><span class="font-medium">Los costos de mis proveedores traen el IVA incluido</span>
+            <span class="block text-sm text-muted">Escribes el costo como te lo cobran y la app le quita el IVA para
+              calcular bien tu ganancia (el IVA que pagas lo descuentas del que cobras). Cada producto lo puede
+              cambiar. <a routerLink="/app/productos/revisar-costos" class="text-brand hover:underline">Revisar los costos
+              que ya escribiste con IVA</a></span></span>
+        </label>
         <label class="flex items-start gap-3">
           <input type="checkbox" class="mt-1" formControlName="cashCloseEmail" />
           <span><span class="font-medium">Enviarme el resumen de cada cierre de caja</span>
@@ -414,6 +423,7 @@ export class SettingsComponent implements OnInit {
   protected readonly form = inject(FormBuilder).nonNullable.group({
     allowNegativeStock: [false],
     pricesIncludeTax: [true],
+    costsIncludeTax: [true],
     timezone: ['America/Bogota', Validators.required],
     currency: ['COP', Validators.required],
     maxDiscountPercent: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
@@ -473,8 +483,9 @@ export class SettingsComponent implements OnInit {
   }
 
   /** Vacío en el servidor = el mensaje de siempre, que se muestra escrito para poder editarlo. */
-  private toForm(settings: BusinessSettings): BusinessSettings & { creditReminder: string } {
-    return { ...settings, creditReminder: settings.creditReminder?.trim() || DEFAULT_REMINDER };
+  private toForm(settings: BusinessSettings): BusinessSettings & { creditReminder: string; costsIncludeTax: boolean } {
+    return { ...settings, creditReminder: settings.creditReminder?.trim() || DEFAULT_REMINDER,
+      costsIncludeTax: settings.costsIncludeTax !== false };
   }
 
   protected insertVariable(box: HTMLTextAreaElement, key: string): void {

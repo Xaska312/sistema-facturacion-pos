@@ -4,6 +4,8 @@ import { ToastService } from '../../shared/ui/toast.service';
 import { of } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { RegisterComponent } from './register.component';
+import { BillingApi } from '../../core/api/billing.api';
+import { ActivatedRoute, convertToParamMap } from '@angular/router';
 
 describe('RegisterComponent', () => {
   let auth: jasmine.SpyObj<AuthService>;
@@ -14,8 +16,25 @@ describe('RegisterComponent', () => {
       emailVerified: false }));
     TestBed.configureTestingModule({
       imports: [RegisterComponent],
-      providers: [provideRouter([]), ToastService, { provide: AuthService, useValue: auth }],
+      providers: [provideRouter([]), ToastService, { provide: AuthService, useValue: auth },
+        { provide: BillingApi, useValue: { pricing: () => of({ trialDays: 14, plans: [], addons: [] }) } }],
     });
+  });
+
+  it('dice de entrada que la prueba es gratis y, sin plan elegido, olvida uno anterior (decisión 346)', () => {
+    localStorage.setItem('xaska.startPlan', JSON.stringify({ plan: 'NEGOCIO', annual: false }));
+    const fixture = TestBed.createComponent(RegisterComponent);
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Pruébalo gratis 14 días');
+    expect(localStorage.getItem('xaska.startPlan')).toBeNull();
+  });
+
+  it('con un plan elegido en Precios lo recuerda para crear el negocio', () => {
+    localStorage.removeItem('xaska.startPlan');
+    TestBed.overrideProvider(ActivatedRoute, { useValue: { snapshot: { queryParamMap: convertToParamMap({ plan: 'NEGOCIO', ciclo: 'anual' }) } } });
+    TestBed.createComponent(RegisterComponent);
+    expect(JSON.parse(localStorage.getItem('xaska.startPlan') ?? '{}')).toEqual({ plan: 'NEGOCIO', annual: true });
+    localStorage.removeItem('xaska.startPlan');
   });
 
   it('pide aceptar los términos y la política antes de registrar (decisión 250)', () => {

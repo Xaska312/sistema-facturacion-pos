@@ -23,7 +23,7 @@ describe('report-views', () => {
 
   it('suma los totales con el margen sobre la base', () => {
     expect(salesTotals([row(1190, 1000, 300, 2), row(595, 500, 100, 1)]))
-      .toEqual({ total: 1785, salesCount: 3, profit: 400, marginPercent: 26.67 });
+      .toEqual({ total: 1785, salesCount: 3, profit: 400, cost: 1100, marginPercent: 26.67 });
     expect(salesTotals([]).marginPercent).toBe(0);
   });
 });

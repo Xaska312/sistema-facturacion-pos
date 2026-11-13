@@ -27,8 +27,10 @@ import {
 } from '../../core/api/purchases.api';
 import { newIdempotencyKey } from '../../core/api/sales.api';
 import { permissionFlag } from '../../core/auth/permission-flag';
+import { AuthService } from '../../core/auth/auth.service';
 import { documentShortLabel } from '../../shared/document-types';
 import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
+import { netCost, shownCost } from '../../shared/cost-tax';
 import { invoiceFilesProblem, shrinkPhoto } from '../../shared/image-shrink';
 import { formatCop, formatQuantity } from '../../shared/money';
 import { nitVerificationDigit } from '../../shared/nit';
@@ -207,6 +209,13 @@ import {
 
     <section class="card p-4 mt-4 max-w-5xl flex flex-col gap-3">
       <h2 class="font-bold tracking-tight">Lo que llegó</h2>
+      <!-- Decisión 348: el costo se escribe con o sin IVA; la compra siempre lo guarda sin IVA. -->
+      <label class="flex items-start gap-2 text-sm">
+        <input type="checkbox" class="size-4 mt-0.5" [checked]="costsWithTax()" (change)="costsWithTax.set($any($event.target).checked)" />
+        <span>Escribo los costos con el IVA incluido
+          <span class="block text-xs text-muted">Como los cobra el proveedor. Si los copias de una factura electrónica, que
+            los trae sin IVA, desmárcalo.</span></span>
+      </label>
       <div class="flex flex-wrap gap-2 items-center">
         <input appInput class="flex-1 min-w-64" placeholder="Escanea el código o escribe SKU/nombre y presiona Enter"
                aria-label="Agregar producto" [(ngModel)]="code" (keyup.enter)="add()" />
@@ -311,8 +320,8 @@ import {
             </select>
           </label>
           <label class="flex flex-col gap-1 md:col-span-2">
-            <span class="text-xs font-medium">Costo sin IVA</span>
-            <input appInput appPesos="2" [(ngModel)]="line.unitCost" (ngModelChange)="touch()" />
+            <span class="text-xs font-medium">Costo {{ costsWithTax() && line.taxRate > 0 ? 'con IVA' : 'sin IVA' }}</span>
+            <input appInput appPesos="2" [ngModel]="costShown(line)" (ngModelChange)="typeCost(line, $event)" />
           </label>
           <label class="flex flex-col gap-1 md:col-span-1">
             <span class="text-xs font-medium">IVA %</span>
@@ -451,6 +460,7 @@ export class ReceiptEditorComponent implements OnInit, HasUnsavedChanges {
   private readonly catalog = inject(CatalogApi);
   private readonly inventory = inject(InventoryApi);
   private readonly organization = inject(OrganizationApi);
+  private readonly canReadSettings = inject(AuthService).hasPermission('settings:read');
   private readonly parties = inject(PartiesApi);
   private readonly cash = inject(CashApi);
   private readonly messages = inject(ToastService);
@@ -556,8 +566,28 @@ export class ReceiptEditorComponent implements OnInit, HasUnsavedChanges {
   protected readonly totalNotice = computed(() => (this.version(),
   invoiceTotalNotice(this.lines(), this.draft()?.total ?? null, this.pending().length)));
 
+  /** Los costos se escriben con IVA (decisión 348): por defecto lo de Ajustes; la factura cargada los trae sin IVA. */
+  protected readonly costsWithTax = signal(true);
+
+  protected costShown(line: ReceiptDraftLine): number | null {
+    return line.unitCost === null ? null : shownCost(Number(line.unitCost), line.taxRate, this.costsWithTax());
+  }
+
+  protected typeCost(line: ReceiptDraftLine, value: number | null): void {
+    if (value === null || String(value).trim() === '') {
+      line.unitCost = null;
+    } else if (Number(value) !== this.costShown(line)) {
+      line.unitCost = netCost(Number(value), line.taxRate, this.costsWithTax());
+    }
+    this.touch();
+  }
+
   ngOnInit(): void {
     this.refreshScanUsage();
+    if (this.canReadSettings) {
+      this.organization.settings().subscribe({ next: (s) => this.costsWithTax.set(s.costsIncludeTax !== false),
+        error: () => undefined });
+    }
     if (this.canPay()) {
       this.paymentType = 'PAID';
     }
@@ -812,6 +842,8 @@ export class ReceiptEditorComponent implements OnInit, HasUnsavedChanges {
       }
       this.draft.set(draft);
       this.lines.set(lines);
+      // La factura trae los costos sin IVA: se muestran así para compararlos con el papel.
+      this.costsWithTax.set(false);
       this.pending.set(pending);
       this.assigning.set(null);
       this.invoice = draft.invoiceNumber;

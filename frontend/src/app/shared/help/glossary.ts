@@ -39,6 +39,11 @@ export const GLOSSARY = {
     text: 'El costo de cada unidad, promediando lo que pagaste en cada entrada. Con él se calculan la utilidad y el '
       + 'valor del inventario.',
   },
+  margen: {
+    title: 'Margen y ganancia sobre el costo',
+    text: 'Compras en $5.650 y vendes en $6.800: ganas $1.150, el 20,4 % sobre el costo (lo que le sumas) y el 16,9 % '
+      + 'de margen (la parte del precio que te queda). Con IVA se cuenta sin IVA: ese IVA es de la DIAN.',
+  },
   'saldo-inicial': {
     title: 'Saldo inicial',
     text: 'Las existencias que ya tienes al empezar a usar el sistema, con su costo. Se registra una sola vez por '

@@ -207,6 +207,8 @@ export interface BusinessSettings {
   expiryAlertMonths: number;
   /** Recordatorio de fiado por WhatsApp con {cliente}, {saldo}…; '' = el mensaje de siempre (decisión 344). */
   creditReminder?: string;
+  /** Los costos se escriben con el IVA incluido; se guardan sin IVA (decisión 348). */
+  costsIncludeTax?: boolean;
 }
 
 export interface Department {

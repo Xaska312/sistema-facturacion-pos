@@ -43,13 +43,15 @@ public class BusinessSettingsService implements BusinessSettingsApi {
     /** Mensaje del recordatorio de fiado por WhatsApp (decisión 344); vacío = el de siempre. */
     static final String CREDIT_REMINDER = "credit_reminder";
     static final int MAX_CREDIT_REMINDER = 500;
+    /** Los costos se escriben con el IVA incluido (decisión 348). */
+    static final String COSTS_INCLUDE_TAX = "costs_include_tax";
 
     /** Monedas soportadas. En el MVP solo pesos colombianos. */
     private static final Set<String> CURRENCIES = Set.of("COP");
 
     private static final BusinessSettings DEFAULTS = new BusinessSettings(false, true, "America/Bogota", "COP",
             "Gracias por su compra", BigDecimal.ZERO.setScale(2), true, 15,
-            "Precios sujetos a cambio después de la fecha de validez.", 10, 3, "", "");
+            "Precios sujetos a cambio después de la fecha de validez.", 10, 3, "", "", true);
 
     private final BusinessSettingRepository repository;
     private final AuditLogger audit;
@@ -72,7 +74,8 @@ public class BusinessSettingsService implements BusinessSettingsApi {
                 integer(values, TIP_PERCENT, DEFAULTS.tipPercent()),
                 integer(values, EXPIRY_ALERT_MONTHS, DEFAULTS.expiryAlertMonths()),
                 values.getOrDefault(RECEIPT_HEADER, DEFAULTS.receiptHeader()),
-                values.getOrDefault(CREDIT_REMINDER, DEFAULTS.creditReminder()));
+                values.getOrDefault(CREDIT_REMINDER, DEFAULTS.creditReminder()),
+                bool(values, COSTS_INCLUDE_TAX, DEFAULTS.costsIncludeTax()));
     }
 
     @Transactional
@@ -98,6 +101,7 @@ public class BusinessSettingsService implements BusinessSettingsApi {
         put(rows, TIP_PERCENT, ValueType.INTEGER, Integer.toString(requested.tipPercent()), actor);
         put(rows, EXPIRY_ALERT_MONTHS, ValueType.INTEGER, Integer.toString(requested.expiryAlertMonths()), actor);
         put(rows, CREDIT_REMINDER, ValueType.STRING, cleanReminder(requested.creditReminder()), actor);
+        put(rows, COSTS_INCLUDE_TAX, ValueType.BOOLEAN, Boolean.toString(requested.costsIncludeTax()), actor);
 
         BusinessSettings after = current();
         audit.log("SETTINGS_UPDATED", "business_settings", null, asMap(before), asMap(after));
@@ -207,6 +211,7 @@ public class BusinessSettingsService implements BusinessSettingsApi {
         map.put(TIP_PERCENT, s.tipPercent());
         map.put(EXPIRY_ALERT_MONTHS, s.expiryAlertMonths());
         map.put(CREDIT_REMINDER, s.creditReminder());
+        map.put(COSTS_INCLUDE_TAX, s.costsIncludeTax());
         return map;
     }
 }

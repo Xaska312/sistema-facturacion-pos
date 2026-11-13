@@ -55,6 +55,7 @@ export function salesTotals(rows: readonly SalesReportRow[]): {
   total: number;
   salesCount: number;
   profit: number;
+  cost: number;
   marginPercent: number;
 } {
   const sum = (pick: (row: SalesReportRow) => number): number => rows.reduce((acc, row) => acc + pick(row), 0);
@@ -64,6 +65,7 @@ export function salesTotals(rows: readonly SalesReportRow[]): {
     total: sum((r) => r.total),
     salesCount: sum((r) => r.salesCount),
     profit,
+    cost: sum((r) => r.cost),
     marginPercent: subtotal > 0 ? Math.round((profit / subtotal) * 10000) / 100 : 0,
   };
 }

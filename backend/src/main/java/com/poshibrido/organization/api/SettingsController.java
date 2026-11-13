@@ -47,7 +47,9 @@ public class SettingsController {
             /** Meses de aviso antes del vencimiento de un lote (Fase 13-3), 1 a 12. Sin dato se conserva. */
             @Min(1) @Max(12) Integer expiryAlertMonths,
             /** Recordatorio de fiado por WhatsApp (decisión 344); "" = el de siempre. Sin dato se conserva. */
-            @Size(max = 600) String creditReminder) {
+            @Size(max = 600) String creditReminder,
+            /** Los costos se escriben con IVA incluido (decisión 348). Sin dato se conserva. */
+            Boolean costsIncludeTax) {
     }
 
     @GetMapping
@@ -70,9 +72,11 @@ public class SettingsController {
                 : request.expiryAlertMonths();
         String receiptHeader = request.receiptHeader() == null ? current.receiptHeader() : request.receiptHeader();
         String creditReminder = request.creditReminder() == null ? current.creditReminder() : request.creditReminder();
+        boolean costsIncludeTax = request.costsIncludeTax() == null ? current.costsIncludeTax()
+                : request.costsIncludeTax();
         return service.update(new BusinessSettings(request.allowNegativeStock(), request.pricesIncludeTax(),
                 request.timezone().trim(), request.currency().trim(), request.receiptFooter(),
                 request.maxDiscountPercent(), cashCloseEmail, quoteValidityDays, quoteTerms, tipPercent,
-                expiryAlertMonths, receiptHeader, creditReminder));
+                expiryAlertMonths, receiptHeader, creditReminder, costsIncludeTax));
     }
 }

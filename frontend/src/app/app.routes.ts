@@ -183,6 +183,15 @@ export const routes: Routes = [
         loadComponent: () => import('./features/products/products.component').then((m) => m.ProductsComponent),
       },
       {
+        // Decisión 349: quitar el IVA a los costos que se escribieron con IVA.
+        path: 'productos/revisar-costos',
+        title: 'Revisar costos con IVA',
+        canActivate: [permissionGuard],
+        data: { permission: 'products:manage' },
+        loadComponent: () =>
+          import('./features/products/cost-review.component').then((m) => m.CostReviewComponent),
+      },
+      {
         path: 'productos/importar',
         title: 'Importar productos',
         canActivate: [permissionGuard],

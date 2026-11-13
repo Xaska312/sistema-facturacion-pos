@@ -11,6 +11,7 @@ import com.poshibrido.catalog.infrastructure.ProductBarcodeRepository;
 import com.poshibrido.catalog.infrastructure.ProductRepository;
 import com.poshibrido.catalog.infrastructure.TaxRepository;
 import com.poshibrido.catalog.infrastructure.UnitRepository;
+import com.poshibrido.organization.application.BusinessSettingsApi;
 import com.poshibrido.shared.csv.CsvReader;
 import com.poshibrido.shared.csv.Numbers;
 import com.poshibrido.shared.error.BusinessRuleException;
@@ -68,6 +69,7 @@ public class ProductImportService {
     private final TaxRepository taxes;
     private final AuditLogger audit;
     private final StockPresence stock;
+    private final BusinessSettingsApi settings;
 
     public record RowError(int row, String message) {
     }
@@ -82,12 +84,12 @@ public class ProductImportService {
 
     @Transactional
     public ImportReport importCsv(String content, boolean dryRun) {
-        return importRows(CsvReader.parseWithLines(content), dryRun);
+        return importRows(CsvReader.parseWithLines(content), dryRun, settings.current().costsIncludeTax());
     }
 
     /**
      * La misma carga desde una tabla ya armada (primera fila: encabezados), p. ej. lo que se revisó en "Cargar con
-     * Aska" (decisión 300).
+     * Aska" (decisión 300). Los costos ya vienen sin IVA (Aska se lo quita si la lista lo trae).
      */
     @Transactional
     public ImportReport importTable(List<List<String>> table, boolean dryRun) {
@@ -95,7 +97,7 @@ public class ProductImportService {
         for (int i = 0; i < table.size(); i++) {
             rows.add(new CsvReader.Row(i + 1, table.get(i)));
         }
-        return importRows(rows, dryRun);
+        return importRows(rows, dryRun, false);
     }
 
     /** La misma carga desde la plantilla de Excel (.xlsx): se lee la primera hoja (fase 8f). */
@@ -107,7 +109,8 @@ public class ProductImportService {
         } catch (XlsxReader.InvalidXlsxException ex) {
             throw new BusinessRuleException(ex.getMessage());
         }
-        return importRows(rows.stream().map(r -> new CsvReader.Row(r.number(), r.cells())).toList(), dryRun);
+        return importRows(rows.stream().map(r -> new CsvReader.Row(r.number(), r.cells())).toList(), dryRun,
+                settings.current().costsIncludeTax());
     }
 
     /**
@@ -131,7 +134,10 @@ public class ProductImportService {
                 List.of("1. Escribe un producto por fila en la hoja Productos. Puedes borrar los dos ejemplos."),
                 List.of("2. Obligatorias: sku (tu código interno, sin espacios), nombre, impuesto y precio."),
                 List.of("3. unidad e impuesto: elige de la lista que aparece al tocar la celda. Si dejas la unidad vacía, queda UND."),
-                List.of("4. costo y precio: solo el número, sin $ ni puntos de miles (ej.: 2500)."),
+                List.of("4. costo y precio: solo el número, sin $ ni puntos de miles (ej.: 2500)."
+                        + (settings.current().costsIncludeTax()
+                        ? " El costo, como te lo cobra el proveedor (con IVA): la app le quita el IVA del producto."
+                        : " El costo, sin IVA.")),
                 List.of("5. controla_inventario: si (lo que tienes en bodega) o no (servicios, bolsas)."),
                 List.of("6. Guarda el archivo tal cual (Excel .xlsx) y súbelo en Productos → Importar."),
                 List.of("7. Si un sku ya existe, ese producto se actualiza. Las categorías nuevas se crean solas."),
@@ -143,7 +149,8 @@ public class ProductImportService {
         return XlsxWriter.write(List.of(products, instructions));
     }
 
-    private ImportReport importRows(List<CsvReader.Row> table, boolean dryRun) {
+    /** {@code costWithTax}: la columna costo trae el IVA y se le quita (decisión 348). */
+    private ImportReport importRows(List<CsvReader.Row> table, boolean dryRun, boolean costWithTax) {
         if (table.size() < 2) {
             throw new BusinessRuleException("El archivo no tiene filas de productos (la primera fila son los encabezados).");
         }
@@ -263,7 +270,7 @@ public class ProductImportService {
                         row.description() != null ? row.description() : product == null ? null : product.getDescription(),
                         category == null ? (product == null ? null : product.getCategoryId()) : category.getId(),
                         keepUnit ? product.getBaseUnitId() : row.unit().getId(), row.tax().getId(),
-                        keepCost ? product.getCost() : row.cost(), row.price(),
+                        keepCost ? product.getCost() : netCost(row.cost(), row.tax(), costWithTax), row.price(),
                         keepTracking ? product.isTrackInventory() : row.trackInventory(),
                         // El archivo no trae "precio libre": se conserva lo que tenga el producto.
                         product != null && product.isOpenPrice());
@@ -395,5 +402,14 @@ public class ProductImportService {
     public static List<String> templateHeaders() {
         return List.copyOf(new LinkedHashSet<>(List.of("sku", "nombre", "codigo_barras", "categoria", "unidad",
                 "impuesto", "costo", "precio", "controla_inventario", "descripcion")));
+    }
+
+    /** Costo sin IVA (decisión 348): si se escribió con IVA y el impuesto lo lleva, se le quita. */
+    static BigDecimal netCost(BigDecimal cost, Tax tax, boolean withTax) {
+        if (cost == null || !withTax || tax == null || tax.getRate() == null || tax.getRate().signum() <= 0) {
+            return cost;
+        }
+        return cost.divide(BigDecimal.ONE.add(tax.getRate().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP)),
+                2, RoundingMode.HALF_UP);
     }
 }

@@ -10,7 +10,10 @@ export interface DraftLine {
   unitId: string;
   quantity: number | null;
   direction: Direction;
+  /** Costo por la unidad elegida, sin IVA (decisión 348: se escribe con IVA si así se elige). */
   unitCost: number | null;
+  /** IVA del producto (%), para escribir el costo con IVA. */
+  taxRate?: number;
   /** Existencia actual en unidad base (conteos; con lote, la del lote). */
   currentQuantity: number | null;
   baseUnitCode: string;
@@ -53,6 +56,7 @@ export function draftLine(product: Product, unitId: string | null): DraftLine {
     quantity: null,
     direction: 'IN',
     unitCost: null,
+    taxRate: product.taxRate ?? 0,
     currentQuantity: null,
     baseUnitCode: product.baseUnitCode ?? '',
     tracksLots: product.tracksLots,

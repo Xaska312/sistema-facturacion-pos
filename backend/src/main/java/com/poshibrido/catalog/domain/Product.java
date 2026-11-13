@@ -213,6 +213,11 @@ public class Product extends AuditableEntity {
         this.costLocked = true;
     }
 
+    /** Corrección de un costo escrito con IVA (decisión 349): cambia el costo sin cambiar quién lo maneja. */
+    public void correctCost(BigDecimal cost) {
+        this.cost = cost.setScale(2, RoundingMode.HALF_UP);
+    }
+
     public void lockCost() {
         this.costLocked = true;
     }

@@ -59,6 +59,24 @@ export interface InvoiceCreatedLine {
     quantity: number | null }[];
 }
 
+/** Producto por revisar en "Revisar costos con IVA" (decisión 349). */
+export interface CostReviewRow {
+  productId: string;
+  sku: string;
+  name: string;
+  taxRate: number;
+  cost: number;
+  costWithoutTax: number;
+  salePrice: number;
+  marginNow: number | null;
+  marginFixed: number | null;
+  soldLines: number;
+  /** Tiene compras registradas: esas ya traían el costo sin IVA. */
+  purchased: boolean;
+  /** Margen de ahora muy bajo (menos del 5 %) que con el costo sin IVA queda normal. */
+  suspicious: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class CatalogApi {
   private readonly http = inject(HttpClient);
@@ -147,6 +165,16 @@ export class CatalogApi {
   /** Plantilla de Excel (.xlsx) con las unidades e impuestos del negocio (fase 8f). */
   importTemplate(): Observable<HttpResponse<Blob>> {
     return this.http.get('/api/v1/products/import/template', { observe: 'response', responseType: 'blob' });
+  }
+
+  /** Productos con IVA y costo para revisar si el costo se escribió con IVA (decisión 349). */
+  costReview(): Observable<CostReviewRow[]> {
+    return this.http.get<CostReviewRow[]>('/api/v1/products/cost-review');
+  }
+
+  /** Le quita el IVA al costo de esos productos y al de sus ventas ya hechas (decisión 349). */
+  removeCostTax(productIds: string[]): Observable<{ products: number; saleLines: number }> {
+    return this.http.post<{ products: number; saleLines: number }>('/api/v1/products/cost-review/remove-tax', { productIds });
   }
 
   importProducts(file: File, dryRun: boolean): Observable<ImportReport> {
