@@ -45,7 +45,7 @@ let nextId = 0;
           @for (row of rows(); track $index) {
             @switch (row.kind) {
               @case ('group') {
-                <li class="ui-menu-submenu-label" role="none">{{ row.item.label }}</li>
+                <li class="ui-menu-submenu-label" role="none"><span>{{ row.item.label }}</span></li>
               }
               @case ('separator') {
                 <li class="ui-menu-separator" role="separator"></li>

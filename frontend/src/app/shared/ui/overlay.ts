@@ -41,7 +41,8 @@ export function placeBelow(
 ): 'top' | 'bottom' {
   overlay.style.insetInlineStart = '0px';
   overlay.style.top = '0px';
-  const width = overlay.offsetWidth;
+  // Ancho con decimales: con offsetWidth (entero) un texto largo podía partirse en dos líneas.
+  const width = overlay.getBoundingClientRect().width;
   const height = overlay.offsetHeight;
   const targetHeight = target.offsetHeight;
   const targetWidth = target.offsetWidth;
