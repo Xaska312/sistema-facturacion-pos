@@ -30,7 +30,8 @@ function masks(page: Page) {
 
 async function shot(page: Page, name: string, settle = true) {
   if (settle) await page.waitForLoadState('networkidle');
-  await expect(page).toHaveScreenshot(`${name}.png`, { fullPage: false, mask: masks(page), maxDiffPixelRatio: 0.01 });
+  // soft: compara todas las pantallas aunque una cambie, para ver el panorama completo en el reporte.
+  await expect.soft(page).toHaveScreenshot(`${name}.png`, { fullPage: false, mask: masks(page), maxDiffPixelRatio: 0.01 });
 }
 
 async function enter(page: Page) {
