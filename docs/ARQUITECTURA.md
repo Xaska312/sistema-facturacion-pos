@@ -151,16 +151,16 @@ Aska usa las finanzas (decisión 325) desde `ai`, que depende de los servicios d
 llama luego a la API de gastos de siempre.
 
 ## Frontend: versiones
-Angular 21 con PrimeNG 21 (licencia MIT) y `@primeuix/themes`, TypeScript 5.9, zone.js, Karma y Jasmine; Node 24 en
-Docker y CI (decisiones 329–330). Desde la 22, PrimeNG pide una licencia con llave anual: antes de subir a Angular 22
-se reemplazan sus componentes por componentes propios.
+Angular 21, `@angular/cdk` (foco atrapado de diálogos y paneles), TypeScript 5.9, zone.js, Karma y Jasmine; Node 24 en
+Docker y CI (decisiones 329–330). Sin librería de componentes: PrimeNG (que desde la 22 pide una licencia con llave
+anual) se reemplazó por componentes propios (decisiones 335–340). Íconos: PrimeIcons (MIT, `pi pi-*`).
 
 ## Frontend: sistema de diseño
 Los colores viven solo en `frontend/src/styles.css` como tokens CSS (`--surface`, `--text`, `--brand`, `--success`,
 `--warning`, `--danger`…) con su versión oscura bajo `.app-dark`. Tailwind los expone con `@theme`
 (`bg-surface`, `text-muted`, `text-brand`, `bg-danger-soft`… y la utilidad `card`) y quita sus paletas propias;
-PrimeNG usa la misma paleta con el preset `core/theme/app-preset.ts` (`definePreset(Aura, …)`,
-`darkModeSelector: '.app-dark'`). `ThemeService` guarda claro/oscuro/sistema en `localStorage` y `public/theme-init.js`
+los componentes propios usan los mismos tokens (`--btn-*`, `--field-*`, `--dialog-*`, `--toast-*`…) y las medidas y el
+movimiento de la dirección "Orgánica" salen de las variables `--ui-*` (radios, presión, rebote, foco; decisión 341). `ThemeService` guarda claro/oscuro/sistema en `localStorage` y `public/theme-init.js`
 (cargado desde `index.html`, sin scripts en línea por la CSP) aplica la clase antes del primer render. `tools/check-colors.mjs` (en CI) rechaza colores literales en `src/app`.
 
 El `ShellComponent` arma la estructura: menú lateral por permisos (`features/shell/menu.ts`, contraíble a iconos y
@@ -172,6 +172,12 @@ Componentes compartidos (UX-2): `shared/table/data-table` (paginada en el servid
 memoria con `items`; celdas por tipo y plantillas `appCell`; tarjetas en móvil), `shared/forms/form-dialog`
 (errores de campo del ProblemDetail vía `InlineErrorScope`), `page-header`, `empty-state`, `status-badge` (mapa
 `shared/status.ts`), `stat-card` y `ConfirmService` para confirmaciones.
+
+Componentes base (`shared/ui`, decisiones 335–341; detalle en `frontend/src/app/shared/ui/README.md`): `app-button` y
+`a[appButton]`, `[appInput]`, `app-skeleton`, `app-dialog` (con `CdkTrapFocus`), `app-confirm-host` (uno solo en
+`AppComponent`, lo maneja `ConfirmService`), `ToastService` con `app-toast-host`, `app-menu`, `app-popover`,
+`[appTooltip]`, `app-drawer`, `app-paginator` y `app-password`. Las capas flotantes llevan su propio z-index
+(`overlay.ts`). Su CSS va sin capa en `styles.css` para que las utilidades de Tailwind no lo pisen.
 
 POS (UX-4): `features/pos/pos.component` orquesta carrito, cobro, tiquete, atajos y foco del lector; las piezas
 `pos-header`, `product-grid` (favoritos locales en `favorites.ts`), `cart-panel` (emite cambios, no muta el carrito) y

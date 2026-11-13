@@ -10,6 +10,7 @@ Base: `/api/v1`. Errores en `application/problem+json` (RFC 9457). **Dinero en p
 | POST | `/auth/select-tenant` | cualquiera | `{tenantId}` → token de negocio + cookie. 403 sin membresía/negocio inactivo |
 | POST | `/auth/refresh` | cookie | Rota la cookie y devuelve nuevo access token. 401 si expiró o fue reutilizada. Un token rotado hace menos de 30 s responde 401 sin cerrar las demás sesiones (otra pestaña); pasado ese margen se trata como robo |
 | POST | `/auth/logout` | cookie | Revoca la cookie. 204 |
+| POST | `/auth/sessions/revoke-others` | cualquiera + cookie | "Cerrar sesión en los otros equipos" (decisión 343): revoca los demás refresh tokens de la cuenta y deja el de la cookie → `{closed}`. 401 sin cookie, si es de otra cuenta o ya no sirve. Evento `OTHER_SESSIONS_REVOKED` |
 | GET | `/auth/me` | cualquiera | Usuario, `tenantId` y permisos del token |
 | GET | `/auth/legal` | cualquiera | `{accepted, termsVersion, privacyVersion}`: si ya aceptó los textos vigentes (si no, la app muestra "Aceptar términos") |
 | POST | `/auth/legal/accept` | cualquiera | Acepta las versiones vigentes y guarda la prueba → `{accepted: true, …}` |
@@ -128,8 +129,8 @@ Enviar deja `KITCHEN_SENT` (cuenta, comandas y productos); las estaciones, `KITC
 ### Ajustes del negocio
 | Método | Ruta | Permiso | Descripción |
 |---|---|---|---|
-| GET | `/settings` | `settings:read` | `{allowNegativeStock, pricesIncludeTax, timezone, currency, receiptHeader, receiptFooter, maxDiscountPercent, cashCloseEmail, quoteValidityDays, quoteTerms, tipPercent, expiryAlertMonths}` |
-| PUT | `/settings` | `settings:manage` | Mismo cuerpo. Sin dato se conservan `receiptHeader`, `cashCloseEmail`, `quoteValidityDays`, `quoteTerms`, `tipPercent` y `expiryAlertMonths`. `receiptHeader` (decisión 331): encabezado libre de los documentos, un dato por renglón (se guardan sin espacios sobrantes ni renglones vacíos), hasta 500 caracteres y 8 renglones (422). 422 zona horaria inválida o moneda distinta de COP; 400 descuento fuera de 0–100 |
+| GET | `/settings` | `settings:read` | `{allowNegativeStock, pricesIncludeTax, timezone, currency, receiptHeader, receiptFooter, maxDiscountPercent, cashCloseEmail, quoteValidityDays, quoteTerms, tipPercent, expiryAlertMonths, creditReminder}` |
+| PUT | `/settings` | `settings:manage` | Mismo cuerpo. Sin dato se conservan `receiptHeader`, `cashCloseEmail`, `quoteValidityDays`, `quoteTerms`, `tipPercent`, `expiryAlertMonths` y `creditReminder`. `creditReminder` (decisión 344): mensaje del recordatorio de fiado por WhatsApp con `{cliente}`, `{saldo}`, `{negocio}`, `{desde}` y `{dias}`, hasta 500 caracteres (422); vacío = el mensaje de siempre. `receiptHeader` (decisión 331): encabezado libre de los documentos, un dato por renglón (se guardan sin espacios sobrantes ni renglones vacíos), hasta 500 caracteres y 8 renglones (422). 422 zona horaria inválida o moneda distinta de COP; 400 descuento fuera de 0–100 |
 
 ### Usuarios, roles e invitaciones
 | Método | Ruta | Permiso | Descripción |
@@ -299,7 +300,7 @@ Solo administradores de plataforma (`platform_admin`; token con `padm`). Tabla `
 |---|---|---|
 | GET | `/platform/security-events?from=&to=&event=&userId=&q=&page=&size=` | Página de `{id, occurredAt, event, userId, email, userName, tenantId, tenantName, ip, userAgent, details}`. `from`/`to` en ISO-8601 (`2026-10-06T00:00:00Z`; sin fechas = últimos 7 días). `q`: correo o IP (contiene). 422 con un `event` desconocido |
 
-Eventos: `REGISTERED`, `LOGIN_SUCCEEDED`, `LOGIN_FAILED` (`details.reason`: `UNKNOWN_EMAIL`, `BAD_PASSWORD`, `LOCKED`, `INACTIVE`), `ACCOUNT_LOCKED` (`details.until`), `LOGOUT`, `TENANT_ENTERED`, `TENANT_ACCESS_DENIED`, `REFRESH_TOKEN_REUSED`, `RATE_LIMITED` (`details.path`; uno por IP y minuto), `TENANT_CREATED`, `TENANT_PROVISIONING_FAILED`.
+Eventos: `REGISTERED`, `LOGIN_SUCCEEDED`, `LOGIN_FAILED` (`details.reason`: `UNKNOWN_EMAIL`, `BAD_PASSWORD`, `LOCKED`, `INACTIVE`), `ACCOUNT_LOCKED` (`details.until`), `LOGOUT`, `OTHER_SESSIONS_REVOKED` (`details.closed`, decisión 343), `TENANT_ENTERED`, `TENANT_ACCESS_DENIED`, `REFRESH_TOKEN_REUSED`, `RATE_LIMITED` (`details.path`; uno por IP y minuto), `TENANT_CREATED`, `TENANT_PROVISIONING_FAILED`.
 
 ## Consola de plataforma (Fase 7-3)
 Administradores de plataforma: `platform_admin = true` en la base; `PLATFORM_ADMIN_EMAILS` lo aplica al arrancar a las cuentas que ya existen con esos correos **y con el correo confirmado** (y se lo quita a las demás si la lista no está vacía). Su token trae `padm` y `/auth/me` devuelve `user.platformAdmin = true`.
@@ -429,6 +430,7 @@ Medio de pago `CREDIT` ("Fiado", id …0704, no entra al efectivo): en `POST /sa
 
 | Método | Ruta | Descripción |
 |---|---|---|
+| GET | `/credit/reminder-template` | `{template}`: el mensaje del recordatorio por WhatsApp (`creditReminder` de Ajustes; vacío = el de siempre). Con `credit:read`, sin necesitar `settings:read` (decisión 344) |
 | GET | `/credit/summary` | `{totalBalance, customers, upTo30Days, from31To60Days, over60Days, overLimit}` (solo quienes deben) |
 | GET | `/credit/accounts?search=&filter=DEBT\|ALL&page=&size=` | Cartera, primero los que más deben. `DEBT`: con saldo; `ALL`: también con cupo al día. `{customerId, name, documentType, formattedDocument, phone, active, creditLimit, balance, available, oldestDebtAt, upTo30Days, from31To60Days, over60Days, lastPaymentAt, lastPaymentAmount}` |
 | GET | `/credit/accounts/{customerId}` | La cuenta de un cliente (saldo 0 si nunca se le fió). 404 si no es cliente |

@@ -1,6 +1,6 @@
 # POS SaaS Híbrido — Monorepo
 
-**XASKA POS**: POS web multi-negocio para comercios, restaurantes y droguerías en Colombia. Backend Spring Boot 4.1 (Java 21) + PostgreSQL 16, frontend Angular 21 + PrimeNG 21 + Tailwind 4, y un programa pequeño de Windows (Go) para imprimir directo en la térmica. En producción en https://app.xaska.co.
+**XASKA POS**: POS web multi-negocio para comercios, restaurantes y droguerías en Colombia. Backend Spring Boot 4.1 (Java 21) + PostgreSQL 16, frontend Angular 21 + componentes propios (`@angular/cdk`) + Tailwind 4, y un programa pequeño de Windows (Go) para imprimir directo en la térmica. En producción en https://app.xaska.co.
 
 - Arquitectura: [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md)
 - API: [`docs/API.md`](docs/API.md)
@@ -36,7 +36,9 @@
 | Planes y pagos | ✅ Bre-B con comprobante revisado por Aska, registro abierto, precios públicos, precio fundador, referidos y aliados (302–305, 312) |
 | Finanzas | ✅ Gastos, gastos fijos, retenciones, estado de resultados, tablero y Aska (320–325) |
 | Celular y documentos | ✅ Modo teléfono, recibo como imagen y botón Enviar, encabezado libre de los documentos, todos los municipios (314–315, 326–328, 331) |
-| Angular 21 | ✅ Frontend en Angular 21 y PrimeNG 21 (MIT) con Node 24 (329–330). ⏳ Angular 22: antes, reemplazar PrimeNG (licencia nueva) |
+| Angular 21 | ✅ Frontend en Angular 21 con Node 24 (329–330). ⏳ Angular 22 (ya sin el bloqueo de PrimeNG) |
+| Componentes propios | ✅ PrimeNG reemplazado por componentes propios sobre `@angular/cdk` y dirección visual "Orgánica"; paquete inicial de 834 a 530 kB (335–341) |
+| Pendientes de noviembre | ✅ Tecla del cajón, cerrar sesión en los otros equipos, recordatorio de fiado editable, robots.txt y sitemap (342–345) |
 | Vender sin internet | ✅ Copia del catálogo, cola de ventas con número provisional y la app que abre sin conexión en el equipo de la caja (332–333) |
 | Facturación electrónica | ⏳ Pendiente (espera al contador) |
 
@@ -425,7 +427,16 @@ igual al tiquete con el botón "Enviar", encabezado libre de los documentos (NIT
 plataforma en el celular y los 1.122 municipios del DANE.
 
 **Angular 21 (329–330).** Un salto a la vez (19 → 20 → 21) con PrimeNG 21 y `@primeuix/themes`; Node 24 en Docker y
-CI. Angular 22 queda para después de reemplazar PrimeNG, que desde la 22 pide una licencia con llave anual.
+CI. Angular 22 quedaba para después de reemplazar PrimeNG, que desde la 22 pide una licencia con llave anual.
+
+**Componentes propios (335–341).** PrimeNG se reemplazó por componentes propios en `frontend/src/app/shared/ui`
+(botón, campo, diálogo, confirmación, avisos, menú, popover, tooltip, panel lateral, paginador y contraseña) sobre
+`@angular/cdk`, con el mismo aspecto medido contra PrimeNG y luego la dirección visual "Orgánica": esquinas más
+redondas, botones que se hunden y rebotan, campos rellenos. Se desinstalaron `primeng` y `@primeuix/themes`; el paquete
+inicial bajó de 834 a 530 kB. Los íconos siguen siendo PrimeIcons (MIT).
+
+**Pendientes de noviembre (342–345).** Tecla para abrir el cajón (F8, configurable por equipo), "Cerrar sesión en los
+otros equipos", mensaje del recordatorio de fiado editable por negocio y `robots.txt`/`sitemap.xml` para buscadores.
 
 **Vender sin internet (332–333).** Vender guarda una copia del catálogo; sin conexión cobra con número provisional
 (`CAJA-1-SC0007`), imprime y envía las ventas solas al volver el internet sin duplicarlas. El equipo de la caja abre
