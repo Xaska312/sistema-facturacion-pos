@@ -61,6 +61,14 @@ const REPORT_PERIODS: readonly PeriodKey[] = ['today', 'yesterday', 'last7', 'la
  * Reportes de ventas, utilidad, impuestos e inventario con exportación a CSV (permiso reports:read).
  * Periodo, sucursal, vendedor y pestaña van en la URL (?periodo=mes&vista=products…) para compartir el enlace.
  */
+/**
+ * Ganancia sobre el costo (decisión 348): (venta sin IVA − costo) ÷ costo, la cuenta del tendero; el margen es sobre la
+ * venta. Vacío sin costo.
+ */
+function overCostPercent(row: { cost: number; profit: number }): string {
+  return row.cost > 0 ? formatPercent(Math.round((row.profit / row.cost) * 1000) / 10) : '—';
+}
+
 @Component({
   selector: 'app-reports',
   imports: [TermComponent, NgTemplateOutlet, ButtonComponent, SkeletonComponent, ChartComponent, PageHeaderComponent, PeriodFilterComponent,
@@ -117,7 +125,7 @@ const REPORT_PERIODS: readonly PeriodKey[] = ['today', 'yesterday', 'last7', 'la
                              [hint]="s.salesCount.toLocaleString('es-CO') + ' ventas'" />
               <app-stat-card label="Ticket promedio" [value]="cop(s.averageTicket)" icon="pi pi-receipt" />
               <app-stat-card label="Utilidad" [value]="cop(s.profit)" icon="pi pi-chart-line"
-                             [hint]="'Margen ' + pct(s.marginPercent)" />
+                             [hint]="'Margen ' + pct(s.marginPercent) + overCost(s)" />
               <app-stat-card label="Anuladas" [value]="s.voidedCount.toLocaleString('es-CO')" icon="pi pi-ban"
                              [hint]="cop(s.voidedTotal)" />
             </div>
@@ -294,7 +302,7 @@ const REPORT_PERIODS: readonly PeriodKey[] = ['today', 'yesterday', 'last7', 'la
         <div class="grid gap-3 grid-cols-1 sm:grid-cols-3 mb-4">
           <app-stat-card label="Total vendido" [value]="cop(t.total)" icon="pi pi-dollar" />
           <app-stat-card label="Ventas" [value]="t.salesCount.toLocaleString('es-CO')" icon="pi pi-shopping-bag" />
-          <app-stat-card label="Utilidad" [value]="cop(t.profit)" icon="pi pi-chart-line" [hint]="'Margen ' + pct(t.marginPercent)" />
+          <app-stat-card label="Utilidad" [value]="cop(t.profit)" icon="pi pi-chart-line" [hint]="'Margen ' + pct(t.marginPercent) + overCost(t)" />
         </div>
       }
     </ng-template>
@@ -310,6 +318,10 @@ export class ReportsComponent {
   protected readonly periods = REPORT_PERIODS;
   protected readonly cop = formatCop;
   protected readonly pct = formatPercent;
+  /** " · 20,4 % sobre el costo" para la tarjeta de utilidad (decisión 348). */
+  protected overCost(row: { cost: number; profit: number }): string {
+    return row.cost > 0 ? ' · ' + overCostPercent(row) + ' sobre el costo' : '';
+  }
   protected readonly qty = (value: number): string => formatQuantity(value);
   protected readonly compactCop = (value: number): string => formatCompactCop(value);
 
@@ -371,6 +383,7 @@ export class ReportsComponent {
     { header: 'Costo', cell: (p) => p.cost, kind: 'money', hideOnMobile: true },
     { header: 'Utilidad', cell: (p) => p.profit, kind: 'money' },
     { header: 'Margen', cell: (p) => formatPercent(p.marginPercent), cellClass: 'text-right' },
+    { header: 'Sobre el costo', cell: (p) => overCostPercent(p), cellClass: 'text-right', hideOnMobile: true },
   ];
   protected readonly categoryColumns: ColumnDef<CategoryReportRow>[] = [
     { header: 'Categoría', cell: (c) => c.categoryName },
@@ -379,6 +392,7 @@ export class ReportsComponent {
     { header: 'Costo', cell: (c) => c.cost, kind: 'money', hideOnMobile: true },
     { header: 'Utilidad', cell: (c) => c.profit, kind: 'money' },
     { header: 'Margen', cell: (c) => formatPercent(c.marginPercent), cellClass: 'text-right' },
+    { header: 'Sobre el costo', cell: (c) => overCostPercent(c), cellClass: 'text-right', hideOnMobile: true },
   ];
   protected readonly taxColumns: ColumnDef<TaxReportRow>[] = [
     { header: 'Impuesto', cell: (t) => TAX_NAMES[t.taxType] ?? t.taxType },

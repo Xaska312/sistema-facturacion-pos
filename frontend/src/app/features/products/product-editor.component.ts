@@ -1,5 +1,5 @@
 import { Component, HostListener, OnInit, computed, inject, input, signal } from '@angular/core';
-import { FormArray, FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { FormArray, FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
@@ -10,6 +10,7 @@ import { CatalogApi } from '../../core/api/catalog.api';
 import { OrganizationApi } from '../../core/api/organization.api';
 import { AuthService } from '../../core/auth/auth.service';
 import { priceFor } from './catalog-text';
+import { netCost, profitOf, shownCost } from '../../shared/cost-tax';
 import { formatCop } from '../../shared/money';
 import { barcodeGroup, conversionGroup, fillForm, listPriceGroup, productForm, skuFromName, toInput } from './product-form';
 import { ConfirmService } from '../../shared/confirm';
@@ -36,7 +37,7 @@ import { MedicineSectionComponent } from './medicine-section.component';
 /** Alta y edición de un producto: datos, presentaciones, códigos de barras y precios por lista. */
 @Component({
   selector: 'app-product-editor',
-  imports: [TermComponent, ReactiveFormsModule, PesosInputDirective, RouterLink, ButtonComponent, AppInputDirective, PageHeaderComponent, StatusBadgeComponent,
+  imports: [TermComponent, ReactiveFormsModule, FormsModule, PesosInputDirective, RouterLink, ButtonComponent, AppInputDirective, PageHeaderComponent, StatusBadgeComponent,
     MedicineSectionComponent],
   template: `
     <app-page-header [title]="isNew() ? 'Nuevo producto' : (product()?.name ?? 'Producto')">
@@ -70,8 +71,21 @@ import { MedicineSectionComponent } from './medicine-section.component';
             <small class="text-muted">{{ formatCop(form.controls.salePrice.value) }} por {{ unitCode(form.controls.baseUnitId.value) }}</small>
           </label>
           <label class="flex flex-col gap-1">
-            <span class="text-sm font-medium">Costo (lo que te cuesta a ti)</span>
-            <input appInput appPesos="2" formControlName="cost" />
+            <span class="text-sm font-medium">Costo (lo que te cuesta a ti){{ costTaxed() ? ', con IVA' : '' }}</span>
+            <!-- Decisión 348: se escribe como lo da el proveedor (con IVA); se guarda sin IVA. -->
+            <input appInput appPesos="2" [ngModel]="costShown()" [ngModelOptions]="{ standalone: true }"
+                   (ngModelChange)="typeCost($event)" />
+            @if (taxRate() > 0) {
+              <span class="flex items-center gap-2 text-sm">
+                <input type="checkbox" class="size-4" [checked]="costWithTax()"
+                       (change)="costWithTax.set($any($event.target).checked)" />
+                <span>El costo trae el IVA incluido
+                  @if (costTaxed() && form.controls.cost.value > 0) {
+                    <span class="text-muted">(sin IVA: {{ formatCop(form.controls.cost.value) }})</span>
+                  }
+                </span>
+              </span>
+            }
             @if (product()?.costLocked) {
               <small class="text-muted">
                 <app-term term="costo-promedio">Costo promedio</app-term> que calcula el inventario. Si lo cambias, desde
@@ -83,7 +97,9 @@ import { MedicineSectionComponent } from './medicine-section.component';
             <!-- Decisión 334: el margen con el costo de ahora y, si bajó, el precio que lo recupera. -->
             @if (costAdvice(); as a) {
               <small class="flex flex-wrap items-center gap-2" role="status">
-                <span>Margen: <strong>{{ a.now }} %</strong>@if (a.before !== null && a.before !== a.now) { (antes {{ a.before }} %)}</span>
+                <span>Ganas <strong>{{ formatCop(a.gain) }}</strong> por {{ unitCode(form.controls.baseUnitId.value) || 'unidad' }}@if (a.taxed) { sin IVA}:
+                  <strong>{{ a.overCost }} %</strong> sobre el costo ·
+                  <app-term term="margen">margen</app-term> {{ a.now }} %@if (a.before !== null && a.before !== a.now) { (antes {{ a.before }} %)}</span>
                 @if (a.suggested) {
                   <button type="button" class="text-brand font-medium hover:underline min-h-8"
                           (click)="form.patchValue({ salePrice: a.suggested })">
@@ -319,25 +335,56 @@ export class ProductEditorComponent implements OnInit, HasUnsavedChanges {
    * Margen con el costo que está en el formulario y el de antes (el guardado); si el margen bajó, el precio que lo
    * recupera, redondeado hacia arriba a $100 (decisión 334). Null si no hay precio o costo.
    */
-  protected costAdvice(): { now: number; before: number | null; suggested: number | null } | null {
+  protected costAdvice(): { now: number; before: number | null; suggested: number | null; gain: number;
+    overCost: number; taxed: boolean } | null {
     const v = this.form.getRawValue();
-    const rate = this.taxes().find((t) => t.id === v.taxId)?.rate ?? 0;
+    const rate = this.taxRate();
     const price = Number(v.salePrice ?? 0);
+    // El costo del formulario ya está sin IVA (decisión 348).
     const cost = Number(v.cost ?? 0);
-    if (!(price > 0) || !(cost > 0) || v.openPrice) {
+    const profit = profitOf(price, cost, rate, this.includesTax());
+    if (!profit || v.openPrice) {
       return null;
     }
-    const margin = (c: number) => {
-      const net = this.includesTax() && rate > 0 ? price / (1 + rate / 100) : price;
-      return Math.round(((net - c) / net) * 1000) / 10;
-    };
     const saved = this.product();
-    const before = saved && saved.cost > 0 && Number(saved.salePrice) === price ? margin(Number(saved.cost)) : null;
-    const now = margin(cost);
+    const before = saved && saved.cost > 0 && Number(saved.salePrice) === price
+      ? profitOf(price, Number(saved.cost), rate, this.includesTax())?.margin ?? null : null;
+    const now = profit.margin;
     const suggested = before !== null && before > 0 && before < 100 && now < before - 1
       ? priceFor(cost, before, rate, this.includesTax())
       : null;
-    return { now, before, suggested };
+    return { now, before, suggested, gain: profit.gain, overCost: profit.overCost, taxed: rate > 0 };
+  }
+
+  /** IVA del impuesto elegido (%), 0 si no lleva. */
+  protected taxRate(): number {
+    return this.taxes().find((t) => t.id === this.form.controls.taxId.value)?.rate ?? 0;
+  }
+
+  /**
+   * El costo se escribe con IVA (decisión 348): por defecto lo que diga Ajustes ("Los costos de los proveedores traen
+   * el IVA incluido"), y cada producto lo puede cambiar. Solo afecta cómo se escribe: el formulario guarda sin IVA.
+   */
+  protected readonly costWithTax = signal(true);
+
+  protected costTaxed(): boolean {
+    return this.costWithTax() && this.taxRate() > 0;
+  }
+
+  /** Lo que se ve en el campo de costo: el costo sin IVA del formulario, con su IVA si se escribe así. */
+  protected costShown(): number {
+    return shownCost(Number(this.form.controls.cost.value ?? 0), this.taxRate(), this.costWithTax());
+  }
+
+  protected typeCost(value: number | null): void {
+    const typed = Number(value ?? 0);
+    const control = this.form.controls.cost;
+    // Sin cambiar lo que se ve no se toca el costo guardado (así no queda un "Cambio de costo" por centavos).
+    if (typed === this.costShown()) {
+      return;
+    }
+    control.setValue(netCost(typed, this.taxRate(), this.costWithTax()));
+    control.markAsDirty();
   }
   /** Datos para empezar el producto desde la factura de un proveedor (decisión 290): ?nombre=…&codigo=…&costo=… */
   readonly nombre = input<string>();
@@ -398,7 +445,13 @@ export class ProductEditorComponent implements OnInit, HasUnsavedChanges {
 
   ngOnInit(): void {
     if (this.authService.hasPermission('settings:read')) {
-      this.organization.settings().subscribe({ next: (s) => this.includesTax.set(s.pricesIncludeTax), error: () => undefined });
+      this.organization.settings().subscribe({
+        next: (s) => {
+          this.includesTax.set(s.pricesIncludeTax);
+          this.costWithTax.set(s.costsIncludeTax !== false);
+        },
+        error: () => undefined,
+      });
     }
     forkJoin({
       categories: this.api.categories(),

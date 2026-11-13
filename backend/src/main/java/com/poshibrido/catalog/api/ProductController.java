@@ -2,6 +2,7 @@ package com.poshibrido.catalog.api;
 
 import com.poshibrido.catalog.application.PricingApi.ResolvedPrice;
 import com.poshibrido.catalog.application.ProductCommand;
+import com.poshibrido.catalog.application.CostReviewService;
 import com.poshibrido.catalog.application.ProductImportService;
 import com.poshibrido.catalog.application.ProductLookupService;
 import com.poshibrido.catalog.application.ProductService;
@@ -55,6 +56,10 @@ public class ProductController {
     private final ProductService products;
     private final ProductLookupService lookup;
     private final ProductImportService importer;
+    private final CostReviewService costReview;
+
+    public record CostFixRequest(@NotNull @Size(min = 1, max = 500) Set<UUID> productIds) {
+    }
 
     public record ConversionRequest(@NotNull UUID unitId,
                                     @NotNull @DecimalMin(value = "0", inclusive = false) @Digits(integer = 10, fraction = 4) BigDecimal factor,
@@ -215,5 +220,19 @@ public class ProductController {
             throw new BusinessRuleException(
                     "El archivo no está en UTF-8. En Excel usa 'Guardar como → CSV UTF-8 (delimitado por comas)'.");
         }
+    }
+
+    /** Productos con IVA y costo, para marcar los que se escribieron con IVA (decisión 349). */
+    @GetMapping("/api/v1/products/cost-review")
+    @PreAuthorize("hasAuthority('products:manage')")
+    public List<CostReviewService.Row> costReview() {
+        return costReview.review();
+    }
+
+    /** Le quita el IVA al costo de esos productos y al de sus ventas (decisión 349). */
+    @PostMapping("/api/v1/products/cost-review/remove-tax")
+    @PreAuthorize("hasAuthority('products:manage')")
+    public CostReviewService.Fixed removeCostTax(@Valid @RequestBody CostFixRequest request) {
+        return costReview.removeTax(request.productIds());
     }
 }

@@ -81,6 +81,11 @@ export function isActivationCodeRequired(error: unknown): boolean {
             <!-- Cómo empezar (decisión 303): prueba gratis, pagar ya con Bre-B o con un código de activación. -->
             <fieldset class="flex flex-col gap-2">
               <legend class="text-sm font-medium mb-1">¿Cómo quieres empezar?</legend>
+              @if (!trialAvailable()) {
+                <!-- Decisión 346: explicar por qué no sale la prueba en lugar de esconderla sin más. -->
+                <p class="text-sm text-muted" role="note">Esta cuenta ya usó su prueba gratis (hay una por cuenta).
+                  Puedes pagar con Bre-B o usar un código de activación.</p>
+              }
               @if (trialAvailable()) {
                 <label class="start" [class.start-on]="mode() === 'trial'">
                   <input type="radio" name="start" [checked]="mode() === 'trial'" (change)="setMode('trial')" />

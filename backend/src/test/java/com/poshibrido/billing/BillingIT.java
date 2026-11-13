@@ -115,6 +115,8 @@ class BillingIT extends IntegrationTest {
         s = TestApi.session(api.refreshRaw(s.refreshToken()).andExpect(status().isOk()).andReturn());
         // Con la prueba, los topes son los de prueba.
         api.getWith(s, "/api/v1/ai/usage").andExpect(jsonPath("$.limit").value(40));
+        // Decisión 347: 5 listas de precios en la prueba (el plan trae 20 al mes).
+        api.getWith(s, "/api/v1/ai/catalog/usage").andExpect(jsonPath("$.limit").value(5));
         api.getWith(s, "/api/v1/ai/teaser").andExpect(jsonPath("$.show").value(false));
         api.getWith(s, "/api/v1/ai/moments").andExpect(jsonPath("$.hasAi").value(true))
                 .andExpect(jsonPath("$.trialAvailable").value(false));

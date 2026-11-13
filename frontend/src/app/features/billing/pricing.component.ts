@@ -34,6 +34,12 @@ import { annualSaving, planPrice } from './billing-text';
           @if (data(); as d) { Empieza con {{ d.trialDays }} días gratis con todo incluido, o paga ya con Bre-B desde la app de tu banco. }
           Sin datáfono ni permanencia.
         </p>
+        <!-- Decisión 346: probar sin elegir plan (el negocio empieza con la prueba gratis). -->
+        @if (data(); as d) {
+          <a [routerLink]="loggedIn() ? '/negocios/nuevo' : '/registro'" class="cta mt-4">
+            <i class="pi pi-gift mr-2" aria-hidden="true"></i>Probar gratis {{ d.trialDays }} días</a>
+          <p class="text-xs text-muted mt-1">Sin tarjeta. Al terminar eliges el plan.</p>
+        }
         <div class="seg mt-4" role="group" aria-label="Forma de pago">
           <button type="button" [class.seg-on]="cycle() === 'MONTHLY'" (click)="cycle.set('MONTHLY')">Mensual</button>
           <button type="button" [class.seg-on]="cycle() === 'ANNUAL'" (click)="cycle.set('ANNUAL')">Anual</button>

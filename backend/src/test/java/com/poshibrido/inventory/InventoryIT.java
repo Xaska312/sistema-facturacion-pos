@@ -106,10 +106,10 @@ class InventoryIT extends IntegrationTest {
                 + "&branchId=" + principal)), "$.content[*].type")).filteredOn("COST_CHANGE"::equals).hasSize(1);
         // Con movimientos, la unidad base no cambia (los saldos están en esa unidad)
         api.putWith(s, "/api/v1/products/" + product, edit.formatted(KG, IVA19, "1500", CJ)).andExpect(status().is(422));
-        // La importación también cambia el costo (decisión 334)
+        // La importación también cambia el costo (decisión 334); viene con IVA y se guarda sin IVA (decisión 348)
         String csv = """
                 sku,nombre,unidad,impuesto,precio,costo
-                GAS-1,Producto GAS-1,UND,IVA19,2100,1400
+                GAS-1,Producto GAS-1,UND,IVA19,2100,1666
                 """;
         api.upload(s, "/api/v1/products/import", csv.getBytes(StandardCharsets.UTF_8), "dryRun", "false")
                 .andExpect(jsonPath("$.applied").value(true));

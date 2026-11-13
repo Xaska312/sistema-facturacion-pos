@@ -1,7 +1,8 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { rememberStartPlan } from '../billing/start-plan';
+import { clearStartPlan, rememberStartPlan } from '../billing/start-plan';
+import { BillingApi } from '../../core/api/billing.api';
 import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
@@ -20,6 +21,12 @@ import { AuthLayoutComponent } from '../../shared/layout/auth-layout.component';
       <form [formGroup]="form" (ngSubmit)="submit()"
             class="card p-6 sm:p-8 flex flex-col gap-4">
         <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Crear cuenta</h1>
+        <!-- Decisión 346: quien llega desde "Probar gratis" (xaska.co) ve de entrada que la prueba es gratis. -->
+        <p class="trial-note" role="note">
+          <i class="pi pi-gift" aria-hidden="true"></i>
+          <span><strong>Pruébalo gratis {{ trialDays() }} días</strong> con todo incluido. Sin tarjeta ni permanencia:
+            pagas después solo si te sirve.</span>
+        </p>
 
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Nombre completo</span>
@@ -68,6 +75,11 @@ import { AuthLayoutComponent } from '../../shared/layout/auth-layout.component';
       </form>
     </app-auth-layout>
   `,
+  styles: `
+    .trial-note { display: flex; gap: 0.625rem; align-items: flex-start; padding: 0.75rem 0.875rem; border-radius: 0.875rem;
+      font-size: 0.875rem; background: var(--success-soft); color: var(--success-soft-text); }
+    .trial-note .pi { margin-top: 0.125rem; color: var(--success); }
+  `,
 })
 export class RegisterComponent {
   private readonly auth = inject(AuthService);
@@ -76,9 +88,18 @@ export class RegisterComponent {
   private readonly query = inject(ActivatedRoute).snapshot.queryParamMap;
   protected readonly returnUrl = safeReturnUrl(this.query.get('returnUrl'));
 
+  /** Días de la prueba gratis (los de la consola); 14 mientras responde. */
+  protected readonly trialDays = signal(14);
+
   constructor() {
-    // Viene de "Planes y precios" con un plan elegido: se propone al crear el negocio (decisión 303).
-    rememberStartPlan(this.query.get('plan'), this.query.get('ciclo'));
+    // Viene de "Planes y precios" con un plan elegido: se propone al crear el negocio (decisión 303). Sin plan (por
+    // ejemplo desde "Probar gratis" en xaska.co) se olvida uno elegido antes: el negocio empieza con la prueba (346).
+    if (this.query.get('plan')) {
+      rememberStartPlan(this.query.get('plan'), this.query.get('ciclo'));
+    } else {
+      clearStartPlan();
+    }
+    inject(BillingApi).pricing().subscribe({ next: (p) => this.trialDays.set(p.trialDays), error: () => undefined });
   }
   protected readonly owner = LEGAL_OWNER;
 

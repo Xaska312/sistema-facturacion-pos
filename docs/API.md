@@ -129,8 +129,8 @@ Enviar deja `KITCHEN_SENT` (cuenta, comandas y productos); las estaciones, `KITC
 ### Ajustes del negocio
 | Método | Ruta | Permiso | Descripción |
 |---|---|---|---|
-| GET | `/settings` | `settings:read` | `{allowNegativeStock, pricesIncludeTax, timezone, currency, receiptHeader, receiptFooter, maxDiscountPercent, cashCloseEmail, quoteValidityDays, quoteTerms, tipPercent, expiryAlertMonths, creditReminder}` |
-| PUT | `/settings` | `settings:manage` | Mismo cuerpo. Sin dato se conservan `receiptHeader`, `cashCloseEmail`, `quoteValidityDays`, `quoteTerms`, `tipPercent`, `expiryAlertMonths` y `creditReminder`. `creditReminder` (decisión 344): mensaje del recordatorio de fiado por WhatsApp con `{cliente}`, `{saldo}`, `{negocio}`, `{desde}` y `{dias}`, hasta 500 caracteres (422); vacío = el mensaje de siempre. `receiptHeader` (decisión 331): encabezado libre de los documentos, un dato por renglón (se guardan sin espacios sobrantes ni renglones vacíos), hasta 500 caracteres y 8 renglones (422). 422 zona horaria inválida o moneda distinta de COP; 400 descuento fuera de 0–100 |
+| GET | `/settings` | `settings:read` | `{allowNegativeStock, pricesIncludeTax, timezone, currency, receiptHeader, receiptFooter, maxDiscountPercent, cashCloseEmail, quoteValidityDays, quoteTerms, tipPercent, expiryAlertMonths, creditReminder, costsIncludeTax}` |
+| PUT | `/settings` | `settings:manage` | Mismo cuerpo. Sin dato se conservan `receiptHeader`, `cashCloseEmail`, `quoteValidityDays`, `quoteTerms`, `tipPercent`, `expiryAlertMonths`, `creditReminder` y `costsIncludeTax`. `costsIncludeTax` (decisión 348, por defecto `true`): los costos se escriben con IVA y la app se lo quita; el costo guardado siempre es sin IVA. `creditReminder` (decisión 344): mensaje del recordatorio de fiado por WhatsApp con `{cliente}`, `{saldo}`, `{negocio}`, `{desde}` y `{dias}`, hasta 500 caracteres (422); vacío = el mensaje de siempre. `receiptHeader` (decisión 331): encabezado libre de los documentos, un dato por renglón (se guardan sin espacios sobrantes ni renglones vacíos), hasta 500 caracteres y 8 renglones (422). 422 zona horaria inválida o moneda distinta de COP; 400 descuento fuera de 0–100 |
 
 ### Usuarios, roles e invitaciones
 | Método | Ruta | Permiso | Descripción |
@@ -696,3 +696,12 @@ Medio de pago `WITHHOLDING` ("Retención", no mueve la caja). En `POST /sales`, 
 | Método | Ruta | Permiso | Notas |
 |---|---|---|---|
 | GET | `/finance/dashboard` | `finance:read` | El mes en curso hasta hoy, todo el negocio: `{from, to, netSales, grossProfit, operatingProfit, flow{in, out, net, byMethod[{paymentMethodId, name, cash, in, out, net}]}, balances{creditOwed, creditCustomers, ordersOwed, openOrders, suppliersOwed, suppliersOverdue, suppliersDueSoon}, expenses{thisMonth, lastMonth, changePercent, top[], unpaidRecurring, unpaidRecurringTotal}, breakEven{basis (LAST_MONTH, RECURRING o nulo), monthlyExpenses, grossMargin, perMonth, perDay, averageDailySales, monthSales, monthTarget}}` |
+
+## Costos con IVA (decisiones 348–349)
+| Método | Ruta | Permiso | Descripción |
+|---|---|---|---|
+| GET | `/products/cost-review` | `products:manage` | Productos activos con IVA y costo: `{productId, sku, name, taxRate, cost, costWithoutTax, salePrice, marginNow, marginFixed, soldLines, purchased, suspicious}` |
+| POST | `/products/cost-review/remove-tax` | `products:manage` | `{productIds}` (1 a 500) → `{products, saleLines}`. Le quita el IVA al costo del producto y al de sus ventas; `COST_CHANGE` en el kardex si el costo lo maneja el inventario; auditoría `PRODUCT_COST_TAX_REMOVED` |
+
+El Excel de productos (`/products/import`) toma la columna `costo` con IVA si `costsIncludeTax` está encendido.
+

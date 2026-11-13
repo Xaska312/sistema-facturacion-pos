@@ -27,6 +27,8 @@ import { SizeGridDialogComponent, SizeGridResult } from './size-grid-dialog.comp
 import { DOCUMENT_LABEL, documentNumber, documentTypeFromRoute } from './labels';
 import { PageHeaderComponent } from '../../shared/page-header.component';
 import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
+import { netCost, shownCost } from '../../shared/cost-tax';
+import { AuthService } from '../../core/auth/auth.service';
 import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
 
 /**
@@ -105,6 +107,13 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
           <app-button label="Por tallas" icon="pi pi-th-large" severity="secondary" [outlined]="true"
                     (clicked)="sizeGrid()?.open()" />
         </div>
+        @if (type() === 'INITIAL' || type() === 'ADJUSTMENT') {
+          <!-- Decisión 348: el costo se escribe con o sin IVA; se guarda sin IVA. -->
+          <label class="flex items-center gap-2 text-sm">
+            <input type="checkbox" class="size-4" [checked]="costsWithTax()" (change)="costsWithTax.set($any($event.target).checked)" />
+            <span>Escribo los costos con el IVA incluido <span class="text-muted">(como los cobra el proveedor)</span></span>
+          </label>
+        }
         @if (results().length > 0) {
           <ul class="border rounded divide-y text-sm max-h-60 overflow-y-auto">
             @for (r of results(); track r.id) {
@@ -124,7 +133,7 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
                 <th class="p-2">Unidad</th>
                 @if (hasLots()) { <th class="p-2">Lote · vence</th> }
                 @if (t === 'COUNT') { <th class="p-2 text-right">En sistema</th><th class="p-2 text-right">Diferencia</th> }
-                @if (t === 'INITIAL' || t === 'ADJUSTMENT') { <th class="p-2">Costo por unidad</th> }
+                @if (t === 'INITIAL' || t === 'ADJUSTMENT') { <th class="p-2">Costo por unidad{{ costsWithTax() ? ' (con IVA)' : ' (sin IVA)' }}</th> }
                 <th class="p-2"></th>
               </tr>
             </thead>
@@ -187,7 +196,8 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
                   @if (t === 'INITIAL' || t === 'ADJUSTMENT') {
                     <td class="p-2">
                       @if (t === 'INITIAL' || line.direction === 'IN') {
-                        <input appInput appPesos="2" class="w-32" [(ngModel)]="line.unitCost"
+                        <input appInput appPesos="2" class="w-32" [ngModel]="costShown(line)"
+                               (ngModelChange)="typeCost(line, $event)"
                                [placeholder]="t === 'ADJUSTMENT' ? 'Costo promedio' : ''" />
                       } @else {
                         <span class="text-muted text-xs">Costo promedio</span>
@@ -241,6 +251,7 @@ export class InventoryDocumentEditorComponent implements OnInit, HasUnsavedChang
   private readonly api = inject(InventoryApi);
   private readonly catalog = inject(CatalogApi);
   private readonly organization = inject(OrganizationApi);
+  private readonly canReadSettings = inject(AuthService).hasPermission('settings:read');
   private readonly messages = inject(ToastService);
   private readonly router = inject(Router);
 
@@ -283,7 +294,27 @@ export class InventoryDocumentEditorComponent implements OnInit, HasUnsavedChang
   /** Ya se registró: salir hacia la lista no debe preguntar. */
   private saved = false;
 
+  /** Los costos se escriben con IVA (decisión 348): por defecto lo de Ajustes. */
+  protected readonly costsWithTax = signal(true);
+
+  protected costShown(line: DraftLine): number | null {
+    return line.unitCost === null || String(line.unitCost) === ''
+      ? null : shownCost(Number(line.unitCost), line.taxRate ?? 0, this.costsWithTax());
+  }
+
+  protected typeCost(line: DraftLine, value: number | null): void {
+    if (value === null || String(value).trim() === '') {
+      line.unitCost = null;
+    } else if (Number(value) !== this.costShown(line)) {
+      line.unitCost = netCost(Number(value), line.taxRate ?? 0, this.costsWithTax());
+    }
+  }
+
   ngOnInit(): void {
+    if (this.canReadSettings) {
+      this.organization.settings().subscribe({ next: (s) => this.costsWithTax.set(s.costsIncludeTax !== false),
+        error: () => undefined });
+    }
     const productId = this.producto();
     if (productId) {
       this.catalog.product(productId, true).subscribe((p) => {

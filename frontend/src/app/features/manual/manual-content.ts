@@ -646,7 +646,7 @@ export const MANUAL: readonly ManualChapter[] = [
         summary: 'Solo necesitas el nombre y el precio; lo demás tiene valores listos que puedes cambiar.',
         steps: [
           'Ve a Productos y toca "Nuevo producto".',
-          'Escribe el nombre y el precio de venta. Si quieres saber cuánto ganas, escribe también el costo.',
+          'Escribe el nombre y el precio de venta. Si quieres saber cuánto ganas, escribe también el costo como te lo cobra el proveedor (con IVA): la app le quita el IVA y te muestra cuánto ganas por unidad, el porcentaje sobre el costo y el margen.',
           'Escanea el código de barras del empaque. Si no tiene, toca "Generar código interno".',
           'Guarda. El código interno (SKU) se crea solo con el nombre si lo dejas vacío.',
           'Te preguntamos si quieres registrar cuántas unidades tienes: di que sí y escribe la cantidad.',
@@ -1071,6 +1071,7 @@ export const MANUAL: readonly ManualChapter[] = [
           'El kardex de un producto muestra cada entrada y salida, con la existencia y el costo después de cada una.',
           'El costo se calcula como costo promedio y con él se calculan la utilidad y el valor del inventario.',
           'Si el costo quedó mal o subió, cámbialo en el producto (o con un Excel o Cargar con Aska): desde ahí el promedio sigue con el nuevo, queda un renglón "Cambio de costo" en el kardex y las ventas anteriores no cambian. Debajo ves el margen y, si bajó, el precio que lo recupera.',
+          'Si antes escribiste costos con IVA y la utilidad te sale muy baja, ve a Productos → "Revisar costos con IVA": marca los productos que traían el IVA y la app se lo quita al costo y a sus ventas ya hechas.',
         ],
       },
     ],
