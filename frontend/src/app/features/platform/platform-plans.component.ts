@@ -1,7 +1,7 @@
 import { XaskaIaLogoComponent } from '../../shared/brand/xaska-ia-logo.component';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable } from 'rxjs';
@@ -139,7 +139,7 @@ interface PlanDraft {
 })
 export class PlatformPlansComponent implements OnInit {
   private readonly platform = inject(PlatformApi);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
 
   protected readonly plans = signal<Plan[]>([]);
   protected readonly loading = signal(true);

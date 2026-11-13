@@ -5,7 +5,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, ElementRef, HostListener, OnDestroy, OnInit, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { clearOfflineBoot, readOfflineBoot, saveOfflineBoot } from '../../core/offline/offline-boot';
 import { FormsModule } from '@angular/forms';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { DialogComponent } from '../../shared/ui/dialog.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
@@ -929,7 +929,7 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   private readonly inventory = inject(InventoryApi);
   private readonly parties = inject(PartiesApi);
   private readonly credit = inject(CreditApi);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   private readonly confirm = inject(ConfirmService);
   protected readonly online = inject(OnlineService).online;
   private readonly offlineCatalog = inject(OfflineCatalogService);

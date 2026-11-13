@@ -2,7 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { AskaNudgeComponent } from './aska-nudge.component';
 import { AskaMomentsState } from './aska-moments-state';
 
@@ -10,7 +10,7 @@ describe('AskaNudgeComponent (decisión 308)', () => {
   beforeEach(() => {
     localStorage.removeItem('xaska.aska-nudge.purchase');
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([]), MessageService],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([]), ToastService],
     });
   });
 

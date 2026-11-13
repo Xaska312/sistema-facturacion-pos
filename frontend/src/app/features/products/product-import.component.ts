@@ -1,6 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { ImportReport, ImportRowError } from '../../core/api/api.models';
 import { CatalogApi } from '../../core/api/catalog.api';
@@ -70,7 +70,7 @@ import { ColumnDef } from '../../shared/table/table';
 })
 export class ProductImportComponent {
   private readonly api = inject(CatalogApi);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   private readonly router = inject(Router);
 
   protected readonly file = signal<File | null>(null);

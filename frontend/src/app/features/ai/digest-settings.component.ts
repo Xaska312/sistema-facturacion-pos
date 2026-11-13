@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { AccessApi } from '../../core/api/access.api';
 import { AiApi, DigestSettings } from '../../core/api/ai.api';
@@ -62,7 +62,7 @@ import { XaskaIaLogoComponent } from '../../shared/brand/xaska-ia-logo.component
 export class DigestSettingsComponent implements OnInit {
   private readonly api = inject(AiApi);
   private readonly access = inject(AccessApi);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
 
   protected readonly form = signal<DigestSettings | null>(null);
   protected readonly others = signal<Member[]>([]);

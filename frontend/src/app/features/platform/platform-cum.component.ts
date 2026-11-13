@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { firstValueFrom } from 'rxjs';
 import { CumStatus, PlatformApi } from '../../core/api/platform.api';
@@ -77,7 +77,7 @@ const BATCH = 1500;
 })
 export class PlatformCumComponent implements OnInit {
   private readonly api = inject(PlatformApi);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
 
   protected readonly status = signal<CumStatus | null>(null);
   protected readonly busy = signal(false);

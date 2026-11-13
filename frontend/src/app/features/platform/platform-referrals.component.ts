@@ -1,6 +1,6 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { DialogComponent } from '../../shared/ui/dialog.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
@@ -140,7 +140,7 @@ const EMPTY: PartnerInput = { name: '', kind: 'ACCOUNTANT', phone: null, email: 
 })
 export class PlatformReferralsComponent implements OnInit {
   private readonly api = inject(BillingApi);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
 
   protected readonly partners = signal<Partner[]>([]);
   protected readonly rows = signal<ReferralRow[]>([]);

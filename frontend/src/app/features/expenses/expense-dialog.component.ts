@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, model, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable, catchError, from, of, switchMap, tap } from 'rxjs';
 import { AiApi, AskUsage } from '../../core/api/ai.api';
@@ -188,7 +188,7 @@ export class ExpenseDialogComponent {
   private readonly cash = inject(CashApi);
   private readonly organization = inject(OrganizationApi);
   private readonly parties = inject(PartiesApi);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   private readonly ai = inject(AiApi);
   private readonly canManage = permissionFlag('expenses:manage');
   private readonly canAsk = permissionFlag('ai:ask');

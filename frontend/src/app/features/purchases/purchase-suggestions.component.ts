@@ -1,6 +1,6 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 import { Branch } from '../../core/api/api.models';
@@ -207,7 +207,7 @@ export class PurchaseSuggestionsComponent implements OnInit {
   private readonly api = inject(PurchasesApi);
   private readonly organization = inject(OrganizationApi);
   private readonly auth = inject(AuthService);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
 
   protected readonly canReceive = permissionFlag('purchases:receive');
   protected readonly canAsk = permissionFlag('ai:ask');

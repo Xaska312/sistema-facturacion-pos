@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
@@ -366,7 +366,7 @@ interface Draft {
 })
 export class QualityComponent implements OnInit {
   private readonly api = inject(PharmacyApi);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
 
   protected readonly tabs: readonly { code: Tab; label: string }[] = [
     { code: 'today', label: 'Hoy' }, { code: 'sheet', label: 'Planilla del mes' },

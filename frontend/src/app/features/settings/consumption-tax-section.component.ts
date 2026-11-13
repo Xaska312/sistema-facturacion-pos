@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { Category } from '../../core/api/api.models';
 import { CatalogApi } from '../../core/api/catalog.api';
@@ -84,7 +84,7 @@ import { problemMessage } from '../../core/errors/problem';
 })
 export class ConsumptionTaxSectionComponent implements OnInit {
   private readonly catalog = inject(CatalogApi);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
 
   protected readonly canProducts = permissionFlag('products:manage');
   protected readonly answer = signal<'yes' | 'no' | null>(null);

@@ -3,7 +3,7 @@ import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angula
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { BillingCycle } from '../../core/api/api.models';
 import { BillingAddon, BillingApi, BillingCatalog, BillingPlan, PaymentRequestView } from '../../core/api/billing.api';
@@ -324,7 +324,7 @@ import { COUNTABLE, addonsForSale, annualSaving, checkLines, months, orderTotal,
 export class PlansComponent implements OnInit {
   private readonly api = inject(BillingApi);
   private readonly auth = inject(AuthService);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly String = String;

@@ -96,8 +96,7 @@ for (const theme of THEMES) {
       await page.getByRole('button', { name: /^Menú de usuario/ }).click();
       await expect(page.getByRole('menu')).toBeVisible();
       await page.waitForTimeout(400); // el menú termina de abrir y de acomodarse junto al botón
-      // El menú de PrimeNG queda unos px más angosto en celular según cómo calcula su posición; se revisa al cambiarlo (fase C).
-      await shot(page, `09-menu-usuario-${tag}`, true, 0.03);
+      await shot(page, `09-menu-usuario-${tag}`);
       await page.keyboard.press('Escape');
 
       // Carga (esqueletos): se frena la respuesta de productos para verlos

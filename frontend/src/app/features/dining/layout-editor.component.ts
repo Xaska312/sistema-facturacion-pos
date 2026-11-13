@@ -1,6 +1,6 @@
 import { Component, ElementRef, OnInit, computed, inject, input, output, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { DiningApi, DiningTable, DiningZone, TableShape } from '../../core/api/dining.api';
 import { MAX_SIZE, MIN_SIZE, PLAN_H, PLAN_W, PlacedTable, boxStyle, moveBy, placeTables, resize } from './table-map';
@@ -80,7 +80,7 @@ export class LayoutEditorComponent implements OnInit {
   readonly closed = output<void>();
 
   private readonly api = inject(DiningApi);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   private readonly planRef = viewChild.required<ElementRef<HTMLElement>>('plan');
 
   protected readonly Math = Math;

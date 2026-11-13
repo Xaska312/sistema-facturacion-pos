@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, ElementRef, inject, input, model, output, signal, viewChild } from '@angular/core';
 import { AbstractControl, FormArray, FormGroup } from '@angular/forms';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../ui/toast.service';
 import { DialogComponent } from '../ui/dialog.component';
 import { ButtonComponent } from '../ui/button.component';
 import { Observable } from 'rxjs';
@@ -62,7 +62,7 @@ import { applyServerErrors } from './field-messages';
 })
 export class FormDialogComponent {
   private readonly confirm = inject(ConfirmService);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   private readonly inlineErrors = inject(InlineErrorScope);
   private readonly formElement = viewChild<ElementRef<HTMLFormElement>>('formElement');
 

@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { DialogComponent } from '../../shared/ui/dialog.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
@@ -127,7 +127,7 @@ export class SalesComponent implements OnInit {
   /** Cancela la petición anterior de la lista (QA UI-10). */
   private readonly latest = new LatestRequest();
   private readonly sales = inject(SalesApi);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   private readonly router = inject(Router);
   private readonly printer = inject(PrintAgentService);
   private readonly auth = inject(AuthService);

@@ -1,6 +1,6 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable, throwError } from 'rxjs';
@@ -157,7 +157,7 @@ export class ScaleComponent implements OnInit {
   private readonly api = inject(ScaleApi);
   private readonly catalog = inject(CatalogApi);
   private readonly confirm = inject(ConfirmService);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   protected readonly canManage = permissionFlag('products:manage');
   protected readonly prefixes = PREFIXES;
 

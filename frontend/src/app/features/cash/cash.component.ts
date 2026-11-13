@@ -2,7 +2,7 @@ import { DatePipe } from '@angular/common';
 import { Component, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 import { DialogComponent } from '../../shared/ui/dialog.component';
@@ -184,7 +184,7 @@ import { ExpenseDialogComponent } from '../expenses/expense-dialog.component';
 })
 export class CashComponent implements OnInit {
   private readonly cash = inject(CashApi);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
 
   protected readonly cop = formatCop;
   protected readonly movementId = (row: CashMovement): string => row.id;

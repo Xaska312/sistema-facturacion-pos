@@ -5,7 +5,7 @@ import { DigestSettingsComponent } from '../ai/digest-settings.component';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable } from 'rxjs';
@@ -340,7 +340,7 @@ export class SettingsComponent implements OnInit {
   protected readonly headerPlaceholder = 'NIT: 1006122824-9\nCra. 138 #7-45 Ceiba\nCel: 3155145472';
   private readonly api = inject(OrganizationApi);
   private readonly subscriptionApi = inject(SubscriptionApi);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
 

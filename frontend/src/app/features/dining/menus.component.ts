@@ -2,7 +2,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
@@ -181,7 +181,7 @@ import { MenuDraft, emptyMenu, menuContents, menuDraft, menuProblem, toMenuInput
 export class MenusComponent implements OnInit {
   private readonly api = inject(DiningApi);
   private readonly catalog = inject(CatalogApi);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   private readonly auth = inject(AuthService);
 
   /** Función del plan "Caja por zona" (plan Empresa). */

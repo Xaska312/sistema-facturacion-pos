@@ -1,6 +1,6 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { PharmacyApi, Profession, TechnicalDirector } from '../../core/api/pharmacy.api';
@@ -50,7 +50,7 @@ import { PROFESSION_OPTIONS } from '../pos/dispensation';
 export class TechnicalDirectorSectionComponent implements OnInit {
   private readonly api = inject(PharmacyApi);
   private readonly auth = inject(AuthService);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   protected readonly canEdit = computed(() => this.auth.hasPermission('settings:manage'));
   protected readonly professions = PROFESSION_OPTIONS;
   protected readonly saving = signal(false);

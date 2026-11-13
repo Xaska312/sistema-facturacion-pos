@@ -1,6 +1,6 @@
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { KitchenApi, KitchenStation, KitchenTicket, TicketStatus } from '../../core/api/kitchen.api';
@@ -254,7 +254,7 @@ function saveStations(ids: readonly string[]): void {
 export class KitchenDisplayComponent implements OnInit {
   private readonly api = inject(KitchenApi);
   private readonly events = inject(DiningEventsService);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
 
   protected readonly stations = signal<KitchenStation[]>([]);
   protected readonly chosen = signal<string[]>(loadStations());

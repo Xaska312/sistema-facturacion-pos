@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 import { DialogComponent } from '../../shared/ui/dialog.component';
@@ -120,7 +120,7 @@ export class StockComponent implements OnInit {
   private readonly latest = new LatestRequest();
   private readonly api = inject(InventoryApi);
   private readonly organization = inject(OrganizationApi);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   protected readonly canAdjust = permissionFlag('inventory:adjust');
   protected readonly canManageProducts = permissionFlag('products:manage');
   protected readonly canAsk = permissionFlag('ai:ask');

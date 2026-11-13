@@ -1,7 +1,8 @@
 import { Component, inject, input } from '@angular/core';
-import { MenuItem, MessageService } from 'primeng/api';
+import { MenuItem } from '../../shared/ui/menu-item';
+import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
-import { MenuModule } from 'primeng/menu';
+import { MenuComponent } from '../../shared/ui/menu.component';
 import { Sale } from '../../core/api/api.models';
 import { receiptRows } from '../../shared/receipt/receipt-rows';
 import { shareTicketPng, ticketPng } from '../../shared/ticket-image';
@@ -13,12 +14,12 @@ import { saleWhatsAppLink } from './sale-text';
  */
 @Component({
   selector: 'app-receipt-send',
-  imports: [ButtonComponent, MenuModule],
+  imports: [ButtonComponent, MenuComponent],
   template: `
     <app-button label="Enviar" icon="pi pi-send" severity="secondary" [outlined]="true" styleClass="min-h-11"
               ariaLabel="Enviar el recibo por WhatsApp o como imagen" aria-haspopup="menu"
               (clicked)="menu.toggle($event)" />
-    <p-menu #menu [model]="items()" [popup]="true" appendTo="body" />
+    <app-menu #menu [model]="items()" [popup]="true" appendTo="body" />
   `,
 })
 export class ReceiptSendComponent {
@@ -26,7 +27,7 @@ export class ReceiptSendComponent {
   /** Logo del negocio (data URL) para la imagen. */
   readonly logo = input<string | null>(null);
 
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
 
   protected items(): MenuItem[] {
     return [

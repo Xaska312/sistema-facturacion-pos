@@ -2,7 +2,7 @@ import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { of, throwError } from 'rxjs';
 import { CashSession, CreditAccount, PageResponse, Party, PaymentMethod, PosConfig, ProductLookup } from '../../core/api/api.models';
 import { CashApi } from '../../core/api/cash.api';
@@ -98,7 +98,7 @@ describe('PosComponent: celular, pausar venta y cliente nuevo', () => {
         { provide: DiningApi, useValue: jasmine.createSpyObj<DiningApi>('DiningApi', ['tab', 'charge']) },
         { provide: PharmacyApi, useValue: { dispensing: () => of([]) } },
         { provide: ConfirmService, useValue: confirm },
-        { provide: MessageService, useValue: jasmine.createSpyObj<MessageService>('MessageService', ['add']) },
+        { provide: ToastService, useValue: jasmine.createSpyObj<ToastService>('ToastService', ['add']) },
         { provide: TourService, useValue: jasmine.createSpyObj<TourService>('TourService', ['offer', 'start']) },
         { provide: BrandingService, useValue: { logo: signal<string | null>(null) } },
         // Decisión 332: el modo sin conexión tiene sus pruebas aparte; aquí siempre hay conexión.
@@ -223,7 +223,7 @@ describe('PosComponent: celular, pausar venta y cliente nuevo', () => {
     component.openHold();
     component.confirmHold();
     sales.price.and.returnValue(throwError(() => new Error('producto inactivo')));
-    const messages = TestBed.inject(MessageService) as jasmine.SpyObj<MessageService>;
+    const messages = TestBed.inject(ToastService) as jasmine.SpyObj<ToastService>;
     messages.add.calls.reset();
 
     component.resumeHeld(component.held()[0]);

@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { DialogComponent } from '../../shared/ui/dialog.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
@@ -106,7 +106,7 @@ interface CodeDraft {
 export class PlatformCodesComponent implements OnInit {
   private readonly platform = inject(PlatformApi);
   private readonly confirm = inject(ConfirmService);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
 
   protected readonly codes = signal<ActivationCode[]>([]);
   protected readonly plans = signal<Plan[]>([]);

@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { BillingAddon, BillingApi, PaymentRequestStatus, PaymentRequestView } from '../../core/api/billing.api';
 import { XaskaIaLogoComponent } from '../../shared/brand/xaska-ia-logo.component';
@@ -123,7 +123,7 @@ import { checkLines, statusLabel } from '../billing/billing-text';
 })
 export class PlatformBillingComponent implements OnInit {
   private readonly api = inject(BillingApi);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   private readonly confirm = inject(ConfirmService);
 
   protected readonly filters: { value: PaymentRequestStatus | null; label: string }[] = [

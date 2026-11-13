@@ -2,7 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { SCREEN_HELP } from '../../shared/help/screen-help';
 import { MANUAL, MANUAL_SECTION_IDS, filterManual } from './manual-content';
 import { ManualComponent, manualLink } from './manual.component';
@@ -50,7 +50,7 @@ describe('ManualComponent', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [ManualComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([]), MessageService],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([]), ToastService],
     });
   });
 

@@ -1,7 +1,7 @@
 import { Component, inject, input, signal } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { PasswordModule } from 'primeng/password';
 import { AuthService } from '../../core/auth/auth.service';
@@ -59,7 +59,7 @@ export class ResetPasswordComponent {
 
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   private readonly inline = inject(InlineErrorScope);
 
   readonly loading = signal(false);

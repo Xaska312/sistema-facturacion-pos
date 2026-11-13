@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { AiTeaser, BillingApi } from '../../core/api/billing.api';
 import { AuthService } from '../../core/auth/auth.service';
 import { XaskaIaLogoComponent } from '../../shared/brand/xaska-ia-logo.component';
@@ -70,7 +70,7 @@ export class AskaTeaserComponent implements OnInit {
   private readonly api = inject(BillingApi);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
 
   protected readonly teaser = signal<AiTeaser | null>(null);
   protected readonly trialAvailable = signal(false);

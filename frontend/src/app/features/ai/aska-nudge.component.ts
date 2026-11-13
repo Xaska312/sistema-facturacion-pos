@@ -1,6 +1,6 @@
 import { Component, OnInit, computed, inject, input, output, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { AskaMoments } from '../../core/api/ai.api';
 import { BillingApi } from '../../core/api/billing.api';
 import { AuthService } from '../../core/auth/auth.service';
@@ -76,7 +76,7 @@ export class AskaNudgeComponent implements OnInit {
   private readonly state = inject(AskaMomentsState);
   private readonly billing = inject(BillingApi);
   private readonly auth = inject(AuthService);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
 
   readonly moment = input.required<AskaMoment>();
   /** Con XASKA IA, si quien mira puede usar aquí lo que Aska ofrece (permiso y cupo del mes). */

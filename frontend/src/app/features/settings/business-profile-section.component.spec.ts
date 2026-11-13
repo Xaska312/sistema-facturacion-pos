@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { of } from 'rxjs';
 import { BusinessProfile, BusinessProfileApi } from '../../core/api/business-profile.api';
 import { AuthService } from '../../core/auth/auth.service';
@@ -18,7 +18,7 @@ describe('BusinessProfileSectionComponent (Fase 12a)', () => {
     auth.loadTenants.and.returnValue(of([]));
     TestBed.configureTestingModule({
       imports: [BusinessProfileSectionComponent],
-      providers: [provideNoopAnimations(), MessageService, { provide: BusinessProfileApi, useValue: api },
+      providers: [provideNoopAnimations(), ToastService, { provide: BusinessProfileApi, useValue: api },
         { provide: AuthService, useValue: auth }],
     });
     const fixture = TestBed.createComponent(BusinessProfileSectionComponent);

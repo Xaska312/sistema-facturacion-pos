@@ -1,5 +1,5 @@
 import { Component, computed, input } from '@angular/core';
-import { PopoverModule } from 'primeng/popover';
+import { PopoverComponent } from '../ui/popover.component';
 import { GLOSSARY, GlossaryTerm } from './glossary';
 
 /**
@@ -8,7 +8,7 @@ import { GLOSSARY, GlossaryTerm } from './glossary';
  */
 @Component({
   selector: 'app-term',
-  imports: [PopoverModule],
+  imports: [PopoverComponent],
   template: `
     <span class="inline-flex items-baseline gap-0.5"><ng-content />
       <button type="button" class="term-button" [attr.aria-label]="'¿Qué significa ' + entry().title + '?'"
@@ -16,12 +16,12 @@ import { GLOSSARY, GlossaryTerm } from './glossary';
         <i class="pi pi-info-circle" aria-hidden="true"></i>
       </button>
     </span>
-    <p-popover #tip appendTo="body">
+    <app-popover #tip appendTo="body">
       <div class="max-w-72 text-sm">
         <p class="font-semibold mb-1">{{ entry().title }}</p>
         <p class="text-muted">{{ entry().text }}</p>
       </div>
-    </p-popover>
+    </app-popover>
   `,
   styles: `
     .term-button {

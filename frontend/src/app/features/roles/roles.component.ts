@@ -1,6 +1,6 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { DialogComponent } from '../../shared/ui/dialog.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
@@ -122,7 +122,7 @@ const MODULE_LABEL: Record<string, string> = {
 })
 export class RolesComponent implements OnInit {
   private readonly api = inject(AccessApi);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   private readonly confirm = inject(ConfirmService);
   protected readonly auth = inject(AuthService);
 

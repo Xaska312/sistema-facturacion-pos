@@ -2,7 +2,7 @@ import { focusOnDesktop } from '../../shared/touch';
 import { Component, OnInit, computed, inject, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { CashSession, RegisterOption } from '../../core/api/api.models';
@@ -135,7 +135,7 @@ import { permissionFlag } from '../../core/auth/permission-flag';
 })
 export class OpenCashComponent implements OnInit {
   private readonly cash = inject(CashApi);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   protected readonly canOperate = permissionFlag('cash:operate');
   /** Quien vende sin poder abrir caja puede unirse a una compartida (decisión 256). */
   protected readonly canSell = permissionFlag('sales:create');

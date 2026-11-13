@@ -1,7 +1,7 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 import { DialogComponent } from '../../shared/ui/dialog.component';
@@ -209,7 +209,7 @@ export function nextTableNames(existing: readonly string[], fromNumber: number, 
 })
 export class DiningSetupComponent implements OnInit {
   private readonly api = inject(DiningApi);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   private readonly auth = inject(AuthService);
 
   protected readonly branches = signal<BranchOption[]>([]);

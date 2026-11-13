@@ -1,7 +1,7 @@
 import { Component, HostListener, OnInit, computed, inject, input, signal } from '@angular/core';
 import { FormArray, FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { EMPTY, Observable, catchError, forkJoin, map, of, switchMap } from 'rxjs';
@@ -347,7 +347,7 @@ export class ProductEditorComponent implements OnInit, HasUnsavedChanges {
   private readonly fb = inject(FormBuilder);
   private readonly api = inject(CatalogApi);
   private readonly router = inject(Router);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   protected readonly canEdit = permissionFlag('products:manage');
   private readonly canAdjustStock = permissionFlag('inventory:adjust');
   private readonly confirm = inject(ConfirmService);

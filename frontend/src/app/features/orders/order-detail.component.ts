@@ -1,7 +1,7 @@
 import { Component, effect, inject, input, signal, untracked, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
@@ -233,7 +233,7 @@ export class OrderDetailComponent {
   private readonly api = inject(OrdersApi);
   private readonly cash = inject(CashApi);
   private readonly auth = inject(AuthService);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   private readonly router = inject(Router);
   private readonly paymentDialog = viewChild(OrderPaymentDialogComponent);
   private readonly deliverDialog = viewChild(OrderDeliverDialogComponent);

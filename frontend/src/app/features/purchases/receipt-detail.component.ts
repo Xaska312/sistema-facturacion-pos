@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, input, signal, viewChild } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 import { PurchaseReceipt, PurchasesApi, SupplierPayment } from '../../core/api/purchases.api';
@@ -180,7 +180,7 @@ export class ReceiptDetailComponent implements OnInit {
 
   private readonly api = inject(PurchasesApi);
   private readonly router = inject(Router);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   protected readonly canPay = permissionFlag('purchases:pay');
   protected readonly payDialog = viewChild(SupplierPaymentDialogComponent);
   protected readonly returnDialog = viewChild(PurchaseReturnDialogComponent);

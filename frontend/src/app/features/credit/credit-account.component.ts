@@ -1,7 +1,7 @@
 import { Component, effect, inject, input, signal, untracked, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
@@ -109,7 +109,7 @@ export class CreditAccountComponent {
 
   private readonly api = inject(CreditApi);
   private readonly auth = inject(AuthService);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   private readonly paymentDialog = viewChild(CreditPaymentDialogComponent);
   protected readonly canCollect = permissionFlag('credit:collect');
   protected readonly canManage = permissionFlag('credit:manage');

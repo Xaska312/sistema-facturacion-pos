@@ -1,10 +1,10 @@
 import { Component, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
-import { MenuItem } from 'primeng/api';
-import { MenuModule } from 'primeng/menu';
+import { MenuItem } from '../../shared/ui/menu-item';
+import { MenuComponent } from '../../shared/ui/menu.component';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { TooltipModule } from 'primeng/tooltip';
+import { TooltipDirective } from '../../shared/ui/tooltip.directive';
 import { AuthService } from '../../core/auth/auth.service';
 import { XaskaLogoComponent } from '../../shared/brand/xaska-logo.component';
 import { XIconComponent } from '../../shared/icons/xicon.component';
@@ -18,7 +18,7 @@ import { PLATFORM_MENU } from './platform-menu';
  */
 @Component({
   selector: 'app-platform-layout',
-  imports: [MenuModule, RouterOutlet, RouterLink, RouterLinkActive, TooltipModule, XaskaLogoComponent, XIconComponent],
+  imports: [MenuComponent, RouterOutlet, RouterLink, RouterLinkActive, TooltipDirective, XaskaLogoComponent, XIconComponent],
   template: `
     <!-- overflow-x-clip y min-w-0: nada ensancha la página en el celular (se veía con zoom y la barra se rompía). -->
     <div class="min-h-screen flex flex-col bg-ground overflow-x-clip">
@@ -46,7 +46,7 @@ import { PLATFORM_MENU } from './platform-menu';
     <nav class="dock" aria-label="Consola de plataforma">
       @for (item of menu; track item.route; let i = $index) {
         <a [routerLink]="item.route" routerLinkActive="dock-item--active" ariaCurrentWhenActive="page" class="dock-item"
-           [class.dock-item--extra]="i >= mainCount" [pTooltip]="item.label" tooltipPosition="top" [showDelay]="300">
+           [class.dock-item--extra]="i >= mainCount" [appTooltip]="item.label" tooltipPosition="top" [showDelay]="300">
           <app-xicon [name]="item.glyph" [size]="26" />
           <span class="dock-label">{{ item.label }}</span>
         </a>
@@ -57,7 +57,7 @@ import { PLATFORM_MENU } from './platform-menu';
         <span class="dock-label">Más</span>
       </button>
     </nav>
-    <p-menu #moreMenu [model]="moreItems" [popup]="true" appendTo="body" />
+    <app-menu #moreMenu [model]="moreItems" [popup]="true" appendTo="body" />
   `,
   styles: `
     .platform-tag {

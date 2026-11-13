@@ -1,5 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { Observable, Subscription, catchError, concatMap, filter, from, map, of, toArray } from 'rxjs';
 import { KitchenApi, KitchenTicket } from '../../core/api/kitchen.api';
 import { AuthService } from '../../core/auth/auth.service';
@@ -58,7 +58,7 @@ export function savePrinterConfig(tenantId: string | null, config: PrinterConfig
 export class KitchenPrinterService {
   private readonly api = inject(KitchenApi);
   private readonly auth = inject(AuthService);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
 
   /** Configuración de este equipo para el negocio abierto (null: no imprime). */
   readonly config = signal<PrinterConfig | null>(null);

@@ -1,10 +1,10 @@
 import { Component, DestroyRef, ElementRef, HostListener, computed, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRouteSnapshot, NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { MenuItem as PrimeMenuItem } from 'primeng/api';
-import { DrawerModule } from 'primeng/drawer';
-import { MenuModule } from 'primeng/menu';
-import { TooltipModule } from 'primeng/tooltip';
+import { MenuItem as PrimeMenuItem } from '../../shared/ui/menu-item';
+import { DrawerComponent } from '../../shared/ui/drawer.component';
+import { MenuComponent } from '../../shared/ui/menu.component';
+import { TooltipDirective } from '../../shared/ui/tooltip.directive';
 import { filter } from 'rxjs';
 import { Subscription } from '../../core/api/api.models';
 import { SubscriptionApi } from '../../core/api/subscription.api';
@@ -38,7 +38,7 @@ interface ThemeOption extends PrimeMenuItem {
  */
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, DrawerModule, MenuModule, TooltipModule, HelpPanelComponent,
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, DrawerComponent, MenuComponent, TooltipDirective, HelpPanelComponent,
     XaskaLogoComponent, XIconComponent, AskaComponent, AskaWelcomeComponent],
   template: `
     <button type="button" class="skip-link" (click)="focusMain()">Saltar al contenido</button>
@@ -77,7 +77,7 @@ interface ThemeOption extends PrimeMenuItem {
           <!-- Píldora del plan (decisión 303): siempre a la vista; abre Planes y pagos. -->
           <a routerLink="/app/planes" class="plan-pill" [class.plan-pill-soon]="pl.tone === 'soon'"
              [class.plan-pill-late]="pl.tone === 'late'" [attr.aria-label]="'Planes y pagos: ' + pl.plan + ', ' + pl.detail"
-             pTooltip="Planes y pagos" tooltipPosition="bottom">
+             appTooltip="Planes y pagos" tooltipPosition="bottom">
             <span class="plan-pill-dot" aria-hidden="true"></span>
             <span class="font-bold">{{ pl.plan }}</span>
             <span class="plan-pill-detail">{{ pl.detail }}</span>
@@ -103,7 +103,7 @@ interface ThemeOption extends PrimeMenuItem {
         @if (helpTopic()) {
           <!-- Decisión 314: en el celular, ayuda y tema van en el menú del perfil para que se vea el perfil. -->
           <button type="button" class="icon-button desk-only" aria-label="Ayuda de esta pantalla" aria-haspopup="dialog"
-                  [attr.aria-expanded]="helpOpen()" pTooltip="Ayuda" tooltipPosition="bottom" (click)="helpOpen.set(true)">
+                  [attr.aria-expanded]="helpOpen()" appTooltip="Ayuda" tooltipPosition="bottom" (click)="helpOpen.set(true)">
             <i class="pi pi-question-circle" aria-hidden="true"></i>
           </button>
         }
@@ -111,7 +111,7 @@ interface ThemeOption extends PrimeMenuItem {
                 (click)="themeMenu.toggle($event)">
           <i [class]="themeIcon()" aria-hidden="true"></i>
         </button>
-        <p-menu #themeMenu [model]="themeItems()" [popup]="true" appendTo="body">
+        <app-menu #themeMenu [model]="themeItems()" [popup]="true" appendTo="body">
           <ng-template #item let-option>
             <span class="flex items-center gap-2 px-3 py-2 min-w-44">
               <i [class]="option.icon" aria-hidden="true"></i>
@@ -122,7 +122,7 @@ interface ThemeOption extends PrimeMenuItem {
               }
             </span>
           </ng-template>
-        </p-menu>
+        </app-menu>
 
         <button type="button" class="user-button" aria-haspopup="menu" [attr.aria-label]="'Menú de usuario: ' + userName()"
                 (click)="userMenu.toggle($event)">
@@ -130,7 +130,7 @@ interface ThemeOption extends PrimeMenuItem {
           <span class="hidden sm:inline text-sm max-w-40 truncate">{{ userName() }}</span>
           <i class="pi pi-chevron-down text-xs text-muted" aria-hidden="true"></i>
         </button>
-        <p-menu #userMenu [model]="userItems()" [popup]="true" appendTo="body" />
+        <app-menu #userMenu [model]="userItems()" [popup]="true" appendTo="body" />
       </header>
 
       @if (banner(); as b) {
@@ -155,9 +155,9 @@ interface ThemeOption extends PrimeMenuItem {
       }
 
       @if (helpTopic(); as topic) {
-        <p-drawer [(visible)]="helpOpen" position="right" [style]="{ width: 'min(24rem, 100vw)' }" [header]="'Ayuda: ' + topic.title">
+        <app-drawer [(visible)]="helpOpen" position="right" [style]="{ width: 'min(24rem, 100vw)' }" [header]="'Ayuda: ' + topic.title">
           <app-help-panel [topic]="topic" [showTour]="tourAvailable() !== null" (startTour)="startTour($event)" />
-        </p-drawer>
+        </app-drawer>
       }
 
       <main #main id="main" tabindex="-1" class="flex-1 min-w-0 w-full max-w-[96rem] mx-auto px-4 pt-4 md:px-8 md:pt-6 pb-32 outline-none">
@@ -174,14 +174,14 @@ interface ThemeOption extends PrimeMenuItem {
       @for (item of dock(); track item.route; let i = $index) {
         <a [routerLink]="item.route" routerLinkActive="dock-item--active" ariaCurrentWhenActive="page"
            [routerLinkActiveOptions]="{ exact: exactRoutes.has(item.route) }" class="dock-item"
-           [class.dock-item--extra]="i >= 4" [pTooltip]="item.label" tooltipPosition="top" [showDelay]="300">
+           [class.dock-item--extra]="i >= 4" [appTooltip]="item.label" tooltipPosition="top" [showDelay]="300">
           <app-xicon [name]="item.glyph" [size]="26" />
           <span class="sr-only">{{ item.label }}</span>
         </a>
       }
       <span class="dock-separator" aria-hidden="true"></span>
       <a routerLink="/app/todo" routerLinkActive="dock-item--active" ariaCurrentWhenActive="page"
-         class="dock-item dock-all" pTooltip="Todos los módulos (Ctrl + K)" tooltipPosition="top" [showDelay]="300">
+         class="dock-item dock-all" appTooltip="Todos los módulos (Ctrl + K)" tooltipPosition="top" [showDelay]="300">
         <app-xicon name="all" [size]="26" />
         <span>Todo</span>
       </a>

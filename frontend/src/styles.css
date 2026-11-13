@@ -124,6 +124,45 @@
   /* Diálogos de shared/ui (decisión 338): fondo y sombra como los de PrimeNG. */
   --dialog-mask: rgb(0 0 0 / 0.4);
   --dialog-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  /* Capas flotantes de shared/ui (decisión 339): avisos, menús, popover, tooltip y panel lateral, como en PrimeNG. */
+  --overlay-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --menu-item-focus-fg: #0b1214;
+  --menu-icon: #839290;
+  --menu-icon-focus: #5f706e;
+  --tooltip-bg: #3b4a48;
+  --tooltip-fg: #ffffff;
+  --toast-detail-fg: #3b4a48;
+  --toast-blur: 1.5px;
+  --toast-success-bg: color-mix(in srgb, #f0fdf4, transparent 5%);
+  --toast-success-border: #bbf7d0;
+  --toast-success-fg: #166534;
+  --toast-success-ring: #16a34a;
+  --toast-success-close-hover: #dcfce7;
+  --toast-success-shadow: 0 4px 8px 0 color-mix(in srgb, #22c55e, transparent 96%);
+  --toast-info-bg: color-mix(in srgb, #eff6ff, transparent 5%);
+  --toast-info-border: #bfdbfe;
+  --toast-info-fg: #1d4ed8;
+  --toast-info-ring: #2563eb;
+  --toast-info-close-hover: #dbeafe;
+  --toast-info-shadow: 0 4px 8px 0 color-mix(in srgb, #3b82f6, transparent 96%);
+  --toast-warn-bg: color-mix(in srgb, #fefce8, transparent 5%);
+  --toast-warn-border: #fef08a;
+  --toast-warn-fg: #9a3412;
+  --toast-warn-ring: #ca8a04;
+  --toast-warn-close-hover: #fef9c3;
+  --toast-warn-shadow: 0 4px 8px 0 color-mix(in srgb, #eab308, transparent 96%);
+  --toast-error-bg: color-mix(in srgb, #fef2f2, transparent 5%);
+  --toast-error-border: #fecaca;
+  --toast-error-fg: #b91c1c;
+  --toast-error-ring: #dc2626;
+  --toast-error-close-hover: #fee2e2;
+  --toast-error-shadow: 0 4px 8px 0 color-mix(in srgb, #ef4444, transparent 96%);
+  --toast-secondary-bg: #eef2f2;
+  --toast-secondary-border: #dbe2e2;
+  --toast-secondary-fg: #4f5f5d;
+  --toast-secondary-ring: #4f5f5d;
+  --toast-secondary-close-hover: #dbe2e2;
+  --toast-secondary-shadow: 0 4px 8px 0 color-mix(in srgb, #5f706e, transparent 96%);
   --text: #12201f;
   --text-muted: #4f5f5d;
   --brand: #4338ca;
@@ -261,6 +300,42 @@
   --btn-warn-tint-hover: color-mix(in srgb, #fb923c, transparent 96%);
   --btn-warn-tint-active: color-mix(in srgb, #fb923c, transparent 84%);
   --dialog-mask: rgb(0 0 0 / 0.6);
+  --menu-item-focus-fg: #ffffff;
+  --menu-icon: #5f7174;
+  --menu-icon-focus: #9cb0ad;
+  --tooltip-bg: #2a3a3d;
+  --toast-detail-fg: #ffffff;
+  --toast-blur: 10px;
+  --toast-success-bg: color-mix(in srgb, #22c55e, transparent 84%);
+  --toast-success-border: color-mix(in srgb, #15803d, transparent 64%);
+  --toast-success-fg: #22c55e;
+  --toast-success-ring: #22c55e;
+  --toast-success-close-hover: rgb(255 255 255 / 0.05);
+  --toast-success-shadow: 0 4px 8px 0 color-mix(in srgb, #22c55e, transparent 96%);
+  --toast-info-bg: color-mix(in srgb, #3b82f6, transparent 84%);
+  --toast-info-border: color-mix(in srgb, #1d4ed8, transparent 64%);
+  --toast-info-fg: #3b82f6;
+  --toast-info-ring: #3b82f6;
+  --toast-info-close-hover: rgb(255 255 255 / 0.05);
+  --toast-info-shadow: 0 4px 8px 0 color-mix(in srgb, #3b82f6, transparent 96%);
+  --toast-warn-bg: color-mix(in srgb, #eab308, transparent 84%);
+  --toast-warn-border: color-mix(in srgb, #a16207, transparent 64%);
+  --toast-warn-fg: #eab308;
+  --toast-warn-ring: #eab308;
+  --toast-warn-close-hover: rgb(255 255 255 / 0.05);
+  --toast-warn-shadow: 0 4px 8px 0 color-mix(in srgb, #eab308, transparent 96%);
+  --toast-error-bg: color-mix(in srgb, #ef4444, transparent 84%);
+  --toast-error-border: color-mix(in srgb, #b91c1c, transparent 64%);
+  --toast-error-fg: #ef4444;
+  --toast-error-ring: #ef4444;
+  --toast-error-close-hover: rgb(255 255 255 / 0.05);
+  --toast-error-shadow: 0 4px 8px 0 color-mix(in srgb, #ef4444, transparent 96%);
+  --toast-secondary-bg: #1b2729;
+  --toast-secondary-border: #2a3a3d;
+  --toast-secondary-fg: #b9c8c6;
+  --toast-secondary-ring: #b9c8c6;
+  --toast-secondary-close-hover: #2a3a3d;
+  --toast-secondary-shadow: 0 4px 8px 0 color-mix(in srgb, #5f7174, transparent 96%);
   --text: #e6efee;
   --text-muted: #9cb0ad;
   --brand: #818cf8;
@@ -1028,6 +1103,439 @@
 @keyframes ui-dialog-mask-enter {
   from {
     background: transparent;
+  }
+}
+
+/* Avisos de shared/ui (app-toast-host, decisión 339): mismas medidas y colores que los de PrimeNG. */
+.ui-toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 25rem;
+  white-space: pre-line;
+  word-break: break-word;
+}
+
+.ui-toast-empty {
+  pointer-events: none;
+}
+
+.ui-toast-message,
+.ui-toast-message-info {
+  --t-bg: var(--toast-info-bg);
+  --t-border: var(--toast-info-border);
+  --t-fg: var(--toast-info-fg);
+  --t-ring: var(--toast-info-ring);
+  --t-close-hover: var(--toast-info-close-hover);
+  --t-shadow: var(--toast-info-shadow);
+}
+
+.ui-toast-message-success {
+  --t-bg: var(--toast-success-bg);
+  --t-border: var(--toast-success-border);
+  --t-fg: var(--toast-success-fg);
+  --t-ring: var(--toast-success-ring);
+  --t-close-hover: var(--toast-success-close-hover);
+  --t-shadow: var(--toast-success-shadow);
+}
+
+.ui-toast-message-info {
+  --t-bg: var(--toast-info-bg);
+  --t-border: var(--toast-info-border);
+  --t-fg: var(--toast-info-fg);
+  --t-ring: var(--toast-info-ring);
+  --t-close-hover: var(--toast-info-close-hover);
+  --t-shadow: var(--toast-info-shadow);
+}
+
+.ui-toast-message-warn {
+  --t-bg: var(--toast-warn-bg);
+  --t-border: var(--toast-warn-border);
+  --t-fg: var(--toast-warn-fg);
+  --t-ring: var(--toast-warn-ring);
+  --t-close-hover: var(--toast-warn-close-hover);
+  --t-shadow: var(--toast-warn-shadow);
+}
+
+.ui-toast-message-error {
+  --t-bg: var(--toast-error-bg);
+  --t-border: var(--toast-error-border);
+  --t-fg: var(--toast-error-fg);
+  --t-ring: var(--toast-error-ring);
+  --t-close-hover: var(--toast-error-close-hover);
+  --t-shadow: var(--toast-error-shadow);
+}
+
+.ui-toast-message-secondary {
+  --t-bg: var(--toast-secondary-bg);
+  --t-border: var(--toast-secondary-border);
+  --t-fg: var(--toast-secondary-fg);
+  --t-ring: var(--toast-secondary-ring);
+  --t-close-hover: var(--toast-secondary-close-hover);
+  --t-shadow: var(--toast-secondary-shadow);
+}
+
+.ui-toast-message {
+  display: grid;
+  grid-template-rows: 1fr;
+  margin: 0 0 1rem 0;
+  border: 1px solid var(--t-border);
+  border-radius: 10px;
+  background: var(--t-bg);
+  color: var(--t-fg);
+  box-shadow: var(--t-shadow);
+  backdrop-filter: blur(var(--toast-blur));
+  animation: ui-toast-enter 300ms ease-out;
+}
+
+.ui-toast-message-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0.75rem;
+}
+
+.ui-toast-message-icon {
+  flex-shrink: 0;
+  width: 1.125rem;
+  height: 1.125rem;
+  font-size: 1.125rem;
+}
+
+.ui-toast-message-text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ui-toast-summary {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.ui-toast-detail {
+  color: var(--toast-detail-fg);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.ui-toast-close {
+  position: relative;
+  right: -25%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin: -25% 0 0 0;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  user-select: none;
+  outline-color: transparent;
+  transition:
+    background var(--ui-duration),
+    color var(--ui-duration),
+    outline-color var(--ui-duration),
+    box-shadow var(--ui-duration);
+}
+
+.ui-toast-close:hover {
+  background: var(--t-close-hover);
+}
+
+.ui-toast-close:focus-visible {
+  outline: 1px solid var(--t-ring);
+  outline-offset: 2px;
+}
+
+.ui-toast-close-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+@keyframes ui-toast-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
+/* Menú emergente de shared/ui (app-menu, decisión 339). */
+.ui-menu {
+  position: absolute;
+  min-width: 12.5rem;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--ui-radius-control);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--overlay-shadow);
+  animation: ui-overlay-enter 300ms cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.ui-menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0.25rem;
+  list-style: none;
+  outline: 0 none;
+}
+
+.ui-menu-submenu-label {
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.ui-menu-separator {
+  border-block-start: 1px solid var(--surface-border);
+}
+
+.ui-menu-item-content {
+  overflow: hidden;
+  border-radius: 6px;
+  color: var(--text);
+  transition:
+    background var(--ui-duration),
+    color var(--ui-duration);
+}
+
+.ui-menu-item-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  overflow: hidden;
+  padding: 0.5rem 0.75rem;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+  outline: 0 none;
+}
+
+.ui-menu-item-label {
+  line-height: 1;
+}
+
+.ui-menu-item-icon {
+  color: var(--menu-icon);
+}
+
+.ui-menu-item.ui-focus .ui-menu-item-content,
+.ui-menu-item:not(.ui-disabled) .ui-menu-item-content:hover {
+  background: var(--surface-alt);
+  color: var(--menu-item-focus-fg);
+}
+
+.ui-menu-item.ui-focus .ui-menu-item-icon,
+.ui-menu-item:not(.ui-disabled) .ui-menu-item-content:hover .ui-menu-item-icon {
+  color: var(--menu-icon-focus);
+}
+
+.ui-menu-item.ui-disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Popover de shared/ui (app-popover, decisión 339): con flecha hacia el botón. */
+.ui-popover {
+  position: absolute;
+  margin-block-start: 10px;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--ui-radius-overlay);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--overlay-shadow);
+  will-change: transform;
+  animation: ui-overlay-enter 300ms cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.ui-popover-content {
+  padding: 0.75rem;
+}
+
+.ui-popover-flipped {
+  margin-block-start: -10px;
+  margin-block-end: 10px;
+}
+
+.ui-popover::after,
+.ui-popover::before {
+  content: " ";
+  position: absolute;
+  bottom: 100%;
+  left: calc(1.25rem + var(--ui-popover-arrow-left, 0px));
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.ui-popover::after {
+  margin-left: -8px;
+  border: 8px solid transparent;
+  border-bottom-color: var(--surface);
+}
+
+.ui-popover::before {
+  margin-left: -10px;
+  border: 10px solid transparent;
+  border-bottom-color: var(--surface-border);
+}
+
+.ui-popover-flipped::after,
+.ui-popover-flipped::before {
+  top: 100%;
+  bottom: auto;
+}
+
+.ui-popover.ui-popover-flipped::after {
+  border-bottom-color: transparent;
+  border-top-color: var(--surface);
+}
+
+.ui-popover.ui-popover-flipped::before {
+  border-bottom-color: transparent;
+  border-top-color: var(--surface-border);
+}
+
+/* Tooltip de shared/ui ([appTooltip], decisión 339). */
+.ui-tooltip {
+  position: absolute;
+  max-width: 12.5rem;
+  pointer-events: none;
+}
+
+.ui-tooltip-top,
+.ui-tooltip-bottom {
+  padding: 0.25rem 0;
+}
+
+.ui-tooltip-left,
+.ui-tooltip-right {
+  padding: 0 0.25rem;
+}
+
+.ui-tooltip-text {
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--ui-radius-overlay);
+  background: var(--tooltip-bg);
+  color: var(--tooltip-fg);
+  box-shadow: var(--overlay-shadow);
+  white-space: pre-line;
+  word-break: break-word;
+}
+
+.ui-tooltip-arrow {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-color: transparent;
+}
+
+.ui-tooltip-top .ui-tooltip-arrow {
+  margin-left: -0.25rem;
+  border-width: 0.25rem 0.25rem 0 0.25rem;
+  border-top-color: var(--tooltip-bg);
+}
+
+.ui-tooltip-bottom .ui-tooltip-arrow {
+  margin-left: -0.25rem;
+  border-width: 0 0.25rem 0.25rem 0.25rem;
+  border-bottom-color: var(--tooltip-bg);
+}
+
+.ui-tooltip-right .ui-tooltip-arrow {
+  margin-top: -0.25rem;
+  border-width: 0.25rem 0.25rem 0.25rem 0;
+  border-right-color: var(--tooltip-bg);
+}
+
+.ui-tooltip-left .ui-tooltip-arrow {
+  margin-top: -0.25rem;
+  border-width: 0.25rem 0 0.25rem 0.25rem;
+  border-left-color: var(--tooltip-bg);
+}
+
+/* Panel lateral de shared/ui (app-drawer, decisión 339). */
+.ui-drawer-mask {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: flex-end;
+  background: var(--dialog-mask);
+  animation: ui-dialog-mask-enter 300ms ease-out;
+}
+
+.ui-drawer-mask.ui-drawer-left {
+  justify-content: flex-start;
+}
+
+.ui-drawer {
+  display: flex;
+  flex-direction: column;
+  width: 20rem;
+  height: 100%;
+  border-color: var(--surface-border);
+  border-style: solid;
+  border-width: 0 0 0 1px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--dialog-shadow);
+  animation: ui-drawer-enter-right 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.ui-drawer-left .ui-drawer {
+  border-width: 0 1px 0 0;
+  animation-name: ui-drawer-enter-left;
+}
+
+.ui-drawer-header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem;
+}
+
+.ui-drawer-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.ui-drawer-content {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 0 1.5rem 1.5rem;
+}
+
+@keyframes ui-overlay-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.93);
+  }
+}
+
+@keyframes ui-drawer-enter-right {
+  from {
+    transform: translate3d(100%, 0, 0);
+  }
+}
+
+@keyframes ui-drawer-enter-left {
+  from {
+    transform: translate3d(-100%, 0, 0);
   }
 }
 

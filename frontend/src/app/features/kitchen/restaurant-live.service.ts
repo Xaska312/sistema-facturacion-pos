@@ -1,5 +1,5 @@
 import { Injectable, Injector, effect, inject, untracked } from '@angular/core';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { Subscription, filter } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { DiningEvent, DiningEventsService } from '../../core/realtime/dining-events.service';
@@ -16,7 +16,7 @@ export class RestaurantLiveService {
   private readonly auth = inject(AuthService);
   private readonly events = inject(DiningEventsService);
   private readonly printer = inject(KitchenPrinterService);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   private readonly injector = inject(Injector);
 
   private started = false;

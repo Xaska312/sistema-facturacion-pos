@@ -2,7 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { rememberStartPlan } from '../billing/start-plan';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { PasswordModule } from 'primeng/password';
@@ -72,7 +72,7 @@ import { AuthLayoutComponent } from '../../shared/layout/auth-layout.component';
 export class RegisterComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   private readonly query = inject(ActivatedRoute).snapshot.queryParamMap;
   protected readonly returnUrl = safeReturnUrl(this.query.get('returnUrl'));
 

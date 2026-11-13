@@ -1,6 +1,6 @@
 import { Component, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable } from 'rxjs';
@@ -245,7 +245,7 @@ export class ExpensesComponent implements OnInit {
   private readonly latestSummary = new LatestRequest();
   private readonly api = inject(ExpensesApi);
   private readonly organization = inject(OrganizationApi);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   private readonly recurring = inject(RecurringExpensesApi);
   private readonly confirm = inject(ConfirmService);
   protected readonly recurringDialog = viewChild(RecurringExpensesDialogComponent);

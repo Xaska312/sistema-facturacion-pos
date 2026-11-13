@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { ToastModule } from 'primeng/toast';
+import { ToastHostComponent } from './shared/ui/toast-host.component';
 import { ConfirmHostComponent } from './shared/ui/confirm-host.component';
 import { LoadingBarComponent } from './shared/loading-bar.component';
 import { TourOverlayComponent } from './shared/tour/tour-overlay.component';
@@ -9,10 +9,10 @@ import { rememberReferral } from './features/billing/referral-code';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, ToastModule, ConfirmHostComponent, LoadingBarComponent, TourOverlayComponent, UpdateBannerComponent],
+  imports: [RouterOutlet, ToastHostComponent, ConfirmHostComponent, LoadingBarComponent, TourOverlayComponent, UpdateBannerComponent],
   template: `
     <app-loading-bar />
-    <p-toast position="top-right" />
+    <app-toast-host />
     <app-confirm-host />
     <router-outlet />
     <app-tour-overlay />

@@ -1,5 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { map, switchMap } from 'rxjs';
@@ -111,7 +111,7 @@ import { XIconComponent } from '../../shared/icons/xicon.component';
 export class BusinessProfileSectionComponent {
   private readonly api = inject(BusinessProfileApi);
   private readonly auth = inject(AuthService);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
 
   protected readonly modules = BUSINESS_MODULES;
 

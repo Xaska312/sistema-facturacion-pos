@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { Payables, PurchaseSummary, PurchasesApi, SupplierPayment } from '../../core/api/purchases.api';
 import { permissionFlag } from '../../core/auth/permission-flag';
@@ -87,7 +87,7 @@ import { SupplierPaymentDialogComponent } from './supplier-payment-dialog.compon
 })
 export class PayablesComponent implements OnInit {
   private readonly api = inject(PurchasesApi);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   protected readonly canPay = permissionFlag('purchases:pay');
   private readonly dialog = viewChild(SupplierPaymentDialogComponent);
   protected readonly data = signal<Payables | null>(null);

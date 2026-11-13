@@ -2,7 +2,7 @@ import { focusOnDesktop } from '../../shared/touch';
 import { Component, DestroyRef, inject, input, output, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ButtonComponent } from '../../shared/ui/button.component';
-import { Popover, PopoverModule } from 'primeng/popover';
+import { PopoverComponent } from '../../shared/ui/popover.component';
 import { XIconComponent } from '../../shared/icons/xicon.component';
 import { formatCop, formatQuantity } from '../../shared/money';
 import { CartLine, CartTotals, lineAmounts, linePrice, modifierSummary, quantityForAmount, stepQuantity } from './sale-math';
@@ -44,7 +44,7 @@ const UNDO_MS = 6000;
  */
 @Component({
   selector: 'app-cart-panel',
-  imports: [FormsModule, ButtonComponent, PopoverModule, XIconComponent],
+  imports: [FormsModule, ButtonComponent, PopoverComponent, XIconComponent],
   template: `
     <aside aria-label="Venta actual" class="h-full flex flex-col gap-3 min-h-0">
       <div class="card flex-1 flex flex-col min-h-0 overflow-hidden">
@@ -168,7 +168,7 @@ const UNDO_MS = 6000;
       </div>
     </aside>
 
-    <p-popover #editor ariaLabel="Editar línea" (onShow)="focusEditor()" (onHide)="editorClosed()">
+    <app-popover #editor ariaLabel="Editar línea" (shown)="focusEditor()" (hidden)="editorClosed()">
       @if (editing(); as line) {
         <form class="flex flex-col gap-3 w-64" (ngSubmit)="applyEdit()">
           <p class="font-medium leading-tight">{{ line.name }}</p>
@@ -215,7 +215,7 @@ const UNDO_MS = 6000;
           </div>
         </form>
       }
-    </p-popover>
+    </app-popover>
   `,
   styles: `
     :host {
@@ -353,7 +353,7 @@ export class CartPanelComponent {
   readonly drawer = input(false);
   readonly openDrawer = output<void>();
 
-  private readonly editor = viewChild.required<Popover>('editor');
+  private readonly editor = viewChild.required<PopoverComponent>('editor');
   protected readonly cop = formatCop;
   protected readonly q = formatQuantity;
   protected readonly editing = signal<CartLine | null>(null);

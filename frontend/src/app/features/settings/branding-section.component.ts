@@ -1,5 +1,5 @@
 import { Component, OnDestroy, computed, inject, signal } from '@angular/core';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { Branding, BrandingApi } from '../../core/api/branding.api';
 import { permissionFlag } from '../../core/auth/permission-flag';
@@ -106,7 +106,7 @@ export class BrandingSectionComponent implements OnDestroy {
   private readonly api = inject(BrandingApi);
   private readonly branding = inject(BrandingService);
   private readonly theme = inject(ThemeService);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   protected readonly canManage = permissionFlag('settings:manage');
 
   protected readonly palettes = BRAND_PALETTES;

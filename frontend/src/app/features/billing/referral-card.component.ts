@@ -1,5 +1,5 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { BillingApi, MyReferrals } from '../../core/api/billing.api';
 import { AuthService } from '../../core/auth/auth.service';
 import { copyToClipboard } from '../../shared/clipboard';
@@ -68,7 +68,7 @@ import { referralMessage } from './referral-code';
 export class ReferralCardComponent implements OnInit {
   private readonly api = inject(BillingApi);
   private readonly auth = inject(AuthService);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
 
   protected readonly data = signal<MyReferrals | null>(null);
   protected readonly whatsapp = computed(() => {

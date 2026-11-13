@@ -1,6 +1,6 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 import { AuthService } from '../../core/auth/auth.service';
@@ -116,7 +116,7 @@ export class PrinterSectionComponent implements OnInit {
   protected readonly agent = inject(PrintAgentService);
   private readonly drawerService = inject(CashDrawerService);
   private readonly auth = inject(AuthService);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   private readonly brandLogo = inject(BrandingService).logo;
 
   protected readonly download = AGENT_DOWNLOAD;

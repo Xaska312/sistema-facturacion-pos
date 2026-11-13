@@ -1,7 +1,7 @@
 import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { DialogComponent } from '../../shared/ui/dialog.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
@@ -516,7 +516,7 @@ export class TabComponent implements OnInit, HasUnsavedChanges {
   private readonly sales = inject(SalesApi);
   private readonly catalog = inject(CatalogApi);
   private readonly modifiersApi = inject(ModifiersApi);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   private readonly auth = inject(AuthService);
   private readonly printer = inject(KitchenPrinterService);
   private readonly kitchen = inject(KitchenApi);
