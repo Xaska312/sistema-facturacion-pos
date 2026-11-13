@@ -17,7 +17,8 @@ import { DialogComponent } from './dialog.component';
                 [header]="request?.header">
       @if (request) {
         <div class="ui-confirm-content">
-          <i [class]="request.icon + ' ui-confirm-icon'" aria-hidden="true"></i>
+          <i [class]="request.icon + ' ui-confirm-icon'" [class.ui-confirm-icon-danger]="request.danger"
+             aria-hidden="true"></i>
           <span class="ui-confirm-message">{{ request.message }}</span>
         </div>
       }

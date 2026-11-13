@@ -86,7 +86,7 @@ describe('ButtonComponent y a[appButton]', () => {
     fixture.detectChanges();
     const el = button('busy');
     expect(el.disabled).toBeTrue();
-    expect(el.querySelector('.ui-button-spinner')).not.toBeNull();
+    expect(el.querySelector('.ui-dots')).not.toBeNull();
     expect(el.querySelector('.pi-check')).toBeNull();
     expect(el.querySelector('.ui-button-label')!.textContent!.trim()).toBe('Cobrar');
     el.click();

@@ -17,21 +17,22 @@
  * cambia solo estos valores: esquinas 14/12/24 px, presión con rebote, sombra del color del negocio y halo de foco.
  */
 :root {
-  --ui-radius-control: 10px; /* botones y campos */
-  --ui-radius-field: 10px;
+  /* Dirección "Orgánica" (decisión 341, elegida por el usuario entre tres bocetos). */
+  --ui-radius-control: 14px; /* botones */
+  --ui-radius-field: 12px; /* campos */
   --ui-radius-overlay: 14px; /* menús, popovers, avisos */
-  --ui-radius-dialog: 22px;
-  --ui-press: none; /* transformación al presionar */
-  --ui-release: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ui-radius-dialog: 24px;
+  --ui-press: scale(0.95); /* al presionar */
+  --ui-release: cubic-bezier(0.34, 1.56, 0.64, 1); /* suelta con un rebote corto */
+  --ui-release-duration: 220ms;
   --ui-duration: 0.2s;
-  --ui-lift: none; /* transformación al pasar el mouse */
-  --ui-shadow-primary: none;
-  --ui-shadow-primary-hover: none;
-  --ui-focus: 0 0 0 2px var(--focus-ring);
+  --ui-lift: translateY(-1px); /* al pasar el mouse por un botón sólido */
+  --ui-focus: 0 0 0 4px color-mix(in srgb, var(--brand) 28%, transparent); /* halo de foco */
 }
 @media (prefers-reduced-motion: reduce) {
   :root {
     --ui-duration: 0.01ms;
+    --ui-release-duration: 0.01ms;
     --ui-press: none;
     --ui-lift: none;
   }
@@ -57,7 +58,8 @@
   --surface-border: #dbe2e2;
   --field-border: #839290;
   /* Campos y barras de carga de shared/ui (decisión 335): los mismos valores que daba PrimeNG. */
-  --field-bg: #ffffff;
+  --field-bg: var(--surface-alt); /* campos rellenos (dirección Orgánica) */
+  --field-focus-bg: var(--surface);
   --field-text: #3b4a48;
   --field-hover-border: #5f706e;
   --field-placeholder: #5f706e;
@@ -260,6 +262,7 @@
   --surface-border: #2a3a3d;
   --field-border: #5f7174;
   --field-bg: #0b1214;
+  --field-focus-bg: #0b1214;
   --field-text: #ffffff;
   --field-hover-border: #9cb0ad;
   --field-placeholder: #9cb0ad;
@@ -677,7 +680,7 @@
   select,
   textarea,
   input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"]) {
-    background-color: var(--surface);
+    background-color: var(--field-bg);
     border-color: var(--field-border);
   }
 
@@ -733,6 +736,8 @@
 .app-input:enabled:focus {
   border-color: var(--brand);
   outline: none;
+  background: var(--field-focus-bg);
+  box-shadow: var(--ui-focus);
 }
 
 .app-input:disabled {
@@ -821,7 +826,8 @@
     color var(--ui-duration),
     border-color var(--ui-duration),
     outline-color var(--ui-duration),
-    box-shadow var(--ui-duration);
+    box-shadow var(--ui-duration),
+    transform var(--ui-release-duration) var(--ui-release);
 }
 
 .ui-button-secondary {
@@ -932,10 +938,81 @@
   color: var(--b-tint-fg);
 }
 
+/* Dirección Orgánica (decisión 341): se hunde al presionar y suelta con rebote; los sólidos de color llevan una
+   sombra de su propio color y suben 1px al pasar el mouse; el foco es un halo suave en vez de una línea. */
+.ui-button:not(:disabled):active {
+  transform: var(--ui-press);
+  transition-duration: var(--ui-duration), var(--ui-duration), var(--ui-duration), var(--ui-duration), var(--ui-duration), 60ms;
+}
+
+.ui-button:not(.ui-button-secondary):not(.ui-button-text):not(.ui-button-outlined) {
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--b-bg) 30%, transparent);
+}
+
+.ui-button:not(.ui-button-secondary):not(.ui-button-text):not(.ui-button-outlined):not(:disabled):hover {
+  transform: var(--ui-lift);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--b-bg) 38%, transparent);
+}
+
+.ui-button:not(.ui-button-secondary):not(.ui-button-text):not(.ui-button-outlined):not(:disabled):active {
+  transform: var(--ui-press);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--b-bg) 30%, transparent);
+}
+
 .ui-button:focus-visible {
-  outline: 1px solid var(--b-ring);
-  outline-offset: 2px;
-  box-shadow: none;
+  outline: none;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--b-ring) 28%, transparent);
+}
+
+.ui-button:not(.ui-button-secondary):not(.ui-button-text):not(.ui-button-outlined):focus-visible {
+  box-shadow:
+    0 4px 12px color-mix(in srgb, var(--b-bg) 30%, transparent),
+    0 0 0 4px color-mix(in srgb, var(--b-ring) 28%, transparent);
+}
+
+.ui-button .ui-button-icon-right {
+  transition: transform var(--ui-release-duration) var(--ui-release);
+}
+
+.ui-button:not(:disabled):hover .ui-button-icon-right {
+  transform: translateX(4px);
+}
+
+/* Cargando: tres puntos que saltan (en lugar del círculo que gira). */
+.ui-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 1rem;
+}
+
+.ui-dots i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: ui-dot 1s infinite ease-in-out;
+}
+
+.ui-dots i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.ui-dots i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes ui-dot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
 }
 
 .ui-button:disabled {
@@ -1019,21 +1096,6 @@
   height: 3rem;
 }
 
-.ui-button-spinner {
-  width: 1rem;
-  height: 1rem;
-  animation: ui-spin 2s linear infinite;
-}
-
-@keyframes ui-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 /* Diálogo de shared/ui (app-dialog y app-confirm-host, decisión 338): mismas medidas que el de PrimeNG. */
 .ui-dialog-mask {
   position: fixed;
@@ -1062,7 +1124,7 @@
   color: var(--text);
   box-shadow: var(--dialog-shadow);
   will-change: transform;
-  animation: ui-dialog-enter 300ms cubic-bezier(0.19, 1, 0.22, 1);
+  animation: ui-dialog-enter 280ms cubic-bezier(0.34, 1.4, 0.64, 1);
 }
 
 .ui-dialog-header {
@@ -1109,11 +1171,23 @@
   gap: 1rem;
 }
 
+/* Ícono en baldosa suave, como las del inicio (dirección Orgánica). */
 .ui-confirm-content .ui-confirm-icon {
+  display: inline-flex;
   flex-shrink: 0;
-  width: 2rem;
-  height: 2rem;
-  font-size: 2rem;
+  align-items: center;
+  justify-content: center;
+  width: 2.625rem;
+  height: 2.625rem;
+  border-radius: 14px;
+  background: var(--brand-soft);
+  color: var(--brand-soft-text);
+  font-size: 1.25rem;
+}
+
+.ui-confirm-content .ui-confirm-icon-danger {
+  background: var(--danger-soft);
+  color: var(--danger);
 }
 
 /* La página de atrás no se desplaza con un diálogo modal abierto. */
@@ -1125,7 +1199,7 @@
 @keyframes ui-dialog-enter {
   from {
     opacity: 0;
-    transform: scale(0.93);
+    transform: translateY(14px) scale(0.97);
   }
 }
 
@@ -1214,7 +1288,7 @@
   color: var(--t-fg);
   box-shadow: var(--t-shadow);
   backdrop-filter: blur(var(--toast-blur));
-  animation: ui-toast-enter 300ms ease-out;
+  animation: ui-toast-enter 400ms cubic-bezier(0.34, 1.5, 0.64, 1);
 }
 
 .ui-toast-message-content {
@@ -1226,11 +1300,17 @@
   padding: 0.75rem;
 }
 
+/* El ícono va en un círculo suave de su color y aparece con un pequeño salto (dirección Orgánica). */
 .ui-toast-message-icon {
   flex-shrink: 0;
-  width: 1.125rem;
-  height: 1.125rem;
-  font-size: 1.125rem;
+  box-sizing: content-box;
+  width: 1rem;
+  height: 1rem;
+  margin-top: -0.125rem;
+  padding: 0.375rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--t-fg) 14%, transparent);
+  animation: ui-toast-icon-pop 400ms 120ms cubic-bezier(0.34, 1.8, 0.64, 1) backwards;
 }
 
 .ui-toast-message-text {
@@ -1293,7 +1373,13 @@
 @keyframes ui-toast-enter {
   from {
     opacity: 0;
-    transform: scale(0.6);
+    transform: translateX(40px);
+  }
+}
+
+@keyframes ui-toast-icon-pop {
+  from {
+    transform: scale(0.4);
   }
 }
 
@@ -1659,6 +1745,8 @@
 
 .ui-select:focus-within {
   border-color: var(--brand);
+  background: var(--field-focus-bg);
+  box-shadow: var(--ui-focus);
 }
 
 .ui-select-label {

@@ -155,13 +155,15 @@ const EMPTY_MODELS: PageResponse<ProductModelRow> = { content: [], page: 0, size
       border: 1px solid var(--surface-border);
       background: var(--surface);
       box-shadow: var(--elevation-card);
-      transition: border-color 0.15s, transform 0.1s;
+      transition: border-color 0.15s, transform var(--ui-release-duration) var(--ui-release);
     }
     .product-card:hover:not(:disabled) {
       border-color: var(--brand);
     }
+    /* Dirección Orgánica (decisión 341): se hunde al tocarla y suelta con rebote, como los botones. */
     .product-card:active:not(:disabled) {
-      transform: scale(0.98);
+      transform: var(--ui-press);
+      transition-duration: 0.15s, 60ms;
     }
     .product-card:disabled {
       cursor: not-allowed;
