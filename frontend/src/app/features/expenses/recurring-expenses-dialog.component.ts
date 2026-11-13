@@ -1,7 +1,7 @@
 import { Component, computed, inject, model, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ButtonComponent } from '../../shared/ui/button.component';
-import { DialogModule } from 'primeng/dialog';
+import { DialogComponent } from '../../shared/ui/dialog.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable } from 'rxjs';
 import { Branch, Party, PaymentMethod } from '../../core/api/api.models';
@@ -31,10 +31,10 @@ import { frequencyLabel, recurringProblem } from './recurring-text';
  */
 @Component({
   selector: 'app-recurring-expenses-dialog',
-  imports: [FormsModule, ButtonComponent, DialogModule, AppInputDirective, PesosInputDirective, FormDialogComponent],
+  imports: [FormsModule, ButtonComponent, DialogComponent, AppInputDirective, PesosInputDirective, FormDialogComponent],
   template: `
-    <p-dialog header="Gastos fijos" [(visible)]="visible" [modal]="true" [style]="{ width: '40rem' }"
-              [breakpoints]="{ '640px': '96vw' }" (onHide)="changed.emit()">
+    <app-dialog header="Gastos fijos" [(visible)]="visible" [modal]="true" [style]="{ width: '40rem' }"
+              [breakpoints]="{ '640px': '96vw' }" (hidden)="changed.emit()">
       <p class="text-sm text-muted mb-3">Lo que pagas siempre, como el arriendo, la nómina o el internet. XASKA te avisa
         cuando toca y lo registras con un toque.</p>
       @if (canManage()) {
@@ -62,7 +62,7 @@ import { frequencyLabel, recurringProblem } from './recurring-text';
           <li class="py-6 text-center text-sm text-muted">{{ loaded() ? 'Aún no tienes gastos fijos.' : 'Cargando…' }}</li>
         }
       </ul>
-    </p-dialog>
+    </app-dialog>
 
     <app-form-dialog [(visible)]="formOpen" [header]="editing() ? 'Cambiar gasto fijo' : 'Nuevo gasto fijo'"
                      width="32rem" [submitLabel]="editing() ? 'Guardar' : 'Crear gasto fijo'" [dirty]="formDirty"

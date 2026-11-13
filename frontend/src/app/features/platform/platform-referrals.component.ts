@@ -2,7 +2,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { ButtonComponent } from '../../shared/ui/button.component';
-import { DialogModule } from 'primeng/dialog';
+import { DialogComponent } from '../../shared/ui/dialog.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { BillingApi, Partner, PartnerInput, PartnerKind, ReferralRow } from '../../core/api/billing.api';
 import { problemMessage } from '../../core/errors/problem';
@@ -20,7 +20,7 @@ const EMPTY: PartnerInput = { name: '', kind: 'ACCOUNTANT', phone: null, email: 
  */
 @Component({
   selector: 'app-platform-referrals',
-  imports: [FormsModule, ButtonComponent, DialogModule, AppInputDirective, PageHeaderComponent],
+  imports: [FormsModule, ButtonComponent, DialogComponent, AppInputDirective, PageHeaderComponent],
   template: `
     <app-page-header title="Referidos y aliados"
                      description="Contadores y distribuidores que traen negocios (20 % del primer pago) y los negocios que entraron con un código.">
@@ -97,7 +97,7 @@ const EMPTY: PartnerInput = { name: '', kind: 'ACCOUNTANT', phone: null, email: 
       }
     </section>
 
-    <p-dialog [(visible)]="editOpen" [modal]="true" [header]="editingId ? 'Editar aliado' : 'Nuevo aliado'"
+    <app-dialog [(visible)]="editOpen" [modal]="true" [header]="editingId ? 'Editar aliado' : 'Nuevo aliado'"
               [style]="{ width: '28rem', maxWidth: '94vw' }">
       <div class="flex flex-col gap-3">
         <label class="flex flex-col gap-1"><span class="text-sm font-medium">Nombre</span>
@@ -123,9 +123,9 @@ const EMPTY: PartnerInput = { name: '', kind: 'ACCOUNTANT', phone: null, email: 
           <app-button label="Guardar" [loading]="saving()" (clicked)="save()" />
         </div>
       </div>
-    </p-dialog>
+    </app-dialog>
 
-    <p-dialog [(visible)]="paidOpen" [modal]="true" header="Marcar comisión pagada" [style]="{ width: '24rem', maxWidth: '94vw' }">
+    <app-dialog [(visible)]="paidOpen" [modal]="true" header="Marcar comisión pagada" [style]="{ width: '24rem', maxWidth: '94vw' }">
       @if (paying(); as r) {
         <p class="text-sm mb-3">{{ cop(r.commission ?? 0) }} a {{ r.partnerName }} por {{ r.referredName }}.
           Paga a {{ r.partnerPayoutKey ?? 'su llave' }} y escribe la referencia del pago.</p>
@@ -135,7 +135,7 @@ const EMPTY: PartnerInput = { name: '', kind: 'ACCOUNTANT', phone: null, email: 
           <app-button label="Marcar pagada" [loading]="saving()" [disabled]="!reference.trim()" (clicked)="markPaid(r)" />
         </div>
       }
-    </p-dialog>
+    </app-dialog>
   `,
 })
 export class PlatformReferralsComponent implements OnInit {

@@ -7,7 +7,7 @@ import { clearOfflineBoot, readOfflineBoot, saveOfflineBoot } from '../../core/o
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { ButtonComponent } from '../../shared/ui/button.component';
-import { DialogModule } from 'primeng/dialog';
+import { DialogComponent } from '../../shared/ui/dialog.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { catchError, finalize, forkJoin, map, of, switchMap } from 'rxjs';
@@ -138,7 +138,7 @@ const STOCK_PAGES = 5;
  */
 @Component({
   selector: 'app-pos',
-  imports: [OfflineBarComponent, ReceiptSendComponent, WithholdingBoxComponent, FormsModule, PesosInputDirective, ButtonComponent, DialogModule, AppInputDirective, SkeletonComponent, HasPermissionDirective,
+  imports: [OfflineBarComponent, ReceiptSendComponent, WithholdingBoxComponent, FormsModule, PesosInputDirective, ButtonComponent, DialogComponent, AppInputDirective, SkeletonComponent, HasPermissionDirective,
     ReceiptComponent, PosHeaderComponent, ProductGridComponent, CartPanelComponent, OpenCashComponent,
     VariantPickerComponent, NewCustomerDialogComponent, ModifierPickerComponent],
   template: `
@@ -257,8 +257,8 @@ const STOCK_PAGES = 5;
     </div>
 
     <!-- Buscar por nombre (F2) -->
-    <p-dialog header="Buscar producto" [(visible)]="searchOpen" [modal]="true" [style]="{ width: '40rem' }"
-              [breakpoints]="{ '640px': '100vw' }" (onShow)="focus('search')" (onHide)="focusScanner()">
+    <app-dialog header="Buscar producto" [(visible)]="searchOpen" [modal]="true" [style]="{ width: '40rem' }"
+              [breakpoints]="{ '640px': '100vw' }" (shown)="focus('search')" (hidden)="focusScanner()">
       <form class="flex gap-2 mb-3" (ngSubmit)="runSearch()">
         <input #search appInput name="search" class="flex-1 h-11" [(ngModel)]="searchText"
                aria-label="Nombre, SKU o código" placeholder="Nombre, SKU o código" />
@@ -287,11 +287,11 @@ const STOCK_PAGES = 5;
           <li class="p-2 text-sm text-muted">{{ searched() ? 'Sin resultados.' : 'Escribe y pulsa Enter.' }}</li>
         }
       </ul>
-    </p-dialog>
+    </app-dialog>
 
     <!-- Precio libre (decisión 253): impresiones, anillados, servicios -->
-    <p-dialog header="Precio libre" [(visible)]="openPriceOpen" [modal]="true" [style]="{ width: '24rem' }"
-              [breakpoints]="{ '640px': '100vw' }" (onShow)="focusOpenPrice()" (onHide)="openPriceClosed()">
+    <app-dialog header="Precio libre" [(visible)]="openPriceOpen" [modal]="true" [style]="{ width: '24rem' }"
+              [breakpoints]="{ '640px': '100vw' }" (shown)="focusOpenPrice()" (hidden)="openPriceClosed()">
       @if (openPriceItem(); as item) {
         <form class="flex flex-col gap-3" (ngSubmit)="confirmOpenPrice()">
           <p class="font-medium">{{ item.found.name }}</p>
@@ -310,28 +310,28 @@ const STOCK_PAGES = 5;
           </div>
         </form>
       }
-    </p-dialog>
+    </app-dialog>
 
     <!-- Talla de un modelo (fase 8d) -->
-    <p-dialog [header]="variantModel()?.name ?? 'Elegir talla'" [(visible)]="variantOpen" [modal]="true"
-              [style]="{ width: '40rem' }" [breakpoints]="{ '640px': '100vw' }" (onHide)="focusScanner()">
+    <app-dialog [header]="variantModel()?.name ?? 'Elegir talla'" [(visible)]="variantOpen" [modal]="true"
+              [style]="{ width: '40rem' }" [breakpoints]="{ '640px': '100vw' }" (hidden)="focusScanner()">
       @if (variantModel(); as m) {
         <app-variant-picker [model]="m" [stockMap]="stock()" (pick)="pickVariant($event)" />
       }
-    </p-dialog>
+    </app-dialog>
 
     <!-- Adiciones (Fase 12b-1) -->
-    <p-dialog [header]="modifierPending()?.found?.name ?? 'Adiciones'" [(visible)]="modifierOpen" [modal]="true"
-              [style]="{ width: '40rem' }" [breakpoints]="{ '640px': '100vw' }" (onHide)="modifiersCancelled()">
+    <app-dialog [header]="modifierPending()?.found?.name ?? 'Adiciones'" [(visible)]="modifierOpen" [modal]="true"
+              [style]="{ width: '40rem' }" [breakpoints]="{ '640px': '100vw' }" (hidden)="modifiersCancelled()">
       @if (modifierPending(); as pending) {
         <app-modifier-picker [groups]="pending.groups" [basePrice]="pending.unitPrice"
                              (picked)="modifiersPicked($event)" (cancelled)="modifiersCancelled()" />
       }
-    </p-dialog>
+    </app-dialog>
 
     <!-- Cliente -->
-    <p-dialog header="Cliente de la venta" [(visible)]="customerOpen" [modal]="true" [style]="{ width: '36rem' }"
-              [breakpoints]="{ '640px': '100vw' }" (onShow)="focus('customerSearch')" (onHide)="focusScanner()">
+    <app-dialog header="Cliente de la venta" [(visible)]="customerOpen" [modal]="true" [style]="{ width: '36rem' }"
+              [breakpoints]="{ '640px': '100vw' }" (shown)="focus('customerSearch')" (hidden)="focusScanner()">
       <form class="flex gap-2 mb-3" (ngSubmit)="runCustomerSearch()">
         <input #customerSearch appInput name="customerSearch" class="flex-1 h-11" [(ngModel)]="customerText"
                aria-label="Nombre o número de documento" placeholder="Nombre o número de documento" />
@@ -358,15 +358,15 @@ const STOCK_PAGES = 5;
                   [outlined]="true" styleClass="min-h-11" (clicked)="openNewCustomer()" />
       </div>
       <p class="text-xs text-muted mt-2">Registrar un cliente no borra lo que llevas en la venta.</p>
-    </p-dialog>
+    </app-dialog>
 
     <!-- Cliente nuevo sin salir de la venta -->
     <app-new-customer-dialog [visible]="newCustomerOpen" (visibleChange)="newCustomerVisible($event)"
                              (created)="customerCreated($event)" />
 
     <!-- Pausar venta -->
-    <p-dialog header="Pausar venta" [(visible)]="holdOpen" [modal]="true" [style]="{ width: '28rem' }"
-              [breakpoints]="{ '640px': '100vw' }" (onShow)="focusHoldLabel()" (onHide)="focusScanner()">
+    <app-dialog header="Pausar venta" [(visible)]="holdOpen" [modal]="true" [style]="{ width: '28rem' }"
+              [breakpoints]="{ '640px': '100vw' }" (shown)="focusHoldLabel()" (hidden)="focusScanner()">
       <form class="flex flex-col gap-3" (ngSubmit)="confirmHold()">
         <p class="text-sm text-muted">
           La venta queda guardada en este equipo para que atiendas a otro cliente. La retomas desde "En espera".
@@ -381,11 +381,11 @@ const STOCK_PAGES = 5;
           <app-button type="submit" label="Pausar venta" icon="pi pi-pause" styleClass="min-h-11" />
         </div>
       </form>
-    </p-dialog>
+    </app-dialog>
 
     <!-- Ventas en espera -->
-    <p-dialog header="Ventas en espera" [(visible)]="heldOpen" [modal]="true" [style]="{ width: '34rem' }"
-              [breakpoints]="{ '640px': '100vw' }" (onHide)="focusScanner()">
+    <app-dialog header="Ventas en espera" [(visible)]="heldOpen" [modal]="true" [style]="{ width: '34rem' }"
+              [breakpoints]="{ '640px': '100vw' }" (hidden)="focusScanner()">
       <ul class="divide-y" aria-label="Ventas en espera">
         @for (h of held(); track h.id) {
           <li class="py-2 flex items-center gap-2">
@@ -407,12 +407,12 @@ const STOCK_PAGES = 5;
         Se guardan en este equipo para tu usuario durante {{ heldDays }} días. Al retomar una venta se actualizan los
         precios. Si tienes otra venta abierta, esa queda en espera.
       </p>
-    </p-dialog>
+    </app-dialog>
 
     <!-- Cobro (F4) -->
-    <p-dialog header="Cobrar" [(visible)]="payOpen" [modal]="true" [style]="{ width: '40rem' }"
+    <app-dialog header="Cobrar" [(visible)]="payOpen" [modal]="true" [style]="{ width: '40rem' }"
               [closable]="!saving()" [closeOnEscape]="!saving()"
-              [breakpoints]="{ '640px': '100vw' }" (onShow)="focusPayment()" (onHide)="focusScanner()">
+              [breakpoints]="{ '640px': '100vw' }" (shown)="focusPayment()" (hidden)="focusScanner()">
       <p class="text-center text-sm text-muted">Total a cobrar</p>
       <p class="text-5xl font-extrabold tracking-tight text-center tabular-nums" [class.mb-4]="!tip()">{{ cop(due()) }}</p>
       @if (tip() > 0) {
@@ -618,12 +618,12 @@ const STOCK_PAGES = 5;
         <app-button label="Registrar venta (Enter)" icon="pi pi-check" size="large" styleClass="min-h-12"
                   [disabled]="!canConfirm()" [loading]="saving()" (clicked)="confirmPayment()" />
       </ng-template>
-    </p-dialog>
+    </app-dialog>
 
     <!-- Venta registrada -->
-    <p-dialog [header]="lastSale() ? 'Venta ' + lastSale()!.documentNumber : 'Tiquete'" [(visible)]="receiptOpen"
+    <app-dialog [header]="lastSale() ? 'Venta ' + lastSale()!.documentNumber : 'Tiquete'" [(visible)]="receiptOpen"
               [modal]="true" [style]="{ width: '30rem' }" [breakpoints]="{ '640px': '100vw' }"
-              (onShow)="focusNewSale()" (onHide)="receiptClosed()">
+              (shown)="focusNewSale()" (hidden)="receiptClosed()">
       @if (lastSale(); as sale) {
         <div class="flex flex-col items-center gap-2 text-center">
           <span class="size-16 rounded-full bg-success-soft text-success-soft-fg inline-flex items-center justify-center">
@@ -662,11 +662,11 @@ const STOCK_PAGES = 5;
                     (clicked)="receiptOpen = false" />
         </div>
       </ng-template>
-    </p-dialog>
+    </app-dialog>
 
     <!-- Atajos (?) -->
-    <p-dialog header="Atajos de teclado" [(visible)]="helpOpen" [modal]="true" [style]="{ width: '30rem' }"
-              [breakpoints]="{ '640px': '100vw' }" (onHide)="focusScanner()">
+    <app-dialog header="Atajos de teclado" [(visible)]="helpOpen" [modal]="true" [style]="{ width: '30rem' }"
+              [breakpoints]="{ '640px': '100vw' }" (hidden)="focusScanner()">
       <dl class="divide-y">
         @for (s of shortcuts; track s.keys) {
           <div class="py-2 flex items-start gap-3">
@@ -682,7 +682,7 @@ const STOCK_PAGES = 5;
         <app-button label="Ver recorrido guiado" icon="pi pi-directions" [outlined]="true" styleClass="min-h-11 mt-4"
                   (clicked)="replayTour()" />
       }
-    </p-dialog>
+    </app-dialog>
 
     @if (lastSale(); as sale) {
       <app-receipt class="receipt-print-root" [sale]="sale" [width]="width()" [logo]="brandLogo()" />
@@ -2412,7 +2412,7 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
         || this.holdOpen || this.heldOpen || this.newCustomerOpen || this.openPriceOpen) {
         return;
       }
-      if (document.querySelector('.p-dialog-mask') && attempt < 10) {
+      if (document.querySelector('.ui-dialog-mask') && attempt < 10) {
         this.focusScanner(attempt + 1);
         return;
       }
@@ -2438,7 +2438,7 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   private anyDialogOpen(): boolean {
     return this.searchOpen || this.variantOpen || this.customerOpen || this.payOpen || this.receiptOpen || this.helpOpen
       || this.holdOpen || this.heldOpen || this.newCustomerOpen || this.openPriceOpen
-      || document.querySelector('.p-dialog-mask') !== null;
+      || document.querySelector('.ui-dialog-mask') !== null;
   }
 
   private draft(method: PaymentMethod, amount: number | null): PaymentDraft {

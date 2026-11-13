@@ -3,7 +3,7 @@ import { ApplicationConfig, inject, isDevMode, provideAppInitializer, provideZon
 import { provideServiceWorker } from '@angular/service-worker';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { TitleStrategy, provideRouter, withComponentInputBinding } from '@angular/router';
-import { ConfirmationService, MessageService } from 'primeng/api';
+import { MessageService } from 'primeng/api';
 import { providePrimeNG } from 'primeng/config';
 import { firstValueFrom } from 'rxjs';
 import { routes } from './app.routes';
@@ -31,7 +31,6 @@ export const appConfig: ApplicationConfig = {
       translation: PRIMENG_ES,
     }),
     MessageService,
-    ConfirmationService,
     // Mantiene sincronizada la clase del modo oscuro (public/theme-init.js ya la aplicó antes del primer render).
     provideAppInitializer(() => {
       inject(ThemeService);

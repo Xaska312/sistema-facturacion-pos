@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonComponent } from '../../shared/ui/button.component';
-import { DialogModule } from 'primeng/dialog';
+import { DialogComponent } from '../../shared/ui/dialog.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable, tap, throwError } from 'rxjs';
 import { PageResponse, Sale, SaleRow, SaleStatus } from '../../core/api/api.models';
@@ -36,7 +36,7 @@ const SALE_STATUS: Record<SaleStatus, StatusKey> = { COMPLETED: 'completed', VOI
 /** Historial de ventas: detalle, reimpresión del tiquete y anulación (permiso sales:void). */
 @Component({
   selector: 'app-sales',
-  imports: [ReceiptSendComponent, FormsModule, ButtonComponent, DialogModule, AppInputDirective, DataTableComponent, HasPermissionDirective,
+  imports: [ReceiptSendComponent, FormsModule, ButtonComponent, DialogComponent, AppInputDirective, DataTableComponent, HasPermissionDirective,
     ReceiptComponent, PageHeaderComponent, FormDialogComponent],
   template: `
     <app-page-header title="Ventas" description="Todas las ventas registradas: detalle, reimpresión del tiquete y anulación." />
@@ -68,7 +68,7 @@ const SALE_STATUS: Record<SaleStatus, StatusKey> = { COMPLETED: 'completed', VOI
       </ng-template>
     </app-data-table>
 
-    <p-dialog [header]="detail() ? 'Venta ' + detail()!.documentNumber : 'Venta'" [(visible)]="detailOpen" [modal]="true"
+    <app-dialog [header]="detail() ? 'Venta ' + detail()!.documentNumber : 'Venta'" [(visible)]="detailOpen" [modal]="true"
               [style]="{ width: '30rem' }">
       @if (detail(); as sale) {
         @if (sale.status === 'VOIDED') {
@@ -95,7 +95,7 @@ const SALE_STATUS: Record<SaleStatus, StatusKey> = { COMPLETED: 'completed', VOI
           <app-button label="Cerrar" styleClass="min-h-11" (clicked)="detailOpen = false" />
         </div>
       </ng-template>
-    </p-dialog>
+    </app-dialog>
 
     <app-form-dialog [(visible)]="voidOpen" header="Anular venta" width="26rem" submitLabel="Anular venta"
                      submitIcon="pi pi-ban" [destructive]="true" [dirty]="voidReason.trim().length > 0"

@@ -4,7 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
-import { DialogModule } from 'primeng/dialog';
+import { DialogComponent } from '../../shared/ui/dialog.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Branch, PageResponse, StockAlert, StockRow, StockStatus } from '../../core/api/api.models';
 import { InventoryApi } from '../../core/api/inventory.api';
@@ -26,7 +26,7 @@ const STOCK_STATUS: Record<StockStatus, StatusKey> = { LOW: 'stock-low', OK: 'st
 /** Existencias por sucursal, alertas de mínimo y niveles mínimo/máximo. */
 @Component({
   selector: 'app-stock',
-  imports: [AskaNudgeComponent, TermComponent, FormsModule, RouterLink, ButtonComponent, ButtonLinkComponent, DialogModule, AppInputDirective, DataTableComponent, PageHeaderComponent,
+  imports: [AskaNudgeComponent, TermComponent, FormsModule, RouterLink, ButtonComponent, ButtonLinkComponent, DialogComponent, AppInputDirective, DataTableComponent, PageHeaderComponent,
     XaskaIaLogoComponent],
   styles: `
     .aska-cta {
@@ -94,7 +94,7 @@ const STOCK_STATUS: Record<StockStatus, StatusKey> = { LOW: 'stock-low', OK: 'st
       </ng-template>
     </app-data-table>
 
-    <p-dialog [(visible)]="levelsOpen" [modal]="true" header="Niveles de existencia" [style]="{ width: '24rem' }">
+    <app-dialog [(visible)]="levelsOpen" [modal]="true" header="Niveles de existencia" [style]="{ width: '24rem' }">
       <p class="text-sm text-muted mb-3">{{ editing()?.name }} ({{ editing()?.unitCode }})</p>
       <div class="grid grid-cols-2 gap-3">
         <label class="flex flex-col gap-1">
@@ -112,7 +112,7 @@ const STOCK_STATUS: Record<StockStatus, StatusKey> = { LOW: 'stock-low', OK: 'st
         <app-button label="Cancelar" [text]="true" severity="secondary" (clicked)="levelsOpen = false" />
         <app-button label="Guardar" icon="pi pi-check" (clicked)="saveLevels()" />
       </div>
-    </p-dialog>
+    </app-dialog>
   `,
 })
 export class StockComponent implements OnInit {

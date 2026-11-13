@@ -3,7 +3,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { ButtonComponent } from '../../shared/ui/button.component';
-import { DialogModule } from 'primeng/dialog';
+import { DialogComponent } from '../../shared/ui/dialog.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable, tap } from 'rxjs';
 import {
@@ -56,7 +56,7 @@ export const PAYMENT_METHODS: readonly string[] = ['Transferencia', 'Nequi', 'Da
  */
 @Component({
   selector: 'app-platform-subscriptions',
-  imports: [XaskaIaLogoComponent, FormsModule, ButtonComponent, DialogModule, AppInputDirective, FormDialogComponent, PesosInputDirective,
+  imports: [XaskaIaLogoComponent, FormsModule, ButtonComponent, DialogComponent, AppInputDirective, FormDialogComponent, PesosInputDirective,
     PageHeaderComponent, StatusBadgeComponent, DataTableComponent, CellTemplateDirective],
   template: `
     <app-page-header title="Suscripciones"
@@ -101,7 +101,7 @@ export const PAYMENT_METHODS: readonly string[] = ['Transferencia', 'Nequi', 'Da
       </ng-template>
     </app-data-table>
 
-    <p-dialog [header]="'Suscripción de ' + (detail()?.tradeName ?? '')" [(visible)]="detailOpen" [modal]="true"
+    <app-dialog [header]="'Suscripción de ' + (detail()?.tradeName ?? '')" [(visible)]="detailOpen" [modal]="true"
               [style]="{ width: 'min(44rem, 95vw)' }">
       @if (detail(); as s) {
         <dl class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
@@ -176,7 +176,7 @@ export const PAYMENT_METHODS: readonly string[] = ['Transferencia', 'Nequi', 'Da
           </div>
         }
       }
-    </p-dialog>
+    </app-dialog>
 
     <app-form-dialog [(visible)]="extrasOpen" [header]="'Extras de ' + (detail()?.tradeName ?? '')" width="36rem"
                      submitLabel="Guardar extras" submitIcon="pi pi-gift" [dirty]="extrasDirty()"

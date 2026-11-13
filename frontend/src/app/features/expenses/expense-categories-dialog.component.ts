@@ -1,7 +1,7 @@
 import { Component, inject, model, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ButtonComponent } from '../../shared/ui/button.component';
-import { DialogModule } from 'primeng/dialog';
+import { DialogComponent } from '../../shared/ui/dialog.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { ExpenseCategory, ExpensesApi } from '../../core/api/expenses.api';
 
@@ -11,10 +11,10 @@ import { ExpenseCategory, ExpensesApi } from '../../core/api/expenses.api';
  */
 @Component({
   selector: 'app-expense-categories-dialog',
-  imports: [FormsModule, ButtonComponent, DialogModule, AppInputDirective],
+  imports: [FormsModule, ButtonComponent, DialogComponent, AppInputDirective],
   template: `
-    <p-dialog header="Categorías de gasto" [(visible)]="visible" [modal]="true" [style]="{ width: '30rem' }"
-              [breakpoints]="{ '640px': '96vw' }" (onHide)="changed.emit()">
+    <app-dialog header="Categorías de gasto" [(visible)]="visible" [modal]="true" [style]="{ width: '30rem' }"
+              [breakpoints]="{ '640px': '96vw' }" (hidden)="changed.emit()">
       <p class="text-sm text-muted mb-3">Son los grupos en que se reparten tus gastos. Renómbralas a tu manera, agrega
         las que te falten y apaga las que no uses.</p>
 
@@ -48,7 +48,7 @@ import { ExpenseCategory, ExpensesApi } from '../../core/api/expenses.api';
           <li class="py-4 text-sm text-muted">Cargando…</li>
         }
       </ul>
-    </p-dialog>
+    </app-dialog>
   `,
 })
 export class ExpenseCategoriesDialogComponent {

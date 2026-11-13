@@ -5,7 +5,7 @@ import { RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
-import { DialogModule } from 'primeng/dialog';
+import { DialogComponent } from '../../shared/ui/dialog.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import {
@@ -39,7 +39,7 @@ import { ExpenseDialogComponent } from '../expenses/expense-dialog.component';
  */
 @Component({
   selector: 'app-cash',
-  imports: [TermComponent, SkeletonComponent, FormsModule, PesosInputDirective, RouterLink, DatePipe, ButtonComponent, ButtonLinkComponent, DialogModule, AppInputDirective, HasPermissionDirective,
+  imports: [TermComponent, SkeletonComponent, FormsModule, PesosInputDirective, RouterLink, DatePipe, ButtonComponent, ButtonLinkComponent, DialogComponent, AppInputDirective, HasPermissionDirective,
     CashReportDialogComponent, PageHeaderComponent, DataTableComponent, CellTemplateDirective, ExpenseDialogComponent],
   template: `
     <app-page-header title="Mi caja" description="Abre tu caja con la base de efectivo, registra ingresos o retiros y ciérrala al final del turno.">
@@ -133,7 +133,7 @@ import { ExpenseDialogComponent } from '../expenses/expense-dialog.component';
     }
     }
 
-    <p-dialog [header]="movementTitle()" [(visible)]="movementOpen" [modal]="true" [style]="{ width: '26rem' }">
+    <app-dialog [header]="movementTitle()" [(visible)]="movementOpen" [modal]="true" [style]="{ width: '26rem' }">
       <div class="flex flex-col gap-3">
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Valor</span>
@@ -150,9 +150,9 @@ import { ExpenseDialogComponent } from '../expenses/expense-dialog.component';
                   [disabled]="!movementAmount || movementAmount <= 0 || !movementReason.trim()"
                   (clicked)="saveMovement()" />
       </ng-template>
-    </p-dialog>
+    </app-dialog>
 
-    <p-dialog header="Cerrar caja" [(visible)]="closeOpen" [modal]="true" [style]="{ width: '28rem' }">
+    <app-dialog header="Cerrar caja" [(visible)]="closeOpen" [modal]="true" [style]="{ width: '28rem' }">
       <p class="text-sm text-muted mb-3">
         Cuenta el efectivo que hay en la caja (billetes y monedas) y escribe el total. Es un
         <app-term term="cierre-ciego">cierre ciego</app-term>: no ves cuánto debería haber. Con lo que cuentes se
@@ -173,7 +173,7 @@ import { ExpenseDialogComponent } from '../expenses/expense-dialog.component';
         <app-button label="Cerrar caja" severity="danger" [loading]="saving()"
                   [disabled]="countedAmount === null || countedAmount < 0" (clicked)="close()" />
       </ng-template>
-    </p-dialog>
+    </app-dialog>
 
     <!-- El egreso es un gasto con categoría (decisión 320): sale del efectivo de esta caja. -->
     <app-expense-dialog (saved)="onExpenseSaved()" />

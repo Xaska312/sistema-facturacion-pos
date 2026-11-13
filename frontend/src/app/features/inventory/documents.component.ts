@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
-import { DialogModule } from 'primeng/dialog';
+import { DialogComponent } from '../../shared/ui/dialog.component';
 import { Branch, InventoryDocument, InventoryDocumentLine, InventoryDocumentType, PageResponse } from '../../core/api/api.models';
 import { InventoryApi } from '../../core/api/inventory.api';
 import { OrganizationApi } from '../../core/api/organization.api';
@@ -21,7 +21,7 @@ import { LatestRequest } from '../../shared/latest-request';
 /** Documentos de inventario (saldo inicial, ajustes, traslados, conteos y bajas) y acceso a crearlos. */
 @Component({
   selector: 'app-inventory-documents',
-  imports: [FormsModule, RouterLink, DatePipe, ButtonComponent, ButtonLinkComponent, DialogModule, DataTableComponent, HasPermissionDirective,
+  imports: [FormsModule, RouterLink, DatePipe, ButtonComponent, ButtonLinkComponent, DialogComponent, DataTableComponent, HasPermissionDirective,
     PageHeaderComponent, CellTemplateDirective],
   template: `
     <app-page-header title="Movimientos de inventario"
@@ -70,7 +70,7 @@ import { LatestRequest } from '../../shared/latest-request';
       </ng-template>
     </app-data-table>
 
-    <p-dialog [(visible)]="detailOpen" [modal]="true" [style]="{ width: '56rem' }"
+    <app-dialog [(visible)]="detailOpen" [modal]="true" [style]="{ width: '56rem' }"
               [header]="detail() ? labels[detail()!.type] + ' ' + docNumber(detail()!.number) : 'Documento'">
       @if (detail(); as d) {
         <p class="text-sm text-muted mb-3">
@@ -105,7 +105,7 @@ import { LatestRequest } from '../../shared/latest-request';
           <p class="text-sm mt-3"><span class="font-medium">Notas:</span> {{ d.notes }}</p>
         }
       }
-    </p-dialog>
+    </app-dialog>
   `,
 })
 export class InventoryDocumentsComponent implements OnInit {

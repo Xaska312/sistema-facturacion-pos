@@ -4,7 +4,7 @@ import { RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
-import { DialogModule } from 'primeng/dialog';
+import { DialogComponent } from '../../shared/ui/dialog.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { Observable, catchError, concatMap, from, last, of } from 'rxjs';
@@ -35,7 +35,7 @@ export function nextTableNames(existing: readonly string[], fromNumber: number, 
 @Component({
   selector: 'app-dining-setup',
   imports: [FormsModule, RouterLink, ButtonComponent, ButtonLinkComponent, AppInputDirective, SkeletonComponent, PageHeaderComponent,
-    FormDialogComponent, EmptyStateComponent, DialogModule, LayoutEditorComponent],
+    FormDialogComponent, EmptyStateComponent, DialogComponent, LayoutEditorComponent],
   template: `
     <app-page-header title="Configurar mesas" description="Zonas de tu local y sus mesas. El nombre de la mesa es el que ve el mesero (4, Barra 2, Terraza A).">
       <a appButton routerLink="/app/mesas" label="Ver el salón" icon="pi pi-arrow-left" severity="secondary" [outlined]="true"></a>
@@ -103,12 +103,12 @@ export function nextTableNames(existing: readonly string[], fromNumber: number, 
       <app-skeleton height="10rem" borderRadius="1.25rem" />
     }
 
-    <p-dialog [visible]="layoutZone() !== null" (visibleChange)="$event || layoutZone.set(null)" [modal]="true"
+    <app-dialog [visible]="layoutZone() !== null" (visibleChange)="$event || layoutZone.set(null)" [modal]="true"
               [header]="'Plano de ' + (layoutZone()?.name ?? '')" [style]="{ width: '60rem' }" [breakpoints]="{ '960px': '100vw' }">
       @if (layoutZone(); as lz) {
         <app-layout-editor [zone]="lz" (saved)="load(); layoutZone.set(null)" (closed)="layoutZone.set(null)" />
       }
-    </p-dialog>
+    </app-dialog>
 
     <app-form-dialog [(visible)]="zoneOpen" [header]="editingZone() ? 'Editar zona' : 'Nueva zona'" width="26rem"
                      [dirty]="true" [invalidMessage]="zoneName.trim() ? null : 'Escribe el nombre de la zona.'"

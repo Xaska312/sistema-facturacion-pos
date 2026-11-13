@@ -2,7 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { ButtonComponent } from '../../shared/ui/button.component';
-import { DialogModule } from 'primeng/dialog';
+import { DialogComponent } from '../../shared/ui/dialog.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable } from 'rxjs';
 import { ActivationCode, CodeInput, CreatedCodes, Plan } from '../../core/api/api.models';
@@ -30,7 +30,7 @@ interface CodeDraft {
  */
 @Component({
   selector: 'app-platform-codes',
-  imports: [FormsModule, ButtonComponent, DialogModule, AppInputDirective, FormDialogComponent, PageHeaderComponent,
+  imports: [FormsModule, ButtonComponent, DialogComponent, AppInputDirective, FormDialogComponent, PageHeaderComponent,
     DataTableComponent, CellTemplateDirective],
   template: `
     <app-page-header title="Códigos de activación"
@@ -86,7 +86,7 @@ interface CodeDraft {
       </div>
     </app-form-dialog>
 
-    <p-dialog header="Códigos generados" [(visible)]="resultOpen" [modal]="true" [closable]="false"
+    <app-dialog header="Códigos generados" [(visible)]="resultOpen" [modal]="true" [closable]="false"
               [closeOnEscape]="false" [style]="{ width: 'min(30rem, 95vw)' }">
       <p class="text-danger font-medium text-sm mb-3">Cópialos ahora: por seguridad no se vuelven a mostrar.</p>
       <ul class="flex flex-col gap-2">
@@ -100,7 +100,7 @@ interface CodeDraft {
       <ng-template #footer>
         <app-button label="Ya los copié" icon="pi pi-check" (clicked)="closeResult()" />
       </ng-template>
-    </p-dialog>
+    </app-dialog>
   `,
 })
 export class PlatformCodesComponent implements OnInit {

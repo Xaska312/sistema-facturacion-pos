@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonComponent } from '../../shared/ui/button.component';
-import { DialogModule } from 'primeng/dialog';
+import { DialogComponent } from '../../shared/ui/dialog.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { Observable, finalize } from 'rxjs';
@@ -53,7 +53,7 @@ interface Picking {
  */
 @Component({
   selector: 'app-tab',
-  imports: [FormsModule, RouterLink, ButtonComponent, DialogModule, AppInputDirective, SkeletonComponent, FormDialogComponent,
+  imports: [FormsModule, RouterLink, ButtonComponent, DialogComponent, AppInputDirective, SkeletonComponent, FormDialogComponent,
     LiveReplacedComponent, CountStepperComponent,
     XIconComponent, ProductGridComponent, ModifierPickerComponent, VariantPickerComponent],
   template: `
@@ -268,7 +268,7 @@ interface Picking {
     }
 
     <!-- Cobrar (Fase 12b-5): toda la cuenta, por productos o en partes iguales. -->
-    <p-dialog header="Cobrar" [(visible)]="chargeOpen" [modal]="true" [style]="{ width: '34rem' }" [breakpoints]="{ '640px': '100vw' }">
+    <app-dialog header="Cobrar" [(visible)]="chargeOpen" [modal]="true" [style]="{ width: '34rem' }" [breakpoints]="{ '640px': '100vw' }">
       <div class="grid gap-2 sm:grid-cols-3 mb-4" role="radiogroup" aria-label="Cómo se cobra">
         <button type="button" class="pick" role="radio" [attr.aria-checked]="chargeMode() === 'all'" (click)="chargeMode.set('all')">
           <span class="font-bold">Toda la cuenta</span><span class="text-xs text-muted">{{ cop(tab()?.total ?? 0) }}</span>
@@ -320,10 +320,10 @@ interface Picking {
                     (clicked)="chargeAll(1)" />
         }
       }
-    </p-dialog>
+    </app-dialog>
 
     <!-- Precio libre -->
-    <p-dialog header="Precio libre" [(visible)]="priceOpen" [modal]="true" [style]="{ width: '24rem' }" [breakpoints]="{ '640px': '100vw' }">
+    <app-dialog header="Precio libre" [(visible)]="priceOpen" [modal]="true" [style]="{ width: '24rem' }" [breakpoints]="{ '640px': '100vw' }">
       @if (picking(); as p) {
         <form class="flex flex-col gap-3" (ngSubmit)="confirmPrice()">
           <p class="font-medium">{{ p.lookup.name }}</p>
@@ -337,24 +337,24 @@ interface Picking {
           </div>
         </form>
       }
-    </p-dialog>
+    </app-dialog>
 
     <!-- Adiciones -->
-    <p-dialog [header]="picking()?.lookup?.name ?? 'Adiciones'" [(visible)]="modifiersOpen" [modal]="true"
+    <app-dialog [header]="picking()?.lookup?.name ?? 'Adiciones'" [(visible)]="modifiersOpen" [modal]="true"
               [style]="{ width: '40rem' }" [breakpoints]="{ '640px': '100vw' }">
       @if (picking(); as p) {
         <app-modifier-picker [groups]="p.groups" [basePrice]="p.basePrice" (picked)="modifiersPicked($event)"
                              (cancelled)="modifiersOpen = false" />
       }
-    </p-dialog>
+    </app-dialog>
 
     <!-- Tallas -->
-    <p-dialog [header]="model()?.name ?? 'Elegir talla'" [(visible)]="variantOpen" [modal]="true" [style]="{ width: '40rem' }"
+    <app-dialog [header]="model()?.name ?? 'Elegir talla'" [(visible)]="variantOpen" [modal]="true" [style]="{ width: '40rem' }"
               [breakpoints]="{ '640px': '100vw' }">
       @if (model(); as m) {
         <app-variant-picker [model]="m" (pick)="pickVariant($event)" />
       }
-    </p-dialog>
+    </app-dialog>
 
     <!-- Quitar -->
     <app-form-dialog [(visible)]="voidOpen" [header]="'Quitar ' + (voiding()?.name ?? '')" width="26rem" submitLabel="Quitar"
@@ -370,7 +370,7 @@ interface Picking {
     </app-form-dialog>
 
     <!-- Mover -->
-    <p-dialog header="Mover a otra mesa" [(visible)]="moveOpen" [modal]="true" [style]="{ width: '32rem' }" [breakpoints]="{ '640px': '100vw' }">
+    <app-dialog header="Mover a otra mesa" [(visible)]="moveOpen" [modal]="true" [style]="{ width: '32rem' }" [breakpoints]="{ '640px': '100vw' }">
       @if (freeTables().length === 0) {
         <p class="text-sm text-muted">No hay mesas libres.</p>
       }
@@ -381,10 +381,10 @@ interface Picking {
           </button>
         }
       </div>
-    </p-dialog>
+    </app-dialog>
 
     <!-- Unir -->
-    <p-dialog header="Unir otra cuenta a esta" [(visible)]="mergeOpen" [modal]="true" [style]="{ width: '32rem' }" [breakpoints]="{ '640px': '100vw' }">
+    <app-dialog header="Unir otra cuenta a esta" [(visible)]="mergeOpen" [modal]="true" [style]="{ width: '32rem' }" [breakpoints]="{ '640px': '100vw' }">
       <p class="text-sm text-muted mb-3">Sus productos pasan a esta cuenta y su mesa queda libre.</p>
       @if (otherTabs().length === 0) {
         <p class="text-sm text-muted">No hay otras cuentas abiertas.</p>
@@ -398,7 +398,7 @@ interface Picking {
           </li>
         }
       </ul>
-    </p-dialog>
+    </app-dialog>
 
     <!-- Datos -->
     <app-form-dialog [(visible)]="detailsOpen" header="Datos de la cuenta" width="28rem" autofocus="desktop" [dirty]="true"

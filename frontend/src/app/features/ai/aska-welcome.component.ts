@@ -1,6 +1,6 @@
 import { Component, OnInit, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { DialogModule } from 'primeng/dialog';
+import { DialogComponent } from '../../shared/ui/dialog.component';
 import { XaskaIaLogoComponent } from '../../shared/brand/xaska-ia-logo.component';
 import { AskaState } from './aska-state';
 import { AskaTrialState } from './aska-trial-state';
@@ -12,9 +12,9 @@ import { challengesDone, daysLeftText } from './aska-trial';
  */
 @Component({
   selector: 'app-aska-welcome',
-  imports: [DialogModule, XaskaIaLogoComponent],
+  imports: [DialogComponent, XaskaIaLogoComponent],
   template: `
-    <p-dialog [visible]="state.welcomeOpen()" (visibleChange)="state.welcomeOpen.set($event)" [modal]="true"
+    <app-dialog [visible]="state.welcomeOpen()" (visibleChange)="state.welcomeOpen.set($event)" [modal]="true"
               [dismissableMask]="true" [showHeader]="false" [style]="{ width: '30rem', maxWidth: '94vw' }"
               styleClass="aska-welcome-dialog">
       @if (state.trial(); as t) {
@@ -55,7 +55,7 @@ import { challengesDone, daysLeftText } from './aska-trial';
             {{ done() === 0 ? 'Empezar' : 'Seguir' }}</button>
         </div>
       }
-    </p-dialog>
+    </app-dialog>
   `,
   styles: `
     .welcome-head { display: flex; align-items: center; gap: 0.875rem; }

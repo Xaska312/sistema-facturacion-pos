@@ -2,7 +2,7 @@ import { Component, inject, input, model, signal } from '@angular/core';
 import { BrandingApi } from '../../core/api/branding.api';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
-import { DialogModule } from 'primeng/dialog';
+import { DialogComponent } from '../../shared/ui/dialog.component';
 import { CashReport } from '../../core/api/api.models';
 import { AuthService } from '../../core/auth/auth.service';
 import { BrandingService } from '../../core/theme/branding.service';
@@ -17,9 +17,9 @@ import { cashSummaryWhatsApp } from './cash-ticket-text';
  */
 @Component({
   selector: 'app-cash-report-dialog',
-  imports: [ButtonComponent, ButtonLinkComponent, DialogModule, CashReportComponent, CashTicketComponent],
+  imports: [ButtonComponent, ButtonLinkComponent, DialogComponent, CashReportComponent, CashTicketComponent],
   template: `
-    <p-dialog [header]="header()" [(visible)]="visible" [modal]="true" [style]="{ width: '32rem' }"
+    <app-dialog [header]="header()" [(visible)]="visible" [modal]="true" [style]="{ width: '32rem' }"
               [breakpoints]="{ '640px': '100vw' }">
       @if (report(); as r) {
         <app-cash-report [report]="r" />
@@ -36,7 +36,7 @@ import { cashSummaryWhatsApp } from './cash-ticket-text';
           </div>
         }
       </ng-template>
-    </p-dialog>
+    </app-dialog>
   `,
 })
 export class CashReportDialogComponent {

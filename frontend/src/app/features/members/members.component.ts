@@ -2,7 +2,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { ButtonComponent } from '../../shared/ui/button.component';
-import { DialogModule } from 'primeng/dialog';
+import { DialogComponent } from '../../shared/ui/dialog.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { AccessApi, invitationLink } from '../../core/api/access.api';
 import { Branch, Invitation, Member, PageResponse, Role } from '../../core/api/api.models';
@@ -22,7 +22,7 @@ type Tab = 'members' | 'invitations';
 
 @Component({
   selector: 'app-members',
-  imports: [FormsModule, ButtonComponent, DialogModule, AppInputDirective, DataTableComponent, HasPermissionDirective,
+  imports: [FormsModule, ButtonComponent, DialogComponent, AppInputDirective, DataTableComponent, HasPermissionDirective,
     PageHeaderComponent],
   template: `
     <app-page-header title="Usuarios" description="Las personas que trabajan en tu negocio, sus roles y sus sucursales.">
@@ -75,7 +75,7 @@ type Tab = 'members' | 'invitations';
     }
 
     <!-- Invitar -->
-    <p-dialog [(visible)]="inviteOpen" [modal]="true" header="Invitar usuario" [style]="{ width: '34rem' }">
+    <app-dialog [(visible)]="inviteOpen" [modal]="true" header="Invitar usuario" [style]="{ width: '34rem' }">
       @if (createdLink(); as link) {
         <div class="flex flex-col gap-3">
           <p>Le enviamos un correo a <strong>{{ invitedEmail() }}</strong> con la invitación. Si no le llega (revisa
@@ -119,10 +119,10 @@ type Tab = 'members' | 'invitations';
           </div>
         </div>
       }
-    </p-dialog>
+    </app-dialog>
 
     <!-- Editar miembro -->
-    <p-dialog [(visible)]="editOpen" [modal]="true" [header]="'Editar ' + (editing()?.displayName ?? '')"
+    <app-dialog [(visible)]="editOpen" [modal]="true" [header]="'Editar ' + (editing()?.displayName ?? '')"
               [style]="{ width: '34rem' }">
       <div class="flex flex-col gap-3">
         <fieldset>
@@ -161,7 +161,7 @@ type Tab = 'members' | 'invitations';
                     [disabled]="selectedRoles().size === 0 || selectedBranches().size === 0" (clicked)="saveMember()" />
         </div>
       </div>
-    </p-dialog>
+    </app-dialog>
   `,
 })
 export class MembersComponent implements OnInit {

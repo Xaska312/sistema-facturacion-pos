@@ -2,7 +2,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { ButtonComponent } from '../../shared/ui/button.component';
-import { DialogModule } from 'primeng/dialog';
+import { DialogComponent } from '../../shared/ui/dialog.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { AccessApi, groupByModule } from '../../core/api/access.api';
 import { Permission, Role } from '../../core/api/api.models';
@@ -35,7 +35,7 @@ const MODULE_LABEL: Record<string, string> = {
 
 @Component({
   selector: 'app-roles',
-  imports: [FormsModule, ButtonComponent, DialogModule, AppInputDirective, PageHeaderComponent, StatusBadgeComponent],
+  imports: [FormsModule, ButtonComponent, DialogComponent, AppInputDirective, PageHeaderComponent, StatusBadgeComponent],
   template: `
     <app-page-header title="Roles y permisos"
                      description="Qué puede hacer cada persona. Los roles del sistema no se pueden cambiar; crea los tuyos.">
@@ -70,7 +70,7 @@ const MODULE_LABEL: Record<string, string> = {
       }
     </div>
 
-    <p-dialog [(visible)]="dialogOpen" [modal]="true" [header]="editing() ? 'Editar rol' : 'Nuevo rol'"
+    <app-dialog [(visible)]="dialogOpen" [modal]="true" [header]="editing() ? 'Editar rol' : 'Nuevo rol'"
               [style]="{ width: '40rem' }">
       <div class="flex flex-col gap-3">
         <label class="flex flex-col gap-1">
@@ -117,7 +117,7 @@ const MODULE_LABEL: Record<string, string> = {
           <app-button label="Guardar" [loading]="saving()" [disabled]="!canSave()" (clicked)="save()" />
         </div>
       </div>
-    </p-dialog>
+    </app-dialog>
   `,
 })
 export class RolesComponent implements OnInit {

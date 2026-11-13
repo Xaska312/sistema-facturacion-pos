@@ -1,5 +1,4 @@
-import { Injectable, inject } from '@angular/core';
-import { ConfirmationService } from 'primeng/api';
+import { Injectable, signal } from '@angular/core';
 
 export interface ConfirmOptions {
   header: string;
@@ -13,26 +12,55 @@ export interface ConfirmOptions {
   reject?: () => void;
 }
 
-/** Confirmaciones con el mismo estilo en toda la app (se pintan en el p-confirmdialog global). */
+/** Lo que pinta la confirmación abierta (`app-confirm-host`, una sola en la app). */
+export interface ConfirmRequest {
+  header: string;
+  message: string;
+  icon: string;
+  acceptLabel: string;
+  rejectLabel: string;
+  danger: boolean;
+  accept: () => void;
+  reject?: () => void;
+}
+
+/**
+ * Confirmaciones con el mismo estilo en toda la app (decisión 338: se pintan en `app-confirm-host`, que reemplaza al
+ * p-confirmdialog de PrimeNG). El foco arranca en "Cancelar" para que un Enter distraído no confirme; Escape y la X
+ * también cancelan. Una confirmación nueva reemplaza a la que esté abierta.
+ */
 @Injectable({ providedIn: 'root' })
 export class ConfirmService {
-  private readonly confirmation = inject(ConfirmationService);
+  private readonly current = signal<ConfirmRequest | null>(null);
+  /** La confirmación abierta, o null. */
+  readonly request = this.current.asReadonly();
 
   ask(options: ConfirmOptions): void {
     const danger = options.danger ?? false;
-    const rejectLabel = options.rejectLabel ?? 'Cancelar';
-    this.confirmation.confirm({
+    this.current.set({
       header: options.header,
       message: options.message,
       icon: danger ? 'pi pi-exclamation-triangle' : 'pi pi-question-circle',
       acceptLabel: options.acceptLabel,
-      rejectLabel,
-      acceptButtonProps: { label: options.acceptLabel, severity: danger ? 'danger' : 'primary' },
-      rejectButtonProps: { label: rejectLabel, severity: 'secondary', text: true },
-      defaultFocus: 'reject',
+      rejectLabel: options.rejectLabel ?? 'Cancelar',
+      danger,
       accept: options.accept,
       reject: options.reject,
     });
+  }
+
+  /** Confirma la abierta: se cierra y corre su acción. */
+  accept(): void {
+    const request = this.current();
+    this.current.set(null);
+    request?.accept();
+  }
+
+  /** Cancela la abierta (botón, X o Escape). */
+  reject(): void {
+    const request = this.current();
+    this.current.set(null);
+    request?.reject?.();
   }
 
   /** Activar/desactivar un registro con textos coherentes. */

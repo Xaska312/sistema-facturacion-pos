@@ -121,6 +121,9 @@
   --btn-warn-tint-hover: #fff7ed;
   --btn-warn-tint-active: #ffedd5;
   --btn-warn-outline: #c2410c;
+  /* Diálogos de shared/ui (decisión 338): fondo y sombra como los de PrimeNG. */
+  --dialog-mask: rgb(0 0 0 / 0.4);
+  --dialog-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
   --text: #12201f;
   --text-muted: #4f5f5d;
   --brand: #4338ca;
@@ -257,6 +260,7 @@
   --btn-warn-ring: #fb923c;
   --btn-warn-tint-hover: color-mix(in srgb, #fb923c, transparent 96%);
   --btn-warn-tint-active: color-mix(in srgb, #fb923c, transparent 84%);
+  --dialog-mask: rgb(0 0 0 / 0.6);
   --text: #e6efee;
   --text-muted: #9cb0ad;
   --brand: #818cf8;
@@ -923,6 +927,107 @@
   }
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* Diálogo de shared/ui (app-dialog y app-confirm-host, decisión 338): mismas medidas que el de PrimeNG. */
+.ui-dialog-mask {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.ui-dialog-mask-modal {
+  pointer-events: auto;
+  background: var(--dialog-mask);
+  animation: ui-dialog-mask-enter 150ms ease-out;
+}
+
+.ui-dialog {
+  display: flex;
+  flex-direction: column;
+  max-height: 90%;
+  pointer-events: auto;
+  transform: scale(1);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--ui-radius-dialog);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--dialog-shadow);
+  will-change: transform;
+  animation: ui-dialog-enter 300ms cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.ui-dialog-header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem;
+}
+
+.ui-dialog-title {
+  font-size: 1.375rem;
+  font-weight: 800;
+}
+
+.ui-dialog-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ui-dialog-close-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.ui-dialog-content {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 0 1.5rem 1.5rem;
+}
+
+.ui-dialog-footer {
+  display: flex;
+  flex-shrink: 0;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0 1.5rem 1.5rem;
+}
+
+.ui-confirm-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.ui-confirm-content .ui-confirm-icon {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  font-size: 2rem;
+}
+
+/* La página de atrás no se desplaza con un diálogo modal abierto. */
+.ui-overflow-hidden {
+  overflow: hidden;
+  padding-right: var(--ui-scrollbar-width, 0);
+}
+
+@keyframes ui-dialog-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.93);
+  }
+}
+
+@keyframes ui-dialog-mask-enter {
+  from {
+    background: transparent;
   }
 }
 
