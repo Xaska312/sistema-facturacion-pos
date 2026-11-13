@@ -2,7 +2,7 @@ import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angula
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
-import { SkeletonModule } from 'primeng/skeleton';
+import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { KitchenApi, KitchenStation, KitchenTicket, TicketStatus } from '../../core/api/kitchen.api';
 import { problemMessage } from '../../core/errors/problem';
 import { DiningEventsService } from '../../core/realtime/dining-events.service';
@@ -41,7 +41,7 @@ function saveStations(ids: readonly string[]): void {
  */
 @Component({
   selector: 'app-kitchen-display',
-  imports: [ButtonModule, SkeletonModule, XIconComponent, LiveReplacedComponent],
+  imports: [ButtonModule, SkeletonComponent, XIconComponent, LiveReplacedComponent],
   template: `
     <div class="kds" [class.kds--full]="full()">
       <header class="flex flex-wrap items-center justify-between gap-3 mb-4">
@@ -148,7 +148,7 @@ function saveStations(ids: readonly string[]): void {
       } @else {
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-busy="true">
           @for (i of [0, 1, 2]; track i) {
-            <p-skeleton height="16rem" borderRadius="1.25rem" />
+            <app-skeleton height="16rem" borderRadius="1.25rem" />
           }
         </div>
       }

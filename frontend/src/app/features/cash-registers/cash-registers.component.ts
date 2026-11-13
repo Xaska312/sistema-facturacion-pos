@@ -1,7 +1,7 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable } from 'rxjs';
 import { Branch, CashRegister, PageResponse } from '../../core/api/api.models';
 import { OrganizationApi } from '../../core/api/organization.api';
@@ -17,7 +17,7 @@ import { LatestRequest } from '../../shared/latest-request';
 
 @Component({
   selector: 'app-cash-registers',
-  imports: [ReactiveFormsModule, ButtonModule, InputTextModule, DataTableComponent, PageHeaderComponent,
+  imports: [ReactiveFormsModule, ButtonModule, AppInputDirective, DataTableComponent, PageHeaderComponent,
     FormDialogComponent, FieldErrorComponent],
   template: `
     <app-page-header title="Cajas registradoras"
@@ -66,14 +66,14 @@ import { LatestRequest } from '../../shared/latest-request';
           </div>
           <div class="flex flex-col gap-1">
             <label for="register-code" class="text-sm font-medium">Código</label>
-            <input pInputText id="register-code" formControlName="code" placeholder="CAJA-2" autocomplete="off" />
+            <input appInput id="register-code" formControlName="code" placeholder="CAJA-2" autocomplete="off" />
             <app-field-error [control]="form.controls.code"
                              patternMessage="Usa de 2 a 20 letras, números, guiones o guiones bajos (sin espacios)." />
           </div>
         }
         <div class="flex flex-col gap-1">
           <label for="register-name" class="text-sm font-medium">Nombre</label>
-          <input pInputText id="register-name" formControlName="name" placeholder="Caja de la entrada" />
+          <input appInput id="register-name" formControlName="name" placeholder="Caja de la entrada" />
           <app-field-error [control]="form.controls.name" />
         </div>
         <label class="flex items-start gap-2 text-sm">

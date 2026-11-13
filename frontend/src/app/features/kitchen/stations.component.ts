@@ -3,8 +3,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { SkeletonModule } from 'primeng/skeleton';
+import { AppInputDirective } from '../../shared/ui/input.directive';
+import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { Observable, Subject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
 import { Category, Product } from '../../core/api/api.models';
 import { CatalogApi } from '../../core/api/catalog.api';
@@ -21,7 +21,7 @@ import { StationDraft, emptyStation, stationDraft, stationProblem, stationReceiv
  */
 @Component({
   selector: 'app-stations',
-  imports: [FormsModule, RouterLink, ButtonModule, InputTextModule, SkeletonModule, PageHeaderComponent,
+  imports: [FormsModule, RouterLink, ButtonModule, AppInputDirective, SkeletonComponent, PageHeaderComponent,
     FormDialogComponent, XIconComponent],
   template: `
     <app-page-header title="Estaciones de cocina" glyph="kitchen"
@@ -52,7 +52,7 @@ import { StationDraft, emptyStation, stationDraft, stationProblem, stationReceiv
     } @else {
       <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3" aria-busy="true">
         @for (i of [0, 1]; track i) {
-          <p-skeleton height="9rem" borderRadius="1.25rem" />
+          <app-skeleton height="9rem" borderRadius="1.25rem" />
         }
       </div>
     }
@@ -62,7 +62,7 @@ import { StationDraft, emptyStation, stationDraft, stationProblem, stationReceiv
                      [successMessage]="editing() ? 'Estación guardada' : 'Estación creada'" (saved)="load()">
       <div class="flex flex-col gap-1">
         <label for="station-name" class="text-sm font-semibold">Nombre</label>
-        <input pInputText id="station-name" maxlength="40" placeholder="Bar, Parrilla, Postres…" [(ngModel)]="draft.name"
+        <input appInput id="station-name" maxlength="40" placeholder="Bar, Parrilla, Postres…" [(ngModel)]="draft.name"
                (ngModelChange)="touch()" />
       </div>
 
@@ -80,7 +80,7 @@ import { StationDraft, emptyStation, stationDraft, stationProblem, stationReceiv
           </div>
         }
         <label for="station-product" class="text-xs text-muted mt-1">Productos sueltos (mandan sobre su categoría):</label>
-        <input pInputText id="station-product" placeholder="Busca un producto por nombre o SKU" autocomplete="off"
+        <input appInput id="station-product" placeholder="Busca un producto por nombre o SKU" autocomplete="off"
                [ngModel]="productSearch" (ngModelChange)="searchProducts($event)" />
         @if (productResults().length > 0) {
           <ul class="border border-line rounded-xl divide-y divide-line max-h-48 overflow-auto" aria-label="Productos encontrados">

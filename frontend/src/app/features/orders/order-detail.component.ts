@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable, tap } from 'rxjs';
 import {
   CREDIT_METHOD_CODE,
@@ -39,7 +39,7 @@ import { PAYMENT_LABEL, dueLabel, formatDay, orderBadge, orderWhatsAppLink, size
  */
 @Component({
   selector: 'app-order-detail',
-  imports: [FormsModule, RouterLink, ButtonModule, InputTextModule, PageHeaderComponent, StatCardComponent,
+  imports: [FormsModule, RouterLink, ButtonModule, AppInputDirective, PageHeaderComponent, StatCardComponent,
     StatusBadgeComponent, FormDialogComponent, OrderPaymentDialogComponent, OrderDeliverDialogComponent,
     OrderReceiptComponent, OrderDocumentComponent],
   template: `
@@ -189,7 +189,7 @@ import { PAYMENT_LABEL, dueLabel, formatDay, orderBadge, orderWhatsAppLink, size
                        : 'Lo ya entregado sigue siendo una venta. Lo pendiente se cancela.'">
       <div class="flex flex-col gap-1">
         <label for="cancel-reason" class="text-sm font-medium">{{ refundOnly() ? 'Nota de la devolución' : 'Motivo' }}</label>
-        <input pInputText id="cancel-reason" maxlength="255" [(ngModel)]="cancelReason"
+        <input appInput id="cancel-reason" maxlength="255" [(ngModel)]="cancelReason"
                [placeholder]="refundOnly() ? 'Devolución por la venta anulada' : 'El cliente desistió, no hubo material…'" />
       </div>
       @if ((order()?.depositAvailable ?? 0) > 0) {
@@ -216,7 +216,7 @@ import { PAYMENT_LABEL, dueLabel, formatDay, orderBadge, orderWhatsAppLink, size
                 <span class="text-muted font-normal">(opcional)</span>
               }
             </label>
-            <input pInputText id="refund-reference" maxlength="60" [(ngModel)]="refundReference" />
+            <input appInput id="refund-reference" maxlength="60" [(ngModel)]="refundReference" />
           </div>
         }
       }

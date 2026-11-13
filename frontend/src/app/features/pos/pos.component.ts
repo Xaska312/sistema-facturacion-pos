@@ -8,8 +8,8 @@ import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
-import { SkeletonModule } from 'primeng/skeleton';
+import { AppInputDirective } from '../../shared/ui/input.directive';
+import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { catchError, finalize, forkJoin, map, of, switchMap } from 'rxjs';
 import {
   CREDIT_METHOD_CODE,
@@ -138,7 +138,7 @@ const STOCK_PAGES = 5;
  */
 @Component({
   selector: 'app-pos',
-  imports: [OfflineBarComponent, ReceiptSendComponent, WithholdingBoxComponent, FormsModule, PesosInputDirective, ButtonModule, DialogModule, InputTextModule, SkeletonModule, HasPermissionDirective,
+  imports: [OfflineBarComponent, ReceiptSendComponent, WithholdingBoxComponent, FormsModule, PesosInputDirective, ButtonModule, DialogModule, AppInputDirective, SkeletonComponent, HasPermissionDirective,
     ReceiptComponent, PosHeaderComponent, ProductGridComponent, CartPanelComponent, OpenCashComponent,
     VariantPickerComponent, NewCustomerDialogComponent, ModifierPickerComponent],
   template: `
@@ -157,7 +157,7 @@ const STOCK_PAGES = 5;
         </div>
       } @else if (session() === undefined) {
         <div class="flex-1 flex items-center justify-center p-6" aria-busy="true">
-          <p-skeleton width="20rem" height="12rem" borderRadius="1.75rem" />
+          <app-skeleton width="20rem" height="12rem" borderRadius="1.75rem" />
         </div>
       } @else if (session() === null) {
         <app-open-cash class="flex-1 overflow-auto" (opened)="cashOpened($event)" />
@@ -194,7 +194,7 @@ const STOCK_PAGES = 5;
             <div class="scan-tile">
               <div class="relative flex-1 min-w-0" data-tour="scanner">
                 <i class="pi pi-barcode absolute left-4 top-1/2 -translate-y-1/2 z-10 pointer-events-none text-brand text-lg" aria-hidden="true"></i>
-                <input #scanner pInputText class="scanner-input w-full h-14" [(ngModel)]="code" (keydown.enter)="scan()"
+                <input #scanner appInput class="scanner-input w-full h-14" [(ngModel)]="code" (keydown.enter)="scan()"
                        (blur)="keepFocus()" autocomplete="off" aria-label="Código de barras o SKU"
                        [attr.inputmode]="keyboard() ? null : 'none'"
                        placeholder="Escanea o escribe el código / SKU y Enter (3*código = 3 unidades)" />
@@ -260,7 +260,7 @@ const STOCK_PAGES = 5;
     <p-dialog header="Buscar producto" [(visible)]="searchOpen" [modal]="true" [style]="{ width: '40rem' }"
               [breakpoints]="{ '640px': '100vw' }" (onShow)="focus('search')" (onHide)="focusScanner()">
       <form class="flex gap-2 mb-3" (ngSubmit)="runSearch()">
-        <input #search pInputText name="search" class="flex-1 h-11" [(ngModel)]="searchText"
+        <input #search appInput name="search" class="flex-1 h-11" [(ngModel)]="searchText"
                aria-label="Nombre, SKU o código" placeholder="Nombre, SKU o código" />
         <p-button type="submit" label="Buscar" styleClass="min-h-11" />
       </form>
@@ -333,7 +333,7 @@ const STOCK_PAGES = 5;
     <p-dialog header="Cliente de la venta" [(visible)]="customerOpen" [modal]="true" [style]="{ width: '36rem' }"
               [breakpoints]="{ '640px': '100vw' }" (onShow)="focus('customerSearch')" (onHide)="focusScanner()">
       <form class="flex gap-2 mb-3" (ngSubmit)="runCustomerSearch()">
-        <input #customerSearch pInputText name="customerSearch" class="flex-1 h-11" [(ngModel)]="customerText"
+        <input #customerSearch appInput name="customerSearch" class="flex-1 h-11" [(ngModel)]="customerText"
                aria-label="Nombre o número de documento" placeholder="Nombre o número de documento" />
         <p-button type="submit" label="Buscar" styleClass="min-h-11" />
       </form>
@@ -373,7 +373,7 @@ const STOCK_PAGES = 5;
         </p>
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Nombre para reconocerla</span>
-          <input #holdLabelInput pInputText name="holdLabel" class="h-11" maxlength="60" autocomplete="off"
+          <input #holdLabelInput appInput name="holdLabel" class="h-11" maxlength="60" autocomplete="off"
                  [(ngModel)]="holdLabel" />
         </label>
         <div class="flex justify-end gap-2">
@@ -477,16 +477,16 @@ const STOCK_PAGES = 5;
             @if (rxDetails()) {
               <div class="grid gap-2 sm:grid-cols-2">
                 <label class="flex flex-col gap-1 text-xs font-medium">Quién la firmó
-                  <input pInputText maxlength="160" [(ngModel)]="rx.prescriberName" (ngModelChange)="rxRevision.set(rxRevision() + 1)" placeholder="Dra. Marta Gómez" /></label>
+                  <input appInput maxlength="160" [(ngModel)]="rx.prescriberName" (ngModelChange)="rxRevision.set(rxRevision() + 1)" placeholder="Dra. Marta Gómez" /></label>
                 <label class="flex flex-col gap-1 text-xs font-medium">Registro médico (opcional)
-                  <input pInputText maxlength="40" [(ngModel)]="rx.prescriberLicense" /></label>
+                  <input appInput maxlength="40" [(ngModel)]="rx.prescriberLicense" /></label>
                 <label class="flex flex-col gap-1 text-xs font-medium">Fecha de la fórmula
                   <input type="date" class="border rounded-lg px-2 py-2" [max]="todayIso" [(ngModel)]="rx.prescriptionDate"
                          (ngModelChange)="rxRevision.set(rxRevision() + 1)" /></label>
                 <label class="flex flex-col gap-1 text-xs font-medium">Documento del paciente
-                  <input pInputText maxlength="20" [(ngModel)]="rx.patientDocument" (ngModelChange)="rxRevision.set(rxRevision() + 1)" /></label>
+                  <input appInput maxlength="20" [(ngModel)]="rx.patientDocument" (ngModelChange)="rxRevision.set(rxRevision() + 1)" /></label>
                 <label class="flex flex-col gap-1 text-xs font-medium sm:col-span-2">Nombre del paciente
-                  <input pInputText maxlength="160" [(ngModel)]="rx.patientName" (ngModelChange)="rxRevision.set(rxRevision() + 1)" /></label>
+                  <input appInput maxlength="160" [(ngModel)]="rx.patientName" (ngModelChange)="rxRevision.set(rxRevision() + 1)" /></label>
               </div>
               <p class="text-xs text-muted">Antibiótico o control especial: estos datos quedan en el libro de dispensación.</p>
             }
@@ -542,7 +542,7 @@ const STOCK_PAGES = 5;
                  [id]="'pay-' + i" [(ngModel)]="p.amount" (keydown)="trackAmountTyping($event, p)"
                  (keydown.enter)="confirmFromAmount(p)" />
           @if (!p.affectsCash && methodCode(p.methodId) !== creditCode) {
-            <input pInputText class="flex-1 min-w-32 h-12" [(ngModel)]="p.reference" maxlength="60"
+            <input appInput class="flex-1 min-w-32 h-12" [(ngModel)]="p.reference" maxlength="60"
                    [attr.aria-label]="'Referencia del pago con ' + methodShortName(p.methodId)"
                    [attr.aria-invalid]="missingRefs.includes(i)"
                    [placeholder]="requiresReference(p.methodId) ? 'Referencia (obligatoria)' : 'Referencia (opcional)'"

@@ -7,7 +7,7 @@ import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angu
 import { Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable } from 'rxjs';
 import { Subscription, SubscriptionStatus } from '../../core/api/api.models';
 import { OrganizationApi } from '../../core/api/organization.api';
@@ -42,7 +42,7 @@ const TIMEZONE_LABEL: Record<string, string> = {
 
 @Component({
   selector: 'app-settings',
-  imports: [RouterLink, DigestSettingsComponent, XaskaIaLogoComponent, ConsumptionTaxSectionComponent, TechnicalDirectorSectionComponent, ReactiveFormsModule, FormsModule, ButtonModule, InputTextModule, PageHeaderComponent, FormDialogComponent,
+  imports: [RouterLink, DigestSettingsComponent, XaskaIaLogoComponent, ConsumptionTaxSectionComponent, TechnicalDirectorSectionComponent, ReactiveFormsModule, FormsModule, ButtonModule, AppInputDirective, PageHeaderComponent, FormDialogComponent,
     BrandingSectionComponent, PrinterSectionComponent, BusinessProfileSectionComponent],
   template: `
     <app-page-header title="Ajustes del negocio" description="Cómo funciona tu negocio: tipo y módulos, inventario, impuestos, zona horaria, moneda, tiquete y marca." />
@@ -187,7 +187,7 @@ const TIMEZONE_LABEL: Record<string, string> = {
           </label>
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">Descuento máximo sin autorización (%)</span>
-            <input pInputText type="number" min="0" max="100" step="0.5" formControlName="maxDiscountPercent"
+            <input appInput type="number" min="0" max="100" step="0.5" formControlName="maxDiscountPercent"
                    aria-describedby="discount-help" />
             <span id="discount-help" class="text-xs text-muted">
               Cualquier vendedor puede descontar hasta este porcentaje por producto; más allá, solo quien tiene el
@@ -222,7 +222,7 @@ const TIMEZONE_LABEL: Record<string, string> = {
           <legend class="text-base font-semibold mb-2">Cotizaciones</legend>
           <label class="flex flex-col gap-1 max-w-xs">
             <span class="text-sm font-medium">Días de vigencia por defecto</span>
-            <input pInputText type="number" min="1" max="365" step="1" formControlName="quoteValidityDays"
+            <input appInput type="number" min="1" max="365" step="1" formControlName="quoteValidityDays"
                    aria-describedby="quote-days-help" />
             <span id="quote-days-help" class="text-xs text-muted">Una cotización nueva vale hasta hoy más estos días
               (de 1 a 365). Se puede cambiar en cada una.</span>
@@ -242,7 +242,7 @@ const TIMEZONE_LABEL: Record<string, string> = {
           <legend class="text-base font-semibold mb-2">Mesas</legend>
           <label class="flex flex-col gap-1 max-w-xs">
             <span class="text-sm font-medium">Propina sugerida (%)</span>
-            <input pInputText type="number" min="0" max="20" step="1" formControlName="tipPercent"
+            <input appInput type="number" min="0" max="20" step="1" formControlName="tipPercent"
                    aria-describedby="tip-help" />
             <span id="tip-help" class="text-xs text-muted">Al cobrar una mesa se le pregunta al cliente si la incluye
               (es voluntaria y va aparte de la venta, sin impuestos). Lo usual es 10; 0 para no sugerirla.</span>
@@ -255,7 +255,7 @@ const TIMEZONE_LABEL: Record<string, string> = {
           <legend class="text-base font-semibold mb-2">Vencimientos</legend>
           <label class="flex flex-col gap-1 max-w-xs">
             <span class="text-sm font-medium">Avisar con cuántos meses de anticipación</span>
-            <input pInputText type="number" min="1" max="12" step="1" formControlName="expiryAlertMonths"
+            <input appInput type="number" min="1" max="12" step="1" formControlName="expiryAlertMonths"
                    aria-describedby="expiry-help" />
             <span id="expiry-help" class="text-xs text-muted">Los lotes que vencen dentro de ese tiempo salen en
               Vencimientos y con la marca "Vence pronto" al vender. Lo usual es 3.</span>
@@ -310,16 +310,16 @@ const TIMEZONE_LABEL: Record<string, string> = {
       <div class="flex flex-col gap-4">
         <div class="flex flex-col gap-1">
           <label for="close-name" class="text-sm font-medium">Nombre del negocio</label>
-          <input pInputText id="close-name" autocomplete="off" [(ngModel)]="closeName" [placeholder]="tradeName() ?? ''" />
+          <input appInput id="close-name" autocomplete="off" [(ngModel)]="closeName" [placeholder]="tradeName() ?? ''" />
           <small class="text-muted">Escribe: <strong>{{ tradeName() }}</strong></small>
         </div>
         <div class="flex flex-col gap-1">
           <label for="close-password" class="text-sm font-medium">Tu contraseña</label>
-          <input pInputText id="close-password" type="password" autocomplete="current-password" [(ngModel)]="closePassword" />
+          <input appInput id="close-password" type="password" autocomplete="current-password" [(ngModel)]="closePassword" />
         </div>
         <div class="flex flex-col gap-1">
           <label for="close-reason" class="text-sm font-medium">Motivo (opcional)</label>
-          <input pInputText id="close-reason" maxlength="300" [(ngModel)]="closeReason" placeholder="Cerré el local" />
+          <input appInput id="close-reason" maxlength="300" [(ngModel)]="closeReason" placeholder="Cerré el local" />
         </div>
       </div>
     </app-form-dialog>

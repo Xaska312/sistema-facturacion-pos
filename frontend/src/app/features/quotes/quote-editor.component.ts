@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { Party, Product, Quote, Unit } from '../../core/api/api.models';
@@ -36,7 +36,7 @@ interface CustomerChoice {
  */
 @Component({
   selector: 'app-quote-editor',
-  imports: [FormsModule, RouterLink, ButtonModule, InputTextModule, PageHeaderComponent, PesosInputDirective,
+  imports: [FormsModule, RouterLink, ButtonModule, AppInputDirective, PageHeaderComponent, PesosInputDirective,
     HasPermissionDirective, NewCustomerDialogComponent],
   template: `
     <app-page-header [title]="title()"
@@ -57,11 +57,11 @@ interface CustomerChoice {
           <div class="grid gap-3 md:grid-cols-2">
             <label class="flex flex-col gap-1">
               <span class="text-xs font-medium">Nombre</span>
-              <input pInputText maxlength="160" [(ngModel)]="prospectName" placeholder="Nombre de la persona o empresa" />
+              <input appInput maxlength="160" [(ngModel)]="prospectName" placeholder="Nombre de la persona o empresa" />
             </label>
             <label class="flex flex-col gap-1">
               <span class="text-xs font-medium">Teléfono <span class="text-muted font-normal">(opcional, para WhatsApp)</span></span>
-              <input pInputText type="tel" maxlength="30" [(ngModel)]="prospectPhone" placeholder="300 123 4567" />
+              <input appInput type="tel" maxlength="30" [(ngModel)]="prospectPhone" placeholder="300 123 4567" />
             </label>
           </div>
           <small class="text-xs text-muted">Si acepta, lo registras como cliente al convertir la cotización en pedido.</small>
@@ -75,7 +75,7 @@ interface CustomerChoice {
           </div>
         } @else {
           <form class="flex gap-2" (ngSubmit)="searchCustomers()">
-            <input pInputText name="customerSearch" class="flex-1" [(ngModel)]="customerText"
+            <input appInput name="customerSearch" class="flex-1" [(ngModel)]="customerText"
                    aria-label="Buscar cliente" placeholder="Nombre, documento o teléfono del cliente" />
             <p-button type="submit" label="Buscar" [loading]="searchingCustomers()" />
             <p-button *hasPermission="'parties:manage'" label="Nuevo" icon="pi pi-user-plus" [outlined]="true"
@@ -107,11 +107,11 @@ interface CustomerChoice {
       </label>
       <label class="flex flex-col gap-1">
         <span class="text-sm font-medium">Notas <span class="text-muted font-normal">(opcional)</span></span>
-        <input pInputText maxlength="1000" [(ngModel)]="notes" placeholder="Obra, referencia, color, acabado…" />
+        <input appInput maxlength="1000" [(ngModel)]="notes" placeholder="Obra, referencia, color, acabado…" />
       </label>
       <label class="flex flex-col gap-1 md:col-span-2">
         <span class="text-sm font-medium">Condiciones <span class="text-muted font-normal">(salen en el PDF)</span></span>
-        <textarea pInputText rows="2" maxlength="1000" [(ngModel)]="terms"
+        <textarea appInput rows="2" maxlength="1000" [(ngModel)]="terms"
                   placeholder="Anticipo, tiempo de entrega, garantía, formas de pago…"></textarea>
       </label>
     </section>
@@ -119,7 +119,7 @@ interface CustomerChoice {
     <section class="card p-4 mt-4 max-w-5xl flex flex-col gap-3">
       <h2 class="font-bold tracking-tight">Qué cotizas</h2>
       <form class="flex flex-wrap gap-2" (ngSubmit)="searchProducts()">
-        <input pInputText name="productSearch" class="flex-1 min-w-64" [(ngModel)]="productText"
+        <input appInput name="productSearch" class="flex-1 min-w-64" [(ngModel)]="productText"
                aria-label="Buscar producto o servicio" placeholder="Busca el producto o servicio (nombre o SKU) y presiona Enter" />
         <p-button type="submit" label="Buscar" [loading]="searchingProducts()" />
       </form>
@@ -144,7 +144,7 @@ interface CustomerChoice {
           </div>
           <label class="flex flex-col gap-1 md:col-span-12">
             <span class="text-xs font-medium">Descripción <span class="text-muted font-normal">(opcional)</span></span>
-            <input pInputText maxlength="200" [(ngModel)]="item.description" placeholder="Mesón cocina, resma para el colegio…" />
+            <input appInput maxlength="200" [(ngModel)]="item.description" placeholder="Mesón cocina, resma para el colegio…" />
           </label>
           <fieldset class="md:col-span-3 flex flex-col gap-1">
             <legend class="text-xs font-medium mb-1">Cobrar</legend>
@@ -162,25 +162,25 @@ interface CustomerChoice {
           @if (item.bySize) {
             <label class="flex flex-col gap-1 md:col-span-2">
               <span class="text-xs font-medium">Ancho (m)</span>
-              <input pInputText type="number" min="0" max="100" step="0.001" [(ngModel)]="item.width" />
+              <input appInput type="number" min="0" max="100" step="0.001" [(ngModel)]="item.width" />
             </label>
             <label class="flex flex-col gap-1 md:col-span-2">
               <span class="text-xs font-medium">Largo (m)</span>
-              <input pInputText type="number" min="0" max="100" step="0.001" [(ngModel)]="item.length" />
+              <input appInput type="number" min="0" max="100" step="0.001" [(ngModel)]="item.length" />
             </label>
           } @else {
             <label class="flex flex-col gap-1 md:col-span-4">
               <span class="text-xs font-medium">Cantidad ({{ item.unitCode }})</span>
-              <input pInputText type="number" min="0" [step]="item.allowsDecimals ? 'any' : 1" [(ngModel)]="item.quantity" />
+              <input appInput type="number" min="0" [step]="item.allowsDecimals ? 'any' : 1" [(ngModel)]="item.quantity" />
             </label>
           }
           <label class="flex flex-col gap-1 md:col-span-2">
             <span class="text-xs font-medium">Precio por {{ item.unitCode }}</span>
-            <input pInputText appPesos [(ngModel)]="item.unitPrice" />
+            <input appInput appPesos [(ngModel)]="item.unitPrice" />
           </label>
           <label class="flex flex-col gap-1 md:col-span-1">
             <span class="text-xs font-medium">Desc. %</span>
-            <input pInputText type="number" min="0" max="99.99" step="0.5" [(ngModel)]="item.discountPercent"
+            <input appInput type="number" min="0" max="99.99" step="0.5" [(ngModel)]="item.discountPercent"
                    [attr.aria-label]="'Descuento de ' + item.productName + ' en porcentaje'" />
           </label>
           <div class="md:col-span-2 text-right">

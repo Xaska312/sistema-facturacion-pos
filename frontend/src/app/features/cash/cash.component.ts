@@ -5,8 +5,8 @@ import { RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
-import { SkeletonModule } from 'primeng/skeleton';
+import { AppInputDirective } from '../../shared/ui/input.directive';
+import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import {
   CashMovement,
   CashReport,
@@ -38,7 +38,7 @@ import { ExpenseDialogComponent } from '../expenses/expense-dialog.component';
  */
 @Component({
   selector: 'app-cash',
-  imports: [TermComponent, SkeletonModule, FormsModule, PesosInputDirective, RouterLink, DatePipe, ButtonModule, DialogModule, InputTextModule, HasPermissionDirective,
+  imports: [TermComponent, SkeletonComponent, FormsModule, PesosInputDirective, RouterLink, DatePipe, ButtonModule, DialogModule, AppInputDirective, HasPermissionDirective,
     CashReportDialogComponent, PageHeaderComponent, DataTableComponent, CellTemplateDirective, ExpenseDialogComponent],
   template: `
     <app-page-header title="Mi caja" description="Abre tu caja con la base de efectivo, registra ingresos o retiros y ciérrala al final del turno.">
@@ -47,7 +47,7 @@ import { ExpenseDialogComponent } from '../expenses/expense-dialog.component';
     </app-page-header>
 
     @if (loading()) {
-      <div class="card p-4" aria-busy="true" aria-label="Cargando tu caja"><p-skeleton height="5rem" /></div>
+      <div class="card p-4" aria-busy="true" aria-label="Cargando tu caja"><app-skeleton height="5rem" /></div>
     } @else {
     @if (session(); as s) {
       <section class="card p-4 mb-4">
@@ -119,11 +119,11 @@ import { ExpenseDialogComponent } from '../expenses/expense-dialog.component';
         <div class="flex flex-wrap items-end gap-3">
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">Base de efectivo</span>
-            <input pInputText appPesos class="w-48" [(ngModel)]="openingAmount" />
+            <input appInput appPesos class="w-48" [(ngModel)]="openingAmount" />
           </label>
           <label class="flex flex-col gap-1 flex-1 min-w-48">
             <span class="text-sm font-medium">Notas (opcional)</span>
-            <input pInputText maxlength="255" [(ngModel)]="openingNotes" />
+            <input appInput maxlength="255" [(ngModel)]="openingNotes" />
           </label>
           <p-button label="Abrir caja" [disabled]="!registerId || openingAmount === null || openingAmount < 0"
                     [loading]="saving()" (onClick)="open()" />
@@ -136,11 +136,11 @@ import { ExpenseDialogComponent } from '../expenses/expense-dialog.component';
       <div class="flex flex-col gap-3">
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Valor</span>
-          <input pInputText appPesos [(ngModel)]="movementAmount" />
+          <input appInput appPesos [(ngModel)]="movementAmount" />
         </label>
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Motivo</span>
-          <input pInputText maxlength="255" [(ngModel)]="movementReason" placeholder="Ej.: pago de domicilio" />
+          <input appInput maxlength="255" [(ngModel)]="movementReason" placeholder="Ej.: pago de domicilio" />
         </label>
       </div>
       <ng-template #footer>
@@ -160,11 +160,11 @@ import { ExpenseDialogComponent } from '../expenses/expense-dialog.component';
       <div class="flex flex-col gap-3">
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Efectivo contado</span>
-          <input pInputText appPesos [(ngModel)]="countedAmount" />
+          <input appInput appPesos [(ngModel)]="countedAmount" />
         </label>
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Notas (opcional)</span>
-          <input pInputText maxlength="500" [(ngModel)]="closingNotes" />
+          <input appInput maxlength="500" [(ngModel)]="closingNotes" />
         </label>
       </div>
       <ng-template #footer>

@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable, tap } from 'rxjs';
 import { Quote, QuoteConfig, QuoteSaleResult } from '../../core/api/api.models';
 import { QuotesApi } from '../../core/api/quotes.api';
@@ -28,7 +28,7 @@ import { partyName, partyPhone, quoteBadge, quoteWhatsAppLink, validLabel } from
  */
 @Component({
   selector: 'app-quote-detail',
-  imports: [FormsModule, RouterLink, ButtonModule, InputTextModule, PageHeaderComponent, StatusBadgeComponent,
+  imports: [FormsModule, RouterLink, ButtonModule, AppInputDirective, PageHeaderComponent, StatusBadgeComponent,
     FormDialogComponent, QuoteDocumentComponent, QuoteOrderDialogComponent, QuoteSellDialogComponent],
   template: `
     <app-page-header [title]="quote() ? 'Cotización ' + quote()!.number : 'Cotización'" [description]="subtitle()">
@@ -160,7 +160,7 @@ import { partyName, partyPhone, quoteBadge, quoteWhatsAppLink, validLabel } from
                      description="Queda como rechazada (sirve para saber por qué no se cerró). Puedes duplicarla después.">
       <div class="flex flex-col gap-1">
         <label for="reject-reason" class="text-sm font-medium">Motivo</label>
-        <input pInputText id="reject-reason" maxlength="255" [(ngModel)]="rejectReason"
+        <input appInput id="reject-reason" maxlength="255" [(ngModel)]="rejectReason"
                placeholder="Le pareció caro, compró en otro lado, ya no lo necesita…" />
       </div>
     </app-form-dialog>

@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { AccessApi, groupByModule } from '../../core/api/access.api';
 import { Permission, Role } from '../../core/api/api.models';
 import { AuthService } from '../../core/auth/auth.service';
@@ -35,7 +35,7 @@ const MODULE_LABEL: Record<string, string> = {
 
 @Component({
   selector: 'app-roles',
-  imports: [FormsModule, ButtonModule, DialogModule, InputTextModule, PageHeaderComponent, StatusBadgeComponent],
+  imports: [FormsModule, ButtonModule, DialogModule, AppInputDirective, PageHeaderComponent, StatusBadgeComponent],
   template: `
     <app-page-header title="Roles y permisos"
                      description="Qué puede hacer cada persona. Los roles del sistema no se pueden cambiar; crea los tuyos.">
@@ -75,11 +75,11 @@ const MODULE_LABEL: Record<string, string> = {
       <div class="flex flex-col gap-3">
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Nombre</span>
-          <input pInputText [ngModel]="name" (ngModelChange)="setName($event)" placeholder="Supervisor de caja" />
+          <input appInput [ngModel]="name" (ngModelChange)="setName($event)" placeholder="Supervisor de caja" />
         </label>
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Descripción</span>
-          <input pInputText [(ngModel)]="description" />
+          <input appInput [(ngModel)]="description" />
         </label>
         <p class="text-xs text-muted">Solo puedes otorgar permisos que tú tienes.</p>
         <div class="grid gap-3 md:grid-cols-2 max-h-80 overflow-y-auto">
@@ -106,7 +106,7 @@ const MODULE_LABEL: Record<string, string> = {
             <summary class="cursor-pointer text-muted min-h-11 inline-flex items-center">Opciones avanzadas</summary>
             <label class="flex flex-col gap-1 mt-1">
               <span class="font-medium">Código interno</span>
-              <input pInputText [ngModel]="code" (ngModelChange)="setCode($event)" aria-describedby="role-code-help" />
+              <input appInput [ngModel]="code" (ngModelChange)="setCode($event)" aria-describedby="role-code-help" />
               <span id="role-code-help" class="text-xs text-muted">Se arma solo con el nombre. Cámbialo solo si ya existe
                 otro rol con el mismo código (letras, números y _).</span>
             </label>

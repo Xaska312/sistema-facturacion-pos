@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { BillingApi, Partner, PartnerInput, PartnerKind, ReferralRow } from '../../core/api/billing.api';
 import { problemMessage } from '../../core/errors/problem';
 import { copyToClipboard } from '../../shared/clipboard';
@@ -20,7 +20,7 @@ const EMPTY: PartnerInput = { name: '', kind: 'ACCOUNTANT', phone: null, email: 
  */
 @Component({
   selector: 'app-platform-referrals',
-  imports: [FormsModule, ButtonModule, DialogModule, InputTextModule, PageHeaderComponent],
+  imports: [FormsModule, ButtonModule, DialogModule, AppInputDirective, PageHeaderComponent],
   template: `
     <app-page-header title="Referidos y aliados"
                      description="Contadores y distribuidores que traen negocios (20 % del primer pago) y los negocios que entraron con un código.">
@@ -101,21 +101,21 @@ const EMPTY: PartnerInput = { name: '', kind: 'ACCOUNTANT', phone: null, email: 
               [style]="{ width: '28rem', maxWidth: '94vw' }">
       <div class="flex flex-col gap-3">
         <label class="flex flex-col gap-1"><span class="text-sm font-medium">Nombre</span>
-          <input pInputText [(ngModel)]="draft.name" maxlength="120" /></label>
+          <input appInput [(ngModel)]="draft.name" maxlength="120" /></label>
         <label class="flex flex-col gap-1"><span class="text-sm font-medium">Tipo</span>
           <select class="border border-line rounded-[10px] px-3 min-h-11 bg-surface" [(ngModel)]="draft.kind">
             <option value="ACCOUNTANT">Contador</option><option value="DISTRIBUTOR">Distribuidor</option>
           </select></label>
         <div class="grid grid-cols-2 gap-3">
           <label class="flex flex-col gap-1"><span class="text-sm font-medium">Teléfono</span>
-            <input pInputText [(ngModel)]="draft.phone" maxlength="30" /></label>
+            <input appInput [(ngModel)]="draft.phone" maxlength="30" /></label>
           <label class="flex flex-col gap-1"><span class="text-sm font-medium">Llave Bre-B</span>
-            <input pInputText [(ngModel)]="draft.payoutKey" maxlength="64" placeholder="@LLAVE" /></label>
+            <input appInput [(ngModel)]="draft.payoutKey" maxlength="64" placeholder="@LLAVE" /></label>
         </div>
         <label class="flex flex-col gap-1"><span class="text-sm font-medium">Correo</span>
-          <input pInputText type="email" [(ngModel)]="draft.email" maxlength="160" /></label>
+          <input appInput type="email" [(ngModel)]="draft.email" maxlength="160" /></label>
         <label class="flex flex-col gap-1"><span class="text-sm font-medium">Nota</span>
-          <input pInputText [(ngModel)]="draft.note" maxlength="300" /></label>
+          <input appInput [(ngModel)]="draft.note" maxlength="300" /></label>
         <label class="flex items-center gap-2 text-sm"><input type="checkbox" [(ngModel)]="draft.active" /> Activo (su código
           sirve para registrarse)</label>
         <div class="flex justify-end gap-2 mt-2">
@@ -129,7 +129,7 @@ const EMPTY: PartnerInput = { name: '', kind: 'ACCOUNTANT', phone: null, email: 
       @if (paying(); as r) {
         <p class="text-sm mb-3">{{ cop(r.commission ?? 0) }} a {{ r.partnerName }} por {{ r.referredName }}.
           Paga a {{ r.partnerPayoutKey ?? 'su llave' }} y escribe la referencia del pago.</p>
-        <input pInputText class="w-full" [(ngModel)]="reference" maxlength="60" placeholder="Referencia Bre-B" />
+        <input appInput class="w-full" [(ngModel)]="reference" maxlength="60" placeholder="Referencia Bre-B" />
         <div class="flex justify-end gap-2 mt-4">
           <p-button label="Cancelar" [text]="true" (onClick)="paidOpen = false" />
           <p-button label="Marcar pagada" [loading]="saving()" [disabled]="!reference.trim()" (onClick)="markPaid(r)" />

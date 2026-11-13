@@ -1,7 +1,7 @@
 import { Component, DestroyRef, OnInit, computed, inject, input, output, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ReactiveFormsModule } from '@angular/forms';
-import { InputTextModule } from 'primeng/inputtext';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Subject, catchError, debounceTime, distinctUntilChanged, of, startWith, switchMap } from 'rxjs';
 import { CumEntry, MedicinesApi } from '../../core/api/medicines.api';
 import {
@@ -22,7 +22,7 @@ import {
  */
 @Component({
   selector: 'app-medicine-section',
-  imports: [ReactiveFormsModule, InputTextModule],
+  imports: [ReactiveFormsModule, AppInputDirective],
   template: `
     <section class="card p-4 flex flex-col gap-3" [formGroup]="form()" aria-labelledby="medicine-title">
       <header>
@@ -43,7 +43,7 @@ import {
       @if (kind() === 'MEDICINE' || kind() === 'PHYTOTHERAPEUTIC' || kind() === '') {
         <div class="relative flex flex-col gap-1">
           <label for="cum-search" class="text-sm font-medium">Buscar en el catálogo del INVIMA</label>
-          <input pInputText id="cum-search" autocomplete="off" placeholder="Nombre, principio activo o CUM"
+          <input appInput id="cum-search" autocomplete="off" placeholder="Nombre, principio activo o CUM"
                  [value]="query()" (input)="search($any($event.target).value)" [disabled]="disabled()"
                  aria-describedby="cum-help" role="combobox" aria-autocomplete="list"
                  [attr.aria-expanded]="results().length > 0" aria-controls="cum-results" />
@@ -72,32 +72,32 @@ import {
         <div class="grid gap-3 md:grid-cols-2">
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">Registro sanitario INVIMA</span>
-            <input pInputText formControlName="sanitaryRegistration" placeholder="INVIMA 2020M-0012345" />
+            <input appInput formControlName="sanitaryRegistration" placeholder="INVIMA 2020M-0012345" />
           </label>
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">CUM (opcional)</span>
-            <input pInputText formControlName="cum" placeholder="19943544-1" inputmode="numeric" />
+            <input appInput formControlName="cum" placeholder="19943544-1" inputmode="numeric" />
           </label>
           <label class="flex flex-col gap-1 md:col-span-2">
             <span class="text-sm font-medium">Principio activo y concentración</span>
-            <input pInputText formControlName="activeIngredients" placeholder="ACETAMINOFEN 500 mg" />
+            <input appInput formControlName="activeIngredients" placeholder="ACETAMINOFEN 500 mg" />
             <small class="text-muted">Con esto también se encuentra el producto al buscar en Vender y en Productos.</small>
           </label>
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">Forma farmacéutica</span>
-            <input pInputText formControlName="dosageForm" placeholder="TABLETA" />
+            <input appInput formControlName="dosageForm" placeholder="TABLETA" />
           </label>
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">Vía de administración</span>
-            <input pInputText formControlName="route" placeholder="ORAL" />
+            <input appInput formControlName="route" placeholder="ORAL" />
           </label>
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">Código ATC</span>
-            <input pInputText formControlName="atc" class="uppercase" placeholder="N02BE01" />
+            <input appInput formControlName="atc" class="uppercase" placeholder="N02BE01" />
           </label>
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">Titular del registro</span>
-            <input pInputText formControlName="holder" />
+            <input appInput formControlName="holder" />
           </label>
         </div>
 

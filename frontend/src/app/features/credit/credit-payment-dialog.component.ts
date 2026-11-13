@@ -1,6 +1,6 @@
 import { Component, inject, input, model, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { InputTextModule } from 'primeng/inputtext';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable, tap } from 'rxjs';
 import { CREDIT_METHOD_CODE, DEPOSIT_METHOD_CODE, CreditAccount, CreditEntry, PaymentMethod } from '../../core/api/api.models';
 import { CashApi } from '../../core/api/cash.api';
@@ -19,7 +19,7 @@ import { methodLabel } from '../pos/pos-labels';
  */
 @Component({
   selector: 'app-credit-payment-dialog',
-  imports: [FormsModule, InputTextModule, PesosInputDirective, FormDialogComponent],
+  imports: [FormsModule, AppInputDirective, PesosInputDirective, FormDialogComponent],
   template: `
     @if (account(); as a) {
       <app-form-dialog [(visible)]="visible" [header]="'Abono de ' + a.name" width="28rem" submitLabel="Registrar abono"
@@ -59,12 +59,12 @@ import { methodLabel } from '../pos/pos-labels';
                 <span class="text-muted font-normal">(opcional)</span>
               }
             </label>
-            <input pInputText id="credit-reference" name="reference" maxlength="60" [(ngModel)]="reference" />
+            <input appInput id="credit-reference" name="reference" maxlength="60" [(ngModel)]="reference" />
           </div>
         }
         <div class="flex flex-col gap-1">
           <label for="credit-notes" class="text-sm font-medium">Nota <span class="text-muted font-normal">(opcional)</span></label>
-          <input pInputText id="credit-notes" name="notes" maxlength="255" [(ngModel)]="notes" />
+          <input appInput id="credit-notes" name="notes" maxlength="255" [(ngModel)]="notes" />
         </div>
       </app-form-dialog>
     }

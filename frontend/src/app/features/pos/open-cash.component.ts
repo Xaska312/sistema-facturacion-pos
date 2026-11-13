@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
-import { SkeletonModule } from 'primeng/skeleton';
+import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { CashSession, RegisterOption } from '../../core/api/api.models';
 import { CashApi } from '../../core/api/cash.api';
 import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
@@ -18,7 +18,7 @@ import { permissionFlag } from '../../core/auth/permission-flag';
  */
 @Component({
   selector: 'app-open-cash',
-  imports: [FormsModule, PesosInputDirective, RouterLink, ButtonModule, SkeletonModule, XIconComponent],
+  imports: [FormsModule, PesosInputDirective, RouterLink, ButtonModule, SkeletonComponent, XIconComponent],
   template: `
     <section class="card w-full max-w-xl p-6 flex flex-col gap-5 rounded-[1.75rem]" aria-labelledby="open-cash-title">
       <div class="flex items-start gap-3">
@@ -42,7 +42,7 @@ import { permissionFlag } from '../../core/auth/permission-flag';
           "Abrir, mover y cerrar caja".</p>
         <a routerLink="/app" class="text-brand font-medium">Volver al menú</a>
       } @else if (registers() === null) {
-        <p-skeleton height="4.5rem" borderRadius="0.75rem" />
+        <app-skeleton height="4.5rem" borderRadius="0.75rem" />
       } @else {
         @if (joinable().length > 0) {
           <div class="flex flex-col gap-2">

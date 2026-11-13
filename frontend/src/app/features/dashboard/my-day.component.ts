@@ -1,7 +1,7 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
-import { SkeletonModule } from 'primeng/skeleton';
+import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { MyDay } from '../../core/api/api.models';
 import { ReportsApi } from '../../core/api/reports.api';
 import { ChartComponent } from '../../shared/charts/chart.component';
@@ -14,7 +14,7 @@ import { permissionFlag } from '../../core/auth/permission-flag';
 /** "Mi día": ventas propias de hoy (cajero o vendedor sin acceso a los reportes del negocio). */
 @Component({
   selector: 'app-my-day',
-  imports: [ButtonModule, SkeletonModule, ChartComponent, EmptyStateComponent, StatCardComponent],
+  imports: [ButtonModule, SkeletonComponent, ChartComponent, EmptyStateComponent, StatCardComponent],
   template: `
     <section aria-labelledby="my-day-title" class="flex flex-col gap-4">
       <h2 id="my-day-title" class="text-lg font-bold tracking-tight">Mi día</h2>
@@ -47,7 +47,7 @@ import { permissionFlag } from '../../core/auth/permission-flag';
       } @else {
         <div class="grid gap-3 grid-cols-1 sm:grid-cols-3">
           @for (i of [0, 1, 2]; track i) {
-            <div class="card p-4"><p-skeleton height="4.5rem" /></div>
+            <div class="card p-4"><app-skeleton height="4.5rem" /></div>
           }
         </div>
       }

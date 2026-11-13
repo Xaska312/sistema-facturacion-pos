@@ -4,7 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Branch, PageResponse, StockAlert, StockRow, StockStatus } from '../../core/api/api.models';
 import { InventoryApi } from '../../core/api/inventory.api';
 import { OrganizationApi } from '../../core/api/organization.api';
@@ -25,7 +25,7 @@ const STOCK_STATUS: Record<StockStatus, StatusKey> = { LOW: 'stock-low', OK: 'st
 /** Existencias por sucursal, alertas de mínimo y niveles mínimo/máximo. */
 @Component({
   selector: 'app-stock',
-  imports: [AskaNudgeComponent, TermComponent, FormsModule, RouterLink, ButtonModule, DialogModule, InputTextModule, DataTableComponent, PageHeaderComponent,
+  imports: [AskaNudgeComponent, TermComponent, FormsModule, RouterLink, ButtonModule, DialogModule, AppInputDirective, DataTableComponent, PageHeaderComponent,
     XaskaIaLogoComponent],
   styles: `
     .aska-cta {
@@ -98,11 +98,11 @@ const STOCK_STATUS: Record<StockStatus, StatusKey> = { LOW: 'stock-low', OK: 'st
       <div class="grid grid-cols-2 gap-3">
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Mínimo</span>
-          <input pInputText type="number" min="0" [(ngModel)]="minStock" />
+          <input appInput type="number" min="0" [(ngModel)]="minStock" />
         </label>
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Máximo</span>
-          <input pInputText type="number" min="0" [(ngModel)]="maxStock" />
+          <input appInput type="number" min="0" [(ngModel)]="maxStock" />
         </label>
       </div>
       <p class="text-xs text-muted mt-2">Con una <app-term term="stock-minimo">existencia mínima</app-term>, recibes una

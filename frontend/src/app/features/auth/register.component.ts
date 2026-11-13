@@ -4,7 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { rememberStartPlan } from '../billing/start-plan';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { PasswordModule } from 'primeng/password';
 import { AuthService } from '../../core/auth/auth.service';
 import { problemMessage } from '../../core/errors/problem';
@@ -14,7 +14,7 @@ import { AuthLayoutComponent } from '../../shared/layout/auth-layout.component';
 
 @Component({
   selector: 'app-register',
-  imports: [ReactiveFormsModule, RouterLink, ButtonModule, InputTextModule, PasswordModule, AuthLayoutComponent],
+  imports: [ReactiveFormsModule, RouterLink, ButtonModule, AppInputDirective, PasswordModule, AuthLayoutComponent],
   template: `
     <app-auth-layout width="md">
       <form [formGroup]="form" (ngSubmit)="submit()"
@@ -23,15 +23,15 @@ import { AuthLayoutComponent } from '../../shared/layout/auth-layout.component';
 
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Nombre completo</span>
-          <input pInputText formControlName="fullName" autocomplete="name" />
+          <input appInput formControlName="fullName" autocomplete="name" />
         </label>
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Correo</span>
-          <input pInputText type="email" formControlName="email" autocomplete="email" />
+          <input appInput type="email" formControlName="email" autocomplete="email" />
         </label>
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Celular (opcional)</span>
-          <input pInputText formControlName="phone" autocomplete="tel" />
+          <input appInput formControlName="phone" autocomplete="tel" />
         </label>
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Contraseña</span>

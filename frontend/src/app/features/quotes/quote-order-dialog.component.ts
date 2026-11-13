@@ -1,7 +1,7 @@
 import { Component, inject, input, model, output, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable } from 'rxjs';
 import { Party, Quote } from '../../core/api/api.models';
 import { PartiesApi } from '../../core/api/parties.api';
@@ -19,7 +19,7 @@ import { isoDay } from '../orders/order-text';
  */
 @Component({
   selector: 'app-quote-order-dialog',
-  imports: [FormsModule, ButtonModule, InputTextModule, HasPermissionDirective, FormDialogComponent,
+  imports: [FormsModule, ButtonModule, AppInputDirective, HasPermissionDirective, FormDialogComponent,
     NewCustomerDialogComponent],
   template: `
     @if (quote(); as q) {
@@ -45,7 +45,7 @@ import { isoDay } from '../orders/order-text';
               {{ q.prospectName }} aún no es cliente: búscalo por si ya lo registraron, o regístralo con sus datos.
             </small>
             <div class="flex gap-2">
-              <input pInputText class="flex-1" [(ngModel)]="search" aria-labelledby="quote-order-customer"
+              <input appInput class="flex-1" [(ngModel)]="search" aria-labelledby="quote-order-customer"
                      placeholder="Nombre, documento o teléfono" (keydown.enter)="$event.preventDefault(); find()" />
               <p-button label="Buscar" [loading]="searching()" (onClick)="find()" />
               <p-button *hasPermission="'parties:manage'" label="Registrar" icon="pi pi-user-plus" [outlined]="true"
@@ -73,7 +73,7 @@ import { isoDay } from '../orders/order-text';
         </label>
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Dirección de entrega o instalación <span class="text-muted font-normal">(opcional)</span></span>
-          <input pInputText maxlength="255" [(ngModel)]="address" />
+          <input appInput maxlength="255" [(ngModel)]="address" />
         </label>
         <p class="text-sm">Total del pedido <strong class="tabular-nums">{{ cop(q.total) }}</strong>
           <span class="block text-xs text-muted">Puede variar unos pesos por el redondeo del precio con descuento.</span></p>

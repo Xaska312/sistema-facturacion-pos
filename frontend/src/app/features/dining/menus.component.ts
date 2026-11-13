@@ -4,8 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { SkeletonModule } from 'primeng/skeleton';
+import { AppInputDirective } from '../../shared/ui/input.directive';
+import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { Observable, Subject, catchError, debounceTime, distinctUntilChanged, of, switchMap } from 'rxjs';
 import { Category, Product } from '../../core/api/api.models';
 import { CatalogApi } from '../../core/api/catalog.api';
@@ -25,7 +25,7 @@ import { MenuDraft, emptyMenu, menuContents, menuDraft, menuProblem, toMenuInput
  */
 @Component({
   selector: 'app-dining-menus',
-  imports: [FormsModule, RouterLink, ButtonModule, InputTextModule, SkeletonModule, PageHeaderComponent,
+  imports: [FormsModule, RouterLink, ButtonModule, AppInputDirective, SkeletonComponent, PageHeaderComponent,
     FormDialogComponent, EmptyStateComponent, XIconComponent],
   template: `
     <app-page-header title="Cartas por piso" glyph="tables"
@@ -84,7 +84,7 @@ import { MenuDraft, emptyMenu, menuContents, menuDraft, menuProblem, toMenuInput
     } @else {
       <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3" aria-busy="true">
         @for (i of [0, 1]; track i) {
-          <p-skeleton height="9rem" borderRadius="1.25rem" />
+          <app-skeleton height="9rem" borderRadius="1.25rem" />
         }
       </div>
     }
@@ -94,7 +94,7 @@ import { MenuDraft, emptyMenu, menuContents, menuDraft, menuProblem, toMenuInput
                      [successMessage]="editing() ? 'Carta guardada' : 'Carta creada'" (saved)="load()">
       <div class="flex flex-col gap-1">
         <label for="menu-name" class="text-sm font-semibold">Nombre</label>
-        <input pInputText id="menu-name" maxlength="40" placeholder="Piso 1, Piso 2, Bar…" [(ngModel)]="draft.name"
+        <input appInput id="menu-name" maxlength="40" placeholder="Piso 1, Piso 2, Bar…" [(ngModel)]="draft.name"
                (ngModelChange)="touch()" />
       </div>
       <div class="flex flex-col gap-1">
@@ -122,7 +122,7 @@ import { MenuDraft, emptyMenu, menuContents, menuDraft, menuProblem, toMenuInput
           </div>
         }
         <label for="menu-product" class="text-xs text-muted mt-1">Productos sueltos (mandan sobre su categoría):</label>
-        <input pInputText id="menu-product" placeholder="Busca un producto por nombre o SKU" autocomplete="off"
+        <input appInput id="menu-product" placeholder="Busca un producto por nombre o SKU" autocomplete="off"
                [ngModel]="productSearch" (ngModelChange)="searchProducts($event)" />
         @if (productResults().length > 0) {
           <ul class="border border-line rounded-xl divide-y divide-line max-h-48 overflow-auto" aria-label="Productos encontrados">

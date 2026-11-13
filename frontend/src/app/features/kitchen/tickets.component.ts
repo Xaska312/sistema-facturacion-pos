@@ -2,7 +2,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
-import { SkeletonModule } from 'primeng/skeleton';
+import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { BranchOption, DiningApi } from '../../core/api/dining.api';
 import { KitchenApi, KitchenStation, KitchenTicket } from '../../core/api/kitchen.api';
 import { permissionFlag } from '../../core/auth/permission-flag';
@@ -28,7 +28,7 @@ const REFRESH_MS = 10_000;
  */
 @Component({
   selector: 'app-tickets',
-  imports: [FormsModule, RouterLink, ButtonModule, SkeletonModule, PageHeaderComponent, EmptyStateComponent, XIconComponent,
+  imports: [FormsModule, RouterLink, ButtonModule, SkeletonComponent, PageHeaderComponent, EmptyStateComponent, XIconComponent,
     LiveReplacedComponent],
   template: `
     <app-page-header title="Comandas" description="Lo que se ha enviado a cocina y bar en las últimas horas.">
@@ -155,7 +155,7 @@ const REFRESH_MS = 10_000;
     } @else {
       <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3" aria-busy="true">
         @for (i of [0, 1, 2]; track i) {
-          <p-skeleton height="12rem" borderRadius="1.25rem" />
+          <app-skeleton height="12rem" borderRadius="1.25rem" />
         }
       </div>
     }

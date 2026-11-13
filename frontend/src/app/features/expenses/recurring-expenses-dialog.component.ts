@@ -2,7 +2,7 @@ import { Component, computed, inject, model, output, signal } from '@angular/cor
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable } from 'rxjs';
 import { Branch, Party, PaymentMethod } from '../../core/api/api.models';
 import { CashApi } from '../../core/api/cash.api';
@@ -31,7 +31,7 @@ import { frequencyLabel, recurringProblem } from './recurring-text';
  */
 @Component({
   selector: 'app-recurring-expenses-dialog',
-  imports: [FormsModule, ButtonModule, DialogModule, InputTextModule, PesosInputDirective, FormDialogComponent],
+  imports: [FormsModule, ButtonModule, DialogModule, AppInputDirective, PesosInputDirective, FormDialogComponent],
   template: `
     <p-dialog header="Gastos fijos" [(visible)]="visible" [modal]="true" [style]="{ width: '40rem' }"
               [breakpoints]="{ '640px': '96vw' }" (onHide)="changed.emit()">
@@ -69,7 +69,7 @@ import { frequencyLabel, recurringProblem } from './recurring-text';
                      [invalidMessage]="problem()" [save]="saveRequest" [successMessage]="null" (saved)="onSaved()">
       <label class="flex flex-col gap-1">
         <span class="text-sm font-medium">Nombre</span>
-        <input pInputText name="name" maxlength="80" [(ngModel)]="name" (ngModelChange)="formDirty = true"
+        <input appInput name="name" maxlength="80" [(ngModel)]="name" (ngModelChange)="formDirty = true"
                placeholder="Ej.: Arriendo del local" />
       </label>
       <div class="flex flex-col gap-1">

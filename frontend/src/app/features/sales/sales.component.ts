@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable, tap, throwError } from 'rxjs';
 import { PageResponse, Sale, SaleRow, SaleStatus } from '../../core/api/api.models';
 import { SaleFilters, SalesApi } from '../../core/api/sales.api';
@@ -36,7 +36,7 @@ const SALE_STATUS: Record<SaleStatus, StatusKey> = { COMPLETED: 'completed', VOI
 /** Historial de ventas: detalle, reimpresión del tiquete y anulación (permiso sales:void). */
 @Component({
   selector: 'app-sales',
-  imports: [ReceiptSendComponent, FormsModule, ButtonModule, DialogModule, InputTextModule, DataTableComponent, HasPermissionDirective,
+  imports: [ReceiptSendComponent, FormsModule, ButtonModule, DialogModule, AppInputDirective, DataTableComponent, HasPermissionDirective,
     ReceiptComponent, PageHeaderComponent, FormDialogComponent],
   template: `
     <app-page-header title="Ventas" description="Todas las ventas registradas: detalle, reimpresión del tiquete y anulación." />
@@ -104,7 +104,7 @@ const SALE_STATUS: Record<SaleStatus, StatusKey> = { COMPLETED: 'completed', VOI
                      description="La venta queda anulada (no se borra): los productos vuelven al inventario y el efectivo se descuenta de la caja.">
       <div class="flex flex-col gap-1">
         <label for="void-reason" class="text-sm font-medium">Motivo</label>
-        <input pInputText id="void-reason" maxlength="200" [(ngModel)]="voidReason" placeholder="Cliente devolvió el producto" />
+        <input appInput id="void-reason" maxlength="200" [(ngModel)]="voidReason" placeholder="Cliente devolvió el producto" />
       </div>
       @if (detail()?.tip; as tip) {
         @if (!tip.voided) {

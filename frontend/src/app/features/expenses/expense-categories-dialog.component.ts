@@ -2,7 +2,7 @@ import { Component, inject, model, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { ExpenseCategory, ExpensesApi } from '../../core/api/expenses.api';
 
 /**
@@ -11,7 +11,7 @@ import { ExpenseCategory, ExpensesApi } from '../../core/api/expenses.api';
  */
 @Component({
   selector: 'app-expense-categories-dialog',
-  imports: [FormsModule, ButtonModule, DialogModule, InputTextModule],
+  imports: [FormsModule, ButtonModule, DialogModule, AppInputDirective],
   template: `
     <p-dialog header="Categorías de gasto" [(visible)]="visible" [modal]="true" [style]="{ width: '30rem' }"
               [breakpoints]="{ '640px': '96vw' }" (onHide)="changed.emit()">
@@ -20,7 +20,7 @@ import { ExpenseCategory, ExpensesApi } from '../../core/api/expenses.api';
 
       <form class="flex gap-2 mb-4" (ngSubmit)="add()">
         <label class="sr-only" for="new-category">Nueva categoría</label>
-        <input pInputText id="new-category" name="newName" class="flex-1" maxlength="60" [(ngModel)]="newName"
+        <input appInput id="new-category" name="newName" class="flex-1" maxlength="60" [(ngModel)]="newName"
                placeholder="Nueva categoría (ej.: Aseo)" />
         <p-button type="submit" label="Agregar" icon="pi pi-plus" [loading]="saving()"
                   [disabled]="!newName.trim()" />
@@ -31,7 +31,7 @@ import { ExpenseCategory, ExpensesApi } from '../../core/api/expenses.api';
           <li class="flex items-center gap-2 py-2 border-t border-line first:border-t-0">
             @if (editingId === c.id) {
               <label class="sr-only" [for]="'category-' + c.id">Nombre de la categoría</label>
-              <input pInputText [id]="'category-' + c.id" class="flex-1" maxlength="60" [(ngModel)]="editingName"
+              <input appInput [id]="'category-' + c.id" class="flex-1" maxlength="60" [(ngModel)]="editingName"
                      [name]="'category-' + c.id" (keydown.enter)="rename(c)" (keydown.escape)="editingId = null" />
               <p-button label="Guardar" size="small" [loading]="saving()" [disabled]="!editingName.trim()"
                         (onClick)="rename(c)" />

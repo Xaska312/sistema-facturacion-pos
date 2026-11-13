@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable, tap } from 'rxjs';
 import {
   BillingCycle, PageResponse, PaymentInput, Plan, PlanFeature, Subscription, SubscriptionRow, SubscriptionStatus,
@@ -56,7 +56,7 @@ export const PAYMENT_METHODS: readonly string[] = ['Transferencia', 'Nequi', 'Da
  */
 @Component({
   selector: 'app-platform-subscriptions',
-  imports: [XaskaIaLogoComponent, FormsModule, ButtonModule, DialogModule, InputTextModule, FormDialogComponent, PesosInputDirective,
+  imports: [XaskaIaLogoComponent, FormsModule, ButtonModule, DialogModule, AppInputDirective, FormDialogComponent, PesosInputDirective,
     PageHeaderComponent, StatusBadgeComponent, DataTableComponent, CellTemplateDirective],
   template: `
     <app-page-header title="Suscripciones"
@@ -211,29 +211,29 @@ export const PAYMENT_METHODS: readonly string[] = ['Transferencia', 'Nequi', 'Da
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div class="flex flex-col gap-1">
             <label for="ex-branches" class="text-sm font-medium">Sedes de más</label>
-            <input pInputText id="ex-branches" type="number" min="0" max="100" [(ngModel)]="extras.branches" />
+            <input appInput id="ex-branches" type="number" min="0" max="100" [(ngModel)]="extras.branches" />
           </div>
           <div class="flex flex-col gap-1">
             <label for="ex-registers" class="text-sm font-medium">Cajas de más</label>
-            <input pInputText id="ex-registers" type="number" min="0" max="100" [(ngModel)]="extras.registers" />
+            <input appInput id="ex-registers" type="number" min="0" max="100" [(ngModel)]="extras.registers" />
           </div>
           <div class="flex flex-col gap-1">
             <label for="ex-users" class="text-sm font-medium">Usuarios de más</label>
-            <input pInputText id="ex-users" type="number" min="0" max="500" [(ngModel)]="extras.users" />
+            <input appInput id="ex-users" type="number" min="0" max="500" [(ngModel)]="extras.users" />
           </div>
           <div class="flex flex-col gap-1">
             <label for="ex-scans" class="text-sm font-medium" title="Solo cuentan si tiene XASKA IA">Facturas IA/mes de más</label>
-            <input pInputText id="ex-scans" type="number" min="0" max="10000" [(ngModel)]="extras.invoiceScans" />
+            <input appInput id="ex-scans" type="number" min="0" max="10000" [(ngModel)]="extras.invoiceScans" />
           </div>
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div class="flex flex-col gap-1">
             <label for="ex-until" class="text-sm font-medium">Hasta <span class="font-normal text-muted">(vacío = sin fin)</span></label>
-            <input pInputText id="ex-until" type="date" [min]="tomorrow" [(ngModel)]="extras.until" />
+            <input appInput id="ex-until" type="date" [min]="tomorrow" [(ngModel)]="extras.until" />
           </div>
           <div class="flex flex-col gap-1">
             <label for="ex-note" class="text-sm font-medium">Nota interna</label>
-            <input pInputText id="ex-note" maxlength="300" placeholder="Por qué se lo das" [(ngModel)]="extras.note" />
+            <input appInput id="ex-note" maxlength="300" placeholder="Por qué se lo das" [(ngModel)]="extras.note" />
           </div>
         </div>
       </div>
@@ -265,12 +265,12 @@ export const PAYMENT_METHODS: readonly string[] = ['Transferencia', 'Nequi', 'Da
         <div class="grid grid-cols-2 gap-3">
           <div class="flex flex-col gap-1">
             <label for="pay-periods" class="text-sm font-medium">{{ payment.billingCycle === 'ANNUAL' ? 'Años' : 'Meses' }}</label>
-            <input pInputText id="pay-periods" type="number" min="1" [max]="payment.billingCycle === 'ANNUAL' ? 3 : 36"
+            <input appInput id="pay-periods" type="number" min="1" [max]="payment.billingCycle === 'ANNUAL' ? 3 : 36"
                    [(ngModel)]="payment.periods" />
           </div>
           <div class="flex flex-col gap-1">
             <label for="pay-amount" class="text-sm font-medium">Valor recibido</label>
-            <input pInputText id="pay-amount" appPesos [(ngModel)]="payment.amount" />
+            <input appInput id="pay-amount" appPesos [(ngModel)]="payment.amount" />
           </div>
         </div>
         <div class="grid grid-cols-2 gap-3">
@@ -284,13 +284,13 @@ export const PAYMENT_METHODS: readonly string[] = ['Transferencia', 'Nequi', 'Da
           </div>
           <div class="flex flex-col gap-1">
             <label for="pay-reference" class="text-sm font-medium">Referencia</label>
-            <input pInputText id="pay-reference" maxlength="100" [(ngModel)]="payment.reference"
+            <input appInput id="pay-reference" maxlength="100" [(ngModel)]="payment.reference"
                    placeholder="Número del comprobante" />
           </div>
         </div>
         <div class="flex flex-col gap-1">
           <label for="pay-notes" class="text-sm font-medium">Notas internas</label>
-          <input pInputText id="pay-notes" maxlength="500" [(ngModel)]="payment.notes" />
+          <input appInput id="pay-notes" maxlength="500" [(ngModel)]="payment.notes" />
           <small class="text-muted">Solo las ves tú; el negocio no las ve.</small>
         </div>
       </div>

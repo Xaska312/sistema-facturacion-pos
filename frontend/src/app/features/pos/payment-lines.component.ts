@@ -1,7 +1,7 @@
 import { Component, computed, input, model } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { CREDIT_METHOD_CODE, PaymentMethod } from '../../core/api/api.models';
 import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
 import { formatCop } from '../../shared/money';
@@ -15,7 +15,7 @@ import { PaymentDraft } from './sale-math';
  */
 @Component({
   selector: 'app-payment-lines',
-  imports: [FormsModule, ButtonModule, InputTextModule, PesosInputDirective],
+  imports: [FormsModule, ButtonModule, AppInputDirective, PesosInputDirective],
   template: `
     <fieldset class="flex flex-col gap-2">
       <legend class="text-sm font-medium mb-1">Cómo paga</legend>
@@ -49,7 +49,7 @@ import { PaymentDraft } from './sale-math';
                   <span class="text-muted font-normal">(opcional)</span>
                 }
               </span>
-              <input pInputText maxlength="60" [ngModel]="line.reference" (ngModelChange)="setReference(i, $event)" />
+              <input appInput maxlength="60" [ngModel]="line.reference" (ngModelChange)="setReference(i, $event)" />
             </label>
           }
           @if (isCredit(line)) {

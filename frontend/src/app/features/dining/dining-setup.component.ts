@@ -4,8 +4,8 @@ import { RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
-import { SkeletonModule } from 'primeng/skeleton';
+import { AppInputDirective } from '../../shared/ui/input.directive';
+import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { Observable, catchError, concatMap, from, last, of } from 'rxjs';
 import { BranchOption, DiningApi, DiningTable, DiningZone, RegisterOption } from '../../core/api/dining.api';
 import { problemMessage } from '../../core/errors/problem';
@@ -33,7 +33,7 @@ export function nextTableNames(existing: readonly string[], fromNumber: number, 
  */
 @Component({
   selector: 'app-dining-setup',
-  imports: [FormsModule, RouterLink, ButtonModule, InputTextModule, SkeletonModule, PageHeaderComponent,
+  imports: [FormsModule, RouterLink, ButtonModule, AppInputDirective, SkeletonComponent, PageHeaderComponent,
     FormDialogComponent, EmptyStateComponent, DialogModule, LayoutEditorComponent],
   template: `
     <app-page-header title="Configurar mesas" description="Zonas de tu local y sus mesas. El nombre de la mesa es el que ve el mesero (4, Barra 2, Terraza A).">
@@ -99,7 +99,7 @@ export function nextTableNames(existing: readonly string[], fromNumber: number, 
         }
       </div>
     } @else {
-      <p-skeleton height="10rem" borderRadius="1.25rem" />
+      <app-skeleton height="10rem" borderRadius="1.25rem" />
     }
 
     <p-dialog [visible]="layoutZone() !== null" (visibleChange)="$event || layoutZone.set(null)" [modal]="true"
@@ -114,12 +114,12 @@ export function nextTableNames(existing: readonly string[], fromNumber: number, 
                      [save]="zoneRequest" [successMessage]="editingZone() ? 'Zona guardada' : 'Zona creada'" (saved)="load()">
       <div class="flex flex-col gap-1">
         <label for="zone-name" class="text-sm font-semibold">Nombre</label>
-        <input pInputText id="zone-name" maxlength="40" placeholder="Salón, Terraza, Barra" [(ngModel)]="zoneName" />
+        <input appInput id="zone-name" maxlength="40" placeholder="Salón, Terraza, Barra" [(ngModel)]="zoneName" />
       </div>
       @if (editingZone()) {
         <div class="flex flex-col gap-1">
           <label for="zone-position" class="text-sm font-semibold">Orden</label>
-          <input pInputText id="zone-position" type="number" min="0" max="1000" [(ngModel)]="zonePosition" />
+          <input appInput id="zone-position" type="number" min="0" max="1000" [(ngModel)]="zonePosition" />
         </div>
         <label class="flex items-center gap-2 text-sm">
           <input type="checkbox" class="size-4" [(ngModel)]="zoneActive" />Activa (sale en el salón)
@@ -147,16 +147,16 @@ export function nextTableNames(existing: readonly string[], fromNumber: number, 
       <div class="grid grid-cols-2 gap-3">
         <div class="flex flex-col gap-1">
           <label for="bulk-from" class="text-sm font-semibold">Desde el número</label>
-          <input pInputText id="bulk-from" type="number" min="1" [(ngModel)]="bulkFrom" />
+          <input appInput id="bulk-from" type="number" min="1" [(ngModel)]="bulkFrom" />
         </div>
         <div class="flex flex-col gap-1">
           <label for="bulk-count" class="text-sm font-semibold">Cuántas</label>
-          <input pInputText id="bulk-count" type="number" min="1" max="50" [(ngModel)]="bulkCount" />
+          <input appInput id="bulk-count" type="number" min="1" max="50" [(ngModel)]="bulkCount" />
         </div>
       </div>
       <div class="flex flex-col gap-1">
         <label for="bulk-seats" class="text-sm font-semibold">Puestos de cada una <span class="font-normal text-muted">(opcional)</span></label>
-        <input pInputText id="bulk-seats" type="number" min="1" max="99" [(ngModel)]="bulkSeats" />
+        <input appInput id="bulk-seats" type="number" min="1" max="99" [(ngModel)]="bulkSeats" />
       </div>
     </app-form-dialog>
 
@@ -165,12 +165,12 @@ export function nextTableNames(existing: readonly string[], fromNumber: number, 
                      successMessage="Mesa guardada" (saved)="load()">
       <div class="flex flex-col gap-1">
         <label for="table-name" class="text-sm font-semibold">Nombre</label>
-        <input pInputText id="table-name" maxlength="20" [(ngModel)]="tableName" />
+        <input appInput id="table-name" maxlength="20" [(ngModel)]="tableName" />
       </div>
       <div class="grid grid-cols-2 gap-3">
         <div class="flex flex-col gap-1">
           <label for="table-seats" class="text-sm font-semibold">Puestos</label>
-          <input pInputText id="table-seats" type="number" min="1" max="99" [(ngModel)]="tableSeats" />
+          <input appInput id="table-seats" type="number" min="1" max="99" [(ngModel)]="tableSeats" />
         </div>
         <div class="flex flex-col gap-1">
           <label for="table-zone" class="text-sm font-semibold">Zona</label>

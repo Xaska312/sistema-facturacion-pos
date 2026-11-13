@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable } from 'rxjs';
 import { ActivationCode, CodeInput, CreatedCodes, Plan } from '../../core/api/api.models';
 import { PlatformApi } from '../../core/api/platform.api';
@@ -30,7 +30,7 @@ interface CodeDraft {
  */
 @Component({
   selector: 'app-platform-codes',
-  imports: [FormsModule, ButtonModule, DialogModule, InputTextModule, FormDialogComponent, PageHeaderComponent,
+  imports: [FormsModule, ButtonModule, DialogModule, AppInputDirective, FormDialogComponent, PageHeaderComponent,
     DataTableComponent, CellTemplateDirective],
   template: `
     <app-page-header title="Códigos de activación"
@@ -67,20 +67,20 @@ interface CodeDraft {
         <div class="grid grid-cols-2 gap-3">
           <div class="flex flex-col gap-1">
             <label for="code-months" class="text-sm font-medium">Meses incluidos</label>
-            <input pInputText id="code-months" type="number" min="1" max="36" [(ngModel)]="draft.months" />
+            <input appInput id="code-months" type="number" min="1" max="36" [(ngModel)]="draft.months" />
           </div>
           <div class="flex flex-col gap-1">
             <label for="code-days" class="text-sm font-medium">Vigencia (días)</label>
-            <input pInputText id="code-days" type="number" min="1" max="365" [(ngModel)]="draft.validDays" />
+            <input appInput id="code-days" type="number" min="1" max="365" [(ngModel)]="draft.validDays" />
           </div>
         </div>
         <div class="flex flex-col gap-1">
           <label for="code-quantity" class="text-sm font-medium">Cantidad</label>
-          <input pInputText id="code-quantity" type="number" min="1" max="20" [(ngModel)]="draft.quantity" />
+          <input appInput id="code-quantity" type="number" min="1" max="20" [(ngModel)]="draft.quantity" />
         </div>
         <div class="flex flex-col gap-1">
           <label for="code-note" class="text-sm font-medium">Nota (opcional)</label>
-          <input pInputText id="code-note" maxlength="200" [(ngModel)]="draft.note"
+          <input appInput id="code-note" maxlength="200" [(ngModel)]="draft.note"
                  placeholder="A quién se lo vendiste" />
         </div>
       </div>

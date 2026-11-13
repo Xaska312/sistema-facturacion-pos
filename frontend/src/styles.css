@@ -23,7 +23,7 @@
   --ui-radius-dialog: 22px;
   --ui-press: none; /* transformación al presionar */
   --ui-release: cubic-bezier(0.2, 0.8, 0.2, 1);
-  --ui-duration: 0.15s;
+  --ui-duration: 0.2s;
   --ui-lift: none; /* transformación al pasar el mouse */
   --ui-shadow-primary: none;
   --ui-shadow-primary-hover: none;
@@ -56,6 +56,18 @@
   --surface-alt: #eef2f2;
   --surface-border: #dbe2e2;
   --field-border: #839290;
+  /* Campos y barras de carga de shared/ui (decisión 335): los mismos valores que daba PrimeNG. */
+  --field-bg: #ffffff;
+  --field-text: #3b4a48;
+  --field-hover-border: #5f706e;
+  --field-placeholder: #5f706e;
+  --field-disabled-bg: #dbe2e2;
+  --field-disabled-text: #5f706e;
+  --field-invalid: #f87171;
+  --field-invalid-placeholder: #dc2626;
+  --field-shadow: 0 1px 2px 0 rgb(18 18 23 / 0.05);
+  --skeleton-bg: #dbe2e2;
+  --skeleton-shine: rgb(255 255 255 / 0.4);
   --text: #12201f;
   --text-muted: #4f5f5d;
   --brand: #4338ca;
@@ -144,6 +156,16 @@
   --surface-alt: #1b2729;
   --surface-border: #2a3a3d;
   --field-border: #5f7174;
+  --field-bg: #0b1214;
+  --field-text: #ffffff;
+  --field-hover-border: #9cb0ad;
+  --field-placeholder: #9cb0ad;
+  --field-disabled-bg: #2a3a3d;
+  --field-disabled-text: #9cb0ad;
+  --field-invalid: #fca5a5;
+  --field-invalid-placeholder: #f87171;
+  --skeleton-bg: rgb(255 255 255 / 0.06);
+  --skeleton-shine: rgb(255 255 255 / 0.04);
   --text: #e6efee;
   --text-muted: #9cb0ad;
   --brand: #818cf8;
@@ -477,6 +499,85 @@
   input[type="checkbox"],
   input[type="radio"] {
     accent-color: var(--brand);
+  }
+}
+
+/*
+ * Campo de texto de shared/ui ([appInput], decisión 335). Sin capa, como los estilos de PrimeNG que reemplaza:
+ * así gana a las reglas base y las utilidades de Tailwind que hoy no aplican siguen sin aplicar.
+ */
+.app-input {
+  font-family: inherit;
+  font-feature-settings: inherit;
+  font-size: 1rem;
+  color: var(--field-text);
+  background: var(--field-bg);
+  padding-block: 0.5rem;
+  padding-inline: 0.75rem;
+  border: 1px solid var(--field-border);
+  border-radius: var(--ui-radius-field);
+  box-shadow: var(--field-shadow);
+  outline-color: transparent;
+  appearance: none;
+  transition:
+    background var(--ui-duration),
+    color var(--ui-duration),
+    border-color var(--ui-duration),
+    outline-color var(--ui-duration),
+    box-shadow var(--ui-duration);
+}
+
+.app-input:enabled:hover {
+  border-color: var(--field-hover-border);
+}
+
+.app-input:enabled:focus {
+  border-color: var(--brand);
+  outline: none;
+}
+
+.app-input:disabled {
+  background: var(--field-disabled-bg);
+  color: var(--field-disabled-text);
+}
+
+.app-input::placeholder {
+  color: var(--field-placeholder);
+}
+
+.app-input.ng-invalid.ng-dirty {
+  border-color: var(--field-invalid);
+}
+
+.app-input.ng-invalid.ng-dirty::placeholder {
+  color: var(--field-invalid-placeholder);
+}
+
+/* Barra de carga de shared/ui (app-skeleton, decisión 335): mismo brillo que la de PrimeNG. */
+.app-skeleton {
+  display: block;
+  position: relative;
+  overflow: hidden;
+  background: var(--skeleton-bg);
+  border-radius: var(--ui-radius-control);
+}
+
+.app-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, var(--skeleton-shine), transparent);
+  animation: app-skeleton-shine 1.2s infinite;
+}
+
+@keyframes app-skeleton-shine {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
   }
 }
 

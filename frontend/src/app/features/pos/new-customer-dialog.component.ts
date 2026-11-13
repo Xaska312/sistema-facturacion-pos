@@ -1,6 +1,6 @@
 import { Component, inject, model, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { InputTextModule } from 'primeng/inputtext';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable } from 'rxjs';
 import { Party, PersonType } from '../../core/api/api.models';
 import { PartiesApi } from '../../core/api/parties.api';
@@ -15,7 +15,7 @@ import { quickCustomerDraft } from './quick-customer';
  */
 @Component({
   selector: 'app-new-customer-dialog',
-  imports: [FormsModule, InputTextModule, FormDialogComponent],
+  imports: [FormsModule, AppInputDirective, FormDialogComponent],
   template: `
     <app-form-dialog [(visible)]="visible" header="Nuevo cliente" width="34rem"
                      description="Queda en Clientes y se usa en esta venta. Los demás datos los completas allá."
@@ -41,7 +41,7 @@ import { quickCustomerDraft } from './quick-customer';
         <div class="flex flex-col gap-1 sm:col-span-2">
           <label for="qc-number" class="text-sm font-medium">Número de documento</label>
           <div class="flex items-center gap-2">
-            <input pInputText id="qc-number" class="flex-1 min-w-0 h-11" inputmode="numeric" autocomplete="off"
+            <input appInput id="qc-number" class="flex-1 min-w-0 h-11" inputmode="numeric" autocomplete="off"
                    [(ngModel)]="draft.documentNumber" />
             @if (draft.documentType === 'NIT') {
               <span class="text-sm text-muted" title="Dígito de verificación, se calcula solo">DV {{ dv() ?? '—' }}</span>
@@ -51,25 +51,25 @@ import { quickCustomerDraft } from './quick-customer';
         @if (draft.personType === 'NATURAL') {
           <div class="flex flex-col gap-1">
             <label for="qc-first" class="text-sm font-medium">Nombres</label>
-            <input pInputText id="qc-first" class="h-11" autocomplete="off" [(ngModel)]="draft.firstNames" />
+            <input appInput id="qc-first" class="h-11" autocomplete="off" [(ngModel)]="draft.firstNames" />
           </div>
           <div class="flex flex-col gap-1">
             <label for="qc-last" class="text-sm font-medium">Apellidos</label>
-            <input pInputText id="qc-last" class="h-11" autocomplete="off" [(ngModel)]="draft.lastNames" />
+            <input appInput id="qc-last" class="h-11" autocomplete="off" [(ngModel)]="draft.lastNames" />
           </div>
         } @else {
           <div class="flex flex-col gap-1 sm:col-span-2">
             <label for="qc-business" class="text-sm font-medium">Razón social</label>
-            <input pInputText id="qc-business" class="h-11" autocomplete="off" [(ngModel)]="draft.businessName" />
+            <input appInput id="qc-business" class="h-11" autocomplete="off" [(ngModel)]="draft.businessName" />
           </div>
         }
         <div class="flex flex-col gap-1">
           <label for="qc-phone" class="text-sm font-medium">Teléfono <span class="text-muted font-normal">(opcional)</span></label>
-          <input pInputText id="qc-phone" class="h-11" type="tel" inputmode="tel" autocomplete="off" [(ngModel)]="draft.phone" />
+          <input appInput id="qc-phone" class="h-11" type="tel" inputmode="tel" autocomplete="off" [(ngModel)]="draft.phone" />
         </div>
         <div class="flex flex-col gap-1">
           <label for="qc-email" class="text-sm font-medium">Correo <span class="text-muted font-normal">(opcional)</span></label>
-          <input pInputText id="qc-email" class="h-11" type="email" inputmode="email" autocomplete="off" [(ngModel)]="draft.email" />
+          <input appInput id="qc-email" class="h-11" type="email" inputmode="email" autocomplete="off" [(ngModel)]="draft.email" />
         </div>
       </div>
     </app-form-dialog>

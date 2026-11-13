@@ -1,6 +1,6 @@
 import { Component, DestroyRef, OnInit, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { SkeletonModule } from 'primeng/skeleton';
+import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { Observable, catchError, forkJoin, map, of } from 'rxjs';
 import { Category, PageResponse, Product, ProductModelRow } from '../../core/api/api.models';
 import { CatalogApi } from '../../core/api/catalog.api';
@@ -23,7 +23,7 @@ const EMPTY_MODELS: PageResponse<ProductModelRow> = { content: [], page: 0, size
  */
 @Component({
   selector: 'app-product-grid',
-  imports: [SkeletonModule],
+  imports: [SkeletonComponent],
   template: `
     <nav class="flex gap-2 overflow-x-auto pb-2 shrink-0" aria-label="Categorías de productos">
       <button type="button" class="chip" [attr.aria-pressed]="tab() === 'favorites'" (click)="select('favorites')">
@@ -41,7 +41,7 @@ const EMPTY_MODELS: PageResponse<ProductModelRow> = { content: [], page: 0, size
       @if (loading() && cards().length === 0) {
         <div class="grid gap-2 grid-cols-2 sm:grid-cols-3 xl:grid-cols-4" aria-hidden="true">
           @for (i of placeholders; track i) {
-            <p-skeleton height="7.5rem" borderRadius="1.25rem" />
+            <app-skeleton height="7.5rem" borderRadius="1.25rem" />
           }
         </div>
       } @else if (cards().length === 0) {

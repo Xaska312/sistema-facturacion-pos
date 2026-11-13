@@ -3,8 +3,8 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { SkeletonModule } from 'primeng/skeleton';
+import { AppInputDirective } from '../../shared/ui/input.directive';
+import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { Observable, concatMap, from, last } from 'rxjs';
 import {
   AdverseEvent,
@@ -48,7 +48,7 @@ interface Draft {
  */
 @Component({
   selector: 'app-quality',
-  imports: [FormsModule, RouterLink, ButtonModule, InputTextModule, SkeletonModule, PageHeaderComponent,
+  imports: [FormsModule, RouterLink, ButtonModule, AppInputDirective, SkeletonComponent, PageHeaderComponent,
     EmptyStateComponent, FormDialogComponent],
   template: `
     <app-page-header title="Temperatura y calidad"
@@ -123,12 +123,12 @@ interface Draft {
                           </select>
                         </label>
                         <label class="flex flex-col gap-1 text-xs font-medium">Temperatura (°C)
-                          <input pInputText type="number" step="0.1" inputmode="decimal" class="w-28" [name]="'t-' + p.id"
+                          <input appInput type="number" step="0.1" inputmode="decimal" class="w-28" [name]="'t-' + p.id"
                                  [(ngModel)]="d.temperature" required />
                         </label>
                         @if (p.kind === 'ROOM') {
                           <label class="flex flex-col gap-1 text-xs font-medium">Humedad (%)
-                            <input pInputText type="number" step="1" inputmode="decimal" class="w-24" [name]="'h-' + p.id"
+                            <input appInput type="number" step="1" inputmode="decimal" class="w-24" [name]="'h-' + p.id"
                                    [(ngModel)]="d.humidity" required />
                           </label>
                         }
@@ -154,7 +154,7 @@ interface Draft {
               lectura siguiente (en "qué se hizo").</p>
           }
         } @else {
-          <p-skeleton height="14rem" borderRadius="1.25rem" />
+          <app-skeleton height="14rem" borderRadius="1.25rem" />
         }
       }
 
@@ -211,7 +211,7 @@ interface Draft {
             </section>
           }
         } @else {
-          <p-skeleton height="14rem" borderRadius="1.25rem" />
+          <app-skeleton height="14rem" borderRadius="1.25rem" />
         }
       }
 
@@ -251,7 +251,7 @@ interface Draft {
             }
           </div>
         } @else {
-          <p-skeleton height="10rem" borderRadius="1.25rem" />
+          <app-skeleton height="10rem" borderRadius="1.25rem" />
         }
       }
 
@@ -276,7 +276,7 @@ interface Draft {
                      width="28rem" [dirty]="true" [invalidMessage]="pointProblem()" [save]="pointRequest"
                      successMessage="Punto guardado" (saved)="reload()">
       <label class="flex flex-col gap-1 text-sm font-semibold">Nombre
-        <input pInputText maxlength="60" placeholder="Local, Nevera, Bodega" [(ngModel)]="pName" />
+        <input appInput maxlength="60" placeholder="Local, Nevera, Bodega" [(ngModel)]="pName" />
       </label>
       @if (!editingPoint()) {
         <label class="flex flex-col gap-1 text-sm font-semibold">Qué es
@@ -288,17 +288,17 @@ interface Draft {
       }
       <div class="grid grid-cols-2 gap-3">
         <label class="flex flex-col gap-1 text-sm font-semibold">Temperatura mínima (°C)
-          <input pInputText type="number" step="0.1" [(ngModel)]="pTempMin" />
+          <input appInput type="number" step="0.1" [(ngModel)]="pTempMin" />
         </label>
         <label class="flex flex-col gap-1 text-sm font-semibold">Temperatura máxima (°C)
-          <input pInputText type="number" step="0.1" [(ngModel)]="pTempMax" />
+          <input appInput type="number" step="0.1" [(ngModel)]="pTempMax" />
         </label>
         @if ((editingPoint()?.kind ?? pKind) === 'ROOM') {
           <label class="flex flex-col gap-1 text-sm font-semibold">Humedad mínima (%)
-            <input pInputText type="number" step="1" [(ngModel)]="pHumMin" />
+            <input appInput type="number" step="1" [(ngModel)]="pHumMin" />
           </label>
           <label class="flex flex-col gap-1 text-sm font-semibold">Humedad máxima (%)
-            <input pInputText type="number" step="1" [(ngModel)]="pHumMax" />
+            <input appInput type="number" step="1" [(ngModel)]="pHumMax" />
           </label>
         }
       </div>
@@ -315,22 +315,22 @@ interface Draft {
                      description="Los datos del paciente son de salud: solo los ven quienes tienen este permiso.">
       <div class="grid gap-3 sm:grid-cols-2">
         <label class="flex flex-col gap-1 text-sm font-semibold">Fecha en que pasó
-          <input pInputText type="date" [max]="todayIso" [(ngModel)]="eOccurred" />
+          <input appInput type="date" [max]="todayIso" [(ngModel)]="eOccurred" />
         </label>
         <label class="flex flex-col gap-1 text-sm font-semibold">Medicamento
-          <input pInputText maxlength="200" placeholder="Amoxicilina 500 mg" [(ngModel)]="eProduct" />
+          <input appInput maxlength="200" placeholder="Amoxicilina 500 mg" [(ngModel)]="eProduct" />
         </label>
         <label class="flex flex-col gap-1 text-sm font-semibold">Paciente
-          <input pInputText maxlength="160" [(ngModel)]="ePatient" />
+          <input appInput maxlength="160" [(ngModel)]="ePatient" />
         </label>
         <label class="flex flex-col gap-1 text-sm font-semibold">Documento <span class="font-normal text-muted">(opcional)</span>
-          <input pInputText maxlength="20" [(ngModel)]="eDocument" />
+          <input appInput maxlength="20" [(ngModel)]="eDocument" />
         </label>
         <label class="flex flex-col gap-1 text-sm font-semibold">Edad <span class="font-normal text-muted">(opcional)</span>
-          <input pInputText type="number" min="0" max="130" [(ngModel)]="eAge" />
+          <input appInput type="number" min="0" max="130" [(ngModel)]="eAge" />
         </label>
         <label class="flex flex-col gap-1 text-sm font-semibold">Lote <span class="font-normal text-muted">(opcional)</span>
-          <input pInputText maxlength="40" [(ngModel)]="eLot" />
+          <input appInput maxlength="40" [(ngModel)]="eLot" />
         </label>
       </div>
       <label class="flex flex-col gap-1 text-sm font-semibold">Qué le pasó
@@ -346,10 +346,10 @@ interface Draft {
                      successMessage="Reporte anotado" (saved)="loadEvents()"
                      description="Cuando ya lo reportaste en la página del INVIMA (FOREAM), anota la fecha y el número que te dieron.">
       <label class="flex flex-col gap-1 text-sm font-semibold">Fecha del reporte
-        <input pInputText type="date" [max]="todayIso" [(ngModel)]="rDate" />
+        <input appInput type="date" [max]="todayIso" [(ngModel)]="rDate" />
       </label>
       <label class="flex flex-col gap-1 text-sm font-semibold">Número del reporte <span class="font-normal text-muted">(opcional)</span>
-        <input pInputText maxlength="60" [(ngModel)]="rReference" />
+        <input appInput maxlength="60" [(ngModel)]="rReference" />
       </label>
     </app-form-dialog>
   `,

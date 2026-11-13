@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable, tap } from 'rxjs';
 import { CreditAccount, CreditEntry, PageResponse } from '../../core/api/api.models';
 import { CreditApi } from '../../core/api/credit.api';
@@ -25,7 +25,7 @@ import { ENTRY_LABEL, balanceLabel, debtAgeLabel, entryDetail, whatsAppLink } fr
 /** Cuenta de fiado de un cliente: saldo, cupo, estado de cuenta, abonos y su anulación (decisión 255). */
 @Component({
   selector: 'app-credit-account',
-  imports: [FormsModule, RouterLink, ButtonModule, InputTextModule, PageHeaderComponent, StatCardComponent,
+  imports: [FormsModule, RouterLink, ButtonModule, AppInputDirective, PageHeaderComponent, StatCardComponent,
     DataTableComponent, CellTemplateDirective, CreditPaymentDialogComponent, FormDialogComponent],
   template: `
     <app-page-header [title]="account()?.name ?? 'Fiado del cliente'" [description]="subtitle()">
@@ -95,7 +95,7 @@ import { ENTRY_LABEL, balanceLabel, debtAgeLabel, entryDetail, whatsAppLink } fr
                      description="La deuda vuelve a subir. Si fue en efectivo, el dinero sale de la caja.">
       <div class="flex flex-col gap-1">
         <label for="void-reason" class="text-sm font-medium">Motivo</label>
-        <input pInputText id="void-reason" maxlength="200" [(ngModel)]="voidReason" placeholder="Se registró dos veces" />
+        <input appInput id="void-reason" maxlength="200" [(ngModel)]="voidReason" placeholder="Se registró dos veces" />
       </div>
     </app-form-dialog>
   `,

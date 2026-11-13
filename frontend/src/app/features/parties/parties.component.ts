@@ -3,7 +3,7 @@ import { CustomerWithholdingsDialogComponent } from '../finance/customer-withhol
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable } from 'rxjs';
 import { City, Department, PageResponse, Party, PersonType, PriceList } from '../../core/api/api.models';
 import { CatalogApi } from '../../core/api/catalog.api';
@@ -25,7 +25,7 @@ import { LatestRequest } from '../../shared/latest-request';
 /** Clientes o proveedores (según {@code kind} en los datos de la ruta). */
 @Component({
   selector: 'app-parties',
-  imports: [RouterLink, TermComponent, FormsModule, PesosInputDirective, ButtonModule, InputTextModule, DataTableComponent, PageHeaderComponent, FormDialogComponent,
+  imports: [RouterLink, TermComponent, FormsModule, PesosInputDirective, ButtonModule, AppInputDirective, DataTableComponent, PageHeaderComponent, FormDialogComponent,
     CustomerWithholdingsDialogComponent],
   template: `
     <app-page-header [title]="isCustomers() ? 'Clientes' : 'Proveedores'"
@@ -91,7 +91,7 @@ import { LatestRequest } from '../../shared/latest-request';
         <div class="flex flex-col gap-1">
           <label for="party-number" class="text-sm font-medium">Número</label>
           <div class="flex items-center gap-2">
-            <input pInputText id="party-number" class="flex-1 min-w-0" inputmode="numeric" [(ngModel)]="draft.documentNumber" />
+            <input appInput id="party-number" class="flex-1 min-w-0" inputmode="numeric" [(ngModel)]="draft.documentNumber" />
             @if (draft.documentType === 'NIT') {
               <span class="text-sm text-muted" title="Dígito de verificación, se calcula solo">DV {{ dv() ?? '—' }}</span>
             }
@@ -103,29 +103,29 @@ import { LatestRequest } from '../../shared/latest-request';
         @if (draft.personType === 'NATURAL') {
           <div class="flex flex-col gap-1">
             <label for="party-first" class="text-sm font-medium">Nombres</label>
-            <input pInputText id="party-first" [(ngModel)]="draft.firstNames" />
+            <input appInput id="party-first" [(ngModel)]="draft.firstNames" />
           </div>
           <div class="flex flex-col gap-1">
             <label for="party-last" class="text-sm font-medium">Apellidos</label>
-            <input pInputText id="party-last" [(ngModel)]="draft.lastNames" />
+            <input appInput id="party-last" [(ngModel)]="draft.lastNames" />
           </div>
         } @else {
           <div class="flex flex-col gap-1">
             <label for="party-business" class="text-sm font-medium">Razón social</label>
-            <input pInputText id="party-business" [(ngModel)]="draft.businessName" />
+            <input appInput id="party-business" [(ngModel)]="draft.businessName" />
           </div>
         }
         <div class="flex flex-col gap-1">
           <label for="party-email" class="text-sm font-medium">Correo <span class="text-muted font-normal">(opcional)</span></label>
-          <input pInputText id="party-email" type="email" [(ngModel)]="draft.email" />
+          <input appInput id="party-email" type="email" [(ngModel)]="draft.email" />
         </div>
         <div class="flex flex-col gap-1">
           <label for="party-phone" class="text-sm font-medium">Teléfono <span class="text-muted font-normal">(opcional)</span></label>
-          <input pInputText id="party-phone" inputmode="tel" [(ngModel)]="draft.phone" />
+          <input appInput id="party-phone" inputmode="tel" [(ngModel)]="draft.phone" />
         </div>
         <div class="flex flex-col gap-1 md:col-span-2">
           <label for="party-address" class="text-sm font-medium">Dirección <span class="text-muted font-normal">(opcional)</span></label>
-          <input pInputText id="party-address" [(ngModel)]="draft.address" />
+          <input appInput id="party-address" [(ngModel)]="draft.address" />
         </div>
         <div class="flex flex-col gap-1">
           <label for="party-department" class="text-sm font-medium">Departamento</label>
@@ -161,7 +161,7 @@ import { LatestRequest } from '../../shared/latest-request';
           </div>
           <div class="flex flex-col gap-1">
             <label for="party-credit" class="text-sm font-medium">Cupo de fiado</label>
-            <input pInputText id="party-credit" appPesos [(ngModel)]="draft.creditLimit" [disabled]="!canManageCredit()" />
+            <input appInput id="party-credit" appPesos [(ngModel)]="draft.creditLimit" [disabled]="!canManageCredit()" />
             <small class="text-xs text-muted">
               @if (canManageCredit()) {
                 Lo máximo que puede quedar debiendo. 0 = no se le fía.

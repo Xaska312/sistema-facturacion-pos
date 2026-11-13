@@ -1,7 +1,7 @@
 import { Component, computed, inject, input, model, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable, forkJoin, map, of } from 'rxjs';
 import { Direction, InventoryDocumentType, ProductModel, ProductModelRow } from '../../core/api/api.models';
 import { CatalogApi } from '../../core/api/catalog.api';
@@ -25,7 +25,7 @@ export interface SizeGridResult {
  */
 @Component({
   selector: 'app-size-grid-dialog',
-  imports: [FormsModule, ButtonModule, InputTextModule, PesosInputDirective, FormDialogComponent],
+  imports: [FormsModule, ButtonModule, AppInputDirective, PesosInputDirective, FormDialogComponent],
   template: `
     <app-form-dialog [(visible)]="visible" width="64rem" header="Agregar por tallas"
                      [description]="selected() ? null : 'Busca el modelo (p. ej. «Tenis Runner») y escribe las cantidades por talla y color.'"
@@ -55,7 +55,7 @@ export interface SizeGridResult {
               @if (type() === 'INITIAL' || direction === 'IN') {
                 <label class="flex flex-col gap-1">
                   <span class="text-sm font-medium">Costo por unidad{{ type() === 'ADJUSTMENT' ? ' (opcional)' : '' }}</span>
-                  <input pInputText appPesos="2" class="w-40" [(ngModel)]="unitCost"
+                  <input appInput appPesos="2" class="w-40" [(ngModel)]="unitCost"
                          [placeholder]="type() === 'ADJUSTMENT' ? 'Costo promedio' : 'Lo que pagaste'" />
                   <small class="text-xs text-muted max-w-xs">
                     Lo que te costó cada unidad al proveedor (no el precio al público, que es {{ cop(m.salePrice) }}).
@@ -88,7 +88,7 @@ export interface SizeGridResult {
                       <td class="align-top">
                         @if (grid().at(color, size); as v) {
                           @if (v.active) {
-                            <input pInputText type="number" min="0" step="1" inputmode="numeric"
+                            <input appInput type="number" min="0" step="1" inputmode="numeric"
                                    class="w-16 text-center px-1" [ngModel]="quantities()[v.productId]"
                                    (ngModelChange)="setQuantity(v.productId, $event)"
                                    [attr.aria-label]="(type() === 'COUNT' ? 'Contado ' : 'Cantidad ') + 'talla ' + size + (color ? ' ' + color : '')" />
@@ -121,7 +121,7 @@ export interface SizeGridResult {
           </p>
         } @else {
           <div class="flex gap-2">
-            <input pInputText class="flex-1" [(ngModel)]="search" placeholder="Nombre o prefijo del modelo"
+            <input appInput class="flex-1" [(ngModel)]="search" placeholder="Nombre o prefijo del modelo"
                    autocomplete="off" (keydown.enter)="find($event)" aria-label="Buscar modelo" />
             <p-button label="Buscar" icon="pi pi-search" [outlined]="true" [loading]="searching()" (onClick)="find()" />
           </div>

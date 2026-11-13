@@ -1,9 +1,9 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { Component, TemplateRef, computed, contentChild, contentChildren, inject, input, output, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { InputTextModule } from 'primeng/inputtext';
+import { AppInputDirective } from '../ui/input.directive';
 import { PaginatorModule, PaginatorState } from 'primeng/paginator';
-import { SkeletonModule } from 'primeng/skeleton';
+import { SkeletonComponent } from '../ui/skeleton.component';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { PageResponse } from '../../core/api/api.models';
 import { EmptyStateComponent } from '../empty-state.component';
@@ -43,14 +43,14 @@ const SEARCH_DEBOUNCE_MS = 350;
  */
 @Component({
   selector: 'app-data-table',
-  imports: [NgTemplateOutlet, InputTextModule, PaginatorModule, SkeletonModule, EmptyStateComponent, StatusBadgeComponent],
+  imports: [NgTemplateOutlet, AppInputDirective, PaginatorModule, SkeletonComponent, EmptyStateComponent, StatusBadgeComponent],
   template: `
     <div class="flex flex-wrap items-center gap-2 mb-3 empty:hidden">
       @if (searchPlaceholder(); as placeholder) {
         <span class="relative w-full md:w-80">
           <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
              aria-hidden="true"></i>
-          <input #searchBox pInputText type="search" class="w-full" [style.padding-left.rem]="2.25"
+          <input #searchBox appInput type="search" class="w-full" [style.padding-left.rem]="2.25"
                  [placeholder]="placeholder" [attr.aria-label]="placeholder" [value]="searchText()"
                  (input)="onSearch(searchBox.value)" (keydown.enter)="searchNow(searchBox.value)" />
         </span>
@@ -91,10 +91,10 @@ const SEARCH_DEBOUNCE_MS = 350;
                 @for (i of skeletonRows; track i) {
                   <tr class="border-t border-line">
                     @for (column of columns(); track column.header) {
-                      <td class="px-4 py-3"><p-skeleton height="0.875rem" [width]="i % 2 === 0 ? '80%' : '60%'" /></td>
+                      <td class="px-4 py-3"><app-skeleton height="0.875rem" [width]="i % 2 === 0 ? '80%' : '60%'" /></td>
                     }
                     @if (actions()) {
-                      <td class="px-4 py-3"><p-skeleton height="0.875rem" width="4rem" /></td>
+                      <td class="px-4 py-3"><app-skeleton height="0.875rem" width="4rem" /></td>
                     }
                   </tr>
                 }
@@ -128,9 +128,9 @@ const SEARCH_DEBOUNCE_MS = 350;
           @if (showSkeleton()) {
             @for (i of skeletonRows.slice(0, 3); track i) {
               <li class="p-4 flex flex-col gap-2 border-t border-line first:border-t-0">
-                <p-skeleton height="1rem" width="60%" />
-                <p-skeleton height="0.75rem" width="90%" />
-                <p-skeleton height="0.75rem" width="70%" />
+                <app-skeleton height="1rem" width="60%" />
+                <app-skeleton height="0.75rem" width="90%" />
+                <app-skeleton height="0.75rem" width="70%" />
               </li>
             }
           } @else {

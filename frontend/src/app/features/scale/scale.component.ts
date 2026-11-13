@@ -2,7 +2,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable, throwError } from 'rxjs';
 import { Product, ScaleFormat, ScalePlu } from '../../core/api/api.models';
 import { CatalogApi } from '../../core/api/catalog.api';
@@ -23,7 +23,7 @@ const PREFIXES = ['2', '20', '21', '22', '23', '24', '25', '26', '27', '28'];
  */
 @Component({
   selector: 'app-scale',
-  imports: [FormsModule, ButtonModule, InputTextModule, PageHeaderComponent, DataTableComponent, FormDialogComponent],
+  imports: [FormsModule, ButtonModule, AppInputDirective, PageHeaderComponent, DataTableComponent, FormDialogComponent],
   template: `
     <app-page-header title="Báscula"
                      description="Para vender lo que se pesa (queso, carnes, frutas) con las etiquetas que imprime la báscula: el lector agrega el producto con su peso o su valor." />
@@ -120,7 +120,7 @@ const PREFIXES = ['2', '20', '21', '22', '23', '24', '25', '26', '27', '28'];
       <div class="flex flex-col gap-3">
         <div class="flex flex-col gap-1">
           <label for="plu-number" class="text-sm font-medium">PLU</label>
-          <input pInputText id="plu-number" [(ngModel)]="pluText" inputmode="numeric" maxlength="6" class="w-32" autocomplete="off" />
+          <input appInput id="plu-number" [(ngModel)]="pluText" inputmode="numeric" maxlength="6" class="w-32" autocomplete="off" />
         </div>
         <div class="flex flex-col gap-1">
           <label for="plu-search" class="text-sm font-medium">Producto</label>
@@ -131,7 +131,7 @@ const PREFIXES = ['2', '20', '21', '22', '23', '24', '25', '26', '27', '28'];
             </div>
           } @else {
             <div class="flex gap-2">
-              <input pInputText id="plu-search" class="flex-1" [(ngModel)]="search" placeholder="Nombre o SKU"
+              <input appInput id="plu-search" class="flex-1" [(ngModel)]="search" placeholder="Nombre o SKU"
                      autocomplete="off" (keydown.enter)="find($event)" />
               <p-button label="Buscar" icon="pi pi-search" [outlined]="true" (onClick)="find()" />
             </div>

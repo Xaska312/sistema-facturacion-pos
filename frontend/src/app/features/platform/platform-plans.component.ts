@@ -3,7 +3,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable } from 'rxjs';
 import { AiAllowance, Plan, PlanFeature, PlanInput } from '../../core/api/api.models';
 import { BUSINESS_MODULES } from '../../shared/business-types';
@@ -34,7 +34,7 @@ interface PlanDraft {
 /** Planes de suscripción: límites y precios (fase 8b). Límite vacío = sin límite; precio vacío = sin definir. */
 @Component({
   selector: 'app-platform-plans',
-  imports: [XaskaIaLogoComponent, FormsModule, ButtonModule, InputTextModule, FormDialogComponent, PesosInputDirective, PageHeaderComponent,
+  imports: [XaskaIaLogoComponent, FormsModule, ButtonModule, AppInputDirective, FormDialogComponent, PesosInputDirective, PageHeaderComponent,
     DataTableComponent, CellTemplateDirective],
   template: `
     <app-page-header title="Planes"
@@ -62,7 +62,7 @@ interface PlanDraft {
         <form class="flex flex-wrap items-end gap-3" (ngSubmit)="saveAllowance(a.code)">
           <label class="flex flex-col gap-1 flex-1 min-w-56">
             <span class="text-sm font-medium">{{ a.name }} al mes</span>
-            <input pInputText type="number" min="0" max="100000" [name]="'ai-' + a.code"
+            <input appInput type="number" min="0" max="100000" [name]="'ai-' + a.code"
                    [(ngModel)]="allowanceDrafts[a.code]" />
           </label>
           <p-button type="submit" label="Guardar" icon="pi pi-check" [outlined]="true"
@@ -80,31 +80,31 @@ interface PlanDraft {
       <div class="flex flex-col gap-3">
         <div class="flex flex-col gap-1">
           <label for="plan-name" class="text-sm font-medium">Nombre</label>
-          <input pInputText id="plan-name" maxlength="60" [(ngModel)]="draft.name" />
+          <input appInput id="plan-name" maxlength="60" [(ngModel)]="draft.name" />
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div class="flex flex-col gap-1">
             <label for="plan-branches" class="text-sm font-medium">Máximo de sucursales</label>
-            <input pInputText id="plan-branches" type="number" min="1" [(ngModel)]="draft.maxBranches" />
+            <input appInput id="plan-branches" type="number" min="1" [(ngModel)]="draft.maxBranches" />
           </div>
           <div class="flex flex-col gap-1">
             <label for="plan-users" class="text-sm font-medium">Máximo de usuarios</label>
-            <input pInputText id="plan-users" type="number" min="1" [(ngModel)]="draft.maxUsers" />
+            <input appInput id="plan-users" type="number" min="1" [(ngModel)]="draft.maxUsers" />
           </div>
           <div class="flex flex-col gap-1">
             <label for="plan-registers" class="text-sm font-medium">Máximo de cajas</label>
-            <input pInputText id="plan-registers" type="number" min="1" [(ngModel)]="draft.maxRegisters" />
+            <input appInput id="plan-registers" type="number" min="1" [(ngModel)]="draft.maxRegisters" />
           </div>
         </div>
         <small class="text-muted -mt-1">Vacío = sin límite. Los usuarios cuentan las invitaciones pendientes.</small>
         <div class="grid grid-cols-2 gap-3">
           <div class="flex flex-col gap-1">
             <label for="plan-monthly" class="text-sm font-medium">Precio mensual</label>
-            <input pInputText id="plan-monthly" appPesos [(ngModel)]="draft.monthlyPrice" />
+            <input appInput id="plan-monthly" appPesos [(ngModel)]="draft.monthlyPrice" />
           </div>
           <div class="flex flex-col gap-1">
             <label for="plan-annual" class="text-sm font-medium">Precio anual</label>
-            <input pInputText id="plan-annual" appPesos [(ngModel)]="draft.annualPrice" />
+            <input appInput id="plan-annual" appPesos [(ngModel)]="draft.annualPrice" />
           </div>
         </div>
         <fieldset class="flex flex-col gap-1">

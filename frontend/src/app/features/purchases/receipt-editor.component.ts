@@ -10,7 +10,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { CREDIT_METHOD_CODE, DEPOSIT_METHOD_CODE, Branch, Party, PaymentMethod, Product } from '../../core/api/api.models';
 import { CashApi } from '../../core/api/cash.api';
 import { CatalogApi } from '../../core/api/catalog.api';
@@ -65,7 +65,7 @@ import {
  */
 @Component({
   selector: 'app-receipt-editor',
-  imports: [XaskaIaLogoComponent, AskaLoaderComponent, InvoiceNewProductsComponent, AskaNudgeComponent, FormsModule, RouterLink, ButtonModule, InputTextModule, PageHeaderComponent, PesosInputDirective],
+  imports: [XaskaIaLogoComponent, AskaLoaderComponent, InvoiceNewProductsComponent, AskaNudgeComponent, FormsModule, RouterLink, ButtonModule, AppInputDirective, PageHeaderComponent, PesosInputDirective],
   template: `
     <app-page-header title="Recibir mercancía"
                      description="Registra lo que llegó contra la factura del proveedor. Revisa cada producto antes de aceptarlo." />
@@ -163,7 +163,7 @@ import {
           </div>
         } @else {
           <form class="flex gap-2" (ngSubmit)="searchSuppliers()">
-            <input pInputText name="supplierSearch" class="flex-1" [(ngModel)]="supplierText"
+            <input appInput name="supplierSearch" class="flex-1" [(ngModel)]="supplierText"
                    aria-label="Buscar proveedor" placeholder="Nombre o NIT del proveedor" />
             <p-button type="submit" label="Buscar" [loading]="searchingSuppliers()" />
           </form>
@@ -187,7 +187,7 @@ import {
 
       <label class="flex flex-col gap-1">
         <span class="text-sm font-medium">Número de la factura</span>
-        <input pInputText maxlength="40" class="uppercase" [(ngModel)]="invoice" placeholder="FV-12345" />
+        <input appInput maxlength="40" class="uppercase" [(ngModel)]="invoice" placeholder="FV-12345" />
       </label>
       <label class="flex flex-col gap-1">
         <span class="text-sm font-medium">Fecha de la factura</span>
@@ -207,7 +207,7 @@ import {
     <section class="card p-4 mt-4 max-w-5xl flex flex-col gap-3">
       <h2 class="font-bold tracking-tight">Lo que llegó</h2>
       <div class="flex flex-wrap gap-2 items-center">
-        <input pInputText class="flex-1 min-w-64" placeholder="Escanea el código o escribe SKU/nombre y presiona Enter"
+        <input appInput class="flex-1 min-w-64" placeholder="Escanea el código o escribe SKU/nombre y presiona Enter"
                aria-label="Agregar producto" [(ngModel)]="code" (keyup.enter)="add()" />
         <p-button label="Agregar" [loading]="adding()" (onClick)="add()" />
       </div>
@@ -299,7 +299,7 @@ import {
           </div>
           <label class="flex flex-col gap-1 md:col-span-2">
             <span class="text-xs font-medium">Cantidad</span>
-            <input pInputText type="number" min="0" step="any" [(ngModel)]="line.quantity" (ngModelChange)="touch()" />
+            <input appInput type="number" min="0" step="any" [(ngModel)]="line.quantity" (ngModelChange)="touch()" />
           </label>
           <label class="flex flex-col gap-1 md:col-span-2">
             <span class="text-xs font-medium">Presentación</span>
@@ -311,22 +311,22 @@ import {
           </label>
           <label class="flex flex-col gap-1 md:col-span-2">
             <span class="text-xs font-medium">Costo sin IVA</span>
-            <input pInputText appPesos="2" [(ngModel)]="line.unitCost" (ngModelChange)="touch()" />
+            <input appInput appPesos="2" [(ngModel)]="line.unitCost" (ngModelChange)="touch()" />
           </label>
           <label class="flex flex-col gap-1 md:col-span-1">
             <span class="text-xs font-medium">IVA %</span>
-            <input pInputText type="number" min="0" max="100" step="1" [(ngModel)]="line.taxRate" (ngModelChange)="touch()" />
+            <input appInput type="number" min="0" max="100" step="1" [(ngModel)]="line.taxRate" (ngModelChange)="touch()" />
           </label>
           @if (line.rejected) {
             <label class="flex flex-col gap-1 md:col-span-3">
               <span class="text-xs font-medium">Por qué lo rechazas</span>
-              <input pInputText maxlength="200" [(ngModel)]="line.rejectReason" (ngModelChange)="touch()"
+              <input appInput maxlength="200" [(ngModel)]="line.rejectReason" (ngModelChange)="touch()"
                      placeholder="Empaque roto, vencido, no coincide con la factura…" />
             </label>
           } @else {
             <label class="flex flex-col gap-1 md:col-span-2">
               <span class="text-xs font-medium">Lote{{ line.tracksLots ? '' : ' (opcional)' }}</span>
-              <input pInputText maxlength="40" class="uppercase" [(ngModel)]="line.lotNumber" (ngModelChange)="touch()" />
+              <input appInput maxlength="40" class="uppercase" [(ngModel)]="line.lotNumber" (ngModelChange)="touch()" />
             </label>
             <label class="flex flex-col gap-1 md:col-span-1">
               <span class="text-xs font-medium">Vence</span>
@@ -354,7 +354,7 @@ import {
       @if (coldNeeded()) {
         <label class="flex flex-col gap-1 max-w-xs">
           <span class="text-sm font-medium">Temperatura de los productos de nevera (°C)</span>
-          <input pInputText type="number" step="0.1" [min]="coldMin" [max]="coldMax" [(ngModel)]="temperature" (ngModelChange)="touch()" />
+          <input appInput type="number" step="0.1" [min]="coldMin" [max]="coldMax" [(ngModel)]="temperature" (ngModelChange)="touch()" />
           <small class="text-xs text-muted">Mídela al abrir el empaque. Debe estar entre 2 y 8 °C; si no, rechaza esos productos.</small>
         </label>
       }
@@ -406,7 +406,7 @@ import {
         @if (selectedMethod() && !selectedMethod()!.affectsCash) {
           <label class="flex flex-col gap-1">
             <span class="text-xs font-medium">Referencia (opcional)</span>
-            <input pInputText maxlength="100" [(ngModel)]="reference" />
+            <input appInput maxlength="100" [(ngModel)]="reference" />
           </label>
         }
       } @else {
@@ -417,7 +417,7 @@ import {
       }
       <label class="flex flex-col gap-1 md:col-span-3">
         <span class="text-xs font-medium">Notas (opcional)</span>
-        <input pInputText maxlength="500" [(ngModel)]="notes" placeholder="Quién entregó, novedades, pedido incompleto…" />
+        <input appInput maxlength="500" [(ngModel)]="notes" placeholder="Quién entregó, novedades, pedido incompleto…" />
       </label>
     </section>
 

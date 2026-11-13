@@ -2,7 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { PasswordModule } from 'primeng/password';
 import { AuthService } from '../../core/auth/auth.service';
 import { problemMessage } from '../../core/errors/problem';
@@ -11,7 +11,7 @@ import { AuthLayoutComponent } from '../../shared/layout/auth-layout.component';
 
 @Component({
   selector: 'app-login',
-  imports: [ReactiveFormsModule, RouterLink, ButtonModule, InputTextModule, PasswordModule, AuthLayoutComponent],
+  imports: [ReactiveFormsModule, RouterLink, ButtonModule, AppInputDirective, PasswordModule, AuthLayoutComponent],
   template: `
     <app-auth-layout>
       <form [formGroup]="form" (ngSubmit)="submit()" class="card p-6 sm:p-8 flex flex-col gap-4">
@@ -22,7 +22,7 @@ import { AuthLayoutComponent } from '../../shared/layout/auth-layout.component';
 
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Correo</span>
-          <input pInputText type="email" formControlName="email" autocomplete="username" />
+          <input appInput type="email" formControlName="email" autocomplete="username" />
         </label>
 
         <label class="flex flex-col gap-1">

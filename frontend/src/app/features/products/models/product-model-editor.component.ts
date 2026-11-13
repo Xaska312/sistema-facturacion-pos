@@ -4,7 +4,7 @@ import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angu
 import { Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
+import { AppInputDirective } from '../../../shared/ui/input.directive';
 import { Observable, forkJoin, tap } from 'rxjs';
 import { Category, ProductModel, ProductVariant, SizeScale, Tax } from '../../../core/api/api.models';
 import { CatalogApi } from '../../../core/api/catalog.api';
@@ -30,7 +30,7 @@ const BARCODE = /^[A-Za-z0-9.-]{1,48}$/;
  */
 @Component({
   selector: 'app-product-model-editor',
-  imports: [ReactiveFormsModule, FormsModule, RouterLink, ButtonModule, InputTextModule, PesosInputDirective,
+  imports: [ReactiveFormsModule, FormsModule, RouterLink, ButtonModule, AppInputDirective, PesosInputDirective,
     PageHeaderComponent, StatusBadgeComponent, FormDialogComponent, SizePickerComponent],
   template: `
     <app-page-header [title]="isNew() ? 'Nuevo modelo con tallas' : (model()?.name ?? 'Modelo')"
@@ -54,7 +54,7 @@ const BARCODE = /^[A-Za-z0-9.-]{1,48}$/;
           @if (isNew()) {
             <label class="flex flex-col gap-1">
               <span class="text-sm font-medium">Prefijo del SKU</span>
-              <input pInputText formControlName="skuPrefix" class="uppercase" maxlength="20" autocomplete="off" />
+              <input appInput formControlName="skuPrefix" class="uppercase" maxlength="20" autocomplete="off" />
               <small class="text-xs text-muted">Corto, p. ej. RUN. Cada talla queda como RUN-38-NEGRO. No se cambia después.</small>
             </label>
           } @else {
@@ -65,7 +65,7 @@ const BARCODE = /^[A-Za-z0-9.-]{1,48}$/;
           }
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">Nombre</span>
-            <input pInputText formControlName="name" maxlength="140" />
+            <input appInput formControlName="name" maxlength="140" />
             <small class="text-xs text-muted">Sin la talla ni el color: se agregan solos (p. ej. «Tenis Runner T38 Negro»).</small>
           </label>
           <label class="flex flex-col gap-1">
@@ -87,7 +87,7 @@ const BARCODE = /^[A-Za-z0-9.-]{1,48}$/;
           </label>
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">Precio de venta (al público)</span>
-            <input pInputText appPesos="2" formControlName="salePrice" />
+            <input appInput appPesos="2" formControlName="salePrice" />
             @if (Number(form.controls.salePrice.value) >= 1) {
               <small class="text-xs text-muted">{{ formatCop(form.controls.salePrice.value) }} en todas las tallas y colores.</small>
             } @else if (form.controls.salePrice.touched || !isNew()) {
@@ -98,7 +98,7 @@ const BARCODE = /^[A-Za-z0-9.-]{1,48}$/;
           </label>
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">Costo (lo que te cuesta a ti)</span>
-            <input pInputText appPesos="2" formControlName="cost" />
+            <input appInput appPesos="2" formControlName="cost" />
             @if (isNew()) {
               <small class="text-xs text-muted">Lo que pagas al proveedor por unidad. Opcional: también lo puedes poner al cargar el inventario.</small>
             } @else {
@@ -134,7 +134,7 @@ const BARCODE = /^[A-Za-z0-9.-]{1,48}$/;
             </div>
             <label class="flex flex-col gap-1">
               <span class="text-sm font-medium">Colores (opcional)</span>
-              <input pInputText [value]="colorsText()" (input)="setColors($event)"
+              <input appInput [value]="colorsText()" (input)="setColors($event)"
                      placeholder="Negro, Blanco, Azul cielo" autocomplete="off" />
               <small class="text-xs text-muted">Sepáralos con comas. Si lo dejas vacío, solo se crean las tallas.</small>
             </label>
@@ -227,7 +227,7 @@ const BARCODE = /^[A-Za-z0-9.-]{1,48}$/;
           </div>
           <div class="flex flex-col gap-1">
             <label for="variant-barcode" class="text-sm font-medium">Código de barras</label>
-            <input pInputText id="variant-barcode" class="font-mono" [(ngModel)]="variantBarcode" maxlength="48"
+            <input appInput id="variant-barcode" class="font-mono" [(ngModel)]="variantBarcode" maxlength="48"
                    autocomplete="off" />
             <small class="text-xs text-muted">Escanea aquí el código que trae el producto del proveedor; reemplaza al interno.</small>
           </div>
@@ -251,7 +251,7 @@ const BARCODE = /^[A-Za-z0-9.-]{1,48}$/;
           @if (m.colors.length > 0) {
             <div class="flex flex-col gap-1">
               <label for="add-colors" class="text-sm font-medium">Colores nuevos</label>
-              <input pInputText id="add-colors" [(ngModel)]="addColorsTextValue" placeholder="Rojo, Gris"
+              <input appInput id="add-colors" [(ngModel)]="addColorsTextValue" placeholder="Rojo, Gris"
                      autocomplete="off" />
               <small class="text-xs text-muted">Ya tiene: {{ m.colors.join(', ') }}. Los colores nuevos se crean en todas las tallas.</small>
             </div>

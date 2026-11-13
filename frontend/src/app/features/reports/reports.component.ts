@@ -3,7 +3,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
-import { SkeletonModule } from 'primeng/skeleton';
+import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { Observable } from 'rxjs';
 import {
   Branch,
@@ -63,7 +63,7 @@ const REPORT_PERIODS: readonly PeriodKey[] = ['today', 'yesterday', 'last7', 'la
  */
 @Component({
   selector: 'app-reports',
-  imports: [TermComponent, NgTemplateOutlet, ButtonModule, SkeletonModule, ChartComponent, PageHeaderComponent, PeriodFilterComponent,
+  imports: [TermComponent, NgTemplateOutlet, ButtonModule, SkeletonComponent, ChartComponent, PageHeaderComponent, PeriodFilterComponent,
     StatCardComponent, DataTableComponent, CellTemplateDirective],
   template: `
     <app-page-header title="Reportes"
@@ -139,7 +139,7 @@ const REPORT_PERIODS: readonly PeriodKey[] = ['today', 'yesterday', 'last7', 'la
           } @else {
             <div class="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
               @for (i of [0, 1, 2, 3]; track i) {
-                <div class="card p-4"><p-skeleton height="4.5rem" /></div>
+                <div class="card p-4"><app-skeleton height="4.5rem" /></div>
               }
             </div>
           }

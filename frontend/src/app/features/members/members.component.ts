@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { AccessApi, invitationLink } from '../../core/api/access.api';
 import { Branch, Invitation, Member, PageResponse, Role } from '../../core/api/api.models';
 import { OrganizationApi } from '../../core/api/organization.api';
@@ -22,7 +22,7 @@ type Tab = 'members' | 'invitations';
 
 @Component({
   selector: 'app-members',
-  imports: [FormsModule, ButtonModule, DialogModule, InputTextModule, DataTableComponent, HasPermissionDirective,
+  imports: [FormsModule, ButtonModule, DialogModule, AppInputDirective, DataTableComponent, HasPermissionDirective,
     PageHeaderComponent],
   template: `
     <app-page-header title="Usuarios" description="Las personas que trabajan en tu negocio, sus roles y sus sucursales.">
@@ -81,7 +81,7 @@ type Tab = 'members' | 'invitations';
           <p>Le enviamos un correo a <strong>{{ invitedEmail() }}</strong> con la invitación. Si no le llega (revisa
             también la carpeta de spam), compártele este enlace por WhatsApp. Vence en 7 días y solo se muestra
             ahora.</p>
-          <input pInputText readonly class="w-full font-mono text-xs" [value]="link" />
+          <input appInput readonly class="w-full font-mono text-xs" [value]="link" />
           <div class="flex justify-end gap-2">
             <p-button label="Copiar enlace" (onClick)="copy(link)" />
             <p-button label="Cerrar" [text]="true" severity="secondary" (onClick)="inviteOpen = false" />
@@ -91,7 +91,7 @@ type Tab = 'members' | 'invitations';
         <div class="flex flex-col gap-3">
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">Correo</span>
-            <input pInputText type="email" [(ngModel)]="inviteEmail" />
+            <input appInput type="email" [(ngModel)]="inviteEmail" />
           </label>
           <fieldset>
             <legend class="text-sm font-medium mb-1">Roles</legend>

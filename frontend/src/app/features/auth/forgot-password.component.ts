@@ -2,7 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { AuthService } from '../../core/auth/auth.service';
 import { InlineErrorScope } from '../../core/errors/inline-errors';
 import { problemMessage } from '../../core/errors/problem';
@@ -11,7 +11,7 @@ import { AuthLayoutComponent } from '../../shared/layout/auth-layout.component';
 /** "¿Olvidaste tu contraseña?": pide el enlace para crear una nueva (la respuesta no revela si el correo existe). */
 @Component({
   selector: 'app-forgot-password',
-  imports: [ReactiveFormsModule, RouterLink, ButtonModule, InputTextModule, AuthLayoutComponent],
+  imports: [ReactiveFormsModule, RouterLink, ButtonModule, AppInputDirective, AuthLayoutComponent],
   template: `
     <app-auth-layout>
       <section class="card p-6 sm:p-8 flex flex-col gap-4">
@@ -28,7 +28,7 @@ import { AuthLayoutComponent } from '../../shared/layout/auth-layout.component';
           <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-col gap-4">
             <label class="flex flex-col gap-1">
               <span class="text-sm font-medium">Correo</span>
-              <input pInputText type="email" formControlName="email" autocomplete="username" />
+              <input appInput type="email" formControlName="email" autocomplete="username" />
             </label>
             @if (error()) {
               <p class="text-sm text-danger" role="alert">{{ error() }}</p>

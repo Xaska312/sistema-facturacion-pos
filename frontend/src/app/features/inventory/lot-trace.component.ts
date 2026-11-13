@@ -2,7 +2,7 @@ import { Component, OnInit, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Product } from '../../core/api/api.models';
 import { CatalogApi } from '../../core/api/catalog.api';
 import { InventoryApi, LotTrace } from '../../core/api/inventory.api';
@@ -18,7 +18,7 @@ import { MOVEMENT_LABEL } from './labels';
  */
 @Component({
   selector: 'app-lot-trace',
-  imports: [FormsModule, RouterLink, ButtonModule, InputTextModule, PageHeaderComponent],
+  imports: [FormsModule, RouterLink, ButtonModule, AppInputDirective, PageHeaderComponent],
   template: `
     <app-page-header title="Trazabilidad de un lote"
                      description="De quién lo compraste y a quién se vendió. Úsalo ante una alerta sanitaria o un retiro del mercado.">
@@ -36,7 +36,7 @@ import { MOVEMENT_LABEL } from './labels';
           </div>
         } @else {
           <form class="flex gap-2" (ngSubmit)="search()">
-            <input pInputText name="productSearch" class="flex-1" [(ngModel)]="text" aria-label="Buscar producto"
+            <input appInput name="productSearch" class="flex-1" [(ngModel)]="text" aria-label="Buscar producto"
                    placeholder="Nombre, SKU o principio activo" />
             <p-button type="submit" label="Buscar" [loading]="searching()" />
           </form>
@@ -54,7 +54,7 @@ import { MOVEMENT_LABEL } from './labels';
       <form class="flex gap-2" (ngSubmit)="find()">
         <label class="flex flex-col gap-1 flex-1">
           <span class="text-sm font-medium">Lote</span>
-          <input pInputText name="lot" class="uppercase" maxlength="40" [(ngModel)]="lot" placeholder="L-12345" />
+          <input appInput name="lot" class="uppercase" maxlength="40" [(ngModel)]="lot" placeholder="L-12345" />
         </label>
         <p-button type="submit" label="Trazar" class="self-end" [disabled]="!product() || !lot.trim()" [loading]="loading()" />
       </form>

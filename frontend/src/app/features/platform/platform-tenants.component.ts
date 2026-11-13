@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { MessageService } from 'primeng/api';
 import { Observable, tap } from 'rxjs';
 import { BusinessType, PageResponse, TenantStatus, TenantSummary } from '../../core/api/api.models';
@@ -25,7 +25,7 @@ import { XIconComponent } from '../../shared/icons/xicon.component';
  */
 @Component({
   selector: 'app-platform-tenants',
-  imports: [FormsModule, ButtonModule, InputTextModule, FormDialogComponent, PageHeaderComponent, DataTableComponent,
+  imports: [FormsModule, ButtonModule, AppInputDirective, FormDialogComponent, PageHeaderComponent, DataTableComponent,
     CellTemplateDirective, BusinessTypePickerComponent, XIconComponent],
   template: `
     <app-page-header title="Negocios"
@@ -97,7 +97,7 @@ import { XIconComponent } from '../../shared/icons/xicon.component';
                      description="Nadie podrá entrar y se cierran las sesiones abiertas. Los datos no se borran y lo puedes reactivar cuando quieras.">
       <div class="flex flex-col gap-1">
         <label for="suspend-reason" class="text-sm font-medium">Motivo</label>
-        <input pInputText id="suspend-reason" maxlength="300" [(ngModel)]="reason" placeholder="Pago pendiente" />
+        <input appInput id="suspend-reason" maxlength="300" [(ngModel)]="reason" placeholder="Pago pendiente" />
         <small class="text-muted">Lo verán el dueño y los miembros al iniciar sesión.</small>
       </div>
     </app-form-dialog>
@@ -120,17 +120,17 @@ import { XIconComponent } from '../../shared/icons/xicon.component';
                      description="Se borran todos sus datos: ventas, productos, clientes, caja, inventario, usuarios del negocio e invitaciones. No se puede deshacer. Solo queda la ficha con el motivo, la suscripción y los pagos.">
       <div class="flex flex-col gap-1">
         <label for="delete-reason" class="text-sm font-medium">Motivo</label>
-        <input pInputText id="delete-reason" maxlength="300" [(ngModel)]="deleteReason"
+        <input appInput id="delete-reason" maxlength="300" [(ngModel)]="deleteReason"
                placeholder="El dueño pidió borrar sus datos" />
       </div>
       <div class="flex flex-col gap-1">
         <label for="delete-confirmation" class="text-sm font-medium">Escribe el nombre del negocio para confirmar</label>
-        <input pInputText id="delete-confirmation" maxlength="200" autocomplete="off" [(ngModel)]="deleteConfirmation"
+        <input appInput id="delete-confirmation" maxlength="200" autocomplete="off" [(ngModel)]="deleteConfirmation"
                [placeholder]="target()?.tradeName ?? ''" />
       </div>
       <div class="flex flex-col gap-1">
         <label for="delete-password" class="text-sm font-medium">Tu contraseña</label>
-        <input pInputText id="delete-password" type="password" maxlength="200" autocomplete="current-password"
+        <input appInput id="delete-password" type="password" maxlength="200" autocomplete="current-password"
                [(ngModel)]="deletePassword" />
       </div>
       <small class="text-muted">Los datos siguen en los respaldos hasta que estos vencen.</small>

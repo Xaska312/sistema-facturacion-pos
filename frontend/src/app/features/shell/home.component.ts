@@ -1,7 +1,7 @@
 import { AskaRecapCardComponent } from '../ai/aska-recap-card.component';
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { SkeletonModule } from 'primeng/skeleton';
+import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { CreditApi } from '../../core/api/credit.api';
 import { InventoryApi } from '../../core/api/inventory.api';
 import { OrdersApi } from '../../core/api/orders.api';
@@ -44,7 +44,7 @@ export function glyphFor(route: string): XIconName {
  */
 @Component({
   selector: 'app-home',
-  imports: [AskaRecapCardComponent, RouterLink, SkeletonModule, XIconComponent, DashboardComponent, MyDayComponent, StockAlertsComponent,
+  imports: [AskaRecapCardComponent, RouterLink, SkeletonComponent, XIconComponent, DashboardComponent, MyDayComponent, StockAlertsComponent,
     FirstStepsComponent, RecurringAlertComponent, OrdersAlertComponent, QualityAlertComponent, DigestCardComponent, AskaTeaserComponent, HeaderReminderComponent],
   template: `
     <h1 class="sr-only">{{ title }}</h1>
@@ -116,7 +116,7 @@ export function glyphFor(route: string): XIconName {
       @defer {
         <app-dashboard />
       } @placeholder (minimum 200ms) {
-        <div class="card p-4 mb-4"><p-skeleton height="20rem" /></div>
+        <div class="card p-4 mb-4"><app-skeleton height="20rem" /></div>
       }
     } @else {
       <div class="flex flex-col gap-4 mb-4">
@@ -124,7 +124,7 @@ export function glyphFor(route: string): XIconName {
           @defer {
             <app-my-day />
           } @placeholder (minimum 200ms) {
-            <div class="card p-4"><p-skeleton height="6rem" /></div>
+            <div class="card p-4"><app-skeleton height="6rem" /></div>
           }
         }
         <app-stock-alerts class="max-w-xl" />

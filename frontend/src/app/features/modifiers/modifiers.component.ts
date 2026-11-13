@@ -1,8 +1,8 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { SkeletonModule } from 'primeng/skeleton';
+import { AppInputDirective } from '../../shared/ui/input.directive';
+import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { Observable, Subject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Category, Product } from '../../core/api/api.models';
@@ -39,7 +39,7 @@ function isoDay(date: Date): string {
  */
 @Component({
   selector: 'app-modifiers',
-  imports: [FormsModule, ButtonModule, InputTextModule, SkeletonModule, PageHeaderComponent, FormDialogComponent,
+  imports: [FormsModule, ButtonModule, AppInputDirective, SkeletonComponent, PageHeaderComponent, FormDialogComponent,
     EmptyStateComponent, XIconComponent],
   template: `
     <app-page-header title="Adiciones"
@@ -86,7 +86,7 @@ function isoDay(date: Date): string {
     } @else {
       <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3" aria-busy="true">
         @for (i of [0, 1, 2]; track i) {
-          <p-skeleton height="11rem" borderRadius="1.25rem" />
+          <app-skeleton height="11rem" borderRadius="1.25rem" />
         }
       </div>
     }
@@ -132,7 +132,7 @@ function isoDay(date: Date): string {
       }
       <div class="flex flex-col gap-1">
         <label for="group-name" class="text-sm font-semibold">Nombre del grupo</label>
-        <input pInputText id="group-name" maxlength="60" placeholder="Tamaño, Licor, Extras…" [(ngModel)]="draft.name"
+        <input appInput id="group-name" maxlength="60" placeholder="Tamaño, Licor, Extras…" [(ngModel)]="draft.name"
                (ngModelChange)="touch()" />
       </div>
 
@@ -153,7 +153,7 @@ function isoDay(date: Date): string {
         @if (draft.multiple) {
           <label class="flex items-center gap-2 text-sm">
             <span>Máximo por producto</span>
-            <input pInputText type="number" min="2" max="20" class="w-24" [(ngModel)]="draft.max" (ngModelChange)="touch()" />
+            <input appInput type="number" min="2" max="20" class="w-24" [(ngModel)]="draft.max" (ngModelChange)="touch()" />
           </label>
         }
         <label class="flex items-start gap-2 text-sm">
@@ -168,14 +168,14 @@ function isoDay(date: Date): string {
         <p class="text-xs text-muted -mt-1">Precio: lo que suma al producto (0 si no cambia; negativo si lo rebaja, como "Sin licor").</p>
         @for (o of draft.options; track $index; let i = $index) {
           <div class="flex flex-wrap items-center gap-2" role="group" [attr.aria-label]="'Opción ' + (i + 1)">
-            <input pInputText class="flex-1 min-w-36" maxlength="60" placeholder="Nombre" [attr.aria-label]="'Nombre de la opción ' + (i + 1)"
+            <input appInput class="flex-1 min-w-36" maxlength="60" placeholder="Nombre" [attr.aria-label]="'Nombre de la opción ' + (i + 1)"
                    [(ngModel)]="o.name" (ngModelChange)="touch()" />
-            <input pInputText type="number" step="100" class="w-28" placeholder="Precio" [attr.aria-label]="'Precio de la opción ' + (i + 1)"
+            <input appInput type="number" step="100" class="w-28" placeholder="Precio" [attr.aria-label]="'Precio de la opción ' + (i + 1)"
                    [(ngModel)]="o.priceDelta" (ngModelChange)="touch()" />
             @if (draft.multiple) {
               <label class="flex items-center gap-1 text-xs text-muted">
                 <span>hasta ×</span>
-                <input pInputText type="number" min="1" max="10" class="w-16" [attr.aria-label]="'Veces que se puede elegir la opción ' + (i + 1)"
+                <input appInput type="number" min="1" max="10" class="w-16" [attr.aria-label]="'Veces que se puede elegir la opción ' + (i + 1)"
                        [(ngModel)]="o.maxQuantity" (ngModelChange)="touch()" />
               </label>
             }
@@ -207,7 +207,7 @@ function isoDay(date: Date): string {
           </div>
         }
         <label for="product-search" class="text-xs text-muted mt-1">Productos sueltos:</label>
-        <input pInputText id="product-search" placeholder="Busca un producto por nombre o SKU" autocomplete="off"
+        <input appInput id="product-search" placeholder="Busca un producto por nombre o SKU" autocomplete="off"
                [ngModel]="productSearch" (ngModelChange)="searchProducts($event)" />
         @if (productResults().length > 0) {
           <ul class="border border-line rounded-xl divide-y divide-line max-h-48 overflow-auto" aria-label="Productos encontrados">

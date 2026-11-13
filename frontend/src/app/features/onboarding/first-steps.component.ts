@@ -1,7 +1,7 @@
 import { Component, Injector, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
-import { SkeletonModule } from 'primeng/skeleton';
+import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { Observable, catchError, forkJoin, map, of } from 'rxjs';
 import { AccessApi } from '../../core/api/access.api';
 import { CashApi } from '../../core/api/cash.api';
@@ -36,7 +36,7 @@ import {
  */
 @Component({
   selector: 'app-first-steps',
-  imports: [RouterLink, ButtonModule, SkeletonModule],
+  imports: [RouterLink, ButtonModule, SkeletonComponent],
   template: `
     @if (eligible()) {
       @if (dismissed()) {
@@ -98,7 +98,7 @@ import {
           </ol>
         </section>
       } @else {
-        <div class="card p-4" aria-busy="true"><p-skeleton height="9rem" /></div>
+        <div class="card p-4" aria-busy="true"><app-skeleton height="9rem" /></div>
       }
       }
     }

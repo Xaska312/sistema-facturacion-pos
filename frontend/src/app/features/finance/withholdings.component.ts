@@ -2,7 +2,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable, tap } from 'rxjs';
 import { PageResponse } from '../../core/api/api.models';
 import {
@@ -36,7 +36,7 @@ import { WITHHOLDING_TYPES, certificateBadge, rateText, typeLabel } from './with
  */
 @Component({
   selector: 'app-withholdings',
-  imports: [FormsModule, ButtonModule, InputTextModule, PageHeaderComponent, PeriodFilterComponent, StatCardComponent,
+  imports: [FormsModule, ButtonModule, AppInputDirective, PageHeaderComponent, PeriodFilterComponent, StatCardComponent,
     StatusBadgeComponent, DataTableComponent, CellTemplateDirective, FormDialogComponent],
   template: `
     <app-page-header title="Retenciones" glyph="withholdings"
@@ -156,7 +156,7 @@ import { WITHHOLDING_TYPES, certificateBadge, rateText, typeLabel } from './with
           quedan con el certificado recibido.</p>
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Nota <span class="text-muted font-normal">(opcional)</span></span>
-          <input pInputText name="note" maxlength="255" [(ngModel)]="note" placeholder="Ej.: certificado del bimestre 5" />
+          <input appInput name="note" maxlength="255" [(ngModel)]="note" placeholder="Ej.: certificado del bimestre 5" />
         </label>
       </app-form-dialog>
     }

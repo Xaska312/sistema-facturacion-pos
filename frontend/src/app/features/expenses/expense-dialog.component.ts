@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, model, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
-import { InputTextModule } from 'primeng/inputtext';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable, catchError, from, of, switchMap, tap } from 'rxjs';
 import { AiApi, AskUsage } from '../../core/api/ai.api';
 import { Branch, Party, PaymentMethod } from '../../core/api/api.models';
@@ -40,7 +40,7 @@ type Mode = 'new' | 'cash' | 'edit' | 'classify' | 'recurring';
  */
 @Component({
   selector: 'app-expense-dialog',
-  imports: [FormsModule, InputTextModule, PesosInputDirective, FormDialogComponent],
+  imports: [FormsModule, AppInputDirective, PesosInputDirective, FormDialogComponent],
   template: `
     <app-form-dialog [(visible)]="visible" [header]="title()" width="30rem" [submitLabel]="submitLabel()"
                      [dirty]="dirty()" [invalidMessage]="problem()" [save]="saveRequest" [successMessage]="null"
@@ -138,7 +138,7 @@ type Mode = 'new' | 'cash' | 'edit' | 'classify' | 'recurring';
           <label class="flex flex-col gap-1 sm:col-span-2">
             <span class="text-sm font-medium">Referencia
               @if (!selected()?.requiresReference) { <span class="text-muted font-normal">(opcional)</span> }</span>
-            <input pInputText name="reference" maxlength="100" [(ngModel)]="reference"
+            <input appInput name="reference" maxlength="100" [(ngModel)]="reference"
                    placeholder="Ej.: número de la transferencia" />
           </label>
         </div>
@@ -156,7 +156,7 @@ type Mode = 'new' | 'cash' | 'edit' | 'classify' | 'recurring';
 
       <label class="flex flex-col gap-1">
         <span class="text-sm font-medium">Nota <span class="text-muted font-normal">(opcional)</span></span>
-        <input pInputText name="note" maxlength="255" [(ngModel)]="note" placeholder="Ej.: recibo de la luz de marzo" />
+        <input appInput name="note" maxlength="255" [(ngModel)]="note" placeholder="Ej.: recibo de la luz de marzo" />
       </label>
 
       @if (mode() !== 'classify') {

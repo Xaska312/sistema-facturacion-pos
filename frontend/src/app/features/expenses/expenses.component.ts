@@ -2,7 +2,7 @@ import { Component, OnInit, computed, inject, signal, viewChild } from '@angular
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable } from 'rxjs';
 import { Branch, PageResponse } from '../../core/api/api.models';
 import {
@@ -45,7 +45,7 @@ import { categoryShares, expenseBadge, expenseLine, expenseNumber, expenseSource
  */
 @Component({
   selector: 'app-expenses',
-  imports: [FormsModule, ButtonModule, InputTextModule, PageHeaderComponent, PeriodFilterComponent, StatCardComponent,
+  imports: [FormsModule, ButtonModule, AppInputDirective, PageHeaderComponent, PeriodFilterComponent, StatCardComponent,
     StatusBadgeComponent, DataTableComponent, CellTemplateDirective, FormDialogComponent, ExpenseDialogComponent,
     ExpenseCategoriesDialogComponent, RecurringExpensesDialogComponent],
   template: `
@@ -161,7 +161,7 @@ import { categoryShares, expenseBadge, expenseLine, expenseNumber, expenseSource
       </label>
       <label class="flex items-center gap-2 flex-1 min-w-48">
         <span class="sr-only">Buscar en la nota o la referencia</span>
-        <input pInputText class="w-full" placeholder="Buscar en la nota o la referencia" [ngModel]="text()"
+        <input appInput class="w-full" placeholder="Buscar en la nota o la referencia" [ngModel]="text()"
                (ngModelChange)="setText($event)" />
       </label>
       <label class="flex items-center gap-2 min-h-9 cursor-pointer">
@@ -232,7 +232,7 @@ import { categoryShares, expenseBadge, expenseLine, expenseNumber, expenseSource
           }
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">¿Por qué lo anulas?</span>
-            <input pInputText name="voidReason" maxlength="255" [(ngModel)]="voidReason"
+            <input appInput name="voidReason" maxlength="255" [(ngModel)]="voidReason"
                    placeholder="Ej.: se registró dos veces" />
           </label>
         }
