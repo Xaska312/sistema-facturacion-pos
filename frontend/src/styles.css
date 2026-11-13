@@ -688,6 +688,20 @@
 }
 
 /*
+ * Reglas globales que ponía PrimeNG (sin capa) y que la app ya daba por hechas (decisión 340): los íconos de PrimeIcons
+ * miden 1rem aunque lleven una utilidad de tamaño de texto, y todo usa border-box.
+ */
+*,
+::before,
+::after {
+  box-sizing: border-box;
+}
+
+.pi {
+  font-size: 1rem;
+}
+
+/*
  * Campo de texto de shared/ui ([appInput], decisión 335). Sin capa, como los estilos de PrimeNG que reemplaza:
  * así gana a las reglas base y las utilidades de Tailwind que hoy no aplican siguen sin aplicar.
  */

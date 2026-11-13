@@ -17,6 +17,9 @@ test.describe.configure({ mode: 'serial' });
 const THEMES = ['light', 'dark'] as const;
 const VIEWPORTS = { escritorio: { width: 1280, height: 800 }, celular: { width: 390, height: 844 } } as const;
 
+/** Correo que se muestra en el menú de usuario durante las capturas. */
+const FIXED_EMAIL = 'dueno@negocio-e2e.co';
+
 let business: Business;
 
 test.beforeAll(async ({ request }) => {
@@ -57,6 +60,20 @@ for (const theme of THEMES) {
         },
         [theme, `pos.tours.${business.ownerId}`] as const,
       );
+      // El correo de cada corrida es distinto y su largo cambia el ancho del menú de usuario: se muestra uno fijo.
+      await page.route('**/api/v1/auth/**', async (route) => {
+        const response = await route.fetch();
+        const type = response.headers()['content-type'] ?? '';
+        if (!type.includes('json')) {
+          await route.fulfill({ response });
+          return;
+        }
+        const body = await response.json();
+        if (body?.user?.email) {
+          body.user.email = FIXED_EMAIL;
+        }
+        await route.fulfill({ response, json: body });
+      });
 
       // Públicas
       await page.goto('/login');
