@@ -94,6 +94,7 @@ for (const theme of THEMES) {
       // Menú emergente del usuario
       await page.getByRole('button', { name: /^Menú de usuario/ }).click();
       await expect(page.getByRole('menu')).toBeVisible();
+      await page.waitForTimeout(400); // el menú termina de abrir y de acomodarse junto al botón
       await shot(page, `09-menu-usuario-${tag}`);
       await page.keyboard.press('Escape');
 
