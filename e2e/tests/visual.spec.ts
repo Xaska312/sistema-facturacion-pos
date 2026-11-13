@@ -28,7 +28,13 @@ test.beforeAll(async ({ request }) => {
 
 /** Lo que cambia en cada corrida (nombre del negocio, fechas y horas) se tapa para no dar falsas diferencias. */
 function masks(page: Page) {
-  return [page.getByText(business.tradeName), page.getByText(business.email), page.locator('time')];
+  return [
+    page.getByText(business.tradeName),
+    page.getByText(business.email),
+    page.locator('time'),
+    // El saludo de Inicio cambia con la hora del día.
+    page.getByText(/^Buen(os días|as tardes|as noches)/),
+  ];
 }
 
 async function shot(page: Page, name: string, settle = true, maxDiffPixelRatio = 0.01) {
