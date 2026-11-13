@@ -4,7 +4,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, ParamMap, Router, RouterLink } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { BusinessType, CreateTenantRequest } from '../../core/api/api.models';
 import { AuthService } from '../../core/auth/auth.service';
@@ -45,7 +45,7 @@ export function isActivationCodeRequired(error: unknown): boolean {
  */
 @Component({
   selector: 'app-create-tenant',
-  imports: [ReactiveFormsModule, RouterLink, ButtonModule, AppInputDirective, VerifyEmailBannerComponent,
+  imports: [ReactiveFormsModule, RouterLink, ButtonComponent, AppInputDirective, VerifyEmailBannerComponent,
     AuthLayoutComponent, BusinessTypePickerComponent],
   styles: `
     .start { display: flex; gap: 0.75rem; align-items: flex-start; padding: 0.75rem 0.875rem; border-radius: 0.875rem;
@@ -143,7 +143,7 @@ export function isActivationCodeRequired(error: unknown): boolean {
             </div>
             <div class="flex justify-between mt-2">
               <a routerLink="/negocios" class="self-center text-sm text-muted hover:underline">Cancelar</a>
-              <p-button label="Continuar" [disabled]="form.invalid" (onClick)="step.set(2)" />
+              <app-button label="Continuar" [disabled]="form.invalid" (clicked)="step.set(2)" />
             </div>
           } @else {
             <dl class="grid grid-cols-3 gap-2 text-sm">
@@ -157,8 +157,8 @@ export function isActivationCodeRequired(error: unknown): boolean {
               Se creará tu negocio con una sede principal, una caja y los roles por defecto.
             </p>
             <div class="flex justify-between mt-2">
-              <p-button label="Atrás" [text]="true" severity="secondary" (onClick)="step.set(1)" />
-              <p-button label="Crear negocio" [loading]="saving()" [disabled]="!verified()" (onClick)="create()" />
+              <app-button label="Atrás" [text]="true" severity="secondary" (clicked)="step.set(1)" />
+              <app-button label="Crear negocio" [loading]="saving()" [disabled]="!verified()" (clicked)="create()" />
             </div>
           }
         </form>

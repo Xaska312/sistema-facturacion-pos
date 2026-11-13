@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { ImportReport, ImportRowError } from '../../core/api/api.models';
 import { CatalogApi } from '../../core/api/catalog.api';
 import { saveDownload } from '../../shared/download';
@@ -12,7 +12,7 @@ import { ColumnDef } from '../../shared/table/table';
 /** Carga masiva de productos: validar (sin escribir) y luego importar. */
 @Component({
   selector: 'app-product-import',
-  imports: [ButtonModule, PageHeaderComponent, DataTableComponent],
+  imports: [ButtonComponent, PageHeaderComponent, DataTableComponent],
   template: `
     <app-page-header title="Importar productos" description="Carga o actualiza muchos productos a la vez desde Excel." />
 
@@ -25,8 +25,8 @@ import { ColumnDef } from '../../shared/table/table';
         <li>Si todo está bien, toca <strong>Importar</strong>. Si un SKU ya existe, ese producto se actualiza.</li>
       </ol>
       <div class="flex flex-wrap gap-2 items-center">
-        <p-button label="Descargar plantilla de Excel" icon="pi pi-file-excel" severity="secondary" [outlined]="true"
-                  [loading]="downloading()" (onClick)="downloadTemplate()" />
+        <app-button label="Descargar plantilla de Excel" icon="pi pi-file-excel" severity="secondary" [outlined]="true"
+                  [loading]="downloading()" (clicked)="downloadTemplate()" />
         <label class="inline-flex items-center gap-2 border rounded px-3 py-2 text-sm cursor-pointer hover:bg-surface-alt
                       focus-within:ring-2 focus-within:ring-brand">
           <i class="pi pi-upload text-xs" aria-hidden="true"></i>
@@ -39,11 +39,11 @@ import { ColumnDef } from '../../shared/table/table';
         }
       </div>
       <div class="flex gap-2">
-        <p-button label="Revisar" [disabled]="!file()" [loading]="busy()" (onClick)="run(true)" />
+        <app-button label="Revisar" [disabled]="!file()" [loading]="busy()" (clicked)="run(true)" />
         @if (report(); as r) {
           @if (!r.applied && r.errors.length === 0) {
-            <p-button [label]="'Importar ' + (r.toCreate + r.toUpdate) + ' productos'" severity="success"
-                      [loading]="busy()" (onClick)="run(false)" />
+            <app-button [label]="'Importar ' + (r.toCreate + r.toUpdate) + ' productos'" severity="success"
+                      [loading]="busy()" (clicked)="run(false)" />
           }
         }
       </div>

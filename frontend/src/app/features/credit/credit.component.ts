@@ -2,7 +2,8 @@ import { Component, OnInit, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 import { CreditAccount, CreditEntry, CreditSummary, PageResponse } from '../../core/api/api.models';
 import { CreditApi } from '../../core/api/credit.api';
 import { AuthService } from '../../core/auth/auth.service';
@@ -20,7 +21,7 @@ import { debtAgeLabel, debtSeverity, whatsAppLink } from './credit-text';
 /** Fiados: lo que deben los clientes, por antigüedad; abonos y recordatorio por WhatsApp (decisión 255). */
 @Component({
   selector: 'app-credit',
-  imports: [FormsModule, RouterLink, ButtonModule, PageHeaderComponent, StatCardComponent, DataTableComponent,
+  imports: [FormsModule, RouterLink, ButtonComponent, ButtonLinkComponent, PageHeaderComponent, StatCardComponent, DataTableComponent,
     CellTemplateDirective, CreditPaymentDialogComponent],
   template: `
     <app-page-header title="Fiados"
@@ -69,9 +70,9 @@ import { debtAgeLabel, debtSeverity, whatsAppLink } from './credit-text';
       <ng-template #actions let-row>
         @if (row.balance > 0) {
           @if (canCollect()) {
-            <p-button label="Abonar" icon="pi pi-dollar" size="small" [text]="true" (onClick)="openPayment(row)" />
+            <app-button label="Abonar" icon="pi pi-dollar" size="small" [text]="true" (clicked)="openPayment(row)" />
           }
-          <a pButton [text]="true" size="small" icon="pi pi-whatsapp" label="Recordar" target="_blank"
+          <a appButton [text]="true" size="small" icon="pi pi-whatsapp" label="Recordar" target="_blank"
              rel="noopener noreferrer" [href]="whatsApp(row)"
              [attr.aria-label]="'Recordar a ' + row.name + ' por WhatsApp (abre WhatsApp)'"></a>
         }

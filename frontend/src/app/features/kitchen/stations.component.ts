@@ -2,7 +2,8 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { Observable, Subject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
@@ -21,13 +22,13 @@ import { StationDraft, emptyStation, stationDraft, stationProblem, stationReceiv
  */
 @Component({
   selector: 'app-stations',
-  imports: [FormsModule, RouterLink, ButtonModule, AppInputDirective, SkeletonComponent, PageHeaderComponent,
+  imports: [FormsModule, RouterLink, ButtonComponent, ButtonLinkComponent, AppInputDirective, SkeletonComponent, PageHeaderComponent,
     FormDialogComponent, XIconComponent],
   template: `
     <app-page-header title="Estaciones de cocina" glyph="kitchen"
                      description="A dónde sale cada producto al enviar a cocina. Lo que no tenga estación va a la principal.">
-      <a pButton routerLink="/app/comandas" label="Comandas" icon="pi pi-arrow-left" severity="secondary" [text]="true"></a>
-      <p-button label="Nueva estación" icon="pi pi-plus" (onClick)="openNew()" />
+      <a appButton routerLink="/app/comandas" label="Comandas" icon="pi pi-arrow-left" severity="secondary" [text]="true"></a>
+      <app-button label="Nueva estación" icon="pi pi-plus" (clicked)="openNew()" />
     </app-page-header>
 
     @if (stations(); as list) {
@@ -42,8 +43,8 @@ import { StationDraft, emptyStation, stationDraft, stationProblem, stationReceiv
                   {{ s.main ? 'Principal' : s.active ? 'Activa' : 'Inactiva: lo suyo va a la principal' }}
                 </p>
               </div>
-              <p-button icon="pi pi-pencil" [text]="true" [rounded]="true" severity="secondary"
-                        [ariaLabel]="'Editar ' + s.name" (onClick)="openEdit(s)" />
+              <app-button icon="pi pi-pencil" [text]="true" [rounded]="true" severity="secondary"
+                        [ariaLabel]="'Editar ' + s.name" (clicked)="openEdit(s)" />
             </div>
             <p class="text-sm text-muted mt-auto"><span class="font-semibold text-fg">Recibe:</span> {{ receives(s) }}</p>
           </li>

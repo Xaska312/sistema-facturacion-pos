@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { PasswordModule } from 'primeng/password';
 import { AuthService } from '../../core/auth/auth.service';
@@ -11,7 +11,7 @@ import { AuthLayoutComponent } from '../../shared/layout/auth-layout.component';
 
 @Component({
   selector: 'app-login',
-  imports: [ReactiveFormsModule, RouterLink, ButtonModule, AppInputDirective, PasswordModule, AuthLayoutComponent],
+  imports: [ReactiveFormsModule, RouterLink, ButtonComponent, AppInputDirective, PasswordModule, AuthLayoutComponent],
   template: `
     <app-auth-layout>
       <form [formGroup]="form" (ngSubmit)="submit()" class="card p-6 sm:p-8 flex flex-col gap-4">
@@ -37,7 +37,7 @@ import { AuthLayoutComponent } from '../../shared/layout/auth-layout.component';
           <p class="text-sm text-danger" role="alert">{{ error() }}</p>
         }
 
-        <p-button type="submit" label="Ingresar" [loading]="loading()" [disabled]="form.invalid" styleClass="w-full" size="large" />
+        <app-button type="submit" label="Ingresar" [loading]="loading()" [disabled]="form.invalid" styleClass="w-full" size="large" />
 
         <p class="text-sm text-center">
           ¿No tienes cuenta? <a routerLink="/registro" [queryParams]="returnUrl ? { returnUrl: returnUrl } : {}"

@@ -2,7 +2,8 @@ import { Component, effect, inject, input, signal, untracked, viewChild } from '
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable, tap } from 'rxjs';
 import {
@@ -39,12 +40,12 @@ import { PAYMENT_LABEL, dueLabel, formatDay, orderBadge, orderWhatsAppLink, size
  */
 @Component({
   selector: 'app-order-detail',
-  imports: [FormsModule, RouterLink, ButtonModule, AppInputDirective, PageHeaderComponent, StatCardComponent,
+  imports: [FormsModule, RouterLink, ButtonComponent, ButtonLinkComponent, AppInputDirective, PageHeaderComponent, StatCardComponent,
     StatusBadgeComponent, FormDialogComponent, OrderPaymentDialogComponent, OrderDeliverDialogComponent,
     OrderReceiptComponent, OrderDocumentComponent],
   template: `
     <app-page-header [title]="order() ? 'Pedido ' + order()!.number : 'Pedido'" [description]="subtitle()">
-      <a pButton routerLink="/app/pedidos" label="Todos los pedidos" icon="pi pi-arrow-left" severity="secondary"
+      <a appButton routerLink="/app/pedidos" label="Todos los pedidos" icon="pi pi-arrow-left" severity="secondary"
          [outlined]="true"></a>
     </app-page-header>
 
@@ -72,28 +73,28 @@ import { PAYMENT_LABEL, dueLabel, formatDay, orderBadge, orderWhatsAppLink, size
       <div class="flex flex-wrap gap-2 mb-4">
         @if (o.status === 'OPEN' && canCreate()) {
           @if (canSell()) {
-            <p-button label="Entregar" icon="pi pi-check-circle" (onClick)="openDeliver()" />
+            <app-button label="Entregar" icon="pi pi-check-circle" (clicked)="openDeliver()" />
           }
           @if (o.balanceDue > 0) {
-            <p-button label="Recibir anticipo" icon="pi pi-dollar" severity="secondary" [outlined]="true"
-                      (onClick)="openPayment()" />
+            <app-button label="Recibir anticipo" icon="pi pi-dollar" severity="secondary" [outlined]="true"
+                      (clicked)="openPayment()" />
           }
-          <a pButton [routerLink]="['/app/pedidos', o.id, 'editar']" label="Editar" icon="pi pi-pencil"
+          <a appButton [routerLink]="['/app/pedidos', o.id, 'editar']" label="Editar" icon="pi pi-pencil"
              severity="secondary" [outlined]="true"></a>
         }
-        <p-button label="Imprimir comprobante" icon="pi pi-print" severity="secondary" [outlined]="true"
-                  (onClick)="print()" />
-        <p-button label="Descargar PDF" icon="pi pi-file-pdf" severity="secondary" [outlined]="true"
-                  (onClick)="printDocument()" />
-        <a pButton label="Enviar por WhatsApp" icon="pi pi-whatsapp" severity="secondary" [outlined]="true"
+        <app-button label="Imprimir comprobante" icon="pi pi-print" severity="secondary" [outlined]="true"
+                  (clicked)="print()" />
+        <app-button label="Descargar PDF" icon="pi pi-file-pdf" severity="secondary" [outlined]="true"
+                  (clicked)="printDocument()" />
+        <a appButton label="Enviar por WhatsApp" icon="pi pi-whatsapp" severity="secondary" [outlined]="true"
            target="_blank" rel="noopener noreferrer" [href]="whatsApp(o)"
            [attr.aria-label]="'Enviar el comprobante a ' + o.customerName + ' por WhatsApp (abre WhatsApp)'"></a>
         @if (o.status === 'OPEN' && canManage()) {
-          <p-button label="Cancelar pedido" icon="pi pi-ban" severity="danger" [text]="true" (onClick)="openCancel()" />
+          <app-button label="Cancelar pedido" icon="pi pi-ban" severity="danger" [text]="true" (clicked)="openCancel()" />
         }
         @if (o.status === 'CANCELLED' && o.depositAvailable > 0 && canManage()) {
-          <p-button label="Devolver anticipo" icon="pi pi-replay" severity="danger" [outlined]="true"
-                    (onClick)="openCancel()" />
+          <app-button label="Devolver anticipo" icon="pi pi-replay" severity="danger" [outlined]="true"
+                    (clicked)="openCancel()" />
         }
       </div>
 

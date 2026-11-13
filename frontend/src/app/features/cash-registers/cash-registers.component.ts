@@ -1,6 +1,6 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable } from 'rxjs';
 import { Branch, CashRegister, PageResponse } from '../../core/api/api.models';
@@ -17,13 +17,13 @@ import { LatestRequest } from '../../shared/latest-request';
 
 @Component({
   selector: 'app-cash-registers',
-  imports: [ReactiveFormsModule, ButtonModule, AppInputDirective, DataTableComponent, PageHeaderComponent,
+  imports: [ReactiveFormsModule, ButtonComponent, AppInputDirective, DataTableComponent, PageHeaderComponent,
     FormDialogComponent, FieldErrorComponent],
   template: `
     <app-page-header title="Cajas registradoras"
                      description="Cada caja se abre con una base de efectivo y se cierra con su arqueo.">
       @if (canManage()) {
-        <p-button label="Nueva caja" icon="pi pi-plus" (onClick)="openCreate()" />
+        <app-button label="Nueva caja" icon="pi pi-plus" (clicked)="openCreate()" />
       }
     </app-page-header>
 
@@ -43,10 +43,10 @@ import { LatestRequest } from '../../shared/latest-request';
       </label>
       <ng-template #actions let-row>
         @if (canManage()) {
-          <p-button label="Editar" icon="pi pi-pencil" size="small" [text]="true" (onClick)="openEdit(row)" />
-          <p-button [label]="row.active ? 'Desactivar' : 'Activar'" size="small" [text]="true"
+          <app-button label="Editar" icon="pi pi-pencil" size="small" [text]="true" (clicked)="openEdit(row)" />
+          <app-button [label]="row.active ? 'Desactivar' : 'Activar'" size="small" [text]="true"
                     [icon]="row.active ? 'pi pi-ban' : 'pi pi-check-circle'"
-                    [severity]="row.active ? 'danger' : 'success'" (onClick)="toggle(row)" />
+                    [severity]="row.active ? 'danger' : 'success'" (clicked)="toggle(row)" />
         }
       </ng-template>
     </app-data-table>

@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { MessageService } from 'primeng/api';
 import { Observable, tap } from 'rxjs';
@@ -25,7 +25,7 @@ import { XIconComponent } from '../../shared/icons/xicon.component';
  */
 @Component({
   selector: 'app-platform-tenants',
-  imports: [FormsModule, ButtonModule, AppInputDirective, FormDialogComponent, PageHeaderComponent, DataTableComponent,
+  imports: [FormsModule, ButtonComponent, AppInputDirective, FormDialogComponent, PageHeaderComponent, DataTableComponent,
     CellTemplateDirective, BusinessTypePickerComponent, XIconComponent],
   template: `
     <app-page-header title="Negocios"
@@ -71,20 +71,20 @@ import { XIconComponent } from '../../shared/icons/xicon.component';
       </ng-template>
       <ng-template #actions let-row>
         @if (row.status !== 'DELETED') {
-          <p-button label="Tipo" icon="pi pi-pencil" size="small" [text]="true"
-                    (onClick)="openType(row)" [ariaLabel]="'Cambiar el tipo de ' + row.tradeName" />
+          <app-button label="Tipo" icon="pi pi-pencil" size="small" [text]="true"
+                    (clicked)="openType(row)" [ariaLabel]="'Cambiar el tipo de ' + row.tradeName" />
         }
         @if (row.status === 'ACTIVE') {
-          <p-button label="Suspender" icon="pi pi-ban" size="small" severity="danger" [text]="true"
-                    (onClick)="openSuspend(row)" [ariaLabel]="'Suspender ' + row.tradeName" />
+          <app-button label="Suspender" icon="pi pi-ban" size="small" severity="danger" [text]="true"
+                    (clicked)="openSuspend(row)" [ariaLabel]="'Suspender ' + row.tradeName" />
         } @else if (row.status === 'SUSPENDED') {
-          <p-button label="Reactivar" icon="pi pi-replay" size="small" [text]="true"
-                    (onClick)="reactivate(row)" [ariaLabel]="'Reactivar ' + row.tradeName" />
-          <p-button label="Eliminar" icon="pi pi-trash" size="small" severity="danger" [text]="true"
-                    (onClick)="openDelete(row)" [ariaLabel]="'Eliminar definitivamente ' + row.tradeName" />
+          <app-button label="Reactivar" icon="pi pi-replay" size="small" [text]="true"
+                    (clicked)="reactivate(row)" [ariaLabel]="'Reactivar ' + row.tradeName" />
+          <app-button label="Eliminar" icon="pi pi-trash" size="small" severity="danger" [text]="true"
+                    (clicked)="openDelete(row)" [ariaLabel]="'Eliminar definitivamente ' + row.tradeName" />
         } @else if (row.status === 'FAILED') {
-          <p-button label="Eliminar" icon="pi pi-trash" size="small" severity="danger" [text]="true"
-                    (onClick)="openDelete(row)" [ariaLabel]="'Eliminar definitivamente ' + row.tradeName" />
+          <app-button label="Eliminar" icon="pi pi-trash" size="small" severity="danger" [text]="true"
+                    (clicked)="openDelete(row)" [ariaLabel]="'Eliminar definitivamente ' + row.tradeName" />
         }
       </ng-template>
     </app-data-table>

@@ -1,6 +1,6 @@
 import { Component, effect, inject, input, signal, untracked, computed } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 import { SlowMovers, StockAlert } from '../../core/api/api.models';
 import { InventoryApi } from '../../core/api/inventory.api';
 import { ReportsApi } from '../../core/api/reports.api';
@@ -14,7 +14,7 @@ import { DOCUMENT_ROUTE } from '../inventory/labels';
  */
 @Component({
   selector: 'app-stock-alerts',
-  imports: [RouterLink, ButtonModule],
+  imports: [RouterLink, ButtonLinkComponent],
   template: `
     @if (canRead()) {
       <section class="card p-4 h-full flex flex-col" aria-labelledby="stock-alerts-title">
@@ -49,10 +49,10 @@ import { DOCUMENT_ROUTE } from '../inventory/labels';
             <p class="text-xs text-muted mt-1">Y {{ alerts().length - 5 }} más.</p>
           }
           <div class="mt-auto pt-3 flex flex-wrap gap-2">
-            <a pButton routerLink="/app/inventario" label="Ver existencias" icon="pi pi-warehouse" size="small"
+            <a appButton routerLink="/app/inventario" label="Ver existencias" icon="pi pi-warehouse" size="small"
                severity="secondary" [outlined]="true"></a>
             @if (canAdjust()) {
-              <a pButton [routerLink]="['/app/inventario/nuevo', adjustRoute]" label="Hacer un ajuste" icon="pi pi-sliders-h"
+              <a appButton [routerLink]="['/app/inventario/nuevo', adjustRoute]" label="Hacer un ajuste" icon="pi pi-sliders-h"
                  size="small"></a>
             }
           </div>

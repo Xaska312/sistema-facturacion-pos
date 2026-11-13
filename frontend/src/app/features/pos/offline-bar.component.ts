@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { OfflineSalesService } from '../../core/offline/offline-sales.service';
 import { formatCop } from '../../shared/money';
 
@@ -9,7 +9,7 @@ import { formatCop } from '../../shared/money';
  */
 @Component({
   selector: 'app-offline-bar',
-  imports: [ButtonModule],
+  imports: [ButtonComponent],
   template: `
     @if (sales.offline()) {
       <div class="offline-bar bg-warning-soft text-warning-soft-fg" role="status">
@@ -36,8 +36,8 @@ import { formatCop } from '../../shared/money';
               <span class="font-mono">{{ f.sale.documentNumber }}</span>
               <span>{{ cop(f.sale.total) }}</span>
               <span class="flex-1 min-w-40">{{ f.error }}</span>
-              <p-button label="Reintentar" icon="pi pi-refresh" size="small" severity="secondary" [outlined]="true"
-                        (onClick)="sales.retry(f.key)" />
+              <app-button label="Reintentar" icon="pi pi-refresh" size="small" severity="secondary" [outlined]="true"
+                        (clicked)="sales.retry(f.key)" />
             </li>
           }
         </ul>

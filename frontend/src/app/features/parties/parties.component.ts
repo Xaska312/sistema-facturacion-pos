@@ -2,7 +2,8 @@ import { Component, OnInit, computed, inject, input, signal, viewChild } from '@
 import { CustomerWithholdingsDialogComponent } from '../finance/customer-withholdings-dialog.component';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable } from 'rxjs';
 import { City, Department, PageResponse, Party, PersonType, PriceList } from '../../core/api/api.models';
@@ -25,7 +26,7 @@ import { LatestRequest } from '../../shared/latest-request';
 /** Clientes o proveedores (según {@code kind} en los datos de la ruta). */
 @Component({
   selector: 'app-parties',
-  imports: [RouterLink, TermComponent, FormsModule, PesosInputDirective, ButtonModule, AppInputDirective, DataTableComponent, PageHeaderComponent, FormDialogComponent,
+  imports: [RouterLink, TermComponent, FormsModule, PesosInputDirective, ButtonComponent, ButtonLinkComponent, AppInputDirective, DataTableComponent, PageHeaderComponent, FormDialogComponent,
     CustomerWithholdingsDialogComponent],
   template: `
     <app-page-header [title]="isCustomers() ? 'Clientes' : 'Proveedores'"
@@ -33,7 +34,7 @@ import { LatestRequest } from '../../shared/latest-request';
                        ? 'Personas y empresas a las que les vendes. Con su lista de precios y cupo de fiado.'
                        : 'Personas y empresas a las que les compras.'">
       @if (canManage()) {
-        <p-button [label]="isCustomers() ? 'Nuevo cliente' : 'Nuevo proveedor'" icon="pi pi-plus" (onClick)="openCreate()" />
+        <app-button [label]="isCustomers() ? 'Nuevo cliente' : 'Nuevo proveedor'" icon="pi pi-plus" (clicked)="openCreate()" />
       }
     </app-page-header>
 
@@ -52,17 +53,17 @@ import { LatestRequest } from '../../shared/latest-request';
       </label>
       <ng-template #actions let-row>
         @if (isCustomers() && canReadCredit() && !row.system && row.creditLimit > 0) {
-          <a pButton [routerLink]="['/app/fiados', row.id]" label="Fiado" icon="pi pi-book" size="small" [text]="true"></a>
+          <a appButton [routerLink]="['/app/fiados', row.id]" label="Fiado" icon="pi pi-book" size="small" [text]="true"></a>
         }
         @if (isCustomers() && canManageFinance() && !row.system) {
-          <p-button label="Retenciones" icon="pi pi-percentage" size="small" [text]="true"
-                    (onClick)="withholdings()?.open(row)" />
+          <app-button label="Retenciones" icon="pi pi-percentage" size="small" [text]="true"
+                    (clicked)="withholdings()?.open(row)" />
         }
         @if (canManage() && !row.system) {
-          <p-button label="Editar" icon="pi pi-pencil" size="small" [text]="true" (onClick)="openEdit(row)" />
-          <p-button [label]="row.active ? 'Desactivar' : 'Activar'" size="small" [text]="true"
+          <app-button label="Editar" icon="pi pi-pencil" size="small" [text]="true" (clicked)="openEdit(row)" />
+          <app-button [label]="row.active ? 'Desactivar' : 'Activar'" size="small" [text]="true"
                     [icon]="row.active ? 'pi pi-ban' : 'pi pi-check-circle'"
-                    [severity]="row.active ? 'danger' : 'success'" (onClick)="toggle(row)" />
+                    [severity]="row.active ? 'danger' : 'success'" (clicked)="toggle(row)" />
         }
       </ng-template>
     </app-data-table>

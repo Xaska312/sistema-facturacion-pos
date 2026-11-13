@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { firstValueFrom } from 'rxjs';
 import { CumStatus, PlatformApi } from '../../core/api/platform.api';
 import { XIconComponent } from '../../shared/icons/xicon.component';
@@ -17,7 +17,7 @@ const BATCH = 1500;
  */
 @Component({
   selector: 'app-platform-cum',
-  imports: [ButtonModule, PageHeaderComponent, XIconComponent],
+  imports: [ButtonComponent, PageHeaderComponent, XIconComponent],
   template: `
     <app-page-header title="Catálogo CUM"
                      description="Código Único de Medicamentos del INVIMA. Las droguerías lo usan para llenar la ficha de cada medicamento." />
@@ -50,8 +50,8 @@ const BATCH = 1500;
         </ol>
         <input #file type="file" accept=".csv,text/csv" class="sr-only" tabindex="-1" aria-hidden="true"
                (change)="load(file)" />
-        <p-button class="self-start" label="Elegir el CSV" icon="pi pi-upload" [loading]="busy()"
-                  (onClick)="file.click()" />
+        <app-button class="self-start" label="Elegir el CSV" icon="pi pi-upload" [loading]="busy()"
+                  (clicked)="file.click()" />
         @if (step(); as st) {
           <p class="text-sm" role="status">{{ st }}</p>
         }

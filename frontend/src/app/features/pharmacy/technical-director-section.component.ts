@@ -1,7 +1,7 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { PharmacyApi, Profession, TechnicalDirector } from '../../core/api/pharmacy.api';
 import { AuthService } from '../../core/auth/auth.service';
@@ -13,7 +13,7 @@ import { PROFESSION_OPTIONS } from '../pos/dispensation';
  */
 @Component({
   selector: 'app-technical-director-section',
-  imports: [FormsModule, ButtonModule, AppInputDirective],
+  imports: [FormsModule, ButtonComponent, AppInputDirective],
   template: `
     <section class="card p-4 flex flex-col gap-3 max-w-3xl" aria-labelledby="dt-title">
       <header>
@@ -41,7 +41,7 @@ import { PROFESSION_OPTIONS } from '../pos/dispensation';
       </fieldset>
       @if (canEdit()) {
         <div class="flex justify-end">
-          <p-button label="Guardar director técnico" [loading]="saving()" (onClick)="save()" />
+          <app-button label="Guardar director técnico" [loading]="saving()" (clicked)="save()" />
         </div>
       }
     </section>

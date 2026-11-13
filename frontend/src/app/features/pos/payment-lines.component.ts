@@ -1,6 +1,6 @@
 import { Component, computed, input, model } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { CREDIT_METHOD_CODE, PaymentMethod } from '../../core/api/api.models';
 import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
@@ -15,7 +15,7 @@ import { PaymentDraft } from './sale-math';
  */
 @Component({
   selector: 'app-payment-lines',
-  imports: [FormsModule, ButtonModule, AppInputDirective, PesosInputDirective],
+  imports: [FormsModule, ButtonComponent, AppInputDirective, PesosInputDirective],
   template: `
     <fieldset class="flex flex-col gap-2">
       <legend class="text-sm font-medium mb-1">Cómo paga</legend>
@@ -37,8 +37,8 @@ import { PaymentDraft } from './sale-math';
                      (ngModelChange)="setAmount(i, $event)" />
             </label>
             @if (lines().length > 1) {
-              <p-button icon="pi pi-trash" severity="danger" [text]="true" styleClass="min-h-11"
-                        [attr.aria-label]="'Quitar el pago ' + (i + 1)" (onClick)="remove(i)" />
+              <app-button icon="pi pi-trash" severity="danger" [text]="true" styleClass="min-h-11"
+                        [attr.aria-label]="'Quitar el pago ' + (i + 1)" (clicked)="remove(i)" />
             }
           </div>
           @if (needsReference(line)) {
@@ -59,7 +59,7 @@ import { PaymentDraft } from './sale-math';
       }
       <div class="flex flex-wrap items-center justify-between gap-2">
         @if (lines().length < methods().length) {
-          <p-button label="Agregar otro medio" icon="pi pi-plus" size="small" [text]="true" (onClick)="add()" />
+          <app-button label="Agregar otro medio" icon="pi pi-plus" size="small" [text]="true" (clicked)="add()" />
         }
         <span class="text-sm tabular-nums ml-auto">
           @if (summary().missing > 0) {

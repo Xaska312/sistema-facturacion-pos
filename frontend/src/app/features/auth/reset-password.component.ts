@@ -2,7 +2,7 @@ import { Component, inject, input, signal } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { PasswordModule } from 'primeng/password';
 import { AuthService } from '../../core/auth/auth.service';
 import { InlineErrorScope } from '../../core/errors/inline-errors';
@@ -19,7 +19,7 @@ export function samePasswords(group: AbstractControl): ValidationErrors | null {
 /** Página del enlace "Crear una contraseña nueva" ({@code /restablecer-clave?token=…}). */
 @Component({
   selector: 'app-reset-password',
-  imports: [ReactiveFormsModule, RouterLink, ButtonModule, PasswordModule, AuthLayoutComponent],
+  imports: [ReactiveFormsModule, RouterLink, ButtonComponent, PasswordModule, AuthLayoutComponent],
   template: `
     <app-auth-layout>
       <form [formGroup]="form" (ngSubmit)="submit()" class="card p-6 sm:p-8 flex flex-col gap-4">
@@ -45,7 +45,7 @@ export function samePasswords(group: AbstractControl): ValidationErrors | null {
             <p class="text-sm text-danger" role="alert">{{ error() }}</p>
           }
           <p class="text-xs text-muted">Al guardarla se cierran las sesiones abiertas en todos tus equipos.</p>
-          <p-button type="submit" label="Guardar contraseña" [loading]="loading()" [disabled]="form.invalid"
+          <app-button type="submit" label="Guardar contraseña" [loading]="loading()" [disabled]="form.invalid"
                     styleClass="w-full" />
         }
         <a routerLink="/recuperar-clave" class="text-sm text-center text-brand hover:underline">Pedir un enlace nuevo</a>

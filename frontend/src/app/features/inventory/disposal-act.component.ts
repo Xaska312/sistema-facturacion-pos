@@ -1,6 +1,7 @@
 import { Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 import { InventoryDocument } from '../../core/api/api.models';
 import { InventoryApi } from '../../core/api/inventory.api';
 import { PharmacyApi, TechnicalDirector } from '../../core/api/pharmacy.api';
@@ -20,12 +21,12 @@ import { documentNumber } from './labels';
  */
 @Component({
   selector: 'app-disposal-act',
-  imports: [RouterLink, ButtonModule, PageHeaderComponent],
+  imports: [RouterLink, ButtonComponent, ButtonLinkComponent, PageHeaderComponent],
   template: `
     <app-page-header title="Acta de baja" description="Imprímela, fírmala y guárdala con el acta del gestor de residuos.">
-      <a pButton routerLink="/app/inventario/movimientos" label="Movimientos" icon="pi pi-arrow-left" [text]="true"
+      <a appButton routerLink="/app/inventario/movimientos" label="Movimientos" icon="pi pi-arrow-left" [text]="true"
          severity="secondary"></a>
-      <p-button label="Imprimir" icon="pi pi-print" [disabled]="!doc()" (onClick)="print()" />
+      <app-button label="Imprimir" icon="pi pi-print" [disabled]="!doc()" (clicked)="print()" />
     </app-page-header>
 
     @if (doc(); as d) {

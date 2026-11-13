@@ -1,7 +1,7 @@
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { KitchenApi, KitchenStation, KitchenTicket, TicketStatus } from '../../core/api/kitchen.api';
 import { problemMessage } from '../../core/errors/problem';
@@ -41,7 +41,7 @@ function saveStations(ids: readonly string[]): void {
  */
 @Component({
   selector: 'app-kitchen-display',
-  imports: [ButtonModule, SkeletonComponent, XIconComponent, LiveReplacedComponent],
+  imports: [ButtonComponent, SkeletonComponent, XIconComponent, LiveReplacedComponent],
   template: `
     <div class="kds" [class.kds--full]="full()">
       <header class="flex flex-wrap items-center justify-between gap-3 mb-4">
@@ -57,10 +57,10 @@ function saveStations(ids: readonly string[]): void {
         </div>
         <div class="flex flex-wrap gap-2">
           @if (!soundOn()) {
-            <p-button label="Activar sonido" icon="pi pi-volume-up" (onClick)="enableSound()" />
+            <app-button label="Activar sonido" icon="pi pi-volume-up" (clicked)="enableSound()" />
           }
-          <p-button [label]="full() ? 'Salir de pantalla completa' : 'Pantalla completa'" icon="pi pi-window-maximize"
-                    severity="secondary" [outlined]="true" (onClick)="toggleFull()" />
+          <app-button [label]="full() ? 'Salir de pantalla completa' : 'Pantalla completa'" icon="pi pi-window-maximize"
+                    severity="secondary" [outlined]="true" (clicked)="toggleFull()" />
         </div>
       </header>
 
@@ -80,7 +80,7 @@ function saveStations(ids: readonly string[]): void {
       @if (alert(); as a) {
         <div class="alert" role="alert">
           <span><i class="pi pi-exclamation-triangle" aria-hidden="true"></i> {{ a }}</span>
-          <p-button label="Entendido" severity="danger" (onClick)="alert.set(null)" />
+          <app-button label="Entendido" severity="danger" (clicked)="alert.set(null)" />
         </div>
       }
 

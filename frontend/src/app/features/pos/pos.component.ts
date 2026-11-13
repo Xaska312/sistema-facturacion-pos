@@ -6,7 +6,7 @@ import { Component, ElementRef, HostListener, OnDestroy, OnInit, computed, effec
 import { clearOfflineBoot, readOfflineBoot, saveOfflineBoot } from '../../core/offline/offline-boot';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { DialogModule } from 'primeng/dialog';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
@@ -138,7 +138,7 @@ const STOCK_PAGES = 5;
  */
 @Component({
   selector: 'app-pos',
-  imports: [OfflineBarComponent, ReceiptSendComponent, WithholdingBoxComponent, FormsModule, PesosInputDirective, ButtonModule, DialogModule, AppInputDirective, SkeletonComponent, HasPermissionDirective,
+  imports: [OfflineBarComponent, ReceiptSendComponent, WithholdingBoxComponent, FormsModule, PesosInputDirective, ButtonComponent, DialogModule, AppInputDirective, SkeletonComponent, HasPermissionDirective,
     ReceiptComponent, PosHeaderComponent, ProductGridComponent, CartPanelComponent, OpenCashComponent,
     VariantPickerComponent, NewCustomerDialogComponent, ModifierPickerComponent],
   template: `
@@ -153,7 +153,7 @@ const STOCK_PAGES = 5;
           <i class="pi pi-wifi text-3xl text-muted" aria-hidden="true"></i>
           <p class="font-medium">No pudimos revisar tu caja.</p>
           <p class="text-sm text-muted">Revisa la conexión y vuelve a intentarlo.</p>
-          <p-button label="Reintentar" icon="pi pi-refresh" (onClick)="loadSession()" />
+          <app-button label="Reintentar" icon="pi pi-refresh" (clicked)="loadSession()" />
         </div>
       } @else if (session() === undefined) {
         <div class="flex-1 flex items-center justify-center p-6" aria-busy="true">
@@ -248,8 +248,8 @@ const STOCK_PAGES = 5;
                 <span class="text-xs text-muted">{{ q(totals().items) }} art. · Ver venta</span>
                 <span class="text-xl font-extrabold tracking-tight tabular-nums">{{ cop(totals().total) }}</span>
               </button>
-              <p-button label="Cobrar" icon="pi pi-wallet" styleClass="min-h-12 px-5 font-bold" [rounded]="true"
-                        (onClick)="openPayment()" />
+              <app-button label="Cobrar" icon="pi pi-wallet" styleClass="min-h-12 px-5 font-bold" [rounded]="true"
+                        (clicked)="openPayment()" />
             </div>
           </div>
         }
@@ -262,7 +262,7 @@ const STOCK_PAGES = 5;
       <form class="flex gap-2 mb-3" (ngSubmit)="runSearch()">
         <input #search appInput name="search" class="flex-1 h-11" [(ngModel)]="searchText"
                aria-label="Nombre, SKU o código" placeholder="Nombre, SKU o código" />
-        <p-button type="submit" label="Buscar" styleClass="min-h-11" />
+        <app-button type="submit" label="Buscar" styleClass="min-h-11" />
       </form>
       <ul class="max-h-96 overflow-auto divide-y">
         @for (row of searchRows(); track row.kind + row.id) {
@@ -304,8 +304,8 @@ const STOCK_PAGES = 5;
             <p class="text-sm text-muted">Cantidad: {{ q(item.quantity) }} {{ item.found.unitCode }}</p>
           }
           <div class="flex justify-end gap-2">
-            <p-button label="Cancelar" [text]="true" severity="secondary" styleClass="min-h-11" (onClick)="openPriceOpen = false" />
-            <p-button type="submit" label="Agregar" icon="pi pi-plus" styleClass="min-h-11"
+            <app-button label="Cancelar" [text]="true" severity="secondary" styleClass="min-h-11" (clicked)="openPriceOpen = false" />
+            <app-button type="submit" label="Agregar" icon="pi pi-plus" styleClass="min-h-11"
                       [disabled]="!(openPriceValue && openPriceValue > 0)" />
           </div>
         </form>
@@ -335,7 +335,7 @@ const STOCK_PAGES = 5;
       <form class="flex gap-2 mb-3" (ngSubmit)="runCustomerSearch()">
         <input #customerSearch appInput name="customerSearch" class="flex-1 h-11" [(ngModel)]="customerText"
                aria-label="Nombre o número de documento" placeholder="Nombre o número de documento" />
-        <p-button type="submit" label="Buscar" styleClass="min-h-11" />
+        <app-button type="submit" label="Buscar" styleClass="min-h-11" />
       </form>
       <ul class="max-h-80 overflow-auto divide-y">
         @for (c of customerResults(); track c.id) {
@@ -353,9 +353,9 @@ const STOCK_PAGES = 5;
         }
       </ul>
       <div class="mt-3 flex flex-wrap justify-between items-center gap-2">
-        <p-button label="Consumidor final" [text]="true" styleClass="min-h-11" (onClick)="resetCustomer()" />
-        <p-button *hasPermission="'parties:manage'" label="Registrar cliente nuevo" icon="pi pi-user-plus"
-                  [outlined]="true" styleClass="min-h-11" (onClick)="openNewCustomer()" />
+        <app-button label="Consumidor final" [text]="true" styleClass="min-h-11" (clicked)="resetCustomer()" />
+        <app-button *hasPermission="'parties:manage'" label="Registrar cliente nuevo" icon="pi pi-user-plus"
+                  [outlined]="true" styleClass="min-h-11" (clicked)="openNewCustomer()" />
       </div>
       <p class="text-xs text-muted mt-2">Registrar un cliente no borra lo que llevas en la venta.</p>
     </p-dialog>
@@ -377,8 +377,8 @@ const STOCK_PAGES = 5;
                  [(ngModel)]="holdLabel" />
         </label>
         <div class="flex justify-end gap-2">
-          <p-button label="Volver" [text]="true" severity="secondary" styleClass="min-h-11" (onClick)="holdOpen = false" />
-          <p-button type="submit" label="Pausar venta" icon="pi pi-pause" styleClass="min-h-11" />
+          <app-button label="Volver" [text]="true" severity="secondary" styleClass="min-h-11" (clicked)="holdOpen = false" />
+          <app-button type="submit" label="Pausar venta" icon="pi pi-pause" styleClass="min-h-11" />
         </div>
       </form>
     </p-dialog>
@@ -393,7 +393,7 @@ const STOCK_PAGES = 5;
               <p class="font-medium truncate">{{ h.label }}</p>
               <p class="text-sm text-muted">{{ heldSummary(h) }}</p>
             </div>
-            <p-button label="Retomar" icon="pi pi-play" styleClass="min-h-11" (onClick)="resumeHeld(h)" />
+            <app-button label="Retomar" icon="pi pi-play" styleClass="min-h-11" (clicked)="resumeHeld(h)" />
             <button type="button" class="icon-btn text-danger" [attr.aria-label]="'Descartar ' + h.label"
                     (click)="discardHeld(h)">
               <i class="pi pi-trash" aria-hidden="true"></i>
@@ -613,10 +613,10 @@ const STOCK_PAGES = 5;
             </span>
           </label>
         }
-        <p-button label="Volver" [text]="true" severity="secondary" styleClass="min-h-11" [disabled]="saving()"
-                  (onClick)="payOpen = false" />
-        <p-button label="Registrar venta (Enter)" icon="pi pi-check" size="large" styleClass="min-h-12"
-                  [disabled]="!canConfirm()" [loading]="saving()" (onClick)="confirmPayment()" />
+        <app-button label="Volver" [text]="true" severity="secondary" styleClass="min-h-11" [disabled]="saving()"
+                  (clicked)="payOpen = false" />
+        <app-button label="Registrar venta (Enter)" icon="pi pi-check" size="large" styleClass="min-h-12"
+                  [disabled]="!canConfirm()" [loading]="saving()" (clicked)="confirmPayment()" />
       </ng-template>
     </p-dialog>
 
@@ -652,14 +652,14 @@ const STOCK_PAGES = 5;
             <option [ngValue]="80">80 mm</option>
             <option [ngValue]="58">58 mm</option>
           </select>
-          <p-button label="Imprimir tiquete" icon="pi pi-print" severity="secondary" [outlined]="true" styleClass="min-h-11"
-                    (onClick)="print()" />
+          <app-button label="Imprimir tiquete" icon="pi pi-print" severity="secondary" [outlined]="true" styleClass="min-h-11"
+                    (clicked)="print()" />
           @if (lastSale(); as sale) {
             <app-receipt-send [sale]="sale" [logo]="brandLogo()" />
           }
           <span class="flex-1"></span>
-          <p-button id="new-sale" label="Nueva venta (Enter)" icon="pi pi-plus" styleClass="min-h-11"
-                    (onClick)="receiptOpen = false" />
+          <app-button id="new-sale" label="Nueva venta (Enter)" icon="pi pi-plus" styleClass="min-h-11"
+                    (clicked)="receiptOpen = false" />
         </div>
       </ng-template>
     </p-dialog>
@@ -679,8 +679,8 @@ const STOCK_PAGES = 5;
         tocar una línea del carrito permite cambiar la cantidad o el descuento. "Pausar venta" la guarda para atender
         a otro cliente.</p>
       @if (session()) {
-        <p-button label="Ver recorrido guiado" icon="pi pi-directions" [outlined]="true" styleClass="min-h-11 mt-4"
-                  (onClick)="replayTour()" />
+        <app-button label="Ver recorrido guiado" icon="pi pi-directions" [outlined]="true" styleClass="min-h-11 mt-4"
+                  (clicked)="replayTour()" />
       }
     </p-dialog>
 

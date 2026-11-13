@@ -3,7 +3,8 @@ import { Component, OnInit, computed, inject, signal, viewChild } from '@angular
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 import { DialogModule } from 'primeng/dialog';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
@@ -38,11 +39,11 @@ import { ExpenseDialogComponent } from '../expenses/expense-dialog.component';
  */
 @Component({
   selector: 'app-cash',
-  imports: [TermComponent, SkeletonComponent, FormsModule, PesosInputDirective, RouterLink, DatePipe, ButtonModule, DialogModule, AppInputDirective, HasPermissionDirective,
+  imports: [TermComponent, SkeletonComponent, FormsModule, PesosInputDirective, RouterLink, DatePipe, ButtonComponent, ButtonLinkComponent, DialogModule, AppInputDirective, HasPermissionDirective,
     CashReportDialogComponent, PageHeaderComponent, DataTableComponent, CellTemplateDirective, ExpenseDialogComponent],
   template: `
     <app-page-header title="Mi caja" description="Abre tu caja con la base de efectivo, registra ingresos o retiros y ciérrala al final del turno.">
-      <a *hasPermission="'cash:read'" pButton routerLink="/app/caja/historial" label="Historial de caja" icon="pi pi-history"
+      <a *hasPermission="'cash:read'" appButton routerLink="/app/caja/historial" label="Historial de caja" icon="pi pi-history"
          severity="secondary" [outlined]="true"></a>
     </app-page-header>
 
@@ -62,18 +63,18 @@ import { ExpenseDialogComponent } from '../expenses/expense-dialog.component';
             }
           </div>
           <div class="flex flex-wrap gap-2 items-start">
-            <a *hasPermission="'sales:create'" routerLink="/pos"><p-button label="Ir a vender" /></a>
-            <p-button label="Ingreso" severity="secondary" [outlined]="true" (onClick)="openMovement('INCOME')" />
-            <p-button label="Egreso" severity="secondary" [outlined]="true" (onClick)="expenseDialog()?.openCash()" />
+            <a *hasPermission="'sales:create'" routerLink="/pos"><app-button label="Ir a vender" /></a>
+            <app-button label="Ingreso" severity="secondary" [outlined]="true" (clicked)="openMovement('INCOME')" />
+            <app-button label="Egreso" severity="secondary" [outlined]="true" (clicked)="expenseDialog()?.openCash()" />
             @if (s.mine || canAudit()) {
-              <p-button label="Retiro" severity="secondary" [outlined]="true" (onClick)="openMovement('WITHDRAWAL')" />
+              <app-button label="Retiro" severity="secondary" [outlined]="true" (clicked)="openMovement('WITHDRAWAL')" />
             }
-            <p-button label="Informe parcial" severity="secondary" [text]="true" (onClick)="showPartial()" />
+            <app-button label="Informe parcial" severity="secondary" [text]="true" (clicked)="showPartial()" />
             @if (s.mine || canAudit()) {
-              <p-button label="Cerrar caja" severity="danger" (onClick)="openClose()" />
+              <app-button label="Cerrar caja" severity="danger" (clicked)="openClose()" />
             }
             @if (!s.mine) {
-              <p-button label="Dejar esta caja" severity="secondary" [text]="true" [loading]="saving()" (onClick)="leave()" />
+              <app-button label="Dejar esta caja" severity="secondary" [text]="true" [loading]="saving()" (clicked)="leave()" />
             }
           </div>
         </div>
@@ -93,7 +94,7 @@ import { ExpenseDialogComponent } from '../expenses/expense-dialog.component';
           <p class="mb-2 font-medium">Cajas compartidas abiertas</p>
           <div class="flex flex-wrap gap-2 mb-4">
             @for (r of joinable(); track r.id) {
-              <p-button icon="pi pi-users" [loading]="saving()" (onClick)="join(r)"
+              <app-button icon="pi pi-users" [loading]="saving()" (clicked)="join(r)"
                         [label]="'Vender en ' + r.code + ' (abierta por ' + (r.busyBy ?? 'otra persona') + ')'" />
             }
           </div>
@@ -125,8 +126,8 @@ import { ExpenseDialogComponent } from '../expenses/expense-dialog.component';
             <span class="text-sm font-medium">Notas (opcional)</span>
             <input appInput maxlength="255" [(ngModel)]="openingNotes" />
           </label>
-          <p-button label="Abrir caja" [disabled]="!registerId || openingAmount === null || openingAmount < 0"
-                    [loading]="saving()" (onClick)="open()" />
+          <app-button label="Abrir caja" [disabled]="!registerId || openingAmount === null || openingAmount < 0"
+                    [loading]="saving()" (clicked)="open()" />
         </div>
       </section>
     }
@@ -144,10 +145,10 @@ import { ExpenseDialogComponent } from '../expenses/expense-dialog.component';
         </label>
       </div>
       <ng-template #footer>
-        <p-button label="Cancelar" [text]="true" severity="secondary" (onClick)="movementOpen = false" />
-        <p-button label="Registrar" [loading]="saving()"
+        <app-button label="Cancelar" [text]="true" severity="secondary" (clicked)="movementOpen = false" />
+        <app-button label="Registrar" [loading]="saving()"
                   [disabled]="!movementAmount || movementAmount <= 0 || !movementReason.trim()"
-                  (onClick)="saveMovement()" />
+                  (clicked)="saveMovement()" />
       </ng-template>
     </p-dialog>
 
@@ -168,9 +169,9 @@ import { ExpenseDialogComponent } from '../expenses/expense-dialog.component';
         </label>
       </div>
       <ng-template #footer>
-        <p-button label="Cancelar" [text]="true" severity="secondary" (onClick)="closeOpen = false" />
-        <p-button label="Cerrar caja" severity="danger" [loading]="saving()"
-                  [disabled]="countedAmount === null || countedAmount < 0" (onClick)="close()" />
+        <app-button label="Cancelar" [text]="true" severity="secondary" (clicked)="closeOpen = false" />
+        <app-button label="Cerrar caja" severity="danger" [loading]="saving()"
+                  [disabled]="countedAmount === null || countedAmount < 0" (clicked)="close()" />
       </ng-template>
     </p-dialog>
 

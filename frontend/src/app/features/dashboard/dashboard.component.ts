@@ -1,7 +1,8 @@
 import { Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { forkJoin, map, of } from 'rxjs';
 import { Branch, ReportSummary } from '../../core/api/api.models';
@@ -47,7 +48,7 @@ interface DashboardView {
  */
 @Component({
   selector: 'app-dashboard',
-  imports: [RouterLink, ButtonModule, SkeletonComponent, PeriodFilterComponent, StatCardComponent, ChartComponent,
+  imports: [RouterLink, ButtonComponent, ButtonLinkComponent, SkeletonComponent, PeriodFilterComponent, StatCardComponent, ChartComponent,
     EmptyStateComponent, StockAlertsComponent],
   template: `
     <app-period-filter data-tour="period" [selection]="selection()" [branches]="branches()" [showBranch]="branches().length > 1"
@@ -59,7 +60,7 @@ interface DashboardView {
           <i class="pi pi-cloud text-3xl text-muted" aria-hidden="true"></i>
           <p class="font-semibold">No pudimos cargar el tablero</p>
           <p class="text-sm text-muted">Revisa tu conexión e inténtalo de nuevo.</p>
-          <p-button label="Reintentar" icon="pi pi-refresh" (onClick)="load()" />
+          <app-button label="Reintentar" icon="pi pi-refresh" (clicked)="load()" />
         </div>
       } @else {
       @if (view(); as v) {
@@ -135,7 +136,7 @@ interface DashboardView {
         </div>
 
         <div>
-          <a pButton routerLink="/app/reportes" [queryParams]="reportsParams(null)" label="Ver todos los reportes"
+          <a appButton routerLink="/app/reportes" [queryParams]="reportsParams(null)" label="Ver todos los reportes"
              icon="pi pi-arrow-right" iconPos="right" [text]="true"></a>
         </div>
       } @else {

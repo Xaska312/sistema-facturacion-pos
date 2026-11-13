@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 import { PageResponse } from '../../core/api/api.models';
 import { PurchaseSummary, PurchasesApi } from '../../core/api/purchases.api';
 import { permissionFlag } from '../../core/auth/permission-flag';
@@ -16,16 +16,16 @@ import { purchaseBadge, receiptNumber } from './purchase-text';
 /** Compras recibidas (Fase 13-2, decisión 280): las más recientes primero, con lo que falta por pagar. */
 @Component({
   selector: 'app-purchases',
-  imports: [RouterLink, ButtonModule, PageHeaderComponent, StatusBadgeComponent, DataTableComponent, CellTemplateDirective],
+  imports: [RouterLink, ButtonLinkComponent, PageHeaderComponent, StatusBadgeComponent, DataTableComponent, CellTemplateDirective],
   template: `
     <app-page-header title="Compras"
                      description="La mercancía que recibes de tus proveedores, contra su factura. Al registrarla sube el inventario y el costo promedio.">
-      <a pButton routerLink="/app/compras/que-comprar" label="Qué comprar" icon="pi pi-shopping-cart" [outlined]="true"></a>
+      <a appButton routerLink="/app/compras/que-comprar" label="Qué comprar" icon="pi pi-shopping-cart" [outlined]="true"></a>
       @if (canPay()) {
-        <a pButton routerLink="/app/cuentas-por-pagar" label="Cuentas por pagar" icon="pi pi-wallet" [outlined]="true"></a>
+        <a appButton routerLink="/app/cuentas-por-pagar" label="Cuentas por pagar" icon="pi pi-wallet" [outlined]="true"></a>
       }
       @if (canReceive()) {
-        <a pButton routerLink="/app/compras/nueva" label="Recibir mercancía" icon="pi pi-plus"></a>
+        <a appButton routerLink="/app/compras/nueva" label="Recibir mercancía" icon="pi pi-plus"></a>
       }
     </app-page-header>
 
@@ -48,7 +48,7 @@ import { purchaseBadge, receiptNumber } from './purchase-text';
         }
       </ng-template>
       <ng-template #actions let-row>
-        <a pButton [text]="true" size="small" label="Ver" icon="pi pi-eye" [routerLink]="['/app/compras', row.id]"></a>
+        <a appButton [text]="true" size="small" label="Ver" icon="pi pi-eye" [routerLink]="['/app/compras', row.id]"></a>
       </ng-template>
     </app-data-table>
   `,

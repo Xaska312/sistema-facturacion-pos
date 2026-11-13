@@ -1,6 +1,6 @@
 import { Component, computed, effect, inject, input, model, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { CustomerWithholding, WithholdingType, WithholdingsApi } from '../../core/api/withholdings.api';
 import { permissionFlag } from '../../core/auth/permission-flag';
 import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
@@ -30,7 +30,7 @@ import {
  */
 @Component({
   selector: 'app-withholding-box',
-  imports: [FormsModule, ButtonModule, PesosInputDirective],
+  imports: [FormsModule, ButtonComponent, PesosInputDirective],
   template: `
     @if (eligible()) {
       <section class="border rounded-lg p-3 flex flex-col gap-2" aria-label="Retención del cliente">
@@ -80,14 +80,14 @@ import {
                 <span class="font-semibold tabular-nums">{{ cop(line?.amount) }}</span>
               }
               @if (drafts().length > 1) {
-                <p-button icon="pi pi-times" severity="secondary" [text]="true" size="small"
-                          [ariaLabel]="'Quitar ' + label(d.type)" (onClick)="remove(i)" />
+                <app-button icon="pi pi-times" severity="secondary" [text]="true" size="small"
+                          [ariaLabel]="'Quitar ' + label(d.type)" (clicked)="remove(i)" />
               }
             </div>
           }
           <div class="flex flex-wrap items-center justify-between gap-2 text-sm">
             @if (canManage() && drafts().length < types.length) {
-              <p-button label="Otra retención" icon="pi pi-plus" size="small" [text]="true" (onClick)="add()" />
+              <app-button label="Otra retención" icon="pi pi-plus" size="small" [text]="true" (clicked)="add()" />
             }
             <span class="ml-auto">Retiene <strong class="tabular-nums">{{ cop(result().total) }}</strong></span>
           </div>

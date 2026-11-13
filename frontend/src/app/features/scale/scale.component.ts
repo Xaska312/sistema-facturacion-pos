@@ -1,7 +1,7 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable, throwError } from 'rxjs';
 import { Product, ScaleFormat, ScalePlu } from '../../core/api/api.models';
@@ -23,7 +23,7 @@ const PREFIXES = ['2', '20', '21', '22', '23', '24', '25', '26', '27', '28'];
  */
 @Component({
   selector: 'app-scale',
-  imports: [FormsModule, ButtonModule, AppInputDirective, PageHeaderComponent, DataTableComponent, FormDialogComponent],
+  imports: [FormsModule, ButtonComponent, AppInputDirective, PageHeaderComponent, DataTableComponent, FormDialogComponent],
   template: `
     <app-page-header title="Báscula"
                      description="Para vender lo que se pesa (queso, carnes, frutas) con las etiquetas que imprime la báscula: el lector agrega el producto con su peso o su valor." />
@@ -87,8 +87,8 @@ const PREFIXES = ['2', '20', '21', '22', '23', '24', '25', '26', '27', '28'];
         }
         @if (canManage()) {
           <div class="flex justify-end">
-            <p-button label="Guardar formato" icon="pi pi-check" [loading]="saving()" [disabled]="!dirty() || !!problem()"
-                      (onClick)="saveFormat()" />
+            <app-button label="Guardar formato" icon="pi pi-check" [loading]="saving()" [disabled]="!dirty() || !!problem()"
+                      (clicked)="saveFormat()" />
           </div>
         }
       </section>
@@ -101,7 +101,7 @@ const PREFIXES = ['2', '20', '21', '22', '23', '24', '25', '26', '27', '28'];
           <p class="text-sm text-muted">El mismo número que tiene cada producto en la báscula. Solo productos que se venden por peso (KG, LB…).</p>
         </div>
         @if (canManage()) {
-          <p-button label="Asignar PLU" icon="pi pi-plus" (onClick)="openAssign()" />
+          <app-button label="Asignar PLU" icon="pi pi-plus" (clicked)="openAssign()" />
         }
       </div>
       <app-data-table [columns]="columns" [items]="plus()" [trackBy]="trackByPlu" caption="PLU de la báscula"
@@ -109,7 +109,7 @@ const PREFIXES = ['2', '20', '21', '22', '23', '24', '25', '26', '27', '28'];
                       emptyMessage="Asigna a cada producto que pesas el PLU que le pusiste en la báscula.">
         <ng-template #actions let-row>
           @if (canManage()) {
-            <p-button label="Quitar" icon="pi pi-times" size="small" severity="danger" [text]="true" (onClick)="remove(row)" />
+            <app-button label="Quitar" icon="pi pi-times" size="small" severity="danger" [text]="true" (clicked)="remove(row)" />
           }
         </ng-template>
       </app-data-table>
@@ -127,13 +127,13 @@ const PREFIXES = ['2', '20', '21', '22', '23', '24', '25', '26', '27', '28'];
           @if (chosen(); as p) {
             <div class="flex items-center justify-between gap-2 border rounded-lg px-3 py-2">
               <span><span class="font-mono text-xs text-muted">{{ p.sku }}</span> {{ p.name }} <span class="text-muted">({{ p.baseUnitCode }})</span></span>
-              <p-button label="Cambiar" size="small" [text]="true" (onClick)="chosen.set(null)" />
+              <app-button label="Cambiar" size="small" [text]="true" (clicked)="chosen.set(null)" />
             </div>
           } @else {
             <div class="flex gap-2">
               <input appInput id="plu-search" class="flex-1" [(ngModel)]="search" placeholder="Nombre o SKU"
                      autocomplete="off" (keydown.enter)="find($event)" />
-              <p-button label="Buscar" icon="pi pi-search" [outlined]="true" (onClick)="find()" />
+              <app-button label="Buscar" icon="pi pi-search" [outlined]="true" (clicked)="find()" />
             </div>
             @if (results().length > 0) {
               <ul class="border rounded divide-y text-sm max-h-60 overflow-y-auto">

@@ -1,6 +1,6 @@
 import { Component, inject, input } from '@angular/core';
 import { MenuItem, MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { MenuModule } from 'primeng/menu';
 import { Sale } from '../../core/api/api.models';
 import { receiptRows } from '../../shared/receipt/receipt-rows';
@@ -13,11 +13,11 @@ import { saleWhatsAppLink } from './sale-text';
  */
 @Component({
   selector: 'app-receipt-send',
-  imports: [ButtonModule, MenuModule],
+  imports: [ButtonComponent, MenuModule],
   template: `
-    <p-button label="Enviar" icon="pi pi-send" severity="secondary" [outlined]="true" styleClass="min-h-11"
+    <app-button label="Enviar" icon="pi pi-send" severity="secondary" [outlined]="true" styleClass="min-h-11"
               ariaLabel="Enviar el recibo por WhatsApp o como imagen" aria-haspopup="menu"
-              (onClick)="menu.toggle($event)" />
+              (clicked)="menu.toggle($event)" />
     <p-menu #menu [model]="items()" [popup]="true" appendTo="body" />
   `,
 })

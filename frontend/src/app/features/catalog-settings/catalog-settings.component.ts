@@ -1,6 +1,6 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable } from 'rxjs';
 import { Category, PriceList, Tax, TaxType, Unit } from '../../core/api/api.models';
@@ -107,12 +107,12 @@ export function settingRows(tab: Tab, data: { tree: { category: Category; depth:
 /** Categorías, unidades, impuestos y listas de precios. */
 @Component({
   selector: 'app-catalog-settings',
-  imports: [FormsModule, ButtonModule, AppInputDirective, DataTableComponent, CellTemplateDirective, PageHeaderComponent,
+  imports: [FormsModule, ButtonComponent, AppInputDirective, DataTableComponent, CellTemplateDirective, PageHeaderComponent,
     FormDialogComponent],
   template: `
     <app-page-header title="Ajustes del catálogo"
                      description="Categorías, unidades de medida, tarifas de impuesto y listas de precios de tus productos.">
-      <p-button [label]="'Nueva ' + singular()" icon="pi pi-plus" (onClick)="openCreate()" />
+      <app-button [label]="'Nueva ' + singular()" icon="pi pi-plus" (clicked)="openCreate()" />
     </app-page-header>
 
     <div class="flex flex-wrap gap-1 mb-3 p-1 rounded-lg bg-surface-alt w-fit" role="group" aria-label="Tipo de ajuste">
@@ -138,13 +138,13 @@ export function settingRows(tab: Tab, data: { tree: { category: Category; depth:
       </ng-template>
       <ng-template #actions let-row>
         @if (!row.locked) {
-          <p-button label="Editar" icon="pi pi-pencil" size="small" [text]="true" (onClick)="openEdit(row.source)" />
-          <p-button [label]="row.active ? 'Desactivar' : 'Activar'" size="small" [text]="true"
+          <app-button label="Editar" icon="pi pi-pencil" size="small" [text]="true" (clicked)="openEdit(row.source)" />
+          <app-button [label]="row.active ? 'Desactivar' : 'Activar'" size="small" [text]="true"
                     [icon]="row.active ? 'pi pi-ban' : 'pi pi-check-circle'"
-                    [severity]="row.active ? 'danger' : 'success'" (onClick)="toggle(row)" />
+                    [severity]="row.active ? 'danger' : 'success'" (clicked)="toggle(row)" />
           @if (tab() === 'categories') {
-            <p-button label="Eliminar" icon="pi pi-trash" size="small" [text]="true" severity="danger"
-                      (onClick)="removeCategory(row)" />
+            <app-button label="Eliminar" icon="pi pi-trash" size="small" [text]="true" severity="danger"
+                      (clicked)="removeCategory(row)" />
           }
         }
       </ng-template>

@@ -1,7 +1,8 @@
 import { Component, OnInit, inject, input, signal, viewChild } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 import { PurchaseReceipt, PurchasesApi, SupplierPayment } from '../../core/api/purchases.api';
 import { permissionFlag } from '../../core/auth/permission-flag';
 import { formatDateTime } from '../../shared/format';
@@ -21,24 +22,24 @@ import { SupplierPaymentDialogComponent } from './supplier-payment-dialog.compon
  */
 @Component({
   selector: 'app-receipt-detail',
-  imports: [RouterLink, ButtonModule, PageHeaderComponent, StatusBadgeComponent, SupplierPaymentDialogComponent,
+  imports: [RouterLink, ButtonComponent, ButtonLinkComponent, PageHeaderComponent, StatusBadgeComponent, SupplierPaymentDialogComponent,
     PurchaseReturnDialogComponent],
   template: `
     @if (receipt(); as r) {
       @let s = r.summary;
       <app-page-header [title]="'Recepción ' + number(s.number)"
                        [description]="(s.supplierName ?? '') + ' · factura ' + s.supplierInvoice + ' del ' + day(s.invoiceDate)">
-        <a pButton routerLink="/app/compras" label="Compras" icon="pi pi-arrow-left" [text]="true" severity="secondary"></a>
+        <a appButton routerLink="/app/compras" label="Compras" icon="pi pi-arrow-left" [text]="true" severity="secondary"></a>
         @if (canPay() && s.balance > 0) {
-          <p-button label="Registrar pago" icon="pi pi-wallet" (onClick)="payDialog()?.open(s)" />
+          <app-button label="Registrar pago" icon="pi pi-wallet" (clicked)="payDialog()?.open(s)" />
         }
         @if (r.document; as doc) {
-          <p-button label="Factura del proveedor" icon="pi pi-download" severity="secondary" [outlined]="true"
-                    [loading]="downloading()" (onClick)="downloadDocument(doc.id, doc.fileName)" />
+          <app-button label="Factura del proveedor" icon="pi pi-download" severity="secondary" [outlined]="true"
+                    [loading]="downloading()" (clicked)="downloadDocument(doc.id, doc.fileName)" />
         }
         @if (canReturn() && returnable()) {
-          <p-button label="Devolver al proveedor" icon="pi pi-replay" severity="secondary" [outlined]="true"
-                    (onClick)="returnDialog()?.open(r)" />
+          <app-button label="Devolver al proveedor" icon="pi pi-replay" severity="secondary" [outlined]="true"
+                    (clicked)="returnDialog()?.open(r)" />
         }
       </app-page-header>
 

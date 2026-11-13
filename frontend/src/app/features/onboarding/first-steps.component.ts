@@ -1,6 +1,7 @@
 import { Component, Injector, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { Observable, catchError, forkJoin, map, of } from 'rxjs';
 import { AccessApi } from '../../core/api/access.api';
@@ -36,7 +37,7 @@ import {
  */
 @Component({
   selector: 'app-first-steps',
-  imports: [RouterLink, ButtonModule, SkeletonComponent],
+  imports: [RouterLink, ButtonComponent, ButtonLinkComponent, SkeletonComponent],
   template: `
     @if (eligible()) {
       @if (dismissed()) {
@@ -56,8 +57,8 @@ import {
                 {{ p.complete ? 'Completaste lo necesario. Puedes ocultar esta lista.' : 'Sigue estos pasos para llegar a tu primera venta.' }}
               </p>
             </div>
-            <p-button label="Ocultar lista" icon="pi pi-eye-slash" [text]="true" severity="secondary" size="small"
-                      (onClick)="dismiss()" />
+            <app-button label="Ocultar lista" icon="pi pi-eye-slash" [text]="true" severity="secondary" size="small"
+                      (clicked)="dismiss()" />
           </header>
 
           <div class="mt-3 flex items-center gap-3">
@@ -89,7 +90,7 @@ import {
                   </p>
                   <p class="text-sm text-muted">{{ step.description }}</p>
                   @if (!step.done && can(step)) {
-                    <a pButton [routerLink]="step.route" [label]="step.actionLabel" size="small" class="mt-2"
+                    <a appButton [routerLink]="step.route" [label]="step.actionLabel" size="small" class="mt-2"
                        [outlined]="p.next?.id !== step.id" icon="pi pi-arrow-right" iconPos="right"></a>
                   }
                 </div>

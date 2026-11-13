@@ -2,7 +2,8 @@ import { Component, effect, inject, input, signal, untracked, viewChild } from '
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable, tap } from 'rxjs';
 import { CreditAccount, CreditEntry, PageResponse } from '../../core/api/api.models';
@@ -25,11 +26,11 @@ import { ENTRY_LABEL, balanceLabel, debtAgeLabel, entryDetail, whatsAppLink } fr
 /** Cuenta de fiado de un cliente: saldo, cupo, estado de cuenta, abonos y su anulación (decisión 255). */
 @Component({
   selector: 'app-credit-account',
-  imports: [FormsModule, RouterLink, ButtonModule, AppInputDirective, PageHeaderComponent, StatCardComponent,
+  imports: [FormsModule, RouterLink, ButtonComponent, ButtonLinkComponent, AppInputDirective, PageHeaderComponent, StatCardComponent,
     DataTableComponent, CellTemplateDirective, CreditPaymentDialogComponent, FormDialogComponent],
   template: `
     <app-page-header [title]="account()?.name ?? 'Fiado del cliente'" [description]="subtitle()">
-      <a pButton routerLink="/app/fiados" label="Todos los fiados" icon="pi pi-arrow-left" severity="secondary"
+      <a appButton routerLink="/app/fiados" label="Todos los fiados" icon="pi pi-arrow-left" severity="secondary"
          [outlined]="true"></a>
     </app-page-header>
 
@@ -44,10 +45,10 @@ import { ENTRY_LABEL, balanceLabel, debtAgeLabel, entryDetail, whatsAppLink } fr
       </div>
       <div class="flex flex-wrap gap-2 mb-4">
         @if (canCollect() && a.balance > 0) {
-          <p-button label="Recibir abono" icon="pi pi-dollar" (onClick)="openPayment()" />
+          <app-button label="Recibir abono" icon="pi pi-dollar" (clicked)="openPayment()" />
         }
         @if (a.balance > 0) {
-          <a pButton label="Recordar por WhatsApp" icon="pi pi-whatsapp" severity="secondary" [outlined]="true"
+          <a appButton label="Recordar por WhatsApp" icon="pi pi-whatsapp" severity="secondary" [outlined]="true"
              target="_blank" rel="noopener noreferrer" [href]="whatsApp(a)"></a>
         }
         @if (a.creditLimit <= 0) {
@@ -81,7 +82,7 @@ import { ENTRY_LABEL, balanceLabel, debtAgeLabel, entryDetail, whatsAppLink } fr
       </ng-template>
       <ng-template #actions let-row>
         @if (canManage() && row.type === 'PAYMENT' && !row.voided) {
-          <p-button label="Anular" icon="pi pi-ban" size="small" severity="danger" [text]="true" (onClick)="openVoid(row)" />
+          <app-button label="Anular" icon="pi pi-ban" size="small" severity="danger" [text]="true" (clicked)="openVoid(row)" />
         }
       </ng-template>
     </app-data-table>

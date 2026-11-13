@@ -1,6 +1,6 @@
 import { Component, OnDestroy, computed, inject, signal } from '@angular/core';
 import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { Branding, BrandingApi } from '../../core/api/branding.api';
 import { permissionFlag } from '../../core/auth/permission-flag';
 import { BRAND_PALETTES, DEFAULT_BRAND, applyBrandColor } from '../../core/theme/brand-palettes';
@@ -14,7 +14,7 @@ import { shrinkImage } from '../../shared/image-shrink';
  */
 @Component({
   selector: 'app-branding-section',
-  imports: [ButtonModule],
+  imports: [ButtonComponent],
   template: `
     <section class="card p-4 md:p-6 mt-6 flex flex-col gap-5 max-w-2xl" aria-labelledby="branding-title">
       <div>
@@ -33,16 +33,16 @@ import { shrinkImage } from '../../shared/image-shrink';
         @if (canManage()) {
           <div class="flex flex-col gap-2">
             <div class="flex flex-wrap gap-2">
-              <label class="p-button p-button-outlined p-button-sm cursor-pointer has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2"
-                     [class.p-disabled]="savingLogo()">
+              <label class="ui-button ui-button-outlined ui-button-sm cursor-pointer has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2"
+                     [class.ui-button-disabled]="savingLogo()">
                 <i class="pi pi-upload" aria-hidden="true"></i>
-                <span class="p-button-label">{{ logo() ? 'Cambiar logo' : 'Subir logo' }}</span>
+                <span class="ui-button-label">{{ logo() ? 'Cambiar logo' : 'Subir logo' }}</span>
                 <input type="file" class="sr-only" accept="image/png,image/jpeg,image/webp" [disabled]="savingLogo()"
                        aria-describedby="logo-hint" (change)="pickLogo($event)" />
               </label>
               @if (logo()) {
-                <p-button label="Quitar" icon="pi pi-trash" size="small" severity="danger" [text]="true"
-                          [disabled]="savingLogo()" (onClick)="removeLogo()" />
+                <app-button label="Quitar" icon="pi pi-trash" size="small" severity="danger" [text]="true"
+                          [disabled]="savingLogo()" (clicked)="removeLogo()" />
               }
             </div>
             <small id="logo-hint" class="text-xs text-muted">PNG, JPG o WebP. Se reduce solo; mejor con fondo blanco o transparente.</small>
@@ -66,8 +66,8 @@ import { shrinkImage } from '../../shared/image-shrink';
           </div>
           @if (chosen() !== saved()) {
             <div class="flex flex-wrap items-center gap-2 mt-1">
-              <p-button label="Guardar color" icon="pi pi-check" size="small" [loading]="savingColor()" (onClick)="saveColor()" />
-              <p-button label="Deshacer" size="small" severity="secondary" [text]="true" (onClick)="preview(saved())" />
+              <app-button label="Guardar color" icon="pi pi-check" size="small" [loading]="savingColor()" (clicked)="saveColor()" />
+              <app-button label="Deshacer" size="small" severity="secondary" [text]="true" (clicked)="preview(saved())" />
               <small class="text-xs text-muted">Así se verá. Guárdalo para que lo vea todo el equipo.</small>
             </div>
           }

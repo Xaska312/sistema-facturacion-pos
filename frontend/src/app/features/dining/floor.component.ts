@@ -1,7 +1,8 @@
 import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { Observable } from 'rxjs';
@@ -30,14 +31,14 @@ const REFRESH_MS = 15_000;
  */
 @Component({
   selector: 'app-floor',
-  imports: [FormsModule, RouterLink, ButtonModule, AppInputDirective, SkeletonComponent, PageHeaderComponent, LiveReplacedComponent,
+  imports: [FormsModule, RouterLink, ButtonComponent, ButtonLinkComponent, AppInputDirective, SkeletonComponent, PageHeaderComponent, LiveReplacedComponent,
     FormDialogComponent, EmptyStateComponent, XIconComponent, TablePlanComponent, CountStepperComponent],
   template: `
     <app-page-header title="Mesas" description="Toca una mesa libre para abrir su cuenta o una ocupada para pedir y cobrar.">
-      <p-button label="Para llevar" icon="pi pi-shopping-bag" severity="secondary" [outlined]="true" (onClick)="openOther('TAKEAWAY')" />
-      <p-button label="Domicilio" icon="pi pi-send" severity="secondary" [outlined]="true" (onClick)="openOther('DELIVERY')" />
+      <app-button label="Para llevar" icon="pi pi-shopping-bag" severity="secondary" [outlined]="true" (clicked)="openOther('TAKEAWAY')" />
+      <app-button label="Domicilio" icon="pi pi-send" severity="secondary" [outlined]="true" (clicked)="openOther('DELIVERY')" />
       @if (canManage()) {
-        <a pButton routerLink="/app/mesas/configurar" label="Configurar" icon="pi pi-cog" severity="secondary"
+        <a appButton routerLink="/app/mesas/configurar" label="Configurar" icon="pi pi-cog" severity="secondary"
            [text]="true"></a>
       }
     </app-page-header>

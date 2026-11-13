@@ -1,6 +1,6 @@
 import { Component, inject, input, model, output, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable } from 'rxjs';
 import { Party, Quote } from '../../core/api/api.models';
@@ -19,7 +19,7 @@ import { isoDay } from '../orders/order-text';
  */
 @Component({
   selector: 'app-quote-order-dialog',
-  imports: [FormsModule, ButtonModule, AppInputDirective, HasPermissionDirective, FormDialogComponent,
+  imports: [FormsModule, ButtonComponent, AppInputDirective, HasPermissionDirective, FormDialogComponent,
     NewCustomerDialogComponent],
   template: `
     @if (quote(); as q) {
@@ -38,7 +38,7 @@ import { isoDay } from '../orders/order-text';
             <div class="flex flex-wrap items-center gap-3 border rounded-lg px-3 py-2 text-sm">
               <span class="font-medium">{{ c.displayName }}</span>
               <span class="text-muted">{{ docShort(c.documentType) }} {{ c.formattedDocument }}</span>
-              <p-button label="Cambiar" size="small" [text]="true" (onClick)="customer.set(null)" />
+              <app-button label="Cambiar" size="small" [text]="true" (clicked)="customer.set(null)" />
             </div>
           } @else {
             <small class="text-xs text-muted">
@@ -47,9 +47,9 @@ import { isoDay } from '../orders/order-text';
             <div class="flex gap-2">
               <input appInput class="flex-1" [(ngModel)]="search" aria-labelledby="quote-order-customer"
                      placeholder="Nombre, documento o teléfono" (keydown.enter)="$event.preventDefault(); find()" />
-              <p-button label="Buscar" [loading]="searching()" (onClick)="find()" />
-              <p-button *hasPermission="'parties:manage'" label="Registrar" icon="pi pi-user-plus" [outlined]="true"
-                        (onClick)="openNewCustomer()" />
+              <app-button label="Buscar" [loading]="searching()" (clicked)="find()" />
+              <app-button *hasPermission="'parties:manage'" label="Registrar" icon="pi pi-user-plus" [outlined]="true"
+                        (clicked)="openNewCustomer()" />
             </div>
             @if (results().length > 0) {
               <ul class="border rounded divide-y text-sm max-h-48 overflow-y-auto">

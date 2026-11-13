@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable } from 'rxjs';
 import { Branch, City, Department, PageResponse } from '../../core/api/api.models';
@@ -19,13 +19,13 @@ const CODE_PATTERN = /^[A-Za-z0-9_-]{2,20}$/;
 
 @Component({
   selector: 'app-branches',
-  imports: [ReactiveFormsModule, ButtonModule, AppInputDirective, DataTableComponent, PageHeaderComponent,
+  imports: [ReactiveFormsModule, ButtonComponent, AppInputDirective, DataTableComponent, PageHeaderComponent,
     FormDialogComponent, FieldErrorComponent],
   template: `
     <app-page-header title="Sucursales"
                      description="Los puntos de venta de tu negocio. Cada caja y cada existencia pertenecen a una sucursal.">
       @if (canManage()) {
-        <p-button label="Nueva sucursal" icon="pi pi-plus" (onClick)="openCreate()" />
+        <app-button label="Nueva sucursal" icon="pi pi-plus" (clicked)="openCreate()" />
       }
     </app-page-header>
 
@@ -36,10 +36,10 @@ const CODE_PATTERN = /^[A-Za-z0-9_-]{2,20}$/;
                     (queryChange)="load($event)">
       <ng-template #actions let-row>
         @if (canManage()) {
-          <p-button label="Editar" icon="pi pi-pencil" size="small" [text]="true" (onClick)="openEdit(row)" />
-          <p-button [label]="row.active ? 'Desactivar' : 'Activar'" size="small" [text]="true"
+          <app-button label="Editar" icon="pi pi-pencil" size="small" [text]="true" (clicked)="openEdit(row)" />
+          <app-button [label]="row.active ? 'Desactivar' : 'Activar'" size="small" [text]="true"
                     [icon]="row.active ? 'pi pi-ban' : 'pi pi-check-circle'"
-                    [severity]="row.active ? 'danger' : 'success'" (onClick)="toggle(row)" />
+                    [severity]="row.active ? 'danger' : 'success'" (clicked)="toggle(row)" />
         }
       </ng-template>
     </app-data-table>

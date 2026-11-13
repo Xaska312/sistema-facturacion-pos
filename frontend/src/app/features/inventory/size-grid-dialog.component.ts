@@ -1,6 +1,6 @@
 import { Component, computed, inject, input, model, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable, forkJoin, map, of } from 'rxjs';
 import { Direction, InventoryDocumentType, ProductModel, ProductModelRow } from '../../core/api/api.models';
@@ -25,7 +25,7 @@ export interface SizeGridResult {
  */
 @Component({
   selector: 'app-size-grid-dialog',
-  imports: [FormsModule, ButtonModule, AppInputDirective, PesosInputDirective, FormDialogComponent],
+  imports: [FormsModule, ButtonComponent, AppInputDirective, PesosInputDirective, FormDialogComponent],
   template: `
     <app-form-dialog [(visible)]="visible" width="64rem" header="Agregar por tallas"
                      [description]="selected() ? null : 'Busca el modelo (p. ej. «Tenis Runner») y escribe las cantidades por talla y color.'"
@@ -38,7 +38,7 @@ export interface SizeGridResult {
               <p class="font-medium">{{ m.name }}</p>
               <p class="text-xs text-muted"><span class="font-mono">{{ m.skuPrefix }}</span> · {{ m.sizeScaleName }}</p>
             </div>
-            <p-button label="Cambiar modelo" size="small" [text]="true" (onClick)="clear()" />
+            <app-button label="Cambiar modelo" size="small" [text]="true" (clicked)="clear()" />
           </div>
 
           @if (type() === 'ADJUSTMENT' || type() === 'INITIAL') {
@@ -123,7 +123,7 @@ export interface SizeGridResult {
           <div class="flex gap-2">
             <input appInput class="flex-1" [(ngModel)]="search" placeholder="Nombre o prefijo del modelo"
                    autocomplete="off" (keydown.enter)="find($event)" aria-label="Buscar modelo" />
-            <p-button label="Buscar" icon="pi pi-search" [outlined]="true" [loading]="searching()" (onClick)="find()" />
+            <app-button label="Buscar" icon="pi pi-search" [outlined]="true" [loading]="searching()" (clicked)="find()" />
           </div>
           @if (results().length > 0) {
             <ul class="border rounded divide-y text-sm max-h-72 overflow-y-auto">

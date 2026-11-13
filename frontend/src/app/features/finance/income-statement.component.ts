@@ -1,6 +1,6 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { Branch } from '../../core/api/api.models';
 import { FinanceApi, IncomeStatement, Statement } from '../../core/api/finance.api';
 import { OrganizationApi } from '../../core/api/organization.api';
@@ -22,13 +22,13 @@ import { StatementRow, change, changeText, marginText, plainWords, statementRows
  */
 @Component({
   selector: 'app-income-statement',
-  imports: [ButtonModule, PageHeaderComponent, PeriodFilterComponent, IncomeStatementDocumentComponent],
+  imports: [ButtonComponent, PageHeaderComponent, PeriodFilterComponent, IncomeStatementDocumentComponent],
   template: `
     <app-page-header title="Estado de resultados" glyph="income"
                      description="Cuánto ganaste: lo que vendiste, menos lo que te costó, menos tus gastos.">
-      <p-button label="Excel" icon="pi pi-file-excel" severity="secondary" [outlined]="true" [loading]="exporting()"
-                [disabled]="!report()" (onClick)="export()" />
-      <p-button label="PDF" icon="pi pi-print" [disabled]="!report()" (onClick)="print()" />
+      <app-button label="Excel" icon="pi pi-file-excel" severity="secondary" [outlined]="true" [loading]="exporting()"
+                [disabled]="!report()" (clicked)="export()" />
+      <app-button label="PDF" icon="pi pi-print" [disabled]="!report()" (clicked)="print()" />
     </app-page-header>
 
     <app-period-filter [selection]="period()" [options]="['thisMonth', 'lastMonth', 'custom']" [branches]="branches()"

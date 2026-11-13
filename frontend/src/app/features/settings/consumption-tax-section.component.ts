@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { Category } from '../../core/api/api.models';
 import { CatalogApi } from '../../core/api/catalog.api';
 import { permissionFlag } from '../../core/auth/permission-flag';
@@ -13,7 +13,7 @@ import { problemMessage } from '../../core/errors/problem';
  */
 @Component({
   selector: 'app-consumption-tax-section',
-  imports: [ButtonModule],
+  imports: [ButtonComponent],
   template: `
     <section class="card p-5 mt-6 max-w-3xl" aria-labelledby="inc-title">
       <h2 id="inc-title" class="text-base font-bold tracking-tight">Impuesto al consumo (INC 8 %)</h2>
@@ -54,8 +54,8 @@ import { problemMessage } from '../../core/errors/problem';
             categorías elígeles "INC 8 %", o vuelve a aplicarlo aquí.
           </p>
           <div class="flex flex-wrap items-center gap-3 mt-3">
-            <p-button label="Aplicar INC 8 %" icon="pi pi-check" [loading]="saving()" [disabled]="chosen().size === 0"
-                      (onClick)="apply()" />
+            <app-button label="Aplicar INC 8 %" icon="pi pi-check" [loading]="saving()" [disabled]="chosen().size === 0"
+                      (clicked)="apply()" />
             @if (result(); as r) {
               <span class="text-sm text-success font-semibold" role="status">
                 Listo: {{ r.products === 1 ? '1 producto quedó' : r.products + ' productos quedaron' }} con {{ r.taxName }}.

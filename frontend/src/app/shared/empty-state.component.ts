@@ -1,5 +1,5 @@
 import { Component, input, output } from '@angular/core';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from './ui/button.component';
 
 /**
  * Estado vacío con guía: icono, título, explicación y la acción principal
@@ -7,7 +7,7 @@ import { ButtonModule } from 'primeng/button';
  */
 @Component({
   selector: 'app-empty-state',
-  imports: [ButtonModule],
+  imports: [ButtonComponent],
   template: `
     <div class="flex flex-col items-center text-center gap-2 py-10 px-4" role="status">
       <span class="inline-flex size-14 items-center justify-center rounded-2xl bg-brand-soft text-brand-soft-fg mb-1"
@@ -19,7 +19,7 @@ import { ButtonModule } from 'primeng/button';
         <p class="text-sm text-muted max-w-md">{{ message() }}</p>
       }
       @if (actionLabel(); as label) {
-        <p-button class="mt-2" [label]="label" [icon]="actionIcon()" (onClick)="action.emit()" />
+        <app-button class="mt-2" [label]="label" [icon]="actionIcon()" (clicked)="action.emit()" />
       }
       <ng-content />
     </div>

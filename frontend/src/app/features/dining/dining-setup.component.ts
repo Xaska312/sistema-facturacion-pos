@@ -2,7 +2,8 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 import { DialogModule } from 'primeng/dialog';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
@@ -33,16 +34,16 @@ export function nextTableNames(existing: readonly string[], fromNumber: number, 
  */
 @Component({
   selector: 'app-dining-setup',
-  imports: [FormsModule, RouterLink, ButtonModule, AppInputDirective, SkeletonComponent, PageHeaderComponent,
+  imports: [FormsModule, RouterLink, ButtonComponent, ButtonLinkComponent, AppInputDirective, SkeletonComponent, PageHeaderComponent,
     FormDialogComponent, EmptyStateComponent, DialogModule, LayoutEditorComponent],
   template: `
     <app-page-header title="Configurar mesas" description="Zonas de tu local y sus mesas. El nombre de la mesa es el que ve el mesero (4, Barra 2, Terraza A).">
-      <a pButton routerLink="/app/mesas" label="Ver el salón" icon="pi pi-arrow-left" severity="secondary" [outlined]="true"></a>
+      <a appButton routerLink="/app/mesas" label="Ver el salón" icon="pi pi-arrow-left" severity="secondary" [outlined]="true"></a>
       @if (zoneRegisters()) {
-        <a pButton routerLink="/app/mesas/cartas" label="Cartas por piso" icon="pi pi-book" severity="secondary"
+        <a appButton routerLink="/app/mesas/cartas" label="Cartas por piso" icon="pi pi-book" severity="secondary"
            [outlined]="true"></a>
       }
-      <p-button label="Nueva zona" icon="pi pi-plus" (onClick)="openZone(null)" />
+      <app-button label="Nueva zona" icon="pi pi-plus" (clicked)="openZone(null)" />
     </app-page-header>
 
     @if (branches().length > 1) {
@@ -73,12 +74,12 @@ export function nextTableNames(existing: readonly string[], fromNumber: number, 
                 }
               </div>
               <div class="flex flex-wrap gap-2">
-                <p-button label="Agregar mesas" icon="pi pi-plus" size="small" [outlined]="true" (onClick)="openBulk(z)" />
+                <app-button label="Agregar mesas" icon="pi pi-plus" size="small" [outlined]="true" (clicked)="openBulk(z)" />
                 @if (z.tables.length > 0) {
-                  <p-button label="Plano" icon="pi pi-map" size="small" [outlined]="true" (onClick)="layoutZone.set(z)" />
+                  <app-button label="Plano" icon="pi pi-map" size="small" [outlined]="true" (clicked)="layoutZone.set(z)" />
                 }
-                <p-button icon="pi pi-pencil" size="small" [text]="true" severity="secondary" [ariaLabel]="'Editar zona ' + z.name"
-                          (onClick)="openZone(z)" />
+                <app-button icon="pi pi-pencil" size="small" [text]="true" severity="secondary" [ariaLabel]="'Editar zona ' + z.name"
+                          (clicked)="openZone(z)" />
               </div>
             </div>
             @if (z.tables.length === 0) {

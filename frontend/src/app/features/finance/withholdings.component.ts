@@ -1,7 +1,7 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable, tap } from 'rxjs';
 import { PageResponse } from '../../core/api/api.models';
@@ -36,13 +36,13 @@ import { WITHHOLDING_TYPES, certificateBadge, rateText, typeLabel } from './with
  */
 @Component({
   selector: 'app-withholdings',
-  imports: [FormsModule, ButtonModule, AppInputDirective, PageHeaderComponent, PeriodFilterComponent, StatCardComponent,
+  imports: [FormsModule, ButtonComponent, AppInputDirective, PageHeaderComponent, PeriodFilterComponent, StatCardComponent,
     StatusBadgeComponent, DataTableComponent, CellTemplateDirective, FormDialogComponent],
   template: `
     <app-page-header title="Retenciones" glyph="withholdings"
                      description="Lo que tus clientes te retuvieron al pagarte (retefuente, reteICA, reteIVA). Esa plata ya la pagaron a tu nombre: la descuentas al declarar con el certificado que te dan.">
-      <p-button label="Exportar" icon="pi pi-download" severity="secondary" [outlined]="true" [loading]="exporting()"
-                (onClick)="export()" />
+      <app-button label="Exportar" icon="pi pi-download" severity="secondary" [outlined]="true" [loading]="exporting()"
+                (clicked)="export()" />
     </app-page-header>
 
     <app-period-filter [selection]="period()" [options]="['thisMonth', 'lastMonth', 'last30', 'custom']"
@@ -79,8 +79,8 @@ import { WITHHOLDING_TYPES, certificateBadge, rateText, typeLabel } from './with
                 @if (c.pendingCertificates > 0) {
                   <app-status-badge status="pending" [label]="c.pendingCertificates + ' sin certificado'" />
                   @if (canManage()) {
-                    <p-button label="Llegó el certificado" size="small" [text]="true" icon="pi pi-check"
-                              (onClick)="askCertificate(c)" />
+                    <app-button label="Llegó el certificado" size="small" [text]="true" icon="pi pi-check"
+                              (clicked)="askCertificate(c)" />
                   }
                 } @else {
                   <app-status-badge status="completed" label="Certificados al día" />
@@ -113,7 +113,7 @@ import { WITHHOLDING_TYPES, certificateBadge, rateText, typeLabel } from './with
         Ver las de ventas anuladas
       </label>
       @if (customerId() || type() || certificate() || includeVoided()) {
-        <p-button label="Quitar filtros" size="small" [text]="true" icon="pi pi-filter-slash" (onClick)="clearFilters()" />
+        <app-button label="Quitar filtros" size="small" [text]="true" icon="pi pi-filter-slash" (clicked)="clearFilters()" />
       }
     </section>
 
@@ -140,8 +140,8 @@ import { WITHHOLDING_TYPES, certificateBadge, rateText, typeLabel } from './with
         </ng-template>
         <ng-template #actions let-row>
           @if (canManage() && !row.reversal && !row.voided) {
-            <p-button size="small" [text]="true" [icon]="row.certificateReceived ? 'pi pi-undo' : 'pi pi-check'"
-                      [label]="row.certificateReceived ? 'Desmarcar' : 'Certificado'" (onClick)="toggleOne(row)" />
+            <app-button size="small" [text]="true" [icon]="row.certificateReceived ? 'pi pi-undo' : 'pi pi-check'"
+                      [label]="row.certificateReceived ? 'Desmarcar' : 'Certificado'" (clicked)="toggleOne(row)" />
           }
         </ng-template>
       </app-data-table>

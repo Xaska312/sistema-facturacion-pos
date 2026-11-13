@@ -1,7 +1,8 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 import { AuthService } from '../../core/auth/auth.service';
 import { CashDrawerService } from '../../core/printing/cash-drawer.service';
 import { testPageBytes } from '../../core/printing/escpos';
@@ -17,7 +18,7 @@ import { ReceiptWidth, loadReceiptWidth, saveReceiptWidth } from '../../shared/r
  */
 @Component({
   selector: 'app-printer-section',
-  imports: [FormsModule, ButtonModule],
+  imports: [FormsModule, ButtonComponent, ButtonLinkComponent],
   template: `
     <section class="card p-4 md:p-6 mt-6 flex flex-col gap-4 max-w-2xl" aria-labelledby="printer-title">
       <header>
@@ -43,9 +44,9 @@ import { ReceiptWidth, loadReceiptWidth, saveReceiptWidth } from '../../shared/r
                 dispositivos de este equipo, toca "Permitir".</li>
             </ol>
             <div class="flex flex-wrap gap-2">
-              <a pButton [href]="download" download label="Descargar XASKA Impresora" icon="pi pi-download"></a>
-              <p-button label="Buscar de nuevo" icon="pi pi-refresh" severity="secondary" [outlined]="true"
-                        (onClick)="agent.check()" />
+              <a appButton [href]="download" download label="Descargar XASKA Impresora" icon="pi pi-download"></a>
+              <app-button label="Buscar de nuevo" icon="pi pi-refresh" severity="secondary" [outlined]="true"
+                        (clicked)="agent.check()" />
             </div>
           </div>
         }
@@ -94,13 +95,13 @@ import { ReceiptWidth, loadReceiptWidth, saveReceiptWidth } from '../../shared/r
           </label>
         </div>
         <div class="flex flex-wrap gap-2">
-          <p-button label="Imprimir prueba" icon="pi pi-print" severity="secondary" [outlined]="true"
-                    [loading]="busy() === 'test'" (onClick)="test()" />
+          <app-button label="Imprimir prueba" icon="pi pi-print" severity="secondary" [outlined]="true"
+                    [loading]="busy() === 'test'" (clicked)="test()" />
           @if (canDrawer()) {
-            <p-button label="Probar el cajón" icon="pi pi-inbox" severity="secondary" [outlined]="true"
-                      [loading]="busy() === 'drawer'" (onClick)="drawer()" />
+            <app-button label="Probar el cajón" icon="pi pi-inbox" severity="secondary" [outlined]="true"
+                      [loading]="busy() === 'drawer'" (clicked)="drawer()" />
           }
-          <p-button label="Buscar de nuevo" icon="pi pi-refresh" severity="secondary" [text]="true" (onClick)="agent.check()" />
+          <app-button label="Buscar de nuevo" icon="pi pi-refresh" severity="secondary" [text]="true" (clicked)="agent.check()" />
         </div>
       }
     </section>

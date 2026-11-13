@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 import { Branch, PageResponse } from '../../core/api/api.models';
 import { InventoryApi, LotRow, LotStatus, LotSummary, UnlottedRow } from '../../core/api/inventory.api';
 import { OrganizationApi } from '../../core/api/organization.api';
@@ -24,12 +24,12 @@ type Filter = LotStatus | 'ALL';
  */
 @Component({
   selector: 'app-expiry',
-  imports: [FormsModule, RouterLink, ButtonModule, PageHeaderComponent, StatusBadgeComponent, DataTableComponent,
+  imports: [FormsModule, RouterLink, ButtonLinkComponent, PageHeaderComponent, StatusBadgeComponent, DataTableComponent,
     CellTemplateDirective],
   template: `
     <app-page-header title="Vencimientos"
                      description="Lo vencido no se vende: dalo de baja con acta o devuélvelo al proveedor. Lo que vence pronto, rótalo primero.">
-      <a pButton routerLink="/app/inventario/trazabilidad" label="Trazabilidad de un lote" icon="pi pi-search"
+      <a appButton routerLink="/app/inventario/trazabilidad" label="Trazabilidad de un lote" icon="pi pi-search"
          [outlined]="true"></a>
     </app-page-header>
 
@@ -93,10 +93,10 @@ type Filter = LotStatus | 'ALL';
         <ng-template #actions let-row>
           <span class="flex flex-wrap justify-end gap-1">
             @if (canAdjust() && row.status !== 'OK') {
-              <a pButton size="small" [text]="true" label="Dar de baja" icon="pi pi-trash" severity="danger"
+              <a appButton size="small" [text]="true" label="Dar de baja" icon="pi pi-trash" severity="danger"
                  [routerLink]="['/app/inventario/nuevo', 'baja']" [queryParams]="{ producto: row.productId, lote: row.lotNumber }"></a>
             }
-            <a pButton size="small" [text]="true" label="Trazar" icon="pi pi-search" routerLink="/app/inventario/trazabilidad"
+            <a appButton size="small" [text]="true" label="Trazar" icon="pi pi-search" routerLink="/app/inventario/trazabilidad"
                [queryParams]="{ producto: row.productId, lote: row.lotNumber }"></a>
           </span>
         </ng-template>

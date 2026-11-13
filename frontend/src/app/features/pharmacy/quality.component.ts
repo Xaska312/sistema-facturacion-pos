@@ -2,7 +2,8 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { Observable, concatMap, from, last } from 'rxjs';
@@ -48,12 +49,12 @@ interface Draft {
  */
 @Component({
   selector: 'app-quality',
-  imports: [FormsModule, RouterLink, ButtonModule, AppInputDirective, SkeletonComponent, PageHeaderComponent,
+  imports: [FormsModule, RouterLink, ButtonComponent, ButtonLinkComponent, AppInputDirective, SkeletonComponent, PageHeaderComponent,
     EmptyStateComponent, FormDialogComponent],
   template: `
     <app-page-header title="Temperatura y calidad"
                      description="Lecturas del termohigrómetro y de la nevera, eventos adversos e informe para la visita de la Secretaría de Salud.">
-      <a pButton routerLink="/app/farmacia/informe" label="Informe para la visita" icon="pi pi-file"
+      <a appButton routerLink="/app/farmacia/informe" label="Informe para la visita" icon="pi pi-file"
          severity="secondary" [outlined]="true"></a>
     </app-page-header>
 
@@ -140,7 +141,7 @@ interface Draft {
                         </label>
                       }
                       <div class="flex justify-end">
-                        <p-button type="submit" label="Guardar lectura" icon="pi pi-check" [loading]="d.saving"
+                        <app-button type="submit" label="Guardar lectura" icon="pi pi-check" [loading]="d.saving"
                                   [disabled]="!canSave(p, d)" />
                       </div>
                     </form>
@@ -219,7 +220,7 @@ interface Draft {
         <div class="flex flex-wrap items-center gap-3 mb-3">
           <p class="text-sm text-muted flex-1">Cuando un medicamento le hace daño a un paciente. Anótalo aquí y
             repórtalo en la página del INVIMA (formato FOREAM); después anota la fecha y el número del reporte.</p>
-          <p-button label="Registrar evento" icon="pi pi-plus" (onClick)="openEvent()" />
+          <app-button label="Registrar evento" icon="pi pi-plus" (clicked)="openEvent()" />
         </div>
         @if (events(); as list) {
           @if (list.length === 0) {
@@ -244,8 +245,8 @@ interface Draft {
                   } @else {
                     <span class="text-xs text-danger">Falta reportarlo al INVIMA</span>
                   }
-                  <p-button [label]="e.reportedOn ? 'Corregir reporte' : 'Anotar reporte'" size="small" [text]="true"
-                            (onClick)="openReport(e)" />
+                  <app-button [label]="e.reportedOn ? 'Corregir reporte' : 'Anotar reporte'" size="small" [text]="true"
+                            (clicked)="openReport(e)" />
                 </div>
               </article>
             }
@@ -257,7 +258,7 @@ interface Draft {
 
       @case ('points') {
         <div class="flex justify-end mb-3">
-          <p-button label="Nuevo punto" icon="pi pi-plus" (onClick)="openPoint(null)" />
+          <app-button label="Nuevo punto" icon="pi pi-plus" (clicked)="openPoint(null)" />
         </div>
         @if (points(); as list) {
           <div class="grid gap-3 md:grid-cols-2">

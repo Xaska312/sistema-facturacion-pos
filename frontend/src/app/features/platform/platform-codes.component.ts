@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { DialogModule } from 'primeng/dialog';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable } from 'rxjs';
@@ -30,12 +30,12 @@ interface CodeDraft {
  */
 @Component({
   selector: 'app-platform-codes',
-  imports: [FormsModule, ButtonModule, DialogModule, AppInputDirective, FormDialogComponent, PageHeaderComponent,
+  imports: [FormsModule, ButtonComponent, DialogModule, AppInputDirective, FormDialogComponent, PageHeaderComponent,
     DataTableComponent, CellTemplateDirective],
   template: `
     <app-page-header title="Códigos de activación"
                      description="Genera un código al vender un plan: el cliente lo escribe al crear su negocio. Cada código sirve una sola vez.">
-      <p-button label="Generar códigos" icon="pi pi-plus" (onClick)="openGenerate()" [disabled]="plans().length === 0" />
+      <app-button label="Generar códigos" icon="pi pi-plus" (clicked)="openGenerate()" [disabled]="plans().length === 0" />
     </app-page-header>
 
     <app-data-table [columns]="columns" [items]="codes()" [loading]="loading()" [trackBy]="trackById"
@@ -46,7 +46,7 @@ interface CodeDraft {
       </ng-template>
       <ng-template #actions let-row>
         @if (row.status === 'AVAILABLE') {
-          <p-button label="Anular" icon="pi pi-ban" size="small" severity="danger" [text]="true" (onClick)="revoke(row)"
+          <app-button label="Anular" icon="pi pi-ban" size="small" severity="danger" [text]="true" (clicked)="revoke(row)"
                     [ariaLabel]="'Anular el código terminado en ' + row.hint" />
         }
       </ng-template>
@@ -93,12 +93,12 @@ interface CodeDraft {
         @for (code of generated(); track code) {
           <li class="flex items-center gap-2">
             <code class="flex-1 rounded-xl bg-surface-alt px-3 py-2 text-center font-mono text-lg font-semibold tracking-widest">{{ code }}</code>
-            <p-button icon="pi pi-copy" [text]="true" [ariaLabel]="'Copiar ' + code" (onClick)="copy(code)" />
+            <app-button icon="pi pi-copy" [text]="true" [ariaLabel]="'Copiar ' + code" (clicked)="copy(code)" />
           </li>
         }
       </ul>
       <ng-template #footer>
-        <p-button label="Ya los copié" icon="pi pi-check" (onClick)="closeResult()" />
+        <app-button label="Ya los copié" icon="pi pi-check" (clicked)="closeResult()" />
       </ng-template>
     </p-dialog>
   `,

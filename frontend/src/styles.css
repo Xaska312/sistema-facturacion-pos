@@ -68,6 +68,59 @@
   --field-shadow: 0 1px 2px 0 rgb(18 18 23 / 0.05);
   --skeleton-bg: #dbe2e2;
   --skeleton-shine: rgb(255 255 255 / 0.4);
+  /* Botones de shared/ui (decisión 337): los mismos colores que daba el preset de PrimeNG, por severidad. */
+  --p-primary-50: #eef2ff;
+  --p-primary-100: #e0e7ff;
+  --p-primary-200: #c7d2fe;
+  --p-primary-300: #a5b4fc;
+  --p-primary-400: #818cf8;
+  --p-primary-500: #6366f1;
+  --p-primary-600: #4f46e5;
+  --p-primary-700: #4338ca;
+  --p-primary-800: #3730a3;
+  --p-primary-900: #312e81;
+  --p-primary-950: #1e1b4b;
+  --brand-active: var(--p-primary-900);
+  --btn-primary-tint-hover: var(--p-primary-50);
+  --btn-primary-tint-active: var(--p-primary-100);
+  --btn-primary-outline: var(--p-primary-200);
+  --btn-secondary-bg: #eef2f2;
+  --btn-secondary-hover-bg: #dbe2e2;
+  --btn-secondary-active-bg: #c3cdcc;
+  --btn-secondary-fg: #4f5f5d;
+  --btn-secondary-hover-fg: #3b4a48;
+  --btn-secondary-active-fg: #263331;
+  --btn-secondary-ring: #4f5f5d;
+  --btn-secondary-tint-fg: #5f706e;
+  --btn-secondary-tint-hover: #f5f7f7;
+  --btn-secondary-tint-active: #eef2f2;
+  --btn-secondary-text-hover: #f5f7f7;
+  --btn-secondary-text-active: #eef2f2;
+  --btn-secondary-outline: #dbe2e2;
+  --btn-danger-bg: #b91c1c;
+  --btn-danger-hover-bg: #991b1b;
+  --btn-danger-active-bg: #7f1d1d;
+  --btn-danger-fg: #ffffff;
+  --btn-danger-ring: #ef4444;
+  --btn-danger-tint-hover: #fef2f2;
+  --btn-danger-tint-active: #fee2e2;
+  --btn-danger-outline: #b91c1c;
+  --btn-success-bg: #15803d;
+  --btn-success-hover-bg: #166534;
+  --btn-success-active-bg: #14532d;
+  --btn-success-fg: #ffffff;
+  --btn-success-ring: #22c55e;
+  --btn-success-tint-hover: #f0fdf4;
+  --btn-success-tint-active: #dcfce7;
+  --btn-success-outline: #15803d;
+  --btn-warn-bg: #c2410c;
+  --btn-warn-hover-bg: #9a3412;
+  --btn-warn-active-bg: #7c2d12;
+  --btn-warn-fg: #ffffff;
+  --btn-warn-ring: #f97316;
+  --btn-warn-tint-hover: #fff7ed;
+  --btn-warn-tint-active: #ffedd5;
+  --btn-warn-outline: #c2410c;
   --text: #12201f;
   --text-muted: #4f5f5d;
   --brand: #4338ca;
@@ -166,6 +219,44 @@
   --field-invalid-placeholder: #f87171;
   --skeleton-bg: rgb(255 255 255 / 0.06);
   --skeleton-shine: rgb(255 255 255 / 0.04);
+  --brand-active: var(--p-primary-200);
+  --btn-primary-tint-hover: color-mix(in srgb, var(--brand), transparent 96%);
+  --btn-primary-tint-active: color-mix(in srgb, var(--brand), transparent 84%);
+  --btn-primary-outline: var(--p-primary-700);
+  --btn-secondary-bg: #1b2729;
+  --btn-secondary-hover-bg: #2a3a3d;
+  --btn-secondary-active-bg: #3d4f52;
+  --btn-secondary-fg: #b9c8c6;
+  --btn-secondary-hover-fg: #d3dddc;
+  --btn-secondary-active-fg: #e6efee;
+  --btn-secondary-ring: #b9c8c6;
+  --btn-secondary-tint-fg: #9cb0ad;
+  --btn-secondary-tint-hover: rgb(255 255 255 / 0.04);
+  --btn-secondary-tint-active: rgb(255 255 255 / 0.16);
+  --btn-secondary-text-hover: #1b2729;
+  --btn-secondary-text-active: #2a3a3d;
+  --btn-secondary-outline: #2a3a3d;
+  --btn-danger-bg: #f87171;
+  --btn-danger-hover-bg: #fca5a5;
+  --btn-danger-active-bg: #fecaca;
+  --btn-danger-fg: #450a0a;
+  --btn-danger-ring: #f87171;
+  --btn-danger-tint-hover: color-mix(in srgb, #f87171, transparent 96%);
+  --btn-danger-tint-active: color-mix(in srgb, #f87171, transparent 84%);
+  --btn-success-bg: #4ade80;
+  --btn-success-hover-bg: #86efac;
+  --btn-success-active-bg: #bbf7d0;
+  --btn-success-fg: #052e16;
+  --btn-success-ring: #4ade80;
+  --btn-success-tint-hover: color-mix(in srgb, #4ade80, transparent 96%);
+  --btn-success-tint-active: color-mix(in srgb, #4ade80, transparent 84%);
+  --btn-warn-bg: #fb923c;
+  --btn-warn-hover-bg: #fdba74;
+  --btn-warn-active-bg: #fed7aa;
+  --btn-warn-fg: #431407;
+  --btn-warn-ring: #fb923c;
+  --btn-warn-tint-hover: color-mix(in srgb, #fb923c, transparent 96%);
+  --btn-warn-tint-active: color-mix(in srgb, #fb923c, transparent 84%);
   --text: #e6efee;
   --text-muted: #9cb0ad;
   --brand: #818cf8;
@@ -578,6 +669,260 @@
   }
   to {
     transform: translateX(100%);
+  }
+}
+
+/*
+ * Botón de shared/ui (app-button y a[appButton], decisión 337). Sin capa, como el de PrimeNG que reemplaza: así las
+ * utilidades de Tailwind que hoy no aplican (styleClass="justify-start", "font-bold"…) siguen sin aplicar.
+ * Cada severidad fija sus colores en variables --b-*; sólido, texto y contorno los usan.
+ */
+.ui-button {
+  --b-bg: var(--brand);
+  --b-hover-bg: var(--brand-hover);
+  --b-active-bg: var(--brand-active);
+  --b-fg: var(--brand-contrast);
+  --b-hover-fg: var(--brand-contrast);
+  --b-active-fg: var(--brand-contrast);
+  --b-ring: var(--brand);
+  --b-tint-fg: var(--brand);
+  --b-tint-hover: var(--btn-primary-tint-hover);
+  --b-tint-active: var(--btn-primary-tint-active);
+  --b-text-hover: var(--btn-primary-tint-hover);
+  --b-text-active: var(--btn-primary-tint-active);
+  --b-outline: var(--btn-primary-outline);
+  display: inline-flex;
+  position: relative;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  overflow: hidden;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--b-bg);
+  border-radius: var(--ui-radius-control);
+  background: var(--b-bg);
+  color: var(--b-fg);
+  font-family: inherit;
+  font-feature-settings: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+  user-select: none;
+  outline-color: transparent;
+  transition:
+    background var(--ui-duration),
+    color var(--ui-duration),
+    border-color var(--ui-duration),
+    outline-color var(--ui-duration),
+    box-shadow var(--ui-duration);
+}
+
+.ui-button-secondary {
+  --b-bg: var(--btn-secondary-bg);
+  --b-hover-bg: var(--btn-secondary-hover-bg);
+  --b-active-bg: var(--btn-secondary-active-bg);
+  --b-fg: var(--btn-secondary-fg);
+  --b-hover-fg: var(--btn-secondary-hover-fg);
+  --b-active-fg: var(--btn-secondary-active-fg);
+  --b-ring: var(--btn-secondary-ring);
+  --b-tint-fg: var(--btn-secondary-tint-fg);
+  --b-tint-hover: var(--btn-secondary-tint-hover);
+  --b-tint-active: var(--btn-secondary-tint-active);
+  --b-text-hover: var(--btn-secondary-text-hover);
+  --b-text-active: var(--btn-secondary-text-active);
+  --b-outline: var(--btn-secondary-outline);
+}
+
+.ui-button-danger,
+.ui-button-success,
+.ui-button-warn {
+  --b-fg: var(--b-solid-fg);
+  --b-hover-fg: var(--b-solid-fg);
+  --b-active-fg: var(--b-solid-fg);
+  --b-tint-fg: var(--b-bg);
+  --b-text-hover: var(--b-tint-hover);
+  --b-text-active: var(--b-tint-active);
+}
+
+.ui-button-danger {
+  --b-bg: var(--btn-danger-bg);
+  --b-hover-bg: var(--btn-danger-hover-bg);
+  --b-active-bg: var(--btn-danger-active-bg);
+  --b-solid-fg: var(--btn-danger-fg);
+  --b-ring: var(--btn-danger-ring);
+  --b-tint-hover: var(--btn-danger-tint-hover);
+  --b-tint-active: var(--btn-danger-tint-active);
+  --b-outline: var(--btn-danger-outline);
+}
+
+.ui-button-success {
+  --b-bg: var(--btn-success-bg);
+  --b-hover-bg: var(--btn-success-hover-bg);
+  --b-active-bg: var(--btn-success-active-bg);
+  --b-solid-fg: var(--btn-success-fg);
+  --b-ring: var(--btn-success-ring);
+  --b-tint-hover: var(--btn-success-tint-hover);
+  --b-tint-active: var(--btn-success-tint-active);
+  --b-outline: var(--btn-success-outline);
+}
+
+.ui-button-warn {
+  --b-bg: var(--btn-warn-bg);
+  --b-hover-bg: var(--btn-warn-hover-bg);
+  --b-active-bg: var(--btn-warn-active-bg);
+  --b-solid-fg: var(--btn-warn-fg);
+  --b-ring: var(--btn-warn-ring);
+  --b-tint-hover: var(--btn-warn-tint-hover);
+  --b-tint-active: var(--btn-warn-tint-active);
+  --b-outline: var(--btn-warn-outline);
+}
+
+.ui-button:not(:disabled):hover {
+  background: var(--b-hover-bg);
+  border-color: var(--b-hover-bg);
+  color: var(--b-hover-fg);
+}
+
+.ui-button:not(:disabled):active {
+  background: var(--b-active-bg);
+  border-color: var(--b-active-bg);
+  color: var(--b-active-fg);
+}
+
+.ui-button.ui-button-text {
+  background: transparent;
+  border-color: transparent;
+  color: var(--b-tint-fg);
+}
+
+.ui-button.ui-button-text:not(:disabled):hover {
+  background: var(--b-text-hover);
+  border-color: transparent;
+  color: var(--b-tint-fg);
+}
+
+.ui-button.ui-button-text:not(:disabled):active {
+  background: var(--b-text-active);
+  border-color: transparent;
+  color: var(--b-tint-fg);
+}
+
+.ui-button.ui-button-outlined {
+  background: transparent;
+  border-color: var(--b-outline);
+  color: var(--b-tint-fg);
+}
+
+.ui-button.ui-button-outlined:not(:disabled):hover {
+  background: var(--b-tint-hover);
+  border-color: var(--b-outline);
+  color: var(--b-tint-fg);
+}
+
+.ui-button.ui-button-outlined:not(:disabled):active {
+  background: var(--b-tint-active);
+  border-color: var(--b-outline);
+  color: var(--b-tint-fg);
+}
+
+.ui-button:focus-visible {
+  outline: 1px solid var(--b-ring);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+.ui-button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* Para un <label> con aspecto de botón (subir archivo) mientras está ocupado. */
+.ui-button-disabled,
+.ui-button-disabled * {
+  cursor: default;
+  pointer-events: none;
+  user-select: none;
+}
+
+.ui-button-disabled {
+  opacity: 0.6;
+}
+
+.ui-button-label {
+  font-weight: 600;
+}
+
+.ui-button-icon-right {
+  order: 1;
+}
+
+.ui-button-icon-only {
+  width: 2.5rem;
+  padding-inline: 0;
+  gap: 0;
+}
+
+/* Va antes de los tamaños (como en PrimeNG: el pequeño conserva su relleno). Sin texto, el botón conserva el alto de una línea. */
+.ui-button-icon-only::after {
+  content: "\00a0";
+  visibility: hidden;
+  width: 0;
+}
+
+.ui-button-sm {
+  font-size: 0.875rem;
+  padding: 0.375rem 0.625rem;
+}
+
+.ui-button-sm .ui-button-icon {
+  font-size: 0.875rem;
+}
+
+.ui-button-lg {
+  font-size: 1.125rem;
+  padding: 0.625rem 0.875rem;
+}
+
+.ui-button-lg .ui-button-icon {
+  font-size: 1.125rem;
+}
+
+.ui-button-sm.ui-button-icon-only {
+  width: 2rem;
+}
+
+.ui-button-lg.ui-button-icon-only {
+  width: 3rem;
+}
+
+.ui-button-rounded {
+  border-radius: 2rem;
+}
+
+.ui-button-icon-only.ui-button-rounded {
+  border-radius: 50%;
+  height: 2.5rem;
+}
+
+.ui-button-sm.ui-button-icon-only.ui-button-rounded {
+  height: 2rem;
+}
+
+.ui-button-lg.ui-button-icon-only.ui-button-rounded {
+  height: 3rem;
+}
+
+.ui-button-spinner {
+  width: 1rem;
+  height: 1rem;
+  animation: ui-spin 2s linear infinite;
+}
+
+@keyframes ui-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }
 

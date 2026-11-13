@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, ElementRef, inject, input, model, output, signal, viewChild } from '@angular/core';
 import { AbstractControl, FormArray, FormGroup } from '@angular/forms';
 import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../ui/button.component';
 import { DialogModule } from 'primeng/dialog';
 import { Observable } from 'rxjs';
 import { InlineErrorScope } from '../../core/errors/inline-errors';
@@ -23,7 +23,7 @@ import { applyServerErrors } from './field-messages';
  */
 @Component({
   selector: 'app-form-dialog',
-  imports: [DialogModule, ButtonModule],
+  imports: [DialogModule, ButtonComponent],
   template: `
     <p-dialog [visible]="visible()" (visibleChange)="onVisibleChange($event)" [modal]="true" [header]="header()"
               [style]="{ width: width(), maxWidth: 'calc(100vw - 2rem)' }" [draggable]="false" [resizable]="false"
@@ -51,9 +51,9 @@ import { applyServerErrors } from './field-messages';
         <ng-content />
 
         <div class="flex flex-wrap justify-end gap-2 pt-2 border-t border-line">
-          <p-button type="button" label="Cancelar" [text]="true" severity="secondary" [disabled]="saving()"
-                    (onClick)="requestClose()" />
-          <p-button type="submit" [label]="submitLabel()" [icon]="submitIcon()" [loading]="saving()"
+          <app-button type="button" label="Cancelar" [text]="true" severity="secondary" [disabled]="saving()"
+                    (clicked)="requestClose()" />
+          <app-button type="submit" [label]="submitLabel()" [icon]="submitIcon()" [loading]="saving()"
                     [severity]="destructive() ? 'danger' : null" />
         </div>
       </form>

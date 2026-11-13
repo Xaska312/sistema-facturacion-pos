@@ -4,7 +4,8 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 import { AiApi, AskUsage, CatalogDraft } from '../../core/api/ai.api';
 import { Branch, ImportReport, Party } from '../../core/api/api.models';
 import { OrganizationApi } from '../../core/api/organization.api';
@@ -26,11 +27,11 @@ type Filter = 'ALL' | 'CREATE' | 'UPDATE' | 'CHECK' | 'SKIP';
  */
 @Component({
   selector: 'app-catalog-import',
-  imports: [FormsModule, RouterLink, ButtonModule, PageHeaderComponent, XaskaIaLogoComponent, AskaLoaderComponent],
+  imports: [FormsModule, RouterLink, ButtonComponent, ButtonLinkComponent, PageHeaderComponent, XaskaIaLogoComponent, AskaLoaderComponent],
   template: `
     <app-page-header title="Cargar con Aska"
                      description="Sube la lista de precios de tu proveedor: Aska crea los productos nuevos y pone al día costos y precios. Tú revisas antes de guardar.">
-      <a pButton routerLink="/app/productos" label="Volver a productos" icon="pi pi-arrow-left" severity="secondary"
+      <a appButton routerLink="/app/productos" label="Volver a productos" icon="pi pi-arrow-left" severity="secondary"
          [outlined]="true"></a>
     </app-page-header>
 
@@ -74,8 +75,8 @@ type Filter = 'ALL' | 'CREATE' | 'UPDATE' | 'CHECK' | 'SKIP';
           <!-- Decisión 313: un Word con más de 10 fotos se lee por tandas. -->
           <div class="card p-3 flex flex-wrap items-center gap-3" role="status">
             <p class="flex-1 min-w-56 text-sm">Listo, guardé esas. Del Word quedan las fotos {{ n }} a {{ totalPhotos() }}.</p>
-            <p-button [label]="'Seguir con las fotos ' + n + ' a ' + lastOf(n)" icon="pi pi-images"
-                      [loading]="reading()" (onClick)="read(n)" />
+            <app-button [label]="'Seguir con las fotos ' + n + ' a ' + lastOf(n)" icon="pi pi-images"
+                      [loading]="reading()" (clicked)="read(n)" />
           </div>
         }
         <label class="aska-drop" [class.aska-drop-ready]="files().length > 0">
@@ -165,7 +166,7 @@ type Filter = 'ALL' | 'CREATE' | 'UPDATE' | 'CHECK' | 'SKIP';
               <p class="text-xs mt-1">{{ w }}</p>
             }
           </div>
-          <p-button label="Subir otra lista" icon="pi pi-refresh" [text]="true" (onClick)="restart()" />
+          <app-button label="Subir otra lista" icon="pi pi-refresh" [text]="true" (clicked)="restart()" />
         </div>
 
         <div class="flex flex-wrap gap-2" role="group" aria-label="Filtrar filas">
@@ -304,8 +305,8 @@ type Filter = 'ALL' | 'CREATE' | 'UPDATE' | 'CHECK' | 'SKIP';
               Se van a guardar <strong>{{ selectedCount() }}</strong> productos. Si el costo baja, el precio se mantiene: bájalo tú si quieres.
             }
           </p>
-          <p-button [label]="'Guardar ' + selectedCount() + ' productos'" icon="pi pi-check" severity="success"
-                    [disabled]="selectedCount() === 0 || problems() > 0" [loading]="saving()" (onClick)="save()" />
+          <app-button [label]="'Guardar ' + selectedCount() + ' productos'" icon="pi pi-check" severity="success"
+                    [disabled]="selectedCount() === 0 || problems() > 0" [loading]="saving()" (clicked)="save()" />
         </div>
       </section>
     }

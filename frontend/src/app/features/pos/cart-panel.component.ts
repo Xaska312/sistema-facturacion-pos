@@ -1,7 +1,7 @@
 import { focusOnDesktop } from '../../shared/touch';
 import { Component, DestroyRef, inject, input, output, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { Popover, PopoverModule } from 'primeng/popover';
 import { XIconComponent } from '../../shared/icons/xicon.component';
 import { formatCop, formatQuantity } from '../../shared/money';
@@ -44,7 +44,7 @@ const UNDO_MS = 6000;
  */
 @Component({
   selector: 'app-cart-panel',
-  imports: [FormsModule, ButtonModule, PopoverModule, XIconComponent],
+  imports: [FormsModule, ButtonComponent, PopoverModule, XIconComponent],
   template: `
     <aside aria-label="Venta actual" class="h-full flex flex-col gap-3 min-h-0">
       <div class="card flex-1 flex flex-col min-h-0 overflow-hidden">
@@ -210,8 +210,8 @@ const UNDO_MS = 6000;
             </span>
           </div>
           <div class="flex justify-end gap-2">
-            <p-button label="Cancelar" [text]="true" severity="secondary" styleClass="min-h-11" (onClick)="closeEditor()" />
-            <p-button type="submit" label="Aplicar" styleClass="min-h-11" />
+            <app-button label="Cancelar" [text]="true" severity="secondary" styleClass="min-h-11" (clicked)="closeEditor()" />
+            <app-button type="submit" label="Aplicar" styleClass="min-h-11" />
           </div>
         </form>
       }

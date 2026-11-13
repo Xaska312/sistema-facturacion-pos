@@ -2,7 +2,8 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 import { DialogModule } from 'primeng/dialog';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Branch, PageResponse, StockAlert, StockRow, StockStatus } from '../../core/api/api.models';
@@ -25,7 +26,7 @@ const STOCK_STATUS: Record<StockStatus, StatusKey> = { LOW: 'stock-low', OK: 'st
 /** Existencias por sucursal, alertas de mínimo y niveles mínimo/máximo. */
 @Component({
   selector: 'app-stock',
-  imports: [AskaNudgeComponent, TermComponent, FormsModule, RouterLink, ButtonModule, DialogModule, AppInputDirective, DataTableComponent, PageHeaderComponent,
+  imports: [AskaNudgeComponent, TermComponent, FormsModule, RouterLink, ButtonComponent, ButtonLinkComponent, DialogModule, AppInputDirective, DataTableComponent, PageHeaderComponent,
     XaskaIaLogoComponent],
   styles: `
     .aska-cta {
@@ -37,7 +38,7 @@ const STOCK_STATUS: Record<StockStatus, StatusKey> = { LOW: 'stock-low', OK: 'st
   `,
   template: `
     <app-page-header title="Existencias" description="Cuánto hay de cada producto en cada sucursal y cuánto vale.">
-      <a pButton routerLink="/app/inventario/movimientos" label="Movimientos" icon="pi pi-arrow-right-arrow-left"
+      <a appButton routerLink="/app/inventario/movimientos" label="Movimientos" icon="pi pi-arrow-right-arrow-left"
          severity="secondary" [outlined]="true"></a>
       @if (canAdjust() && canManageProducts() && canAsk()) {
         <!-- Decisión 306: el inventario del cuaderno, con fotos. -->
@@ -85,10 +86,10 @@ const STOCK_STATUS: Record<StockStatus, StatusKey> = { LOW: 'stock-low', OK: 'st
         </select>
       </label>
       <ng-template #actions let-row>
-        <a pButton [routerLink]="['/app/inventario/kardex', row.productId]" [queryParams]="{ branchId: row.branchId }"
+        <a appButton [routerLink]="['/app/inventario/kardex', row.productId]" [queryParams]="{ branchId: row.branchId }"
            label="Kardex" icon="pi pi-list" size="small" [text]="true"></a>
         @if (canAdjust()) {
-          <p-button label="Mín./máx." icon="pi pi-sliders-h" size="small" [text]="true" (onClick)="openLevels(row)" />
+          <app-button label="Mín./máx." icon="pi pi-sliders-h" size="small" [text]="true" (clicked)="openLevels(row)" />
         }
       </ng-template>
     </app-data-table>
@@ -108,8 +109,8 @@ const STOCK_STATUS: Record<StockStatus, StatusKey> = { LOW: 'stock-low', OK: 'st
       <p class="text-xs text-muted mt-2">Con una <app-term term="stock-minimo">existencia mínima</app-term>, recibes una
         alerta cuando la existencia llega a ese valor. Deja vacío para no usar alerta.</p>
       <div class="flex justify-end gap-2 mt-4">
-        <p-button label="Cancelar" [text]="true" severity="secondary" (onClick)="levelsOpen = false" />
-        <p-button label="Guardar" icon="pi pi-check" (onClick)="saveLevels()" />
+        <app-button label="Cancelar" [text]="true" severity="secondary" (clicked)="levelsOpen = false" />
+        <app-button label="Guardar" icon="pi pi-check" (clicked)="saveLevels()" />
       </div>
     </p-dialog>
   `,

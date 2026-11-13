@@ -2,7 +2,7 @@ import { XaskaIaLogoComponent } from '../../shared/brand/xaska-ia-logo.component
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable } from 'rxjs';
 import { AiAllowance, Plan, PlanFeature, PlanInput } from '../../core/api/api.models';
@@ -34,7 +34,7 @@ interface PlanDraft {
 /** Planes de suscripción: límites y precios (fase 8b). Límite vacío = sin límite; precio vacío = sin definir. */
 @Component({
   selector: 'app-platform-plans',
-  imports: [XaskaIaLogoComponent, FormsModule, ButtonModule, AppInputDirective, FormDialogComponent, PesosInputDirective, PageHeaderComponent,
+  imports: [XaskaIaLogoComponent, FormsModule, ButtonComponent, AppInputDirective, FormDialogComponent, PesosInputDirective, PageHeaderComponent,
     DataTableComponent, CellTemplateDirective],
   template: `
     <app-page-header title="Planes"
@@ -46,7 +46,7 @@ interface PlanDraft {
       <ng-template appCell="monthly" let-row>{{ price(row.monthlyPrice) }}</ng-template>
       <ng-template appCell="annual" let-row>{{ price(row.annualPrice) }}</ng-template>
       <ng-template #actions let-row>
-        <p-button label="Editar" icon="pi pi-pencil" size="small" [text]="true" (onClick)="edit(row)"
+        <app-button label="Editar" icon="pi pi-pencil" size="small" [text]="true" (clicked)="edit(row)"
                   [ariaLabel]="'Editar el plan ' + row.name" />
       </ng-template>
     </app-data-table>
@@ -65,7 +65,7 @@ interface PlanDraft {
             <input appInput type="number" min="0" max="100000" [name]="'ai-' + a.code"
                    [(ngModel)]="allowanceDrafts[a.code]" />
           </label>
-          <p-button type="submit" label="Guardar" icon="pi pi-check" [outlined]="true"
+          <app-button type="submit" label="Guardar" icon="pi pi-check" [outlined]="true"
                     [loading]="savingAllowance() === a.code"
                     [disabled]="allowanceDrafts[a.code] === a.monthlyLimit" />
         </form>

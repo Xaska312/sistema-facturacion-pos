@@ -3,7 +3,7 @@ import { Component, OnInit, computed, inject, output, signal } from '@angular/co
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { CashSession, RegisterOption } from '../../core/api/api.models';
 import { CashApi } from '../../core/api/cash.api';
@@ -18,7 +18,7 @@ import { permissionFlag } from '../../core/auth/permission-flag';
  */
 @Component({
   selector: 'app-open-cash',
-  imports: [FormsModule, PesosInputDirective, RouterLink, ButtonModule, SkeletonComponent, XIconComponent],
+  imports: [FormsModule, PesosInputDirective, RouterLink, ButtonComponent, SkeletonComponent, XIconComponent],
   template: `
     <section class="card w-full max-w-xl p-6 flex flex-col gap-5 rounded-[1.75rem]" aria-labelledby="open-cash-title">
       <div class="flex items-start gap-3">
@@ -48,8 +48,8 @@ import { permissionFlag } from '../../core/auth/permission-flag';
           <div class="flex flex-col gap-2">
             <p class="text-sm font-medium">Cajas abiertas donde puedes vender</p>
             @for (r of joinable(); track r.id) {
-              <p-button styleClass="w-full min-h-14 justify-start" icon="pi pi-shopping-cart" [loading]="joining() === r.id"
-                        [disabled]="joining() !== null" (onClick)="join(r)"
+              <app-button styleClass="w-full min-h-14 justify-start" icon="pi pi-shopping-cart" [loading]="joining() === r.id"
+                        [disabled]="joining() !== null" (clicked)="join(r)"
                         [label]="'Vender en ' + r.code + ' · ' + r.name + ' (abierta por ' + (r.busyBy ?? 'otro usuario') + ')'" />
             }
           </div>
@@ -58,7 +58,7 @@ import { permissionFlag } from '../../core/auth/permission-flag';
           @if (joinable().length === 0) {
             <p class="text-sm" role="alert">Aún no hay una caja compartida abierta. Pide a quien abre la caja que la
               abra, o que te asigne el permiso "Abrir, mover y cerrar caja".</p>
-            <p-button label="Volver a revisar" icon="pi pi-refresh" [text]="true" (onClick)="ngOnInit()" />
+            <app-button label="Volver a revisar" icon="pi pi-refresh" [text]="true" (clicked)="ngOnInit()" />
           }
         } @else if (openable().length === 0) {
           @if (joinable().length === 0) {
@@ -103,7 +103,7 @@ import { permissionFlag } from '../../core/auth/permission-flag';
                      aria-describedby="opening-hint" />
               <span id="opening-hint" class="text-sm text-muted">El dinero que hay en el cajón antes de la primera venta.</span>
             </div>
-            <p-button type="submit" label="Abrir caja" icon="pi pi-lock-open" size="large" styleClass="w-full min-h-14 text-lg"
+            <app-button type="submit" label="Abrir caja" icon="pi pi-lock-open" size="large" styleClass="w-full min-h-14 text-lg"
                       [disabled]="!registerId() || openingAmount === null || openingAmount < 0" [loading]="saving()" />
           </form>
         }

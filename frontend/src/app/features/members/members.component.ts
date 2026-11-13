@@ -1,7 +1,7 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { DialogModule } from 'primeng/dialog';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { AccessApi, invitationLink } from '../../core/api/access.api';
@@ -22,11 +22,11 @@ type Tab = 'members' | 'invitations';
 
 @Component({
   selector: 'app-members',
-  imports: [FormsModule, ButtonModule, DialogModule, AppInputDirective, DataTableComponent, HasPermissionDirective,
+  imports: [FormsModule, ButtonComponent, DialogModule, AppInputDirective, DataTableComponent, HasPermissionDirective,
     PageHeaderComponent],
   template: `
     <app-page-header title="Usuarios" description="Las personas que trabajan en tu negocio, sus roles y sus sucursales.">
-      <p-button *hasPermission="'members:manage'" label="Invitar usuario" icon="pi pi-user-plus" (onClick)="openInvite()" />
+      <app-button *hasPermission="'members:manage'" label="Invitar usuario" icon="pi pi-user-plus" (clicked)="openInvite()" />
     </app-page-header>
 
     <div class="flex flex-wrap gap-1 mb-3 p-1 rounded-lg bg-surface-alt w-fit" role="group" aria-label="Vista">
@@ -50,10 +50,10 @@ type Tab = 'members' | 'invitations';
                       (queryChange)="loadMembers($event)">
         <ng-template #actions let-row>
           @if (canManage(row)) {
-            <p-button label="Editar" icon="pi pi-pencil" size="small" [text]="true" (onClick)="openEdit(row)" />
-            <p-button [label]="row.active ? 'Desactivar' : 'Activar'" size="small" [text]="true"
+            <app-button label="Editar" icon="pi pi-pencil" size="small" [text]="true" (clicked)="openEdit(row)" />
+            <app-button [label]="row.active ? 'Desactivar' : 'Activar'" size="small" [text]="true"
                       [icon]="row.active ? 'pi pi-ban' : 'pi pi-check-circle'"
-                      [severity]="row.active ? 'danger' : 'success'" (onClick)="toggleMember(row)" />
+                      [severity]="row.active ? 'danger' : 'success'" (clicked)="toggleMember(row)" />
           }
         </ng-template>
       </app-data-table>
@@ -66,10 +66,10 @@ type Tab = 'members' | 'invitations';
                       (emptyAction)="openInvite()"
                       (queryChange)="loadInvitations($event)">
         <ng-template #actions let-row>
-          <p-button *hasPermission="'members:manage'" label="Reenviar" icon="pi pi-send" size="small" [text]="true"
-                    (onClick)="resend(row)" />
-          <p-button *hasPermission="'members:manage'" label="Revocar" icon="pi pi-times" size="small" [text]="true"
-                    severity="danger" (onClick)="revoke(row)" />
+          <app-button *hasPermission="'members:manage'" label="Reenviar" icon="pi pi-send" size="small" [text]="true"
+                    (clicked)="resend(row)" />
+          <app-button *hasPermission="'members:manage'" label="Revocar" icon="pi pi-times" size="small" [text]="true"
+                    severity="danger" (clicked)="revoke(row)" />
         </ng-template>
       </app-data-table>
     }
@@ -83,8 +83,8 @@ type Tab = 'members' | 'invitations';
             ahora.</p>
           <input appInput readonly class="w-full font-mono text-xs" [value]="link" />
           <div class="flex justify-end gap-2">
-            <p-button label="Copiar enlace" (onClick)="copy(link)" />
-            <p-button label="Cerrar" [text]="true" severity="secondary" (onClick)="inviteOpen = false" />
+            <app-button label="Copiar enlace" (clicked)="copy(link)" />
+            <app-button label="Cerrar" [text]="true" severity="secondary" (clicked)="inviteOpen = false" />
           </div>
         </div>
       } @else {
@@ -114,8 +114,8 @@ type Tab = 'members' | 'invitations';
             }
           </fieldset>
           <div class="flex justify-end gap-2">
-            <p-button label="Cancelar" [text]="true" severity="secondary" (onClick)="inviteOpen = false" />
-            <p-button label="Enviar invitación" [loading]="saving()" [disabled]="!canInvite()" (onClick)="invite()" />
+            <app-button label="Cancelar" [text]="true" severity="secondary" (clicked)="inviteOpen = false" />
+            <app-button label="Enviar invitación" [loading]="saving()" [disabled]="!canInvite()" (clicked)="invite()" />
           </div>
         </div>
       }
@@ -156,9 +156,9 @@ type Tab = 'members' | 'invitations';
           </select>
         </label>
         <div class="flex justify-end gap-2">
-          <p-button label="Cancelar" [text]="true" severity="secondary" (onClick)="editOpen = false" />
-          <p-button label="Guardar" [loading]="saving()"
-                    [disabled]="selectedRoles().size === 0 || selectedBranches().size === 0" (onClick)="saveMember()" />
+          <app-button label="Cancelar" [text]="true" severity="secondary" (clicked)="editOpen = false" />
+          <app-button label="Guardar" [loading]="saving()"
+                    [disabled]="selectedRoles().size === 0 || selectedBranches().size === 0" (clicked)="saveMember()" />
         </div>
       </div>
     </p-dialog>

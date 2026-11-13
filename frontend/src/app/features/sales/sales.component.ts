@@ -2,7 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { DialogModule } from 'primeng/dialog';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable, tap, throwError } from 'rxjs';
@@ -36,7 +36,7 @@ const SALE_STATUS: Record<SaleStatus, StatusKey> = { COMPLETED: 'completed', VOI
 /** Historial de ventas: detalle, reimpresión del tiquete y anulación (permiso sales:void). */
 @Component({
   selector: 'app-sales',
-  imports: [ReceiptSendComponent, FormsModule, ButtonModule, DialogModule, AppInputDirective, DataTableComponent, HasPermissionDirective,
+  imports: [ReceiptSendComponent, FormsModule, ButtonComponent, DialogModule, AppInputDirective, DataTableComponent, HasPermissionDirective,
     ReceiptComponent, PageHeaderComponent, FormDialogComponent],
   template: `
     <app-page-header title="Ventas" description="Todas las ventas registradas: detalle, reimpresión del tiquete y anulación." />
@@ -64,7 +64,7 @@ const SALE_STATUS: Record<SaleStatus, StatusKey> = { COMPLETED: 'completed', VOI
         </select>
       </label>
       <ng-template #actions let-row>
-        <p-button label="Ver" icon="pi pi-eye" size="small" [text]="true" (onClick)="open(row)" />
+        <app-button label="Ver" icon="pi pi-eye" size="small" [text]="true" (clicked)="open(row)" />
       </ng-template>
     </app-data-table>
 
@@ -85,14 +85,14 @@ const SALE_STATUS: Record<SaleStatus, StatusKey> = { COMPLETED: 'completed', VOI
         <div class="w-full flex flex-wrap items-center justify-end gap-2">
           @if (detail(); as sale) {
             @if (sale.status === 'COMPLETED') {
-              <p-button *hasPermission="'sales:void'" label="Anular" severity="danger" [text]="true"
-                        (onClick)="openVoid()" />
+              <app-button *hasPermission="'sales:void'" label="Anular" severity="danger" [text]="true"
+                        (clicked)="openVoid()" />
             }
             <span class="flex-1"></span>
             <app-receipt-send [sale]="sale" [logo]="brandLogo()" />
           }
-          <p-button label="Reimprimir" icon="pi pi-print" severity="secondary" styleClass="min-h-11" (onClick)="print()" />
-          <p-button label="Cerrar" styleClass="min-h-11" (onClick)="detailOpen = false" />
+          <app-button label="Reimprimir" icon="pi pi-print" severity="secondary" styleClass="min-h-11" (clicked)="print()" />
+          <app-button label="Cerrar" styleClass="min-h-11" (clicked)="detailOpen = false" />
         </div>
       </ng-template>
     </p-dialog>

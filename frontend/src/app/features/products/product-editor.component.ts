@@ -2,7 +2,7 @@ import { Component, HostListener, OnInit, computed, inject, input, signal } from
 import { FormArray, FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { EMPTY, Observable, catchError, forkJoin, map, of, switchMap } from 'rxjs';
 import { Category, PriceList, Product, Tax, Unit } from '../../core/api/api.models';
@@ -36,7 +36,7 @@ import { MedicineSectionComponent } from './medicine-section.component';
 /** Alta y edición de un producto: datos, presentaciones, códigos de barras y precios por lista. */
 @Component({
   selector: 'app-product-editor',
-  imports: [TermComponent, ReactiveFormsModule, PesosInputDirective, RouterLink, ButtonModule, AppInputDirective, PageHeaderComponent, StatusBadgeComponent,
+  imports: [TermComponent, ReactiveFormsModule, PesosInputDirective, RouterLink, ButtonComponent, AppInputDirective, PageHeaderComponent, StatusBadgeComponent,
     MedicineSectionComponent],
   template: `
     <app-page-header [title]="isNew() ? 'Nuevo producto' : (product()?.name ?? 'Producto')">
@@ -167,9 +167,9 @@ import { MedicineSectionComponent } from './medicine-section.component';
             </div>
             @if (editable()) {
               <span class="flex gap-2">
-                <p-button label="Generar código interno" size="small" [text]="true" [loading]="generating()"
-                          (onClick)="generateBarcode()" />
-                <p-button label="Agregar" size="small" [text]="true" (onClick)="addBarcode()" />
+                <app-button label="Generar código interno" size="small" [text]="true" [loading]="generating()"
+                          (clicked)="generateBarcode()" />
+                <app-button label="Agregar" size="small" [text]="true" (clicked)="addBarcode()" />
               </span>
             }
           </header>
@@ -191,8 +191,8 @@ import { MedicineSectionComponent } from './medicine-section.component';
                 </select>
               </label>
               @if (editable()) {
-                <p-button class="col-span-2" label="Quitar" size="small" [text]="true" severity="danger"
-                          (onClick)="removeRow(form.controls.barcodes, i)" />
+                <app-button class="col-span-2" label="Quitar" size="small" [text]="true" severity="danger"
+                          (clicked)="removeRow(form.controls.barcodes, i)" />
               }
             </div>
           } @empty {
@@ -209,7 +209,7 @@ import { MedicineSectionComponent } from './medicine-section.component';
                 <p class="text-xs text-muted">Ej.: una caja de 24 unidades. Si no pones precio, se calcula precio base × factor.</p>
               </div>
               @if (editable()) {
-                <p-button label="Agregar" size="small" [text]="true" (onClick)="addConversion()" />
+                <app-button label="Agregar" size="small" [text]="true" (clicked)="addConversion()" />
               }
             </header>
             @for (group of form.controls.conversions.controls; track group; let i = $index) {
@@ -234,8 +234,8 @@ import { MedicineSectionComponent } from './medicine-section.component';
                          [placeholder]="formatCop(form.controls.salePrice.value * group.controls.factor.value)" />
                 </label>
                 @if (editable()) {
-                  <p-button class="col-span-2" label="Quitar" size="small" [text]="true" severity="danger"
-                            (onClick)="removeRow(form.controls.conversions, i)" />
+                  <app-button class="col-span-2" label="Quitar" size="small" [text]="true" severity="danger"
+                            (clicked)="removeRow(form.controls.conversions, i)" />
                 }
               </div>
             } @empty {
@@ -252,7 +252,7 @@ import { MedicineSectionComponent } from './medicine-section.component';
                   <p class="text-xs text-muted">Si una lista no tiene precio para una unidad, se usa el de la lista General.</p>
                 </div>
                 @if (editable()) {
-                  <p-button label="Agregar" size="small" [text]="true" (onClick)="addListPrice()" />
+                  <app-button label="Agregar" size="small" [text]="true" (clicked)="addListPrice()" />
                 }
               </header>
               @for (group of form.controls.listPrices.controls; track group; let i = $index) {
@@ -281,8 +281,8 @@ import { MedicineSectionComponent } from './medicine-section.component';
                     <input appInput appPesos="2" formControlName="price" />
                   </label>
                   @if (editable()) {
-                    <p-button class="col-span-2" label="Quitar" size="small" [text]="true" severity="danger"
-                              (onClick)="removeRow(form.controls.listPrices, i)" />
+                    <app-button class="col-span-2" label="Quitar" size="small" [text]="true" severity="danger"
+                              (clicked)="removeRow(form.controls.listPrices, i)" />
                   }
                 </div>
               } @empty {
@@ -299,8 +299,8 @@ import { MedicineSectionComponent } from './medicine-section.component';
 
       @if (editable()) {
         <div class="flex justify-end gap-2">
-          <a routerLink="/app/productos"><p-button label="Cancelar" [text]="true" severity="secondary" /></a>
-          <p-button type="submit" label="Guardar" [loading]="saving()" [disabled]="form.invalid" />
+          <a routerLink="/app/productos"><app-button label="Cancelar" [text]="true" severity="secondary" /></a>
+          <app-button type="submit" label="Guardar" [loading]="saving()" [disabled]="form.invalid" />
         </div>
       }
     </form>

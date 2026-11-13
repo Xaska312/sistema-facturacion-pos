@@ -1,7 +1,8 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { PharmacyApi, VisitReport } from '../../core/api/pharmacy.api';
 import { formatDateTime } from '../../shared/format';
@@ -19,13 +20,13 @@ import { degrees, percent, rangeLabel, readingText, sheet, shiftLabel } from './
  */
 @Component({
   selector: 'app-visit-report',
-  imports: [FormsModule, RouterLink, ButtonModule, SkeletonComponent, PageHeaderComponent],
+  imports: [FormsModule, RouterLink, ButtonComponent, ButtonLinkComponent, SkeletonComponent, PageHeaderComponent],
   template: `
     <app-page-header title="Informe para la visita"
                      description="Lo que la Secretaría de Salud revisa, de las fechas que elijas. Imprímelo o guárdalo en PDF.">
-      <a pButton routerLink="/app/farmacia/calidad" label="Temperatura y calidad" icon="pi pi-arrow-left" [text]="true"
+      <a appButton routerLink="/app/farmacia/calidad" label="Temperatura y calidad" icon="pi pi-arrow-left" [text]="true"
          severity="secondary"></a>
-      <p-button label="Imprimir o guardar PDF" icon="pi pi-print" [disabled]="!report()" (onClick)="print()" />
+      <app-button label="Imprimir o guardar PDF" icon="pi pi-print" [disabled]="!report()" (clicked)="print()" />
     </app-page-header>
 
     <div class="flex flex-wrap items-center gap-3 mb-4">

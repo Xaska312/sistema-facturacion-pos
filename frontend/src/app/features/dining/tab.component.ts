@@ -2,7 +2,7 @@ import { Component, HostListener, OnInit, computed, inject, signal } from '@angu
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { DialogModule } from 'primeng/dialog';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
@@ -53,7 +53,7 @@ interface Picking {
  */
 @Component({
   selector: 'app-tab',
-  imports: [FormsModule, RouterLink, ButtonModule, DialogModule, AppInputDirective, SkeletonComponent, FormDialogComponent,
+  imports: [FormsModule, RouterLink, ButtonComponent, DialogModule, AppInputDirective, SkeletonComponent, FormDialogComponent,
     LiveReplacedComponent, CountStepperComponent,
     XIconComponent, ProductGridComponent, ModifierPickerComponent, VariantPickerComponent],
   template: `
@@ -72,10 +72,10 @@ interface Picking {
         </div>
         @if (isOpen()) {
           <div class="flex flex-wrap gap-2">
-            <p-button label="Mover" icon="pi pi-arrows-h" severity="secondary" [outlined]="true" (onClick)="openMove()" />
-            <p-button label="Unir" icon="pi pi-link" severity="secondary" [outlined]="true" (onClick)="openMerge()" />
-            <p-button label="Datos" icon="pi pi-user-edit" severity="secondary" [outlined]="true" (onClick)="openDetails()" />
-            <p-button label="Cancelar cuenta" icon="pi pi-times" severity="danger" [text]="true" (onClick)="openCancel()" />
+            <app-button label="Mover" icon="pi pi-arrows-h" severity="secondary" [outlined]="true" (clicked)="openMove()" />
+            <app-button label="Unir" icon="pi pi-link" severity="secondary" [outlined]="true" (clicked)="openMerge()" />
+            <app-button label="Datos" icon="pi pi-user-edit" severity="secondary" [outlined]="true" (clicked)="openDetails()" />
+            <app-button label="Cancelar cuenta" icon="pi pi-times" severity="danger" [text]="true" (clicked)="openCancel()" />
           </div>
         }
       </header>
@@ -156,10 +156,10 @@ interface Picking {
                   </li>
                 }
               </ul>
-              <p-button styleClass="w-full min-h-12 mt-3 font-bold" [icon]="canSend() ? 'pi pi-send' : 'pi pi-check'"
+              <app-button styleClass="w-full min-h-12 mt-3 font-bold" [icon]="canSend() ? 'pi pi-send' : 'pi pi-check'"
                         [loading]="saving()"
                         [label]="(canSend() ? 'Enviar a cocina · ' : 'Agregar a la cuenta · ') + cop(pendingSum())"
-                        (onClick)="savePending()" />
+                        (clicked)="savePending()" />
             </div>
           }
 
@@ -169,7 +169,7 @@ interface Picking {
               <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-warning-soft text-warning-soft-fg px-3 py-2 mb-2"
                    role="status">
                 <span class="text-sm font-semibold">{{ unsent() === 1 ? '1 producto sin enviar' : unsent() + ' productos sin enviar' }} a cocina</span>
-                <p-button label="Enviar ahora" icon="pi pi-send" size="small" [loading]="sending()" (onClick)="sendPending()" />
+                <app-button label="Enviar ahora" icon="pi pi-send" size="small" [loading]="sending()" (clicked)="sendPending()" />
               </div>
             }
             @if (items().length === 0) {
@@ -230,11 +230,11 @@ interface Picking {
                         <span class="text-muted"> · {{ time(k.sentAt) }} · {{ k.items === 1 ? '1 producto' : k.items + ' productos' }}</span></span>
                       <span class="flex gap-1">
                         @if (canSend() && k.status !== 'DELIVERED') {
-                          <p-button label="Entregada" icon="pi pi-check" size="small" (onClick)="deliver(k.id)" />
+                          <app-button label="Entregada" icon="pi pi-check" size="small" (clicked)="deliver(k.id)" />
                         }
                         @if (canSend()) {
-                          <p-button [label]="k.printCount === 0 ? 'Imprimir' : 'Reimprimir'" icon="pi pi-print" [text]="true"
-                                    size="small" (onClick)="printTicket(k.id)" />
+                          <app-button [label]="k.printCount === 0 ? 'Imprimir' : 'Reimprimir'" icon="pi pi-print" [text]="true"
+                                    size="small" (clicked)="printTicket(k.id)" />
                         }
                       </span>
                     </li>
@@ -244,16 +244,16 @@ interface Picking {
             }
             @if (isOpen() && t.tableId) {
               <!-- Pidió la cuenta (decisión 284): la mesa queda en rojo en el mapa. -->
-              <p-button styleClass="w-full min-h-12 mt-3 font-semibold" [icon]="t.billRequestedAt ? 'pi pi-times' : 'pi pi-flag'"
+              <app-button styleClass="w-full min-h-12 mt-3 font-semibold" [icon]="t.billRequestedAt ? 'pi pi-times' : 'pi pi-flag'"
                         [label]="t.billRequestedAt ? 'Ya no pide la cuenta' : 'Pidió la cuenta'" severity="secondary"
-                        [outlined]="true" [loading]="billSaving()" (onClick)="toggleBill(t)" />
+                        [outlined]="true" [loading]="billSaving()" (clicked)="toggleBill(t)" />
               @if (t.billRequestedAt) {
                 <p class="text-xs mt-1 bill-note">Pidió la cuenta a las {{ time(t.billRequestedAt) }}: en el mapa sale en rojo.</p>
               }
             }
             @if (isOpen() && canCharge()) {
-              <p-button styleClass="w-full min-h-14 mt-3 text-lg font-bold" icon="pi pi-wallet" label="Cobrar"
-                        [disabled]="toCharge().length === 0 || pending().length > 0" (onClick)="openCharge()" />
+              <app-button styleClass="w-full min-h-14 mt-3 text-lg font-bold" icon="pi pi-wallet" label="Cobrar"
+                        [disabled]="toCharge().length === 0 || pending().length > 0" (clicked)="openCharge()" />
               @if (pending().length > 0) {
                 <p class="text-xs text-muted mt-1">Agrega lo pendiente antes de cobrar.</p>
               }
@@ -302,8 +302,8 @@ interface Picking {
               </li>
             }
           </ul>
-          <p-button styleClass="w-full min-h-12 mt-3 font-bold" icon="pi pi-wallet" [disabled]="pickedTotal() <= 0"
-                    [label]="'Cobrar esta parte · ' + cop(pickedTotal())" (onClick)="chargeParts()" />
+          <app-button styleClass="w-full min-h-12 mt-3 font-bold" icon="pi pi-wallet" [disabled]="pickedTotal() <= 0"
+                    [label]="'Cobrar esta parte · ' + cop(pickedTotal())" (clicked)="chargeParts()" />
         }
         @case ('split') {
           <label class="flex items-center gap-2 text-sm mb-2">
@@ -312,12 +312,12 @@ interface Picking {
           </label>
           <p class="text-sm mb-3">Cada persona paga cerca de <strong>{{ cop(splitShare()) }}</strong> (sin propina). En el cobro
             se registran los pagos de todos; si alguno paga con otro medio, usa "Pago mixto".</p>
-          <p-button styleClass="w-full min-h-12 font-bold" icon="pi pi-wallet" label="Cobrar en partes iguales"
-                    [disabled]="!(splitInto >= 2 && splitInto <= 20)" (onClick)="chargeAll(splitInto)" />
+          <app-button styleClass="w-full min-h-12 font-bold" icon="pi pi-wallet" label="Cobrar en partes iguales"
+                    [disabled]="!(splitInto >= 2 && splitInto <= 20)" (clicked)="chargeAll(splitInto)" />
         }
         @default {
-          <p-button styleClass="w-full min-h-12 font-bold" icon="pi pi-wallet" [label]="'Cobrar ' + cop(tab()?.total ?? 0)"
-                    (onClick)="chargeAll(1)" />
+          <app-button styleClass="w-full min-h-12 font-bold" icon="pi pi-wallet" [label]="'Cobrar ' + cop(tab()?.total ?? 0)"
+                    (clicked)="chargeAll(1)" />
         }
       }
     </p-dialog>
@@ -332,8 +332,8 @@ interface Picking {
             <input appInput name="price" type="number" min="1" inputmode="numeric" class="h-12 text-xl text-right" [(ngModel)]="typedPrice" />
           </label>
           <div class="flex justify-end gap-2">
-            <p-button label="Cancelar" [text]="true" severity="secondary" (onClick)="priceOpen = false" />
-            <p-button type="submit" label="Seguir" [disabled]="!(typedPrice && typedPrice > 0)" />
+            <app-button label="Cancelar" [text]="true" severity="secondary" (clicked)="priceOpen = false" />
+            <app-button type="submit" label="Seguir" [disabled]="!(typedPrice && typedPrice > 0)" />
           </div>
         </form>
       }

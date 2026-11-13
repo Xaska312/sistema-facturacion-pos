@@ -1,7 +1,7 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { DialogModule } from 'primeng/dialog';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { AccessApi, groupByModule } from '../../core/api/access.api';
@@ -35,11 +35,11 @@ const MODULE_LABEL: Record<string, string> = {
 
 @Component({
   selector: 'app-roles',
-  imports: [FormsModule, ButtonModule, DialogModule, AppInputDirective, PageHeaderComponent, StatusBadgeComponent],
+  imports: [FormsModule, ButtonComponent, DialogModule, AppInputDirective, PageHeaderComponent, StatusBadgeComponent],
   template: `
     <app-page-header title="Roles y permisos"
                      description="Qué puede hacer cada persona. Los roles del sistema no se pueden cambiar; crea los tuyos.">
-      <p-button label="Nuevo rol" icon="pi pi-plus" (onClick)="openCreate()" />
+      <app-button label="Nuevo rol" icon="pi pi-plus" (clicked)="openCreate()" />
     </app-page-header>
 
     <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -57,13 +57,13 @@ const MODULE_LABEL: Record<string, string> = {
           <p class="text-xs text-muted">{{ role.permissions.length }} permisos · {{ role.memberCount }} usuario(s)</p>
           <div class="flex gap-2 mt-auto">
             @if (role.editable) {
-              <p-button label="Editar" size="small" [text]="true" (onClick)="openEdit(role)" />
+              <app-button label="Editar" size="small" [text]="true" (clicked)="openEdit(role)" />
             } @else {
               <span class="text-xs text-muted">No editable</span>
             }
             @if (!role.systemRole) {
-              <p-button label="Eliminar" size="small" [text]="true" severity="danger"
-                        [disabled]="role.memberCount > 0" (onClick)="remove(role)" />
+              <app-button label="Eliminar" size="small" [text]="true" severity="danger"
+                        [disabled]="role.memberCount > 0" (clicked)="remove(role)" />
             }
           </div>
         </article>
@@ -113,8 +113,8 @@ const MODULE_LABEL: Record<string, string> = {
           </details>
         }
         <div class="flex justify-end gap-2">
-          <p-button label="Cancelar" [text]="true" severity="secondary" (onClick)="dialogOpen = false" />
-          <p-button label="Guardar" [loading]="saving()" [disabled]="!canSave()" (onClick)="save()" />
+          <app-button label="Cancelar" [text]="true" severity="secondary" (clicked)="dialogOpen = false" />
+          <app-button label="Guardar" [loading]="saving()" [disabled]="!canSave()" (clicked)="save()" />
         </div>
       </div>
     </p-dialog>

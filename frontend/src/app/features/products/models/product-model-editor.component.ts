@@ -3,7 +3,8 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../../shared/ui/button.component';
+import { ButtonLinkComponent } from '../../../shared/ui/button-link.component';
 import { AppInputDirective } from '../../../shared/ui/input.directive';
 import { Observable, forkJoin, tap } from 'rxjs';
 import { Category, ProductModel, ProductVariant, SizeScale, Tax } from '../../../core/api/api.models';
@@ -30,7 +31,7 @@ const BARCODE = /^[A-Za-z0-9.-]{1,48}$/;
  */
 @Component({
   selector: 'app-product-model-editor',
-  imports: [ReactiveFormsModule, FormsModule, RouterLink, ButtonModule, AppInputDirective, PesosInputDirective,
+  imports: [ReactiveFormsModule, FormsModule, RouterLink, ButtonComponent, ButtonLinkComponent, AppInputDirective, PesosInputDirective,
     PageHeaderComponent, StatusBadgeComponent, FormDialogComponent, SizePickerComponent],
   template: `
     <app-page-header [title]="isNew() ? 'Nuevo modelo con tallas' : (model()?.name ?? 'Modelo')"
@@ -38,12 +39,12 @@ const BARCODE = /^[A-Za-z0-9.-]{1,48}$/;
       @if (model()?.active === false) {
         <app-status-badge status="inactive" />
       }
-      <a pButton routerLink="/app/productos/modelos" label="Volver" icon="pi pi-arrow-left" severity="secondary"
+      <a appButton routerLink="/app/productos/modelos" label="Volver" icon="pi pi-arrow-left" severity="secondary"
          [text]="true"></a>
       @if (model(); as m) {
         @if (canEdit()) {
-          <p-button [label]="m.active ? 'Desactivar' : 'Activar'" [icon]="m.active ? 'pi pi-ban' : 'pi pi-check-circle'"
-                    [severity]="m.active ? 'danger' : 'success'" [outlined]="true" (onClick)="toggleModel(m)" />
+          <app-button [label]="m.active ? 'Desactivar' : 'Activar'" [icon]="m.active ? 'pi pi-ban' : 'pi pi-check-circle'"
+                    [severity]="m.active ? 'danger' : 'success'" [outlined]="true" (clicked)="toggleModel(m)" />
         }
       }
     </app-page-header>
@@ -154,8 +155,8 @@ const BARCODE = /^[A-Za-z0-9.-]{1,48}$/;
 
       @if (canEdit()) {
         <div class="flex justify-end gap-2">
-          <a routerLink="/app/productos/modelos"><p-button label="Cancelar" [text]="true" severity="secondary" /></a>
-          <p-button type="submit" [label]="isNew() ? 'Crear modelo' : 'Guardar cambios'" [loading]="saving()"
+          <a routerLink="/app/productos/modelos"><app-button label="Cancelar" [text]="true" severity="secondary" /></a>
+          <app-button type="submit" [label]="isNew() ? 'Crear modelo' : 'Guardar cambios'" [loading]="saving()"
                     [disabled]="form.invalid || (isNew() && !!preview().problem) || (!isNew() && form.pristine)" />
         </div>
       }
@@ -174,8 +175,8 @@ const BARCODE = /^[A-Za-z0-9.-]{1,48}$/;
             </p>
           </div>
           @if (canEdit() && canAdd() && m.active) {
-            <p-button label="Agregar tallas o colores" icon="pi pi-plus" size="small" [outlined]="true"
-                      (onClick)="openAdd(m)" />
+            <app-button label="Agregar tallas o colores" icon="pi pi-plus" size="small" [outlined]="true"
+                      (clicked)="openAdd(m)" />
           }
         </header>
         <div class="overflow-x-auto">

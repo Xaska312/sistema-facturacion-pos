@@ -1,6 +1,6 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { Observable, Subject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
@@ -39,13 +39,13 @@ function isoDay(date: Date): string {
  */
 @Component({
   selector: 'app-modifiers',
-  imports: [FormsModule, ButtonModule, AppInputDirective, SkeletonComponent, PageHeaderComponent, FormDialogComponent,
+  imports: [FormsModule, ButtonComponent, AppInputDirective, SkeletonComponent, PageHeaderComponent, FormDialogComponent,
     EmptyStateComponent, XIconComponent],
   template: `
     <app-page-header title="Adiciones"
                      description="Tamaños, extras con precio y opciones que se eligen al vender un producto. Se crean una vez y se aplican a categorías o productos.">
       @if (canManage()) {
-        <p-button label="Nuevo grupo" icon="pi pi-plus" (onClick)="openNew()" />
+        <app-button label="Nuevo grupo" icon="pi pi-plus" (clicked)="openNew()" />
       }
     </app-page-header>
 
@@ -67,8 +67,8 @@ function isoDay(date: Date): string {
                   </p>
                 </div>
                 @if (canManage()) {
-                  <p-button icon="pi pi-pencil" [text]="true" [rounded]="true" severity="secondary"
-                            [ariaLabel]="'Editar ' + g.name" (onClick)="openEdit(g)" />
+                  <app-button icon="pi pi-pencil" [text]="true" [rounded]="true" severity="secondary"
+                            [ariaLabel]="'Editar ' + g.name" (clicked)="openEdit(g)" />
                 }
               </div>
               <ul class="flex flex-wrap gap-1.5" [attr.aria-label]="'Opciones de ' + g.name">
@@ -184,12 +184,12 @@ function isoDay(date: Date): string {
                 <input type="checkbox" class="size-4" [(ngModel)]="o.active" (ngModelChange)="touch()" />Activa
               </label>
             }
-            <p-button icon="pi pi-trash" [text]="true" severity="danger" [ariaLabel]="'Quitar la opción ' + (i + 1)"
-                      (onClick)="removeOption(i)" />
+            <app-button icon="pi pi-trash" [text]="true" severity="danger" [ariaLabel]="'Quitar la opción ' + (i + 1)"
+                      (clicked)="removeOption(i)" />
           </div>
         }
         <div>
-          <p-button label="Agregar opción" icon="pi pi-plus" [text]="true" size="small" (onClick)="addOption()" />
+          <app-button label="Agregar opción" icon="pi pi-plus" [text]="true" size="small" (clicked)="addOption()" />
         </div>
       </fieldset>
 

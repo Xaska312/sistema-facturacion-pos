@@ -6,7 +6,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable } from 'rxjs';
 import { Subscription, SubscriptionStatus } from '../../core/api/api.models';
@@ -42,7 +42,7 @@ const TIMEZONE_LABEL: Record<string, string> = {
 
 @Component({
   selector: 'app-settings',
-  imports: [RouterLink, DigestSettingsComponent, XaskaIaLogoComponent, ConsumptionTaxSectionComponent, TechnicalDirectorSectionComponent, ReactiveFormsModule, FormsModule, ButtonModule, AppInputDirective, PageHeaderComponent, FormDialogComponent,
+  imports: [RouterLink, DigestSettingsComponent, XaskaIaLogoComponent, ConsumptionTaxSectionComponent, TechnicalDirectorSectionComponent, ReactiveFormsModule, FormsModule, ButtonComponent, AppInputDirective, PageHeaderComponent, FormDialogComponent,
     BrandingSectionComponent, PrinterSectionComponent, BusinessProfileSectionComponent],
   template: `
     <app-page-header title="Ajustes del negocio" description="Cómo funciona tu negocio: tipo y módulos, inventario, impuestos, zona horaria, moneda, tiquete y marca." />
@@ -264,7 +264,7 @@ const TIMEZONE_LABEL: Record<string, string> = {
       }
       @if (canEdit()) {
         <div class="flex justify-end">
-          <p-button type="submit" label="Guardar" [loading]="saving()" [disabled]="form.invalid || form.pristine" />
+          <app-button type="submit" label="Guardar" [loading]="saving()" [disabled]="form.invalid || form.pristine" />
         </div>
       } @else {
         <p class="text-sm text-muted">Solo lectura: no tienes permiso para modificar los ajustes.</p>
@@ -297,7 +297,7 @@ const TIMEZONE_LABEL: Record<string, string> = {
           borran (ventas, inventario, clientes); para recuperarlo hay que pedirlo a soporte.
         </p>
         <div class="mt-3">
-          <p-button label="Eliminar negocio…" icon="pi pi-trash" severity="danger" [outlined]="true" (onClick)="openClose()" />
+          <app-button label="Eliminar negocio…" icon="pi pi-trash" severity="danger" [outlined]="true" (clicked)="openClose()" />
         </div>
       </section>
     }

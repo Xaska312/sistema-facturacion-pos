@@ -1,6 +1,6 @@
 import { Component, computed, effect, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { PosModifierGroup } from '../../core/api/modifiers.api';
 import { formatCop } from '../../shared/money';
 import { CartModifier, modifiersPerUnit } from './sale-math';
@@ -25,7 +25,7 @@ export interface ModifierPick {
  */
 @Component({
   selector: 'app-modifier-picker',
-  imports: [FormsModule, ButtonModule],
+  imports: [FormsModule, ButtonComponent],
   template: `
     <form class="flex flex-col gap-5" (ngSubmit)="confirm()">
       @for (g of groups(); track g.id) {
@@ -71,8 +71,8 @@ export interface ModifierPick {
           <p class="text-2xl font-extrabold tracking-tight tabular-nums">{{ cop(total()) }}</p>
         </div>
         <div class="flex gap-2">
-          <p-button label="Cancelar" [text]="true" severity="secondary" styleClass="min-h-12" (onClick)="cancelled.emit()" />
-          <p-button type="submit" icon="pi pi-plus" styleClass="min-h-12 font-bold"
+          <app-button label="Cancelar" [text]="true" severity="secondary" styleClass="min-h-12" (clicked)="cancelled.emit()" />
+          <app-button type="submit" icon="pi pi-plus" styleClass="min-h-12 font-bold"
                     [label]="missing() ? 'Elige ' + missing()!.name : 'Agregar'" [disabled]="missing() !== null" />
         </div>
       </div>

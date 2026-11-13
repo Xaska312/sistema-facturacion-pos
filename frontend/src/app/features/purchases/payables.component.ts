@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { Payables, PurchaseSummary, PurchasesApi, SupplierPayment } from '../../core/api/purchases.api';
 import { permissionFlag } from '../../core/auth/permission-flag';
 import { formatCop } from '../../shared/money';
@@ -17,7 +17,7 @@ import { SupplierPaymentDialogComponent } from './supplier-payment-dialog.compon
  */
 @Component({
   selector: 'app-payables',
-  imports: [RouterLink, ButtonModule, PageHeaderComponent, StatusBadgeComponent, SupplierPaymentDialogComponent],
+  imports: [RouterLink, ButtonComponent, PageHeaderComponent, StatusBadgeComponent, SupplierPaymentDialogComponent],
   template: `
     <app-page-header title="Cuentas por pagar"
                      description="Lo que les debes a tus proveedores por compras a crédito. Registra cada pago o abono aquí." />
@@ -68,7 +68,7 @@ import { SupplierPaymentDialogComponent } from './supplier-payment-dialog.compon
                 <td class="p-3 text-right tabular-nums font-semibold">{{ cop(r.balance) }}</td>
                 <td class="p-3 text-right">
                   @if (canPay()) {
-                    <p-button label="Pagar" size="small" [text]="true" icon="pi pi-wallet" (onClick)="pay(r)" />
+                    <app-button label="Pagar" size="small" [text]="true" icon="pi pi-wallet" (clicked)="pay(r)" />
                   }
                 </td>
               </tr>

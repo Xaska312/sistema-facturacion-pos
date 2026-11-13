@@ -1,6 +1,6 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { MyDay } from '../../core/api/api.models';
 import { ReportsApi } from '../../core/api/reports.api';
@@ -14,14 +14,14 @@ import { permissionFlag } from '../../core/auth/permission-flag';
 /** "Mi día": ventas propias de hoy (cajero o vendedor sin acceso a los reportes del negocio). */
 @Component({
   selector: 'app-my-day',
-  imports: [ButtonModule, SkeletonComponent, ChartComponent, EmptyStateComponent, StatCardComponent],
+  imports: [ButtonComponent, SkeletonComponent, ChartComponent, EmptyStateComponent, StatCardComponent],
   template: `
     <section aria-labelledby="my-day-title" class="flex flex-col gap-4">
       <h2 id="my-day-title" class="text-lg font-bold tracking-tight">Mi día</h2>
       @if (error()) {
         <div class="card p-6 flex flex-col items-center gap-3 text-center" role="alert">
           <p class="font-semibold">No pudimos cargar tus ventas de hoy</p>
-          <p-button label="Reintentar" icon="pi pi-refresh" (onClick)="load()" />
+          <app-button label="Reintentar" icon="pi pi-refresh" (clicked)="load()" />
         </div>
       } @else {
       @if (data(); as d) {

@@ -2,7 +2,8 @@ import { Component, effect, inject, input, signal, untracked, viewChild } from '
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable, tap } from 'rxjs';
 import { Quote, QuoteConfig, QuoteSaleResult } from '../../core/api/api.models';
@@ -28,11 +29,11 @@ import { partyName, partyPhone, quoteBadge, quoteWhatsAppLink, validLabel } from
  */
 @Component({
   selector: 'app-quote-detail',
-  imports: [FormsModule, RouterLink, ButtonModule, AppInputDirective, PageHeaderComponent, StatusBadgeComponent,
+  imports: [FormsModule, RouterLink, ButtonComponent, ButtonLinkComponent, AppInputDirective, PageHeaderComponent, StatusBadgeComponent,
     FormDialogComponent, QuoteDocumentComponent, QuoteOrderDialogComponent, QuoteSellDialogComponent],
   template: `
     <app-page-header [title]="quote() ? 'Cotización ' + quote()!.number : 'Cotización'" [description]="subtitle()">
-      <a pButton routerLink="/app/cotizaciones" label="Todas las cotizaciones" icon="pi pi-arrow-left" severity="secondary"
+      <a appButton routerLink="/app/cotizaciones" label="Todas las cotizaciones" icon="pi pi-arrow-left" severity="secondary"
          [outlined]="true"></a>
     </app-page-header>
 
@@ -71,26 +72,26 @@ import { partyName, partyPhone, quoteBadge, quoteWhatsAppLink, validLabel } from
         @if (q.status === 'OPEN' && canCreate()) {
           @if (!q.expired) {
             @if (canOrder()) {
-              <p-button label="Convertir en pedido" icon="pi pi-calendar-plus" (onClick)="openOrder()" />
+              <app-button label="Convertir en pedido" icon="pi pi-calendar-plus" (clicked)="openOrder()" />
             }
             @if (canSell()) {
-              <p-button label="Vender" icon="pi pi-shopping-cart" [outlined]="canOrder()" (onClick)="openSell()" />
+              <app-button label="Vender" icon="pi pi-shopping-cart" [outlined]="canOrder()" (clicked)="openSell()" />
             }
           }
-          <a pButton [routerLink]="['/app/cotizaciones', q.id, 'editar']" [label]="q.expired ? 'Renovar' : 'Editar'"
+          <a appButton [routerLink]="['/app/cotizaciones', q.id, 'editar']" [label]="q.expired ? 'Renovar' : 'Editar'"
              icon="pi pi-pencil" severity="secondary" [outlined]="true"></a>
         }
-        <p-button label="Descargar PDF" icon="pi pi-file-pdf" severity="secondary" [outlined]="true"
-                  [disabled]="config() === null" (onClick)="print()" />
-        <a pButton label="Enviar por WhatsApp" icon="pi pi-whatsapp" severity="secondary" [outlined]="true"
+        <app-button label="Descargar PDF" icon="pi pi-file-pdf" severity="secondary" [outlined]="true"
+                  [disabled]="config() === null" (clicked)="print()" />
+        <a appButton label="Enviar por WhatsApp" icon="pi pi-whatsapp" severity="secondary" [outlined]="true"
            target="_blank" rel="noopener noreferrer" [href]="whatsApp(q)"
            [attr.aria-label]="'Enviar la cotización a ' + name(q) + ' por WhatsApp (abre WhatsApp)'"></a>
         @if (canCreate()) {
-          <a pButton routerLink="/app/cotizaciones/nueva" [queryParams]="{ desde: q.id }" label="Duplicar" icon="pi pi-copy"
+          <a appButton routerLink="/app/cotizaciones/nueva" [queryParams]="{ desde: q.id }" label="Duplicar" icon="pi pi-copy"
              severity="secondary" [text]="true"></a>
         }
         @if (q.status === 'OPEN' && canCreate()) {
-          <p-button label="Rechazar" icon="pi pi-times-circle" severity="danger" [text]="true" (onClick)="openReject()" />
+          <app-button label="Rechazar" icon="pi pi-times-circle" severity="danger" [text]="true" (clicked)="openReject()" />
         }
       </div>
 

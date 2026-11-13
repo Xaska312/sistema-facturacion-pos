@@ -3,7 +3,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { Observable, Subject, catchError, debounceTime, distinctUntilChanged, of, switchMap } from 'rxjs';
@@ -25,15 +26,15 @@ import { MenuDraft, emptyMenu, menuContents, menuDraft, menuProblem, toMenuInput
  */
 @Component({
   selector: 'app-dining-menus',
-  imports: [FormsModule, RouterLink, ButtonModule, AppInputDirective, SkeletonComponent, PageHeaderComponent,
+  imports: [FormsModule, RouterLink, ButtonComponent, ButtonLinkComponent, AppInputDirective, SkeletonComponent, PageHeaderComponent,
     FormDialogComponent, EmptyStateComponent, XIconComponent],
   template: `
     <app-page-header title="Cartas por piso" glyph="tables"
                      description="Lo de cada carta se cobra en su caja, aunque la mesa esté en otro piso. Si la cuenta trae de dos cartas, sale una venta por caja y un solo tiquete.">
-      <a pButton routerLink="/app/mesas/configurar" label="Configurar mesas" icon="pi pi-arrow-left" severity="secondary"
+      <a appButton routerLink="/app/mesas/configurar" label="Configurar mesas" icon="pi pi-arrow-left" severity="secondary"
          [text]="true"></a>
       @if (allowed() && registers().length > 0) {
-        <p-button label="Nueva carta" icon="pi pi-plus" (onClick)="openNew()" />
+        <app-button label="Nueva carta" icon="pi pi-plus" (clicked)="openNew()" />
       }
     </app-page-header>
 
@@ -73,8 +74,8 @@ import { MenuDraft, emptyMenu, menuContents, menuDraft, menuProblem, toMenuInput
                     {{ m.active ? 'Se cobra en ' + m.cashRegister.name : 'Inactiva: lo suyo se cobra como antes' }}
                   </p>
                 </div>
-                <p-button icon="pi pi-pencil" [text]="true" [rounded]="true" severity="secondary"
-                          [ariaLabel]="'Editar ' + m.name" (onClick)="openEdit(m)" />
+                <app-button icon="pi pi-pencil" [text]="true" [rounded]="true" severity="secondary"
+                          [ariaLabel]="'Editar ' + m.name" (clicked)="openEdit(m)" />
               </div>
               <p class="text-sm text-muted mt-auto"><span class="font-semibold text-fg">Tiene:</span> {{ contents(m) }}</p>
             </li>

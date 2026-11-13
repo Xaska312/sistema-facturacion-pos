@@ -3,7 +3,7 @@ import { Component, HostListener, OnInit, computed, inject, input, signal, viewC
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Branch, InventoryDocument, InventoryDocumentType, Product } from '../../core/api/api.models';
 import { CatalogApi } from '../../core/api/catalog.api';
@@ -36,7 +36,7 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
  */
 @Component({
   selector: 'app-inventory-document-editor',
-  imports: [FormsModule, PesosInputDirective, RouterLink, ButtonModule, AppInputDirective, PageHeaderComponent,
+  imports: [FormsModule, PesosInputDirective, RouterLink, ButtonComponent, AppInputDirective, PageHeaderComponent,
     SizeGridDialogComponent],
   template: `
     @if (type(); as t) {
@@ -101,9 +101,9 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
         <div class="flex flex-wrap gap-2 items-center">
           <input appInput class="flex-1 min-w-64" placeholder="Escanea el código o escribe SKU/nombre y presiona Enter"
                  [(ngModel)]="code" (keyup.enter)="add()" [attr.autofocus]="desktop ? '' : null" />
-          <p-button label="Agregar" [loading]="adding()" (onClick)="add()" />
-          <p-button label="Por tallas" icon="pi pi-th-large" severity="secondary" [outlined]="true"
-                    (onClick)="sizeGrid()?.open()" />
+          <app-button label="Agregar" [loading]="adding()" (clicked)="add()" />
+          <app-button label="Por tallas" icon="pi pi-th-large" severity="secondary" [outlined]="true"
+                    (clicked)="sizeGrid()?.open()" />
         </div>
         @if (results().length > 0) {
           <ul class="border rounded divide-y text-sm max-h-60 overflow-y-auto">
@@ -198,7 +198,7 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
                     @if (t === 'COUNT' && line.tracksLots) {
                       <button type="button" class="text-xs text-brand hover:underline mr-1" (click)="addLot(i)">+ Lote nuevo</button>
                     }
-                    <p-button label="Quitar" size="small" [text]="true" severity="danger" (onClick)="remove(i)" />
+                    <app-button label="Quitar" size="small" [text]="true" severity="danger" (clicked)="remove(i)" />
                   </td>
                 </tr>
               } @empty {
@@ -218,8 +218,8 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
         @if (problem(); as message) {
           <span class="text-sm text-warning">{{ message }}</span>
         }
-        <a routerLink="/app/inventario/movimientos"><p-button label="Cancelar" [text]="true" severity="secondary" /></a>
-        <p-button label="Registrar" [loading]="saving()" [disabled]="problem() !== null" (onClick)="save()" />
+        <a routerLink="/app/inventario/movimientos"><app-button label="Cancelar" [text]="true" severity="secondary" /></a>
+        <app-button label="Registrar" [loading]="saving()" [disabled]="problem() !== null" (clicked)="save()" />
       </div>
 
       <app-size-grid-dialog [type]="t" [branchId]="branchId" [lines]="lines()" (applied)="applyGrid($event)" />

@@ -1,7 +1,6 @@
 import { Component, inject, model, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
 import { Observable, tap } from 'rxjs';
 import { Party } from '../../core/api/api.models';
 import { CustomerWithholding, WithholdingType, WithholdingsApi } from '../../core/api/withholdings.api';
@@ -22,7 +21,7 @@ interface Row {
  */
 @Component({
   selector: 'app-customer-withholdings-dialog',
-  imports: [FormsModule, ButtonModule, FormDialogComponent],
+  imports: [FormsModule, FormDialogComponent],
   template: `
     @if (customer(); as c) {
       <app-form-dialog [(visible)]="visible" [header]="'Retenciones de ' + c.displayName" width="30rem"

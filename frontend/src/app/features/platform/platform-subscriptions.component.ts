@@ -2,7 +2,7 @@ import { XaskaIaLogoComponent } from '../../shared/brand/xaska-ia-logo.component
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { DialogModule } from 'primeng/dialog';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable, tap } from 'rxjs';
@@ -56,7 +56,7 @@ export const PAYMENT_METHODS: readonly string[] = ['Transferencia', 'Nequi', 'Da
  */
 @Component({
   selector: 'app-platform-subscriptions',
-  imports: [XaskaIaLogoComponent, FormsModule, ButtonModule, DialogModule, AppInputDirective, FormDialogComponent, PesosInputDirective,
+  imports: [XaskaIaLogoComponent, FormsModule, ButtonComponent, DialogModule, AppInputDirective, FormDialogComponent, PesosInputDirective,
     PageHeaderComponent, StatusBadgeComponent, DataTableComponent, CellTemplateDirective],
   template: `
     <app-page-header title="Suscripciones"
@@ -96,7 +96,7 @@ export const PAYMENT_METHODS: readonly string[] = ['Transferencia', 'Nequi', 'Da
         </div>
       </ng-template>
       <ng-template #actions let-row>
-        <p-button label="Ver" icon="pi pi-eye" size="small" [text]="true" (onClick)="open(row)"
+        <app-button label="Ver" icon="pi pi-eye" size="small" [text]="true" (clicked)="open(row)"
                   [ariaLabel]="'Ver la suscripción de ' + row.tradeName" />
       </ng-template>
     </app-data-table>
@@ -131,8 +131,8 @@ export const PAYMENT_METHODS: readonly string[] = ['Transferencia', 'Nequi', 'Da
         </dl>
 
         <div class="flex flex-wrap gap-2 mt-4">
-          <p-button label="Registrar pago" icon="pi pi-dollar" (onClick)="openPayment(s)" />
-          <p-button label="Dar extras" icon="pi pi-gift" severity="secondary" [outlined]="true" (onClick)="openExtras(s)" />
+          <app-button label="Registrar pago" icon="pi pi-dollar" (clicked)="openPayment(s)" />
+          <app-button label="Dar extras" icon="pi pi-gift" severity="secondary" [outlined]="true" (clicked)="openExtras(s)" />
           <span class="flex items-center gap-2 text-sm">
             <label for="sub-plan" class="sr-only">Cambiar plan</label>
             <select id="sub-plan" class="border rounded-[10px] px-3 min-h-11" [(ngModel)]="newPlan">
@@ -140,8 +140,8 @@ export const PAYMENT_METHODS: readonly string[] = ['Transferencia', 'Nequi', 'Da
                 <option [value]="plan.code">{{ plan.name }}</option>
               }
             </select>
-            <p-button label="Cambiar plan" severity="secondary" [outlined]="true"
-                      [disabled]="!newPlan || newPlan === s.plan.code" (onClick)="changePlan(s)" />
+            <app-button label="Cambiar plan" severity="secondary" [outlined]="true"
+                      [disabled]="!newPlan || newPlan === s.plan.code" (clicked)="changePlan(s)" />
           </span>
         </div>
 

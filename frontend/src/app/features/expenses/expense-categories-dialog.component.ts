@@ -1,6 +1,6 @@
 import { Component, inject, model, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { DialogModule } from 'primeng/dialog';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { ExpenseCategory, ExpensesApi } from '../../core/api/expenses.api';
@@ -11,7 +11,7 @@ import { ExpenseCategory, ExpensesApi } from '../../core/api/expenses.api';
  */
 @Component({
   selector: 'app-expense-categories-dialog',
-  imports: [FormsModule, ButtonModule, DialogModule, AppInputDirective],
+  imports: [FormsModule, ButtonComponent, DialogModule, AppInputDirective],
   template: `
     <p-dialog header="Categorías de gasto" [(visible)]="visible" [modal]="true" [style]="{ width: '30rem' }"
               [breakpoints]="{ '640px': '96vw' }" (onHide)="changed.emit()">
@@ -22,7 +22,7 @@ import { ExpenseCategory, ExpensesApi } from '../../core/api/expenses.api';
         <label class="sr-only" for="new-category">Nueva categoría</label>
         <input appInput id="new-category" name="newName" class="flex-1" maxlength="60" [(ngModel)]="newName"
                placeholder="Nueva categoría (ej.: Aseo)" />
-        <p-button type="submit" label="Agregar" icon="pi pi-plus" [loading]="saving()"
+        <app-button type="submit" label="Agregar" icon="pi pi-plus" [loading]="saving()"
                   [disabled]="!newName.trim()" />
       </form>
 
@@ -33,15 +33,15 @@ import { ExpenseCategory, ExpensesApi } from '../../core/api/expenses.api';
               <label class="sr-only" [for]="'category-' + c.id">Nombre de la categoría</label>
               <input appInput [id]="'category-' + c.id" class="flex-1" maxlength="60" [(ngModel)]="editingName"
                      [name]="'category-' + c.id" (keydown.enter)="rename(c)" (keydown.escape)="editingId = null" />
-              <p-button label="Guardar" size="small" [loading]="saving()" [disabled]="!editingName.trim()"
-                        (onClick)="rename(c)" />
-              <p-button label="Cancelar" size="small" [text]="true" severity="secondary" (onClick)="editingId = null" />
+              <app-button label="Guardar" size="small" [loading]="saving()" [disabled]="!editingName.trim()"
+                        (clicked)="rename(c)" />
+              <app-button label="Cancelar" size="small" [text]="true" severity="secondary" (clicked)="editingId = null" />
             } @else {
               <span class="flex-1" [class.text-muted]="!c.active" [class.line-through]="!c.active">{{ c.name }}</span>
-              <p-button icon="pi pi-pencil" size="small" [text]="true" severity="secondary"
-                        [ariaLabel]="'Renombrar ' + c.name" (onClick)="startRename(c)" />
-              <p-button [label]="c.active ? 'Apagar' : 'Prender'" size="small" [text]="true"
-                        [severity]="c.active ? 'secondary' : 'primary'" (onClick)="toggle(c)" />
+              <app-button icon="pi pi-pencil" size="small" [text]="true" severity="secondary"
+                        [ariaLabel]="'Renombrar ' + c.name" (clicked)="startRename(c)" />
+              <app-button [label]="c.active ? 'Apagar' : 'Prender'" size="small" [text]="true"
+                        [severity]="c.active ? 'secondary' : 'primary'" (clicked)="toggle(c)" />
             }
           </li>
         } @empty {

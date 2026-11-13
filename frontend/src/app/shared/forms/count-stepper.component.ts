@@ -1,5 +1,5 @@
 import { Component, computed, input, model } from '@angular/core';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../ui/button.component';
 
 /**
  * Número con − y + a los lados (decisión 293): para las personas de una mesa en el celular, sin abrir el teclado.
@@ -7,14 +7,14 @@ import { ButtonModule } from 'primeng/button';
  */
 @Component({
   selector: 'app-count-stepper',
-  imports: [ButtonModule],
+  imports: [ButtonComponent],
   template: `
     <div class="flex items-center gap-3" role="group" [attr.aria-label]="label()">
-      <p-button icon="pi pi-minus" severity="secondary" [outlined]="true" [rounded]="true" styleClass="!w-12 !h-12"
-                [ariaLabel]="'Menos ' + unit()" [disabled]="value() !== null && value()! <= min()" (onClick)="step(-1)" />
+      <app-button icon="pi pi-minus" severity="secondary" [outlined]="true" [rounded]="true" styleClass="!w-12 !h-12"
+                [ariaLabel]="'Menos ' + unit()" [disabled]="value() !== null && value()! <= min()" (clicked)="step(-1)" />
       <output class="text-3xl font-bold tabular-nums min-w-14 text-center" aria-live="polite">{{ shown() }}</output>
-      <p-button icon="pi pi-plus" severity="secondary" [outlined]="true" [rounded]="true" styleClass="!w-12 !h-12"
-                [ariaLabel]="'Más ' + unit()" [disabled]="value() !== null && value()! >= max()" (onClick)="step(1)" />
+      <app-button icon="pi pi-plus" severity="secondary" [outlined]="true" [rounded]="true" styleClass="!w-12 !h-12"
+                [ariaLabel]="'Más ' + unit()" [disabled]="value() !== null && value()! >= max()" (clicked)="step(1)" />
     </div>
   `,
 })
