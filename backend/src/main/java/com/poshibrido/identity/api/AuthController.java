@@ -70,6 +70,19 @@ public class AuthController {
                 .build();
     }
 
+    /**
+     * Cierra la sesión en los demás equipos y deja abierta esta (decisión 343). Pide el acceso y la cookie de este
+     * navegador; 401 si la cookie ya no sirve.
+     */
+    @PostMapping("/sessions/revoke-others")
+    public ClosedSessions revokeOtherSessions(
+            @CookieValue(name = RefreshCookies.NAME, required = false) String refreshToken) {
+        return new ClosedSessions(authService.revokeOtherSessions(CurrentActor.requireUserId(), refreshToken));
+    }
+
+    public record ClosedSessions(int closed) {
+    }
+
     /** Confirma el correo con el enlace recibido (no necesita sesión). 422 si el enlace no sirve. */
     @PostMapping("/verify-email")
     @ResponseStatus(HttpStatus.NO_CONTENT)

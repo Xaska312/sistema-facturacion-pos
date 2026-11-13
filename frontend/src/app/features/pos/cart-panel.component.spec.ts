@@ -133,6 +133,19 @@ describe('CartPanelComponent', () => {
     expect(prices).toEqual([]);
   });
 
+  it('"Abrir cajón" muestra la tecla asignada en este equipo (decisión 342)', () => {
+    fixture.componentRef.setInput('drawer', true);
+    fixture.componentRef.setInput('drawerKey', 'F8');
+    fixture.detectChanges();
+    const drawer = [...element().querySelectorAll('button')].find((b) => b.textContent?.includes('Abrir cajón'));
+    expect(drawer?.getAttribute('aria-keyshortcuts')).toBe('F8');
+    expect(drawer?.querySelector('kbd')?.textContent?.trim()).toBe('F8');
+    fixture.componentRef.setInput('drawerKey', '');
+    fixture.detectChanges();
+    expect(drawer?.hasAttribute('aria-keyshortcuts')).toBeFalse();
+    expect(drawer?.querySelector('kbd')).toBeNull();
+  });
+
   it('"Pausar venta" emite solo con productos en la venta', () => {
     let holds = 0;
     component.hold.subscribe(() => holds++);

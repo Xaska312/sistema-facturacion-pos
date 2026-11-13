@@ -26,6 +26,8 @@ import { RestaurantLiveService } from '../kitchen/restaurant-live.service';
 import { buildBreadcrumbs } from './breadcrumbs';
 import { EXACT_MATCH_ROUTES, MENU, dockItems, initials, visibleMenu } from './menu';
 import { planPill, subscriptionBanner } from './subscription-banner';
+import { ConfirmService } from '../../shared/confirm';
+import { ToastService } from '../../shared/ui/toast.service';
 
 interface ThemeOption extends PrimeMenuItem {
   mode: ThemeMode;
@@ -322,6 +324,8 @@ export class ShellComponent {
   protected readonly brandLogo = inject(BrandingService).logo;
   protected readonly theme = inject(ThemeService);
   private readonly router = inject(Router);
+  private readonly confirm = inject(ConfirmService);
+  private readonly messages = inject(ToastService);
   private readonly tours = inject(TourService);
   private readonly subscriptionApi = inject(SubscriptionApi);
   private readonly restaurantLive = inject(RestaurantLiveService);
@@ -403,6 +407,7 @@ export class ShellComponent {
           ? [{ label: 'Consola de plataforma', icon: 'pi pi-server', command: () => void this.router.navigate(['/plataforma']) }]
           : []),
         { separator: true },
+        { label: 'Cerrar sesión en los otros equipos', icon: 'pi pi-desktop', command: () => this.askRevokeOthers() },
         { label: 'Salir', icon: 'pi pi-sign-out', command: () => this.logout() },
       ],
     },
@@ -459,6 +464,22 @@ export class ShellComponent {
 
   switchTenant(): void {
     void this.router.navigate(['/negocios']);
+  }
+
+  /** Decisión 343: por si quedó abierta en un equipo prestado o perdido. Esta sesión sigue abierta. */
+  protected askRevokeOthers(): void {
+    this.confirm.ask({
+      header: 'Cerrar sesión en los otros equipos',
+      message: 'Se cierra tu sesión en todos los demás computadores, tablets y celulares (en unos minutos les pedirá '
+        + 'entrar de nuevo). En este equipo sigues trabajando normal.',
+      acceptLabel: 'Cerrar en los otros',
+      danger: true,
+      accept: () => this.auth.revokeOtherSessions().subscribe(({ closed }) => this.messages.add({
+        severity: 'success',
+        summary: closed === 0 ? 'No había otras sesiones abiertas'
+          : closed === 1 ? 'Se cerró 1 sesión en otro equipo' : `Se cerraron ${closed} sesiones en otros equipos`,
+      })),
+    });
   }
 
   logout(): void {

@@ -8,7 +8,7 @@ import { CashDrawerService } from '../../core/printing/cash-drawer.service';
 import { testPageBytes } from '../../core/printing/escpos';
 import { printableLogo } from '../../core/printing/printable-logo';
 import { BrandingService } from '../../core/theme/branding.service';
-import { AGENT_DOWNLOAD, PrintAgentService } from '../../core/printing/print-agent.service';
+import { AGENT_DOWNLOAD, DRAWER_KEYS, PrintAgentService } from '../../core/printing/print-agent.service';
 import { ReceiptWidth, loadReceiptWidth, saveReceiptWidth } from '../../shared/receipt/receipt-prefs';
 
 /**
@@ -88,6 +88,20 @@ import { ReceiptWidth, loadReceiptWidth, saveReceiptWidth } from '../../shared/r
             <span>Abrir el cajón al cobrar en efectivo <span class="text-muted">(con tarjeta o transferencia no se abre;
               volver a imprimir un tiquete tampoco)</span></span>
           </label>
+          @if (canDrawer()) {
+            <label class="flex flex-wrap items-center gap-2">
+              <span>Tecla para abrir el cajón en Vender</span>
+              <select class="w-auto" [ngModel]="agent.prefs().drawerKey" (ngModelChange)="agent.update({ drawerKey: $event })"
+                      aria-describedby="drawer-key-help">
+                @for (k of drawerKeys; track k) {
+                  <option [ngValue]="k">{{ k }}</option>
+                }
+                <option [ngValue]="''">Ninguna</option>
+              </select>
+              <span id="drawer-key-help" class="text-muted">(solo en este equipo; queda en la auditoría como el botón
+                "Abrir cajón")</span>
+            </label>
+          }
           <label class="flex items-start gap-2">
             <input type="checkbox" class="size-4 mt-0.5" [ngModel]="agent.prefs().plain"
                    (ngModelChange)="agent.update({ plain: $event })" />
@@ -122,6 +136,7 @@ export class PrinterSectionComponent implements OnInit {
   protected readonly download = AGENT_DOWNLOAD;
   protected readonly width = signal<ReceiptWidth>(loadReceiptWidth());
   protected readonly busy = signal<'test' | 'drawer' | null>(null);
+  protected readonly drawerKeys = DRAWER_KEYS;
   protected readonly canDrawer = computed(() => this.auth.hasPermission('cash:drawer'));
 
   ngOnInit(): void {

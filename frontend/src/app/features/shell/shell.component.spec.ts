@@ -10,6 +10,8 @@ import { SubscriptionApi } from '../../core/api/subscription.api';
 import { RestaurantLiveService } from '../kitchen/restaurant-live.service';
 import { ShellComponent } from './shell.component';
 import { AskaTrialState } from '../ai/aska-trial-state';
+import { ConfirmService } from '../../shared/confirm';
+import { ToastService } from '../../shared/ui/toast.service';
 
 @Component({ template: '<p>contenido</p>' })
 class PageComponent {}
@@ -23,6 +25,7 @@ describe('ShellComponent', () => {
     isPlatformAdmin: signal(false),
     hasPermission: (p: string) => permissions().has(p),
     logout: jasmine.createSpy('logout').and.returnValue(of(undefined)),
+    revokeOtherSessions: jasmine.createSpy('revokeOtherSessions').and.returnValue(of({ closed: 2 })),
   };
 
   beforeEach(async () => {
@@ -66,6 +69,23 @@ describe('ShellComponent', () => {
     expect(dock.querySelector('a[href="/app/todo"]')).not.toBeNull();
     expect(element.textContent).toContain('Tienda Demo');
     expect(element.querySelector('.avatar')?.textContent?.trim()).toBe('AP');
+  });
+
+  it('"Cerrar sesión en los otros equipos" pide confirmar y avisa cuántas cerró (decisión 343)', () => {
+    const fixture = TestBed.createComponent(ShellComponent);
+    fixture.detectChanges();
+    const shell = fixture.componentInstance as unknown as { userItems: () => { items?: { label?: string; command?: () => void }[] }[] };
+    const item = shell.userItems()[0].items?.find((i) => i.label === 'Cerrar sesión en los otros equipos');
+    expect(item).toBeDefined();
+    const confirm = TestBed.inject(ConfirmService);
+    const toasts = TestBed.inject(ToastService);
+    spyOn(toasts, 'add');
+    item?.command?.();
+    expect(confirm.request()?.acceptLabel).toBe('Cerrar en los otros');
+    expect(auth.revokeOtherSessions).not.toHaveBeenCalled();
+    confirm.accept();
+    expect(auth.revokeOtherSessions).toHaveBeenCalled();
+    expect(toasts.add).toHaveBeenCalledWith(jasmine.objectContaining({ summary: 'Se cerraron 2 sesiones en otros equipos' }));
   });
 
   it('abre "Todo" con Ctrl + K', async () => {

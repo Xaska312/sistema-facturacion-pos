@@ -191,6 +191,14 @@ public class AuthService {
                 rotation.newRawToken(), summary(user), rotation.tenantId(), access.permissions(), List.of());
     }
 
+    /** Cierra las sesiones del usuario en los otros equipos; esta sigue abierta (decisión 343). */
+    @Transactional
+    public int revokeOtherSessions(UUID userId, String currentRawToken) {
+        int closed = refreshTokens.revokeOthers(userId, currentRawToken);
+        securityEvents.record(SecurityEvent.OTHER_SESSIONS_REVOKED, userId, null, null, Map.of("closed", closed));
+        return closed;
+    }
+
     @Transactional
     public void logout(String rawRefreshToken) {
         refreshTokens.revoke(rawRefreshToken, null).ifPresent(session -> {

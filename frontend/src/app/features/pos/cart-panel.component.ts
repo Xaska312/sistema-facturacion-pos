@@ -155,8 +155,11 @@ const UNDO_MS = 6000;
           }
           @if (drawer()) {
             <button type="button" class="pos-btn on-brand" title="Abre el cajón monedero sin una venta (queda en la auditoría)"
-                    (click)="openDrawer.emit()">
+                    [attr.aria-keyshortcuts]="drawerKey() || null" (click)="openDrawer.emit()">
               <i class="pi pi-inbox" aria-hidden="true"></i>Abrir cajón
+              @if (drawerKey(); as key) {
+                <kbd class="drawer-key" aria-hidden="true">{{ key }}</kbd>
+              }
             </button>
           }
           @if (lastSaleNumber(); as number) {
@@ -294,6 +297,13 @@ const UNDO_MS = 6000;
       outline: 3px solid var(--brand-contrast);
       outline-offset: 3px;
     }
+    .drawer-key {
+      padding: 0 0.375rem;
+      border-radius: 0.375rem;
+      border: 1px solid currentColor;
+      font: 600 0.75rem/1.25rem var(--font-mono, ui-monospace, monospace);
+      opacity: 0.8;
+    }
     .key {
       margin-left: 0.375rem;
       padding: 0.125rem 0.5rem;
@@ -351,6 +361,8 @@ export class CartPanelComponent {
   readonly reprint = output<void>();
   /** Botón "Abrir cajón" (decisión 286): con XASKA Impresora y el permiso cash:drawer. */
   readonly drawer = input(false);
+  /** Tecla asignada al cajón en este equipo (decisión 342); '' = ninguna. */
+  readonly drawerKey = input('');
   readonly openDrawer = output<void>();
 
   private readonly editor = viewChild.required<PopoverComponent>('editor');

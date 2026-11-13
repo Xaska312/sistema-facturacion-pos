@@ -22,12 +22,27 @@ export interface PrinterPrefs {
   drawerOnCash: boolean;
   /** Imprimir sin tildes (impresoras sin la página 850). */
   plain: boolean;
+  /** Tecla que abre el cajón en Vender (decisión 342); '' = ninguna. */
+  drawerKey: DrawerKey;
+}
+
+/**
+ * Teclas que se pueden asignar al cajón. Solo teclas de función libres: F1, F2 y F4 ya son de Vender y F5, F11 y F12
+ * son del navegador (recargar, pantalla completa, herramientas).
+ */
+export const DRAWER_KEYS = ['F3', 'F6', 'F7', 'F8', 'F9', 'F10'] as const;
+export type DrawerKey = (typeof DRAWER_KEYS)[number] | '';
+export const DEFAULT_DRAWER_KEY: DrawerKey = 'F8';
+
+function drawerKeyOf(v: unknown): DrawerKey {
+  return v === '' || (DRAWER_KEYS as readonly unknown[]).includes(v) ? (v as DrawerKey) : DEFAULT_DRAWER_KEY;
 }
 
 export type AgentState = 'unknown' | 'checking' | 'missing' | 'ready';
 
 const KEY = 'xaska.printer';
-const DEFAULTS: PrinterPrefs = { enabled: false, printer: null, autoPrint: false, drawerOnCash: true, plain: false };
+const DEFAULTS: PrinterPrefs = { enabled: false, printer: null, autoPrint: false, drawerOnCash: true, plain: false,
+  drawerKey: DEFAULT_DRAWER_KEY };
 
 export function loadPrinterPrefs(): PrinterPrefs {
   try {
@@ -42,6 +57,7 @@ export function loadPrinterPrefs(): PrinterPrefs {
       autoPrint: v.autoPrint === true,
       drawerOnCash: v.drawerOnCash !== false,
       plain: v.plain === true,
+      drawerKey: drawerKeyOf(v.drawerKey),
     };
   } catch {
     return { ...DEFAULTS };

@@ -1,10 +1,13 @@
 import { CreditEntry } from '../../core/api/api.models';
 import {
+  DEFAULT_REMINDER,
+  MAX_REMINDER,
   balanceLabel,
   debtAgeLabel,
   debtDays,
   debtSeverity,
   entryDetail,
+  isDefaultReminder,
   reminderMessage,
   whatsAppLink,
   whatsAppNumber,
@@ -51,6 +54,29 @@ describe('credit-text', () => {
     expect(link.startsWith('https://wa.me/573001234567?text=')).toBeTrue();
     expect(decodeURIComponent(link.split('text=')[1])).toBe(message);
     expect(whatsAppLink({ ...account, phone: null }, 'X').startsWith('https://wa.me/?text=')).toBeTrue();
+  });
+
+  it('el recordatorio propio reemplaza las variables (decisión 344)', () => {
+    const account = { name: 'Marta Gómez', balance: 20000, oldestDebtAt: '2026-09-04T15:00:00Z', phone: '3001234567' };
+    const message = reminderMessage(account, 'Tienda Doña Ana',
+      '  {Cliente}: debes {saldo} en {negocio} desde el {desde} ({días} días). {otra}  ', now);
+    expect(message).toMatch(/^Marta: debes \$\s?20\.000 en Tienda Doña Ana desde el .+ \(45 días\)\. \{otra\}$/);
+    // Sin fecha de deuda: "hoy" y 0 días
+    expect(reminderMessage({ ...account, oldestDebtAt: null }, 'X', '{desde} {dias}', now)).toBe('hoy 0');
+    // En blanco = el mensaje de siempre
+    expect(reminderMessage(account, 'X', '   ', now)).toBe(reminderMessage(account, 'X'));
+    const link = whatsAppLink(account, 'X', 'Hola {cliente} & cía');
+    expect(decodeURIComponent(link.split('text=')[1])).toBe('Hola Marta & cía');
+  });
+
+  it('el mensaje de siempre escrito con variables da el mismo texto', () => {
+    const account = { name: 'Marta Gómez', balance: 20000, oldestDebtAt: '2026-09-04T15:00:00Z' };
+    expect(reminderMessage(account, 'Tienda', DEFAULT_REMINDER, now)).toBe(reminderMessage(account, 'Tienda', '', now));
+    expect(DEFAULT_REMINDER.length).toBeLessThanOrEqual(MAX_REMINDER);
+    expect(isDefaultReminder('')).toBeTrue();
+    expect(isDefaultReminder(null)).toBeTrue();
+    expect(isDefaultReminder(`  ${DEFAULT_REMINDER}\n`)).toBeTrue();
+    expect(isDefaultReminder('Hola {cliente}')).toBeFalse();
   });
 
   it('describe cada movimiento', () => {

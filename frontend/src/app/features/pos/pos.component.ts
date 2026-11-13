@@ -236,7 +236,7 @@ const STOCK_PAGES = 5;
                           (removeLine)="removeLine($event)" (restoreLine)="restoreLine($event)"
                           (charge)="openPayment()" (cancelSale)="cancelSale()" (customer)="openCustomers()"
                           (hold)="openHold()" (reprint)="receiptOpen = true" [locked]="tab() !== null"
-                          [drawer]="canOpenDrawer()" (openDrawer)="openDrawer()" />
+                          [drawer]="canOpenDrawer()" [drawerKey]="drawerKey()" (openDrawer)="openDrawer()" />
         </div>
 
         <!-- Celular: el carrito queda debajo de los productos; el total y Cobrar siempre a la mano. -->
@@ -668,7 +668,7 @@ const STOCK_PAGES = 5;
     <app-dialog header="Atajos de teclado" [(visible)]="helpOpen" [modal]="true" [style]="{ width: '30rem' }"
               [breakpoints]="{ '640px': '100vw' }" (hidden)="focusScanner()">
       <dl class="divide-y">
-        @for (s of shortcuts; track s.keys) {
+        @for (s of shortcuts(); track s.keys) {
           <div class="py-2 flex items-start gap-3">
             <dt class="w-24 shrink-0"><kbd class="px-2 py-0.5 rounded border bg-surface-alt font-mono text-sm">{{ s.keys }}</kbd></dt>
             <dd class="text-sm">{{ s.action }}</dd>
@@ -862,6 +862,8 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   private readonly printer = inject(PrintAgentService);
   private readonly drawerService = inject(CashDrawerService);
   protected readonly canOpenDrawer = computed(() => this.printer.ready() && this.auth.hasPermission('cash:drawer'));
+  /** Tecla del cajón de este equipo (decisión 342); '' si no tiene o no puede abrirlo. */
+  protected readonly drawerKey = computed(() => (this.canOpenDrawer() ? this.printer.prefs().drawerKey : ''));
   /**
    * "Tiquete al cobrar" en el cobro (decisión 292): con XASKA Impresora en este equipo, a la vista para prenderlo o
    * apagarlo sin ir a Ajustes (una tienda que vende un dulce no necesita tiquete en cada venta). Se recuerda en el
@@ -953,7 +955,11 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   protected readonly methodIcon = methodIcon;
   protected readonly methodLabel = methodLabel;
   protected readonly creditCode = CREDIT_METHOD_CODE;
-  protected readonly shortcuts = POS_SHORTCUTS;
+  protected readonly shortcuts = computed(() => {
+    const key = this.drawerKey();
+    return key ? [...POS_SHORTCUTS.slice(0, 2), { keys: key, action: 'Abrir el cajón monedero' }, ...POS_SHORTCUTS.slice(2)]
+      : POS_SHORTCUTS;
+  });
   /** Tablet o teléfono: el campo de código no abre el teclado en pantalla salvo que se pida (el lector no lo usa). */
   protected readonly coarsePointer = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
   protected readonly keyboard = signal(!this.coarsePointer);
@@ -1183,6 +1189,12 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
     } else if (event.key === 'F4') {
       event.preventDefault();
       this.openPayment();
+    } else if (this.drawerKey() && event.key === this.drawerKey()) {
+      // Con un diálogo abierto (cobro, cliente…) no se abre: la tecla no debe saltarse lo que el cajero está haciendo.
+      event.preventDefault();
+      if (!event.repeat && !this.anyDialogOpen()) {
+        void this.openDrawer();
+      }
     } else if (event.key === 'Escape') {
       // Si la tecla cerró el editor de la línea o un diálogo (su máscara sigue en la página), no se cancela la venta.
       if (!this.cart()?.closeEditor() && !this.anyDialogOpen()) {

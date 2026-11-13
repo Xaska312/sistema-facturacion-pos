@@ -1,4 +1,5 @@
 import { Component, effect, inject, input, signal, untracked, viewChild } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ToastService } from '../../shared/ui/toast.service';
@@ -110,6 +111,8 @@ export class CreditAccountComponent {
   private readonly api = inject(CreditApi);
   private readonly auth = inject(AuthService);
   private readonly messages = inject(ToastService);
+  /** Mensaje del recordatorio que eligió el dueño (decisión 344); '' = el de siempre. */
+  private readonly reminder = toSignal(this.api.reminderTemplate(), { initialValue: '' });
   private readonly paymentDialog = viewChild(CreditPaymentDialogComponent);
   protected readonly canCollect = permissionFlag('credit:collect');
   protected readonly canManage = permissionFlag('credit:manage');
@@ -183,7 +186,7 @@ export class CreditAccountComponent {
   }
 
   protected whatsApp(account: CreditAccount): string {
-    return whatsAppLink(account, this.auth.currentTenant()?.tradeName ?? 'tu tienda');
+    return whatsAppLink(account, this.auth.currentTenant()?.tradeName ?? 'tu tienda', this.reminder());
   }
 
   openPayment(): void {

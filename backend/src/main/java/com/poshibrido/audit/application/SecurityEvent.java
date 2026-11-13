@@ -13,6 +13,8 @@ public enum SecurityEvent {
     /** La cuenta quedó bloqueada por intentos fallidos ({@code details.until}). */
     ACCOUNT_LOCKED,
     LOGOUT,
+    /** Cerró sus sesiones en los otros equipos ({@code details.closed}: cuántas), decisión 343. */
+    OTHER_SESSIONS_REVOKED,
     /** Entró a un negocio (también queda SESSION_STARTED en la auditoría del negocio). */
     TENANT_ENTERED,
     /** Intentó entrar a un negocio sin membresía activa, o el negocio o el miembro no están activos. */
