@@ -1,11 +1,11 @@
 import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
-import { SkeletonModule } from 'primeng/skeleton';
+import { ToastService } from '../../shared/ui/toast.service';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { DialogComponent } from '../../shared/ui/dialog.component';
+import { AppInputDirective } from '../../shared/ui/input.directive';
+import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { Observable, finalize } from 'rxjs';
 import { Product, ProductLookup, ProductModel, ProductModelRow, ProductVariant } from '../../core/api/api.models';
 import { CatalogApi } from '../../core/api/catalog.api';
@@ -53,7 +53,7 @@ interface Picking {
  */
 @Component({
   selector: 'app-tab',
-  imports: [FormsModule, RouterLink, ButtonModule, DialogModule, InputTextModule, SkeletonModule, FormDialogComponent,
+  imports: [FormsModule, RouterLink, ButtonComponent, DialogComponent, AppInputDirective, SkeletonComponent, FormDialogComponent,
     LiveReplacedComponent, CountStepperComponent,
     XIconComponent, ProductGridComponent, ModifierPickerComponent, VariantPickerComponent],
   template: `
@@ -72,10 +72,10 @@ interface Picking {
         </div>
         @if (isOpen()) {
           <div class="flex flex-wrap gap-2">
-            <p-button label="Mover" icon="pi pi-arrows-h" severity="secondary" [outlined]="true" (onClick)="openMove()" />
-            <p-button label="Unir" icon="pi pi-link" severity="secondary" [outlined]="true" (onClick)="openMerge()" />
-            <p-button label="Datos" icon="pi pi-user-edit" severity="secondary" [outlined]="true" (onClick)="openDetails()" />
-            <p-button label="Cancelar cuenta" icon="pi pi-times" severity="danger" [text]="true" (onClick)="openCancel()" />
+            <app-button label="Mover" icon="pi pi-arrows-h" severity="secondary" [outlined]="true" (clicked)="openMove()" />
+            <app-button label="Unir" icon="pi pi-link" severity="secondary" [outlined]="true" (clicked)="openMerge()" />
+            <app-button label="Datos" icon="pi pi-user-edit" severity="secondary" [outlined]="true" (clicked)="openDetails()" />
+            <app-button label="Cancelar cuenta" icon="pi pi-times" severity="danger" [text]="true" (clicked)="openCancel()" />
           </div>
         }
       </header>
@@ -156,10 +156,10 @@ interface Picking {
                   </li>
                 }
               </ul>
-              <p-button styleClass="w-full min-h-12 mt-3 font-bold" [icon]="canSend() ? 'pi pi-send' : 'pi pi-check'"
+              <app-button styleClass="w-full min-h-12 mt-3 font-bold" [icon]="canSend() ? 'pi pi-send' : 'pi pi-check'"
                         [loading]="saving()"
                         [label]="(canSend() ? 'Enviar a cocina · ' : 'Agregar a la cuenta · ') + cop(pendingSum())"
-                        (onClick)="savePending()" />
+                        (clicked)="savePending()" />
             </div>
           }
 
@@ -169,7 +169,7 @@ interface Picking {
               <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-warning-soft text-warning-soft-fg px-3 py-2 mb-2"
                    role="status">
                 <span class="text-sm font-semibold">{{ unsent() === 1 ? '1 producto sin enviar' : unsent() + ' productos sin enviar' }} a cocina</span>
-                <p-button label="Enviar ahora" icon="pi pi-send" size="small" [loading]="sending()" (onClick)="sendPending()" />
+                <app-button label="Enviar ahora" icon="pi pi-send" size="small" [loading]="sending()" (clicked)="sendPending()" />
               </div>
             }
             @if (items().length === 0) {
@@ -230,11 +230,11 @@ interface Picking {
                         <span class="text-muted"> · {{ time(k.sentAt) }} · {{ k.items === 1 ? '1 producto' : k.items + ' productos' }}</span></span>
                       <span class="flex gap-1">
                         @if (canSend() && k.status !== 'DELIVERED') {
-                          <p-button label="Entregada" icon="pi pi-check" size="small" (onClick)="deliver(k.id)" />
+                          <app-button label="Entregada" icon="pi pi-check" size="small" (clicked)="deliver(k.id)" />
                         }
                         @if (canSend()) {
-                          <p-button [label]="k.printCount === 0 ? 'Imprimir' : 'Reimprimir'" icon="pi pi-print" [text]="true"
-                                    size="small" (onClick)="printTicket(k.id)" />
+                          <app-button [label]="k.printCount === 0 ? 'Imprimir' : 'Reimprimir'" icon="pi pi-print" [text]="true"
+                                    size="small" (clicked)="printTicket(k.id)" />
                         }
                       </span>
                     </li>
@@ -244,16 +244,16 @@ interface Picking {
             }
             @if (isOpen() && t.tableId) {
               <!-- Pidió la cuenta (decisión 284): la mesa queda en rojo en el mapa. -->
-              <p-button styleClass="w-full min-h-12 mt-3 font-semibold" [icon]="t.billRequestedAt ? 'pi pi-times' : 'pi pi-flag'"
+              <app-button styleClass="w-full min-h-12 mt-3 font-semibold" [icon]="t.billRequestedAt ? 'pi pi-times' : 'pi pi-flag'"
                         [label]="t.billRequestedAt ? 'Ya no pide la cuenta' : 'Pidió la cuenta'" severity="secondary"
-                        [outlined]="true" [loading]="billSaving()" (onClick)="toggleBill(t)" />
+                        [outlined]="true" [loading]="billSaving()" (clicked)="toggleBill(t)" />
               @if (t.billRequestedAt) {
                 <p class="text-xs mt-1 bill-note">Pidió la cuenta a las {{ time(t.billRequestedAt) }}: en el mapa sale en rojo.</p>
               }
             }
             @if (isOpen() && canCharge()) {
-              <p-button styleClass="w-full min-h-14 mt-3 text-lg font-bold" icon="pi pi-wallet" label="Cobrar"
-                        [disabled]="toCharge().length === 0 || pending().length > 0" (onClick)="openCharge()" />
+              <app-button styleClass="w-full min-h-14 mt-3 text-lg font-bold" icon="pi pi-wallet" label="Cobrar"
+                        [disabled]="toCharge().length === 0 || pending().length > 0" (clicked)="openCharge()" />
               @if (pending().length > 0) {
                 <p class="text-xs text-muted mt-1">Agrega lo pendiente antes de cobrar.</p>
               }
@@ -264,11 +264,11 @@ interface Picking {
     } @else if (notFound()) {
       <p class="card p-6" role="alert">No encontramos esta cuenta. <a routerLink="/app/mesas" class="text-brand underline">Volver a las mesas</a></p>
     } @else {
-      <p-skeleton height="20rem" borderRadius="1.25rem" />
+      <app-skeleton height="20rem" borderRadius="1.25rem" />
     }
 
     <!-- Cobrar (Fase 12b-5): toda la cuenta, por productos o en partes iguales. -->
-    <p-dialog header="Cobrar" [(visible)]="chargeOpen" [modal]="true" [style]="{ width: '34rem' }" [breakpoints]="{ '640px': '100vw' }">
+    <app-dialog header="Cobrar" [(visible)]="chargeOpen" [modal]="true" [style]="{ width: '34rem' }" [breakpoints]="{ '640px': '100vw' }">
       <div class="grid gap-2 sm:grid-cols-3 mb-4" role="radiogroup" aria-label="Cómo se cobra">
         <button type="button" class="pick" role="radio" [attr.aria-checked]="chargeMode() === 'all'" (click)="chargeMode.set('all')">
           <span class="font-bold">Toda la cuenta</span><span class="text-xs text-muted">{{ cop(tab()?.total ?? 0) }}</span>
@@ -302,59 +302,59 @@ interface Picking {
               </li>
             }
           </ul>
-          <p-button styleClass="w-full min-h-12 mt-3 font-bold" icon="pi pi-wallet" [disabled]="pickedTotal() <= 0"
-                    [label]="'Cobrar esta parte · ' + cop(pickedTotal())" (onClick)="chargeParts()" />
+          <app-button styleClass="w-full min-h-12 mt-3 font-bold" icon="pi pi-wallet" [disabled]="pickedTotal() <= 0"
+                    [label]="'Cobrar esta parte · ' + cop(pickedTotal())" (clicked)="chargeParts()" />
         }
         @case ('split') {
           <label class="flex items-center gap-2 text-sm mb-2">
             <span class="font-semibold">Entre cuántas personas</span>
-            <input pInputText type="number" min="2" max="20" class="w-24" [(ngModel)]="splitInto" />
+            <input appInput type="number" min="2" max="20" class="w-24" [(ngModel)]="splitInto" />
           </label>
           <p class="text-sm mb-3">Cada persona paga cerca de <strong>{{ cop(splitShare()) }}</strong> (sin propina). En el cobro
             se registran los pagos de todos; si alguno paga con otro medio, usa "Pago mixto".</p>
-          <p-button styleClass="w-full min-h-12 font-bold" icon="pi pi-wallet" label="Cobrar en partes iguales"
-                    [disabled]="!(splitInto >= 2 && splitInto <= 20)" (onClick)="chargeAll(splitInto)" />
+          <app-button styleClass="w-full min-h-12 font-bold" icon="pi pi-wallet" label="Cobrar en partes iguales"
+                    [disabled]="!(splitInto >= 2 && splitInto <= 20)" (clicked)="chargeAll(splitInto)" />
         }
         @default {
-          <p-button styleClass="w-full min-h-12 font-bold" icon="pi pi-wallet" [label]="'Cobrar ' + cop(tab()?.total ?? 0)"
-                    (onClick)="chargeAll(1)" />
+          <app-button styleClass="w-full min-h-12 font-bold" icon="pi pi-wallet" [label]="'Cobrar ' + cop(tab()?.total ?? 0)"
+                    (clicked)="chargeAll(1)" />
         }
       }
-    </p-dialog>
+    </app-dialog>
 
     <!-- Precio libre -->
-    <p-dialog header="Precio libre" [(visible)]="priceOpen" [modal]="true" [style]="{ width: '24rem' }" [breakpoints]="{ '640px': '100vw' }">
+    <app-dialog header="Precio libre" [(visible)]="priceOpen" [modal]="true" [style]="{ width: '24rem' }" [breakpoints]="{ '640px': '100vw' }">
       @if (picking(); as p) {
         <form class="flex flex-col gap-3" (ngSubmit)="confirmPrice()">
           <p class="font-medium">{{ p.lookup.name }}</p>
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">¿Cuánto cobras?</span>
-            <input pInputText name="price" type="number" min="1" inputmode="numeric" class="h-12 text-xl text-right" [(ngModel)]="typedPrice" />
+            <input appInput name="price" type="number" min="1" inputmode="numeric" class="h-12 text-xl text-right" [(ngModel)]="typedPrice" />
           </label>
           <div class="flex justify-end gap-2">
-            <p-button label="Cancelar" [text]="true" severity="secondary" (onClick)="priceOpen = false" />
-            <p-button type="submit" label="Seguir" [disabled]="!(typedPrice && typedPrice > 0)" />
+            <app-button label="Cancelar" [text]="true" severity="secondary" (clicked)="priceOpen = false" />
+            <app-button type="submit" label="Seguir" [disabled]="!(typedPrice && typedPrice > 0)" />
           </div>
         </form>
       }
-    </p-dialog>
+    </app-dialog>
 
     <!-- Adiciones -->
-    <p-dialog [header]="picking()?.lookup?.name ?? 'Adiciones'" [(visible)]="modifiersOpen" [modal]="true"
+    <app-dialog [header]="picking()?.lookup?.name ?? 'Adiciones'" [(visible)]="modifiersOpen" [modal]="true"
               [style]="{ width: '40rem' }" [breakpoints]="{ '640px': '100vw' }">
       @if (picking(); as p) {
         <app-modifier-picker [groups]="p.groups" [basePrice]="p.basePrice" (picked)="modifiersPicked($event)"
                              (cancelled)="modifiersOpen = false" />
       }
-    </p-dialog>
+    </app-dialog>
 
     <!-- Tallas -->
-    <p-dialog [header]="model()?.name ?? 'Elegir talla'" [(visible)]="variantOpen" [modal]="true" [style]="{ width: '40rem' }"
+    <app-dialog [header]="model()?.name ?? 'Elegir talla'" [(visible)]="variantOpen" [modal]="true" [style]="{ width: '40rem' }"
               [breakpoints]="{ '640px': '100vw' }">
       @if (model(); as m) {
         <app-variant-picker [model]="m" (pick)="pickVariant($event)" />
       }
-    </p-dialog>
+    </app-dialog>
 
     <!-- Quitar -->
     <app-form-dialog [(visible)]="voidOpen" [header]="'Quitar ' + (voiding()?.name ?? '')" width="26rem" submitLabel="Quitar"
@@ -364,13 +364,13 @@ interface Picking {
                      [description]="voiding()?.sentAt ? 'Ya salió a cocina: avísale a cocina que no lo prepare.' : null">
       <div class="flex flex-col gap-1">
         <label for="void-reason" class="text-sm font-semibold">Motivo</label>
-        <input pInputText id="void-reason" maxlength="200" placeholder="El cliente cambió de opinión" [(ngModel)]="reason" />
+        <input appInput id="void-reason" maxlength="200" placeholder="El cliente cambió de opinión" [(ngModel)]="reason" />
         <small class="text-muted">Queda en la cuenta tachado y en la auditoría.</small>
       </div>
     </app-form-dialog>
 
     <!-- Mover -->
-    <p-dialog header="Mover a otra mesa" [(visible)]="moveOpen" [modal]="true" [style]="{ width: '32rem' }" [breakpoints]="{ '640px': '100vw' }">
+    <app-dialog header="Mover a otra mesa" [(visible)]="moveOpen" [modal]="true" [style]="{ width: '32rem' }" [breakpoints]="{ '640px': '100vw' }">
       @if (freeTables().length === 0) {
         <p class="text-sm text-muted">No hay mesas libres.</p>
       }
@@ -381,10 +381,10 @@ interface Picking {
           </button>
         }
       </div>
-    </p-dialog>
+    </app-dialog>
 
     <!-- Unir -->
-    <p-dialog header="Unir otra cuenta a esta" [(visible)]="mergeOpen" [modal]="true" [style]="{ width: '32rem' }" [breakpoints]="{ '640px': '100vw' }">
+    <app-dialog header="Unir otra cuenta a esta" [(visible)]="mergeOpen" [modal]="true" [style]="{ width: '32rem' }" [breakpoints]="{ '640px': '100vw' }">
       <p class="text-sm text-muted mb-3">Sus productos pasan a esta cuenta y su mesa queda libre.</p>
       @if (otherTabs().length === 0) {
         <p class="text-sm text-muted">No hay otras cuentas abiertas.</p>
@@ -398,7 +398,7 @@ interface Picking {
           </li>
         }
       </ul>
-    </p-dialog>
+    </app-dialog>
 
     <!-- Datos -->
     <app-form-dialog [(visible)]="detailsOpen" header="Datos de la cuenta" width="28rem" autofocus="desktop" [dirty]="true"
@@ -411,21 +411,21 @@ interface Picking {
       }
       <div class="flex flex-col gap-1">
         <label for="d-name" class="text-sm font-semibold">Nombre del cliente</label>
-        <input pInputText id="d-name" maxlength="120" [(ngModel)]="details.customerName" />
+        <input appInput id="d-name" maxlength="120" [(ngModel)]="details.customerName" />
       </div>
       @if (tab()?.kind !== 'TABLE') {
         <div class="flex flex-col gap-1">
           <label for="d-phone" class="text-sm font-semibold">Teléfono</label>
-          <input pInputText id="d-phone" maxlength="30" [(ngModel)]="details.phone" />
+          <input appInput id="d-phone" maxlength="30" [(ngModel)]="details.phone" />
         </div>
         <div class="flex flex-col gap-1">
           <label for="d-address" class="text-sm font-semibold">Dirección</label>
-          <input pInputText id="d-address" maxlength="200" [(ngModel)]="details.address" />
+          <input appInput id="d-address" maxlength="200" [(ngModel)]="details.address" />
         </div>
       }
       <div class="flex flex-col gap-1">
         <label for="d-notes" class="text-sm font-semibold">Notas</label>
-        <input pInputText id="d-notes" maxlength="200" [(ngModel)]="details.notes" />
+        <input appInput id="d-notes" maxlength="200" [(ngModel)]="details.notes" />
       </div>
     </app-form-dialog>
 
@@ -437,7 +437,7 @@ interface Picking {
                      description="La mesa queda libre. Los productos no se cobran; todo queda en la auditoría.">
       <div class="flex flex-col gap-1">
         <label for="cancel-reason" class="text-sm font-semibold">Motivo</label>
-        <input pInputText id="cancel-reason" maxlength="200" placeholder="Se fueron sin pedir" [(ngModel)]="reason" />
+        <input appInput id="cancel-reason" maxlength="200" placeholder="Se fueron sin pedir" [(ngModel)]="reason" />
       </div>
     </app-form-dialog>
   `,
@@ -516,7 +516,7 @@ export class TabComponent implements OnInit, HasUnsavedChanges {
   private readonly sales = inject(SalesApi);
   private readonly catalog = inject(CatalogApi);
   private readonly modifiersApi = inject(ModifiersApi);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   private readonly auth = inject(AuthService);
   private readonly printer = inject(KitchenPrinterService);
   private readonly kitchen = inject(KitchenApi);

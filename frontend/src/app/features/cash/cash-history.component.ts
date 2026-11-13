@@ -1,7 +1,8 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 import { CashReport, CashSession, PageResponse } from '../../core/api/api.models';
 import { CashApi, CashSessionFilters } from '../../core/api/cash.api';
 import { formatCop } from '../../shared/money';
@@ -18,11 +19,11 @@ import { LatestRequest } from '../../shared/latest-request';
 /** Historial de sesiones de caja con su informe (permiso cash:read). */
 @Component({
   selector: 'app-cash-history',
-  imports: [TermComponent, FormsModule, RouterLink, ButtonModule, DataTableComponent, CashReportDialogComponent,
+  imports: [TermComponent, FormsModule, RouterLink, ButtonComponent, ButtonLinkComponent, DataTableComponent, CashReportDialogComponent,
     PageHeaderComponent],
   template: `
     <app-page-header title="Historial de caja" description="Aperturas y cierres de todas las cajas, con su arqueo.">
-      <a pButton routerLink="/app/caja" label="Mi caja" icon="pi pi-wallet" severity="secondary" [outlined]="true"></a>
+      <a appButton routerLink="/app/caja" label="Mi caja" icon="pi pi-wallet" severity="secondary" [outlined]="true"></a>
     </app-page-header>
 
     <p class="text-sm text-muted -mt-3 mb-4">
@@ -52,7 +53,7 @@ import { LatestRequest } from '../../shared/latest-request';
         <input type="date" class="border rounded-[10px] px-3 min-h-11" [(ngModel)]="filters.to" (ngModelChange)="reloadFirstPage()" />
       </label>
       <ng-template #actions let-row>
-        <p-button label="Informe" icon="pi pi-file" size="small" [text]="true" (onClick)="openReport(row)" />
+        <app-button label="Informe" icon="pi pi-file" size="small" [text]="true" (clicked)="openReport(row)" />
       </ng-template>
     </app-data-table>
 

@@ -1,9 +1,9 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
+import { ToastService } from '../../shared/ui/toast.service';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { DialogComponent } from '../../shared/ui/dialog.component';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { AccessApi, groupByModule } from '../../core/api/access.api';
 import { Permission, Role } from '../../core/api/api.models';
 import { AuthService } from '../../core/auth/auth.service';
@@ -35,11 +35,11 @@ const MODULE_LABEL: Record<string, string> = {
 
 @Component({
   selector: 'app-roles',
-  imports: [FormsModule, ButtonModule, DialogModule, InputTextModule, PageHeaderComponent, StatusBadgeComponent],
+  imports: [FormsModule, ButtonComponent, DialogComponent, AppInputDirective, PageHeaderComponent, StatusBadgeComponent],
   template: `
     <app-page-header title="Roles y permisos"
                      description="Qué puede hacer cada persona. Los roles del sistema no se pueden cambiar; crea los tuyos.">
-      <p-button label="Nuevo rol" icon="pi pi-plus" (onClick)="openCreate()" />
+      <app-button label="Nuevo rol" icon="pi pi-plus" (clicked)="openCreate()" />
     </app-page-header>
 
     <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -57,29 +57,29 @@ const MODULE_LABEL: Record<string, string> = {
           <p class="text-xs text-muted">{{ role.permissions.length }} permisos · {{ role.memberCount }} usuario(s)</p>
           <div class="flex gap-2 mt-auto">
             @if (role.editable) {
-              <p-button label="Editar" size="small" [text]="true" (onClick)="openEdit(role)" />
+              <app-button label="Editar" size="small" [text]="true" (clicked)="openEdit(role)" />
             } @else {
               <span class="text-xs text-muted">No editable</span>
             }
             @if (!role.systemRole) {
-              <p-button label="Eliminar" size="small" [text]="true" severity="danger"
-                        [disabled]="role.memberCount > 0" (onClick)="remove(role)" />
+              <app-button label="Eliminar" size="small" [text]="true" severity="danger"
+                        [disabled]="role.memberCount > 0" (clicked)="remove(role)" />
             }
           </div>
         </article>
       }
     </div>
 
-    <p-dialog [(visible)]="dialogOpen" [modal]="true" [header]="editing() ? 'Editar rol' : 'Nuevo rol'"
+    <app-dialog [(visible)]="dialogOpen" [modal]="true" [header]="editing() ? 'Editar rol' : 'Nuevo rol'"
               [style]="{ width: '40rem' }">
       <div class="flex flex-col gap-3">
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Nombre</span>
-          <input pInputText [ngModel]="name" (ngModelChange)="setName($event)" placeholder="Supervisor de caja" />
+          <input appInput [ngModel]="name" (ngModelChange)="setName($event)" placeholder="Supervisor de caja" />
         </label>
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Descripción</span>
-          <input pInputText [(ngModel)]="description" />
+          <input appInput [(ngModel)]="description" />
         </label>
         <p class="text-xs text-muted">Solo puedes otorgar permisos que tú tienes.</p>
         <div class="grid gap-3 md:grid-cols-2 max-h-80 overflow-y-auto">
@@ -106,23 +106,23 @@ const MODULE_LABEL: Record<string, string> = {
             <summary class="cursor-pointer text-muted min-h-11 inline-flex items-center">Opciones avanzadas</summary>
             <label class="flex flex-col gap-1 mt-1">
               <span class="font-medium">Código interno</span>
-              <input pInputText [ngModel]="code" (ngModelChange)="setCode($event)" aria-describedby="role-code-help" />
+              <input appInput [ngModel]="code" (ngModelChange)="setCode($event)" aria-describedby="role-code-help" />
               <span id="role-code-help" class="text-xs text-muted">Se arma solo con el nombre. Cámbialo solo si ya existe
                 otro rol con el mismo código (letras, números y _).</span>
             </label>
           </details>
         }
         <div class="flex justify-end gap-2">
-          <p-button label="Cancelar" [text]="true" severity="secondary" (onClick)="dialogOpen = false" />
-          <p-button label="Guardar" [loading]="saving()" [disabled]="!canSave()" (onClick)="save()" />
+          <app-button label="Cancelar" [text]="true" severity="secondary" (clicked)="dialogOpen = false" />
+          <app-button label="Guardar" [loading]="saving()" [disabled]="!canSave()" (clicked)="save()" />
         </div>
       </div>
-    </p-dialog>
+    </app-dialog>
   `,
 })
 export class RolesComponent implements OnInit {
   private readonly api = inject(AccessApi);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   private readonly confirm = inject(ConfirmService);
   protected readonly auth = inject(AuthService);
 

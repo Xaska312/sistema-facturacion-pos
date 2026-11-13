@@ -1,7 +1,6 @@
 import { Component, inject, model, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ToastService } from '../../shared/ui/toast.service';
 import { Observable, tap } from 'rxjs';
 import { Party } from '../../core/api/api.models';
 import { CustomerWithholding, WithholdingType, WithholdingsApi } from '../../core/api/withholdings.api';
@@ -22,7 +21,7 @@ interface Row {
  */
 @Component({
   selector: 'app-customer-withholdings-dialog',
-  imports: [FormsModule, ButtonModule, FormDialogComponent],
+  imports: [FormsModule, FormDialogComponent],
   template: `
     @if (customer(); as c) {
       <app-form-dialog [(visible)]="visible" [header]="'Retenciones de ' + c.displayName" width="30rem"
@@ -54,7 +53,7 @@ interface Row {
 })
 export class CustomerWithholdingsDialogComponent {
   private readonly api = inject(WithholdingsApi);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
 
   readonly visible = model(false);
   protected readonly customer = signal<Party | null>(null);

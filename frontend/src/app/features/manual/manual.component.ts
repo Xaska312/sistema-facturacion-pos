@@ -1,7 +1,7 @@
 import { Location } from '@angular/common';
 import { Component, afterNextRender, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { copyToClipboard } from '../../shared/clipboard';
 import { XaskaLogoComponent } from '../../shared/brand/xaska-logo.component';
@@ -275,7 +275,7 @@ import { MANUAL_GLOSSARY, filterManual, normalize } from './manual-content';
 export class ManualComponent {
   protected readonly auth = inject(AuthService);
   private readonly location = inject(Location);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
 
   protected readonly query = signal('');
   protected readonly chapters = computed(() => filterManual(this.query()));

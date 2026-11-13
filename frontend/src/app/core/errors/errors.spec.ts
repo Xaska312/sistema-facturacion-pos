@@ -1,7 +1,7 @@
 import { HttpClient, HttpErrorResponse, provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { errorInterceptor } from './error.interceptor';
 import { InlineErrorScope } from './inline-errors';
 import { fieldProblemText, problemFieldErrors, problemMessage, problemTitle } from './problem';
@@ -30,15 +30,15 @@ describe('problem', () => {
 describe('errorInterceptor', () => {
   let http: HttpClient;
   let backend: HttpTestingController;
-  let messages: jasmine.SpyObj<MessageService>;
+  let messages: jasmine.SpyObj<ToastService>;
 
   beforeEach(() => {
-    messages = jasmine.createSpyObj<MessageService>('MessageService', ['add']);
+    messages = jasmine.createSpyObj<ToastService>('ToastService', ['add']);
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(withInterceptors([errorInterceptor])),
         provideHttpClientTesting(),
-        { provide: MessageService, useValue: messages },
+        { provide: ToastService, useValue: messages },
       ],
     });
     http = TestBed.inject(HttpClient);

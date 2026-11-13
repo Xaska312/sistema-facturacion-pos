@@ -2,7 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
 import { filter } from 'rxjs';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from './ui/button.component';
 
 /**
  * Versión nueva de XASKA (decisión 333): la app guardada en el equipo baja la nueva en segundo plano y aquí se avisa
@@ -10,14 +10,14 @@ import { ButtonModule } from 'primeng/button';
  */
 @Component({
   selector: 'app-update-banner',
-  imports: [ButtonModule],
+  imports: [ButtonComponent],
   template: `
     @if (ready()) {
       <div class="update-banner card" role="status">
         <i class="pi pi-sparkles text-brand" aria-hidden="true"></i>
         <span class="text-sm"><strong>Hay una versión nueva de XASKA.</strong> Actualiza cuando termines lo que estás
           haciendo.</span>
-        <p-button label="Actualizar" size="small" (onClick)="reload()" />
+        <app-button label="Actualizar" size="small" (clicked)="reload()" />
         <button type="button" class="text-sm text-muted hover:underline" (click)="ready.set(false)">Después</button>
       </div>
     }

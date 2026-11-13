@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { DiningEventsService } from './dining-events.service';
 
 /**
@@ -9,7 +9,7 @@ import { DiningEventsService } from './dining-events.service';
  */
 @Component({
   selector: 'app-live-replaced',
-  imports: [ButtonModule],
+  imports: [ButtonComponent],
   template: `
     @if (events.replaced()) {
       <div class="rounded-lg border border-warning bg-warning-soft text-warning-soft-fg p-3 text-sm mb-4
@@ -21,8 +21,8 @@ import { DiningEventsService } from './dining-events.service';
             Aquí todo se sigue actualizando cada pocos segundos.
           </span>
         </p>
-        <p-button label="Recibir avisos aquí" icon="pi pi-bolt" size="small" severity="secondary" [outlined]="true"
-                  (onClick)="events.takeOver()" />
+        <app-button label="Recibir avisos aquí" icon="pi pi-bolt" size="small" severity="secondary" [outlined]="true"
+                  (clicked)="events.takeOver()" />
       </div>
     }
   `,

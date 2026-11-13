@@ -1,7 +1,8 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../../shared/ui/button.component';
+import { ButtonLinkComponent } from '../../../shared/ui/button-link.component';
 import { PageResponse, ProductModelRow } from '../../../core/api/api.models';
 import { CatalogApi } from '../../../core/api/catalog.api';
 import { permissionFlag } from '../../../core/auth/permission-flag';
@@ -15,16 +16,16 @@ import { ColumnDef, TableQuery, initialQuery, toPageQuery } from '../../../share
 /** Productos con tallas y colores (fase 8d): cada modelo agrupa sus variantes talla × color. */
 @Component({
   selector: 'app-product-models',
-  imports: [FormsModule, RouterLink, ButtonModule, DataTableComponent, PageHeaderComponent],
+  imports: [FormsModule, RouterLink, ButtonComponent, ButtonLinkComponent, DataTableComponent, PageHeaderComponent],
   template: `
     <app-page-header title="Productos con tallas"
                      description="Calzado y ropa: un modelo con su precio y una variante por cada talla y color. Cada variante se vende, se cuenta y tiene su propio código de barras.">
-      <a pButton routerLink="/app/productos" label="Productos" icon="pi pi-arrow-left" severity="secondary"
+      <a appButton routerLink="/app/productos" label="Productos" icon="pi pi-arrow-left" severity="secondary"
          [text]="true"></a>
-      <a pButton routerLink="/app/productos/tallas" label="Escalas de tallas" icon="pi pi-sliders-h"
+      <a appButton routerLink="/app/productos/tallas" label="Escalas de tallas" icon="pi pi-sliders-h"
          severity="secondary" [outlined]="true"></a>
       @if (canManage()) {
-        <a pButton routerLink="/app/productos/modelos/nuevo" label="Nuevo modelo" icon="pi pi-plus"></a>
+        <a appButton routerLink="/app/productos/modelos/nuevo" label="Nuevo modelo" icon="pi pi-plus"></a>
       }
     </app-page-header>
 
@@ -39,11 +40,11 @@ import { ColumnDef, TableQuery, initialQuery, toPageQuery } from '../../../share
         Ver inactivos
       </label>
       <ng-template #actions let-row>
-        <p-button label="Ver" icon="pi pi-eye" size="small" [text]="true" (onClick)="open(row)" />
+        <app-button label="Ver" icon="pi pi-eye" size="small" [text]="true" (clicked)="open(row)" />
         @if (canManage()) {
-          <p-button [label]="row.active ? 'Desactivar' : 'Activar'" size="small" [text]="true"
+          <app-button [label]="row.active ? 'Desactivar' : 'Activar'" size="small" [text]="true"
                     [icon]="row.active ? 'pi pi-ban' : 'pi pi-check-circle'"
-                    [severity]="row.active ? 'danger' : 'success'" (onClick)="toggle(row)" />
+                    [severity]="row.active ? 'danger' : 'success'" (clicked)="toggle(row)" />
         }
       </ng-template>
     </app-data-table>

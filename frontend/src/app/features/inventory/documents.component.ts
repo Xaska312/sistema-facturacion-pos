@@ -2,8 +2,9 @@ import { DatePipe } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
+import { DialogComponent } from '../../shared/ui/dialog.component';
 import { Branch, InventoryDocument, InventoryDocumentLine, InventoryDocumentType, PageResponse } from '../../core/api/api.models';
 import { InventoryApi } from '../../core/api/inventory.api';
 import { OrganizationApi } from '../../core/api/organization.api';
@@ -20,22 +21,22 @@ import { LatestRequest } from '../../shared/latest-request';
 /** Documentos de inventario (saldo inicial, ajustes, traslados, conteos y bajas) y acceso a crearlos. */
 @Component({
   selector: 'app-inventory-documents',
-  imports: [FormsModule, RouterLink, DatePipe, ButtonModule, DialogModule, DataTableComponent, HasPermissionDirective,
+  imports: [FormsModule, RouterLink, DatePipe, ButtonComponent, ButtonLinkComponent, DialogComponent, DataTableComponent, HasPermissionDirective,
     PageHeaderComponent, CellTemplateDirective],
   template: `
     <app-page-header title="Movimientos de inventario"
                      description="Saldos iniciales, ajustes, traslados entre sucursales y conteos físicos.">
       <ng-container *hasPermission="'inventory:adjust'">
-        <a pButton [routerLink]="['/app/inventario/nuevo', routes.INITIAL]" label="Saldo inicial" severity="secondary"
+        <a appButton [routerLink]="['/app/inventario/nuevo', routes.INITIAL]" label="Saldo inicial" severity="secondary"
            [outlined]="true"></a>
-        <a pButton [routerLink]="['/app/inventario/nuevo', routes.ADJUSTMENT]" label="Ajuste" severity="secondary"
+        <a appButton [routerLink]="['/app/inventario/nuevo', routes.ADJUSTMENT]" label="Ajuste" severity="secondary"
            [outlined]="true"></a>
-        <a pButton [routerLink]="['/app/inventario/nuevo', routes.COUNT]" label="Conteo físico" severity="secondary"
+        <a appButton [routerLink]="['/app/inventario/nuevo', routes.COUNT]" label="Conteo físico" severity="secondary"
            [outlined]="true"></a>
-        <a pButton [routerLink]="['/app/inventario/nuevo', routes.DISPOSAL]" label="Baja" severity="secondary"
+        <a appButton [routerLink]="['/app/inventario/nuevo', routes.DISPOSAL]" label="Baja" severity="secondary"
            [outlined]="true"></a>
       </ng-container>
-      <a *hasPermission="'inventory:transfer'" pButton [routerLink]="['/app/inventario/nuevo', routes.TRANSFER]"
+      <a *hasPermission="'inventory:transfer'" appButton [routerLink]="['/app/inventario/nuevo', routes.TRANSFER]"
          label="Traslado" icon="pi pi-arrow-right-arrow-left"></a>
     </app-page-header>
 
@@ -65,11 +66,11 @@ import { LatestRequest } from '../../shared/latest-request';
         </select>
       </label>
       <ng-template #actions let-row>
-        <p-button label="Ver" icon="pi pi-eye" size="small" [text]="true" (onClick)="open(row)" />
+        <app-button label="Ver" icon="pi pi-eye" size="small" [text]="true" (clicked)="open(row)" />
       </ng-template>
     </app-data-table>
 
-    <p-dialog [(visible)]="detailOpen" [modal]="true" [style]="{ width: '56rem' }"
+    <app-dialog [(visible)]="detailOpen" [modal]="true" [style]="{ width: '56rem' }"
               [header]="detail() ? labels[detail()!.type] + ' ' + docNumber(detail()!.number) : 'Documento'">
       @if (detail(); as d) {
         <p class="text-sm text-muted mb-3">
@@ -85,7 +86,7 @@ import { LatestRequest } from '../../shared/latest-request';
         @if (d.type === 'DISPOSAL') {
           <p class="text-sm mb-3 flex flex-wrap items-center gap-2">
             <span>Dispuesto: {{ d.disposalMethod }}{{ d.witnessName ? ' · testigo ' + d.witnessName : '' }}</span>
-            <a pButton [routerLink]="['/app/inventario/acta', d.id]" label="Ver e imprimir acta" icon="pi pi-print"
+            <a appButton [routerLink]="['/app/inventario/acta', d.id]" label="Ver e imprimir acta" icon="pi pi-print"
                size="small" [outlined]="true"></a>
           </p>
         }
@@ -104,7 +105,7 @@ import { LatestRequest } from '../../shared/latest-request';
           <p class="text-sm mt-3"><span class="font-medium">Notas:</span> {{ d.notes }}</p>
         }
       }
-    </p-dialog>
+    </app-dialog>
   `,
 })
 export class InventoryDocumentsComponent implements OnInit {

@@ -1,6 +1,8 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpContext, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, catchError, map, of } from 'rxjs';
+import { SILENT_ALL_ERRORS } from '../errors/error.interceptor';
+import { SKIP_GLOBAL_LOADING } from '../loading/loading';
 import { CreditAccount, CreditEntry, CreditPaymentInput, CreditSummary, PageResponse } from './api.models';
 import { PageQuery, pageParams } from './organization.api';
 
@@ -11,6 +13,16 @@ export type CreditFilter = 'DEBT' | 'ALL';
 @Injectable({ providedIn: 'root' })
 export class CreditApi {
   private readonly http = inject(HttpClient);
+
+  /**
+   * Mensaje con que se recuerda el fiado (decisión 344); '' = el de siempre. Si falla se usa el de siempre sin
+   * molestar al cajero con un error.
+   */
+  reminderTemplate(): Observable<string> {
+    return this.http.get<{ template: string }>('/api/v1/credit/reminder-template', {
+      context: new HttpContext().set(SILENT_ALL_ERRORS, true).set(SKIP_GLOBAL_LOADING, true),
+    }).pipe(map((r) => r.template ?? ''), catchError(() => of('')));
+  }
 
   summary(): Observable<CreditSummary> {
     return this.http.get<CreditSummary>('/api/v1/credit/summary');

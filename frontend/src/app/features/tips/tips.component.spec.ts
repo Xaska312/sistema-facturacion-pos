@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { ConfirmationService, MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { of } from 'rxjs';
 import { TipSummary, TipsApi } from '../../core/api/tips.api';
 import { TipsComponent } from './tips.component';
@@ -17,7 +17,7 @@ describe('TipsComponent', () => {
     api.summary.and.returnValue(of(summary(overpaid)));
     TestBed.configureTestingModule({
       imports: [TipsComponent],
-      providers: [MessageService, ConfirmationService, { provide: TipsApi, useValue: api }],
+      providers: [ToastService, { provide: TipsApi, useValue: api }],
     });
     const fixture = TestBed.createComponent(TipsComponent);
     fixture.detectChanges();

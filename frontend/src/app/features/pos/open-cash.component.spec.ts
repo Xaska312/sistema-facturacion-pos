@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { of } from 'rxjs';
 import { CashSession, RegisterOption } from '../../core/api/api.models';
 import { CashApi } from '../../core/api/cash.api';
@@ -28,7 +28,7 @@ describe('OpenCashComponent', () => {
         provideRouter([]),
         { provide: CashApi, useValue: cash },
         { provide: AuthService, useValue: { hasPermission: () => allowed } },
-        { provide: MessageService, useValue: jasmine.createSpyObj<MessageService>('MessageService', ['add']) },
+        { provide: ToastService, useValue: jasmine.createSpyObj<ToastService>('ToastService', ['add']) },
       ],
     });
   });

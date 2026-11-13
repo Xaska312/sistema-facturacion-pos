@@ -1,8 +1,9 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
-import { SkeletonModule } from 'primeng/skeleton';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
+import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { BranchOption, DiningApi } from '../../core/api/dining.api';
 import { KitchenApi, KitchenStation, KitchenTicket } from '../../core/api/kitchen.api';
 import { permissionFlag } from '../../core/auth/permission-flag';
@@ -28,16 +29,16 @@ const REFRESH_MS = 10_000;
  */
 @Component({
   selector: 'app-tickets',
-  imports: [FormsModule, RouterLink, ButtonModule, SkeletonModule, PageHeaderComponent, EmptyStateComponent, XIconComponent,
+  imports: [FormsModule, RouterLink, ButtonComponent, ButtonLinkComponent, SkeletonComponent, PageHeaderComponent, EmptyStateComponent, XIconComponent,
     LiveReplacedComponent],
   template: `
     <app-page-header title="Comandas" description="Lo que se ha enviado a cocina y bar en las últimas horas.">
       @if (canDisplay()) {
-        <a pButton routerLink="/app/cocina" label="Pantalla de cocina" icon="pi pi-desktop" severity="secondary"
+        <a appButton routerLink="/app/cocina" label="Pantalla de cocina" icon="pi pi-desktop" severity="secondary"
            [outlined]="true"></a>
       }
       @if (canManage()) {
-        <a pButton routerLink="/app/comandas/estaciones" label="Estaciones" icon="pi pi-cog" severity="secondary"
+        <a appButton routerLink="/app/comandas/estaciones" label="Estaciones" icon="pi pi-cog" severity="secondary"
            [outlined]="true"></a>
       }
     </app-page-header>
@@ -74,7 +75,7 @@ const REFRESH_MS = 10_000;
             <option [ngValue]="58">58 mm</option>
           </select>
         </label>
-        <p-button label="Imprimir prueba" icon="pi pi-print" [text]="true" size="small" (onClick)="test()" />
+        <app-button label="Imprimir prueba" icon="pi pi-print" [text]="true" size="small" (clicked)="test()" />
         @if (printer.config(); as c) {
           <span class="text-brand font-semibold" role="status">
             Este equipo imprime {{ stationNames(c.stationIds) }}{{ printer.lastPrinted() ? ' · última: #' + printer.lastPrinted() : '' }}
@@ -144,9 +145,9 @@ const REFRESH_MS = 10_000;
               </ul>
               @if (t.notes) { <p class="text-sm"><span class="text-muted">Nota:</span> {{ t.notes }}</p> }
               <div class="flex flex-wrap gap-2 mt-auto pt-1">
-                <p-button [label]="t.printCount === 0 ? 'Imprimir' : 'Reimprimir'" icon="pi pi-print" severity="secondary"
-                          [outlined]="true" size="small" (onClick)="print(t)" />
-                <a pButton [routerLink]="['/app/mesas/cuenta', t.tabId]" label="Ver cuenta" [text]="true" size="small"></a>
+                <app-button [label]="t.printCount === 0 ? 'Imprimir' : 'Reimprimir'" icon="pi pi-print" severity="secondary"
+                          [outlined]="true" size="small" (clicked)="print(t)" />
+                <a appButton [routerLink]="['/app/mesas/cuenta', t.tabId]" label="Ver cuenta" [text]="true" size="small"></a>
               </div>
             </li>
           }
@@ -155,7 +156,7 @@ const REFRESH_MS = 10_000;
     } @else {
       <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3" aria-busy="true">
         @for (i of [0, 1, 2]; track i) {
-          <p-skeleton height="12rem" borderRadius="1.25rem" />
+          <app-skeleton height="12rem" borderRadius="1.25rem" />
         }
       </div>
     }

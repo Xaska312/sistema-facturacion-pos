@@ -2,8 +2,8 @@ import { businessLines, headerLines } from './doc-header';
 
 describe('Encabezado de los documentos (decisión 331)', () => {
   it('toma un dato por renglón, sin renglones vacíos', () => {
-    expect(headerLines('NIT: 1006122824-9\r\n\n  Cra. 138 #7-45 Ceiba \nCel: 3155145472'))
-      .toEqual(['NIT: 1006122824-9', 'Cra. 138 #7-45 Ceiba', 'Cel: 3155145472']);
+    expect(headerLines('NIT: 900.123.456-7\r\n\n  Calle 10 # 5-20, Centro \nCel: 300 123 4567'))
+      .toEqual(['NIT: 900.123.456-7', 'Calle 10 # 5-20, Centro', 'Cel: 300 123 4567']);
     expect(headerLines(null)).toEqual([]);
   });
 

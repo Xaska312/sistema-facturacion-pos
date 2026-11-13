@@ -1,7 +1,7 @@
 import { Component, ElementRef, OnInit, computed, inject, input, output, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ToastService } from '../../shared/ui/toast.service';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { DiningApi, DiningTable, DiningZone, TableShape } from '../../core/api/dining.api';
 import { MAX_SIZE, MIN_SIZE, PLAN_H, PLAN_W, PlacedTable, boxStyle, moveBy, placeTables, resize } from './table-map';
 
@@ -13,7 +13,7 @@ type Spot = PlacedTable<DiningTable>;
  */
 @Component({
   selector: 'app-layout-editor',
-  imports: [FormsModule, ButtonModule],
+  imports: [FormsModule, ButtonComponent],
   template: `
     <div class="flex flex-col gap-3">
       <p class="text-sm text-muted">Arrastra cada mesa a donde está en el local. Tócala para cambiar su forma y tamaño.
@@ -49,9 +49,9 @@ type Spot = PlacedTable<DiningTable>;
       }
 
       <div class="flex flex-wrap justify-end gap-2">
-        <p-button label="Acomodar en filas" icon="pi pi-th-large" severity="secondary" [text]="true" (onClick)="arrange()" />
-        <p-button label="Cerrar" severity="secondary" [outlined]="true" (onClick)="closed.emit()" />
-        <p-button label="Guardar plano" icon="pi pi-check" [loading]="saving()" [disabled]="!dirty()" (onClick)="save()" />
+        <app-button label="Acomodar en filas" icon="pi pi-th-large" severity="secondary" [text]="true" (clicked)="arrange()" />
+        <app-button label="Cerrar" severity="secondary" [outlined]="true" (clicked)="closed.emit()" />
+        <app-button label="Guardar plano" icon="pi pi-check" [loading]="saving()" [disabled]="!dirty()" (clicked)="save()" />
       </div>
     </div>
   `,
@@ -80,7 +80,7 @@ export class LayoutEditorComponent implements OnInit {
   readonly closed = output<void>();
 
   private readonly api = inject(DiningApi);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   private readonly planRef = viewChild.required<ElementRef<HTMLElement>>('plan');
 
   protected readonly Math = Math;

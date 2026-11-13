@@ -1,6 +1,6 @@
 import { HttpContextToken, HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { catchError, throwError } from 'rxjs';
 import { isTenantUnavailable } from '../auth/auth.interceptor';
 import { InlineErrorScope } from './inline-errors';
@@ -18,7 +18,7 @@ export const SILENT_ALL_ERRORS = new HttpContextToken<boolean>(() => false);
  * muestra sus errores en línea ({@link InlineErrorScope}).
  */
 export const errorInterceptor: HttpInterceptorFn = (request, next) => {
-  const messages = inject(MessageService);
+  const messages = inject(ToastService);
   const inline = inject(InlineErrorScope);
   return next(request).pipe(
     catchError((error: unknown) => {

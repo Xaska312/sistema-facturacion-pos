@@ -1,8 +1,8 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
+import { ToastService } from '../../shared/ui/toast.service';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { PharmacyApi, Profession, TechnicalDirector } from '../../core/api/pharmacy.api';
 import { AuthService } from '../../core/auth/auth.service';
 import { PROFESSION_OPTIONS } from '../pos/dispensation';
@@ -13,7 +13,7 @@ import { PROFESSION_OPTIONS } from '../pos/dispensation';
  */
 @Component({
   selector: 'app-technical-director-section',
-  imports: [FormsModule, ButtonModule, InputTextModule],
+  imports: [FormsModule, ButtonComponent, AppInputDirective],
   template: `
     <section class="card p-4 flex flex-col gap-3 max-w-3xl" aria-labelledby="dt-title">
       <header>
@@ -23,7 +23,7 @@ import { PROFESSION_OPTIONS } from '../pos/dispensation';
       <fieldset class="grid gap-3 md:grid-cols-3" [disabled]="!canEdit()">
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Nombre</span>
-          <input pInputText maxlength="160" [(ngModel)]="name" />
+          <input appInput maxlength="160" [(ngModel)]="name" />
         </label>
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Profesión</span>
@@ -36,12 +36,12 @@ import { PROFESSION_OPTIONS } from '../pos/dispensation';
         </label>
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Tarjeta profesional</span>
-          <input pInputText maxlength="40" [(ngModel)]="license" placeholder="Número o resolución" />
+          <input appInput maxlength="40" [(ngModel)]="license" placeholder="Número o resolución" />
         </label>
       </fieldset>
       @if (canEdit()) {
         <div class="flex justify-end">
-          <p-button label="Guardar director técnico" [loading]="saving()" (onClick)="save()" />
+          <app-button label="Guardar director técnico" [loading]="saving()" (clicked)="save()" />
         </div>
       }
     </section>
@@ -50,7 +50,7 @@ import { PROFESSION_OPTIONS } from '../pos/dispensation';
 export class TechnicalDirectorSectionComponent implements OnInit {
   private readonly api = inject(PharmacyApi);
   private readonly auth = inject(AuthService);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   protected readonly canEdit = computed(() => this.auth.hasPermission('settings:manage'));
   protected readonly professions = PROFESSION_OPTIONS;
   protected readonly saving = signal(false);

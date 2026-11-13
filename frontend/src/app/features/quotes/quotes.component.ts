@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 import { PageResponse, QuoteFilter, QuoteRow } from '../../core/api/api.models';
 import { QuotesApi } from '../../core/api/quotes.api';
 import { permissionFlag } from '../../core/auth/permission-flag';
@@ -17,13 +17,13 @@ import { QUOTE_FILTERS, quoteBadge, validLabel } from './quote-text';
 /** Cotizaciones: vigentes, vencidas, aceptadas y rechazadas, las más recientes primero (decisión 260). */
 @Component({
   selector: 'app-quotes',
-  imports: [FormsModule, RouterLink, ButtonModule, PageHeaderComponent, StatusBadgeComponent, DataTableComponent,
+  imports: [FormsModule, RouterLink, ButtonLinkComponent, PageHeaderComponent, StatusBadgeComponent, DataTableComponent,
     CellTemplateDirective],
   template: `
     <app-page-header title="Cotizaciones"
                      description="Precios que le ofreces a un cliente antes de que compre. Si acepta, se convierten en pedido o en venta.">
       @if (canCreate()) {
-        <a pButton routerLink="/app/cotizaciones/nueva" label="Nueva cotización" icon="pi pi-plus"></a>
+        <a appButton routerLink="/app/cotizaciones/nueva" label="Nueva cotización" icon="pi pi-plus"></a>
       }
     </app-page-header>
 
@@ -64,7 +64,7 @@ import { QUOTE_FILTERS, quoteBadge, validLabel } from './quote-text';
         }
       </ng-template>
       <ng-template #actions let-row>
-        <a pButton [text]="true" size="small" label="Ver" icon="pi pi-eye" [routerLink]="['/app/cotizaciones', row.id]"></a>
+        <a appButton [text]="true" size="small" label="Ver" icon="pi pi-eye" [routerLink]="['/app/cotizaciones', row.id]"></a>
       </ng-template>
     </app-data-table>
   `,

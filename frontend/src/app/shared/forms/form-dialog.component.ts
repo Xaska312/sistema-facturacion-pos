@@ -1,9 +1,9 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, ElementRef, inject, input, model, output, signal, viewChild } from '@angular/core';
 import { AbstractControl, FormArray, FormGroup } from '@angular/forms';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
+import { ToastService } from '../ui/toast.service';
+import { DialogComponent } from '../ui/dialog.component';
+import { ButtonComponent } from '../ui/button.component';
 import { Observable } from 'rxjs';
 import { InlineErrorScope } from '../../core/errors/inline-errors';
 import { FieldProblem, fieldProblemText, problemFieldErrors, problemMessage } from '../../core/errors/problem';
@@ -23,11 +23,11 @@ import { applyServerErrors } from './field-messages';
  */
 @Component({
   selector: 'app-form-dialog',
-  imports: [DialogModule, ButtonModule],
+  imports: [DialogComponent, ButtonComponent],
   template: `
-    <p-dialog [visible]="visible()" (visibleChange)="onVisibleChange($event)" [modal]="true" [header]="header()"
-              [style]="{ width: width(), maxWidth: 'calc(100vw - 2rem)' }" [draggable]="false" [resizable]="false"
-              [closeOnEscape]="false" [focusOnShow]="false" [blockScroll]="true" (onShow)="focusFirstField()"
+    <app-dialog [visible]="visible()" (visibleChange)="onVisibleChange($event)" [modal]="true" [header]="header()"
+              [style]="{ width: width(), maxWidth: 'calc(100vw - 2rem)' }"
+              [closeOnEscape]="false" [focusOnShow]="false" (shown)="focusFirstField()"
               (keydown.escape)="requestClose()">
       <form #formElement novalidate class="flex flex-col gap-4" (submit)="onSubmit($event)">
         @if (description()) {
@@ -51,18 +51,18 @@ import { applyServerErrors } from './field-messages';
         <ng-content />
 
         <div class="flex flex-wrap justify-end gap-2 pt-2 border-t border-line">
-          <p-button type="button" label="Cancelar" [text]="true" severity="secondary" [disabled]="saving()"
-                    (onClick)="requestClose()" />
-          <p-button type="submit" [label]="submitLabel()" [icon]="submitIcon()" [loading]="saving()"
+          <app-button type="button" label="Cancelar" [text]="true" severity="secondary" [disabled]="saving()"
+                    (clicked)="requestClose()" />
+          <app-button type="submit" [label]="submitLabel()" [icon]="submitIcon()" [loading]="saving()"
                     [severity]="destructive() ? 'danger' : null" />
         </div>
       </form>
-    </p-dialog>
+    </app-dialog>
   `,
 })
 export class FormDialogComponent {
   private readonly confirm = inject(ConfirmService);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   private readonly inlineErrors = inject(InlineErrorScope);
   private readonly formElement = viewChild<ElementRef<HTMLFormElement>>('formElement');
 

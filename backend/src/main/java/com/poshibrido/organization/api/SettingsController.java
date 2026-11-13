@@ -45,7 +45,9 @@ public class SettingsController {
             /** Propina sugerida al cobrar una mesa (Fase 12b-5), 0 a 20 %. Sin dato se conserva. */
             @Min(0) @Max(20) Integer tipPercent,
             /** Meses de aviso antes del vencimiento de un lote (Fase 13-3), 1 a 12. Sin dato se conserva. */
-            @Min(1) @Max(12) Integer expiryAlertMonths) {
+            @Min(1) @Max(12) Integer expiryAlertMonths,
+            /** Recordatorio de fiado por WhatsApp (decisión 344); "" = el de siempre. Sin dato se conserva. */
+            @Size(max = 600) String creditReminder) {
     }
 
     @GetMapping
@@ -67,9 +69,10 @@ public class SettingsController {
         int expiryAlertMonths = request.expiryAlertMonths() == null ? current.expiryAlertMonths()
                 : request.expiryAlertMonths();
         String receiptHeader = request.receiptHeader() == null ? current.receiptHeader() : request.receiptHeader();
+        String creditReminder = request.creditReminder() == null ? current.creditReminder() : request.creditReminder();
         return service.update(new BusinessSettings(request.allowNegativeStock(), request.pricesIncludeTax(),
                 request.timezone().trim(), request.currency().trim(), request.receiptFooter(),
                 request.maxDiscountPercent(), cashCloseEmail, quoteValidityDays, quoteTerms, tipPercent,
-                expiryAlertMonths, receiptHeader));
+                expiryAlertMonths, receiptHeader, creditReminder));
     }
 }

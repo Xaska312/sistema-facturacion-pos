@@ -2,9 +2,10 @@ import { Component, HostListener, OnInit, computed, inject, input, signal } from
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
+import { ToastService } from '../../../shared/ui/toast.service';
+import { ButtonComponent } from '../../../shared/ui/button.component';
+import { ButtonLinkComponent } from '../../../shared/ui/button-link.component';
+import { AppInputDirective } from '../../../shared/ui/input.directive';
 import { Observable, forkJoin, tap } from 'rxjs';
 import { Category, ProductModel, ProductVariant, SizeScale, Tax } from '../../../core/api/api.models';
 import { CatalogApi } from '../../../core/api/catalog.api';
@@ -30,7 +31,7 @@ const BARCODE = /^[A-Za-z0-9.-]{1,48}$/;
  */
 @Component({
   selector: 'app-product-model-editor',
-  imports: [ReactiveFormsModule, FormsModule, RouterLink, ButtonModule, InputTextModule, PesosInputDirective,
+  imports: [ReactiveFormsModule, FormsModule, RouterLink, ButtonComponent, ButtonLinkComponent, AppInputDirective, PesosInputDirective,
     PageHeaderComponent, StatusBadgeComponent, FormDialogComponent, SizePickerComponent],
   template: `
     <app-page-header [title]="isNew() ? 'Nuevo modelo con tallas' : (model()?.name ?? 'Modelo')"
@@ -38,12 +39,12 @@ const BARCODE = /^[A-Za-z0-9.-]{1,48}$/;
       @if (model()?.active === false) {
         <app-status-badge status="inactive" />
       }
-      <a pButton routerLink="/app/productos/modelos" label="Volver" icon="pi pi-arrow-left" severity="secondary"
+      <a appButton routerLink="/app/productos/modelos" label="Volver" icon="pi pi-arrow-left" severity="secondary"
          [text]="true"></a>
       @if (model(); as m) {
         @if (canEdit()) {
-          <p-button [label]="m.active ? 'Desactivar' : 'Activar'" [icon]="m.active ? 'pi pi-ban' : 'pi pi-check-circle'"
-                    [severity]="m.active ? 'danger' : 'success'" [outlined]="true" (onClick)="toggleModel(m)" />
+          <app-button [label]="m.active ? 'Desactivar' : 'Activar'" [icon]="m.active ? 'pi pi-ban' : 'pi pi-check-circle'"
+                    [severity]="m.active ? 'danger' : 'success'" [outlined]="true" (clicked)="toggleModel(m)" />
         }
       }
     </app-page-header>
@@ -54,7 +55,7 @@ const BARCODE = /^[A-Za-z0-9.-]{1,48}$/;
           @if (isNew()) {
             <label class="flex flex-col gap-1">
               <span class="text-sm font-medium">Prefijo del SKU</span>
-              <input pInputText formControlName="skuPrefix" class="uppercase" maxlength="20" autocomplete="off" />
+              <input appInput formControlName="skuPrefix" class="uppercase" maxlength="20" autocomplete="off" />
               <small class="text-xs text-muted">Corto, p. ej. RUN. Cada talla queda como RUN-38-NEGRO. No se cambia después.</small>
             </label>
           } @else {
@@ -65,7 +66,7 @@ const BARCODE = /^[A-Za-z0-9.-]{1,48}$/;
           }
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">Nombre</span>
-            <input pInputText formControlName="name" maxlength="140" />
+            <input appInput formControlName="name" maxlength="140" />
             <small class="text-xs text-muted">Sin la talla ni el color: se agregan solos (p. ej. «Tenis Runner T38 Negro»).</small>
           </label>
           <label class="flex flex-col gap-1">
@@ -87,7 +88,7 @@ const BARCODE = /^[A-Za-z0-9.-]{1,48}$/;
           </label>
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">Precio de venta (al público)</span>
-            <input pInputText appPesos="2" formControlName="salePrice" />
+            <input appInput appPesos="2" formControlName="salePrice" />
             @if (Number(form.controls.salePrice.value) >= 1) {
               <small class="text-xs text-muted">{{ formatCop(form.controls.salePrice.value) }} en todas las tallas y colores.</small>
             } @else if (form.controls.salePrice.touched || !isNew()) {
@@ -98,7 +99,7 @@ const BARCODE = /^[A-Za-z0-9.-]{1,48}$/;
           </label>
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">Costo (lo que te cuesta a ti)</span>
-            <input pInputText appPesos="2" formControlName="cost" />
+            <input appInput appPesos="2" formControlName="cost" />
             @if (isNew()) {
               <small class="text-xs text-muted">Lo que pagas al proveedor por unidad. Opcional: también lo puedes poner al cargar el inventario.</small>
             } @else {
@@ -134,7 +135,7 @@ const BARCODE = /^[A-Za-z0-9.-]{1,48}$/;
             </div>
             <label class="flex flex-col gap-1">
               <span class="text-sm font-medium">Colores (opcional)</span>
-              <input pInputText [value]="colorsText()" (input)="setColors($event)"
+              <input appInput [value]="colorsText()" (input)="setColors($event)"
                      placeholder="Negro, Blanco, Azul cielo" autocomplete="off" />
               <small class="text-xs text-muted">Sepáralos con comas. Si lo dejas vacío, solo se crean las tallas.</small>
             </label>
@@ -154,8 +155,8 @@ const BARCODE = /^[A-Za-z0-9.-]{1,48}$/;
 
       @if (canEdit()) {
         <div class="flex justify-end gap-2">
-          <a routerLink="/app/productos/modelos"><p-button label="Cancelar" [text]="true" severity="secondary" /></a>
-          <p-button type="submit" [label]="isNew() ? 'Crear modelo' : 'Guardar cambios'" [loading]="saving()"
+          <a routerLink="/app/productos/modelos"><app-button label="Cancelar" [text]="true" severity="secondary" /></a>
+          <app-button type="submit" [label]="isNew() ? 'Crear modelo' : 'Guardar cambios'" [loading]="saving()"
                     [disabled]="form.invalid || (isNew() && !!preview().problem) || (!isNew() && form.pristine)" />
         </div>
       }
@@ -174,8 +175,8 @@ const BARCODE = /^[A-Za-z0-9.-]{1,48}$/;
             </p>
           </div>
           @if (canEdit() && canAdd() && m.active) {
-            <p-button label="Agregar tallas o colores" icon="pi pi-plus" size="small" [outlined]="true"
-                      (onClick)="openAdd(m)" />
+            <app-button label="Agregar tallas o colores" icon="pi pi-plus" size="small" [outlined]="true"
+                      (clicked)="openAdd(m)" />
           }
         </header>
         <div class="overflow-x-auto">
@@ -227,7 +228,7 @@ const BARCODE = /^[A-Za-z0-9.-]{1,48}$/;
           </div>
           <div class="flex flex-col gap-1">
             <label for="variant-barcode" class="text-sm font-medium">Código de barras</label>
-            <input pInputText id="variant-barcode" class="font-mono" [(ngModel)]="variantBarcode" maxlength="48"
+            <input appInput id="variant-barcode" class="font-mono" [(ngModel)]="variantBarcode" maxlength="48"
                    autocomplete="off" />
             <small class="text-xs text-muted">Escanea aquí el código que trae el producto del proveedor; reemplaza al interno.</small>
           </div>
@@ -251,7 +252,7 @@ const BARCODE = /^[A-Za-z0-9.-]{1,48}$/;
           @if (m.colors.length > 0) {
             <div class="flex flex-col gap-1">
               <label for="add-colors" class="text-sm font-medium">Colores nuevos</label>
-              <input pInputText id="add-colors" [(ngModel)]="addColorsTextValue" placeholder="Rojo, Gris"
+              <input appInput id="add-colors" [(ngModel)]="addColorsTextValue" placeholder="Rojo, Gris"
                      autocomplete="off" />
               <small class="text-xs text-muted">Ya tiene: {{ m.colors.join(', ') }}. Los colores nuevos se crean en todas las tallas.</small>
             </div>
@@ -271,7 +272,7 @@ export class ProductModelEditorComponent implements OnInit, HasUnsavedChanges {
   private readonly fb = inject(FormBuilder);
   private readonly api = inject(CatalogApi);
   private readonly router = inject(Router);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   private readonly confirm = inject(ConfirmService);
   protected readonly canEdit = permissionFlag('products:manage');
   /** Con Tallas y colores apagado (Fase 12a) el modelo se edita, pero no se le agregan tallas ni colores. */

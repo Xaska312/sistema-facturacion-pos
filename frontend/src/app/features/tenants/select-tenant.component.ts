@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { TenantSummary } from '../../core/api/api.models';
 import { AuthService } from '../../core/auth/auth.service';
 import { isTenantPage, safeReturnUrl } from '../../core/auth/return-url';
@@ -21,7 +21,7 @@ const STATUS_LABEL: Record<TenantSummary['status'], string> = {
 
 @Component({
   selector: 'app-select-tenant',
-  imports: [RouterLink, ButtonModule, VerifyEmailBannerComponent, AuthLayoutComponent, XIconComponent],
+  imports: [RouterLink, ButtonComponent, VerifyEmailBannerComponent, AuthLayoutComponent, XIconComponent],
   template: `
     <app-auth-layout width="lg">
       <section class="flex flex-col gap-4">
@@ -30,7 +30,7 @@ const STATUS_LABEL: Record<TenantSummary['status'], string> = {
             <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Hola, {{ auth.user()?.fullName }}</h1>
             <p class="text-muted mt-1">Elige el negocio con el que vas a trabajar</p>
           </div>
-          <p-button label="Salir" icon="pi pi-sign-out" [text]="true" severity="secondary" (onClick)="logout()" />
+          <app-button label="Salir" icon="pi pi-sign-out" [text]="true" severity="secondary" (clicked)="logout()" />
         </header>
 
         <app-verify-email-banner />
@@ -50,10 +50,10 @@ const STATUS_LABEL: Record<TenantSummary['status'], string> = {
                 }
               </div>
               @if (tenant.status === 'ACTIVE') {
-                <p-button label="Entrar" icon="pi pi-arrow-right" iconPos="right" [loading]="selecting() === tenant.id"
-                          (onClick)="select(tenant)" />
+                <app-button label="Entrar" icon="pi pi-arrow-right" iconPos="right" [loading]="selecting() === tenant.id"
+                          (clicked)="select(tenant)" />
               } @else if (tenant.status === 'FAILED' && tenant.owner) {
-                <p-button label="Reintentar" severity="warn" [loading]="selecting() === tenant.id" (onClick)="retry(tenant)" />
+                <app-button label="Reintentar" severity="warn" [loading]="selecting() === tenant.id" (clicked)="retry(tenant)" />
               }
             </li>
           } @empty {

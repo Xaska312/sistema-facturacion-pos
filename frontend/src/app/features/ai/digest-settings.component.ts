@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ToastService } from '../../shared/ui/toast.service';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { AccessApi } from '../../core/api/access.api';
 import { AiApi, DigestSettings } from '../../core/api/ai.api';
 import { Member } from '../../core/api/api.models';
@@ -13,7 +13,7 @@ import { XaskaIaLogoComponent } from '../../shared/brand/xaska-ia-logo.component
  */
 @Component({
   selector: 'app-digest-settings',
-  imports: [FormsModule, ButtonModule, XaskaIaLogoComponent],
+  imports: [FormsModule, ButtonComponent, XaskaIaLogoComponent],
   template: `
     <section class="card p-4 md:p-6 mt-6 max-w-2xl flex flex-col gap-4" aria-labelledby="digest-settings-title">
       <div class="flex items-center gap-4">
@@ -49,8 +49,8 @@ import { XaskaIaLogoComponent } from '../../shared/brand/xaska-ia-logo.component
           <p class="text-xs text-muted">El propietario siempre lo recibe. Cada persona solo ve lo que su rol le deja ver.</p>
         </fieldset>
         <div class="flex flex-wrap items-center gap-2">
-          <p-button label="Guardar" icon="pi pi-check" [loading]="saving()" (onClick)="save(f)" />
-          <p-button label="Enviar ahora" icon="pi pi-send" [outlined]="true" [loading]="running()" (onClick)="run()" />
+          <app-button label="Guardar" icon="pi pi-check" [loading]="saving()" (clicked)="save(f)" />
+          <app-button label="Enviar ahora" icon="pi pi-send" [outlined]="true" [loading]="running()" (clicked)="run()" />
           <span class="text-xs text-muted ml-auto">{{ f.used }} de {{ f.limit }} resúmenes este mes</span>
         </div>
       } @else {
@@ -62,7 +62,7 @@ import { XaskaIaLogoComponent } from '../../shared/brand/xaska-ia-logo.component
 export class DigestSettingsComponent implements OnInit {
   private readonly api = inject(AiApi);
   private readonly access = inject(AccessApi);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
 
   protected readonly form = signal<DigestSettings | null>(null);
   protected readonly others = signal<Member[]>([]);

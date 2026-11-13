@@ -1,11 +1,12 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
-import { SkeletonModule } from 'primeng/skeleton';
+import { ToastService } from '../../shared/ui/toast.service';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
+import { DialogComponent } from '../../shared/ui/dialog.component';
+import { AppInputDirective } from '../../shared/ui/input.directive';
+import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { Observable, catchError, concatMap, from, last, of } from 'rxjs';
 import { BranchOption, DiningApi, DiningTable, DiningZone, RegisterOption } from '../../core/api/dining.api';
 import { problemMessage } from '../../core/errors/problem';
@@ -33,16 +34,16 @@ export function nextTableNames(existing: readonly string[], fromNumber: number, 
  */
 @Component({
   selector: 'app-dining-setup',
-  imports: [FormsModule, RouterLink, ButtonModule, InputTextModule, SkeletonModule, PageHeaderComponent,
-    FormDialogComponent, EmptyStateComponent, DialogModule, LayoutEditorComponent],
+  imports: [FormsModule, RouterLink, ButtonComponent, ButtonLinkComponent, AppInputDirective, SkeletonComponent, PageHeaderComponent,
+    FormDialogComponent, EmptyStateComponent, DialogComponent, LayoutEditorComponent],
   template: `
     <app-page-header title="Configurar mesas" description="Zonas de tu local y sus mesas. El nombre de la mesa es el que ve el mesero (4, Barra 2, Terraza A).">
-      <a pButton routerLink="/app/mesas" label="Ver el salón" icon="pi pi-arrow-left" severity="secondary" [outlined]="true"></a>
+      <a appButton routerLink="/app/mesas" label="Ver el salón" icon="pi pi-arrow-left" severity="secondary" [outlined]="true"></a>
       @if (zoneRegisters()) {
-        <a pButton routerLink="/app/mesas/cartas" label="Cartas por piso" icon="pi pi-book" severity="secondary"
+        <a appButton routerLink="/app/mesas/cartas" label="Cartas por piso" icon="pi pi-book" severity="secondary"
            [outlined]="true"></a>
       }
-      <p-button label="Nueva zona" icon="pi pi-plus" (onClick)="openZone(null)" />
+      <app-button label="Nueva zona" icon="pi pi-plus" (clicked)="openZone(null)" />
     </app-page-header>
 
     @if (branches().length > 1) {
@@ -73,12 +74,12 @@ export function nextTableNames(existing: readonly string[], fromNumber: number, 
                 }
               </div>
               <div class="flex flex-wrap gap-2">
-                <p-button label="Agregar mesas" icon="pi pi-plus" size="small" [outlined]="true" (onClick)="openBulk(z)" />
+                <app-button label="Agregar mesas" icon="pi pi-plus" size="small" [outlined]="true" (clicked)="openBulk(z)" />
                 @if (z.tables.length > 0) {
-                  <p-button label="Plano" icon="pi pi-map" size="small" [outlined]="true" (onClick)="layoutZone.set(z)" />
+                  <app-button label="Plano" icon="pi pi-map" size="small" [outlined]="true" (clicked)="layoutZone.set(z)" />
                 }
-                <p-button icon="pi pi-pencil" size="small" [text]="true" severity="secondary" [ariaLabel]="'Editar zona ' + z.name"
-                          (onClick)="openZone(z)" />
+                <app-button icon="pi pi-pencil" size="small" [text]="true" severity="secondary" [ariaLabel]="'Editar zona ' + z.name"
+                          (clicked)="openZone(z)" />
               </div>
             </div>
             @if (z.tables.length === 0) {
@@ -99,27 +100,27 @@ export function nextTableNames(existing: readonly string[], fromNumber: number, 
         }
       </div>
     } @else {
-      <p-skeleton height="10rem" borderRadius="1.25rem" />
+      <app-skeleton height="10rem" borderRadius="1.25rem" />
     }
 
-    <p-dialog [visible]="layoutZone() !== null" (visibleChange)="$event || layoutZone.set(null)" [modal]="true"
+    <app-dialog [visible]="layoutZone() !== null" (visibleChange)="$event || layoutZone.set(null)" [modal]="true"
               [header]="'Plano de ' + (layoutZone()?.name ?? '')" [style]="{ width: '60rem' }" [breakpoints]="{ '960px': '100vw' }">
       @if (layoutZone(); as lz) {
         <app-layout-editor [zone]="lz" (saved)="load(); layoutZone.set(null)" (closed)="layoutZone.set(null)" />
       }
-    </p-dialog>
+    </app-dialog>
 
     <app-form-dialog [(visible)]="zoneOpen" [header]="editingZone() ? 'Editar zona' : 'Nueva zona'" width="26rem"
                      [dirty]="true" [invalidMessage]="zoneName.trim() ? null : 'Escribe el nombre de la zona.'"
                      [save]="zoneRequest" [successMessage]="editingZone() ? 'Zona guardada' : 'Zona creada'" (saved)="load()">
       <div class="flex flex-col gap-1">
         <label for="zone-name" class="text-sm font-semibold">Nombre</label>
-        <input pInputText id="zone-name" maxlength="40" placeholder="Salón, Terraza, Barra" [(ngModel)]="zoneName" />
+        <input appInput id="zone-name" maxlength="40" placeholder="Salón, Terraza, Barra" [(ngModel)]="zoneName" />
       </div>
       @if (editingZone()) {
         <div class="flex flex-col gap-1">
           <label for="zone-position" class="text-sm font-semibold">Orden</label>
-          <input pInputText id="zone-position" type="number" min="0" max="1000" [(ngModel)]="zonePosition" />
+          <input appInput id="zone-position" type="number" min="0" max="1000" [(ngModel)]="zonePosition" />
         </div>
         <label class="flex items-center gap-2 text-sm">
           <input type="checkbox" class="size-4" [(ngModel)]="zoneActive" />Activa (sale en el salón)
@@ -147,16 +148,16 @@ export function nextTableNames(existing: readonly string[], fromNumber: number, 
       <div class="grid grid-cols-2 gap-3">
         <div class="flex flex-col gap-1">
           <label for="bulk-from" class="text-sm font-semibold">Desde el número</label>
-          <input pInputText id="bulk-from" type="number" min="1" [(ngModel)]="bulkFrom" />
+          <input appInput id="bulk-from" type="number" min="1" [(ngModel)]="bulkFrom" />
         </div>
         <div class="flex flex-col gap-1">
           <label for="bulk-count" class="text-sm font-semibold">Cuántas</label>
-          <input pInputText id="bulk-count" type="number" min="1" max="50" [(ngModel)]="bulkCount" />
+          <input appInput id="bulk-count" type="number" min="1" max="50" [(ngModel)]="bulkCount" />
         </div>
       </div>
       <div class="flex flex-col gap-1">
         <label for="bulk-seats" class="text-sm font-semibold">Puestos de cada una <span class="font-normal text-muted">(opcional)</span></label>
-        <input pInputText id="bulk-seats" type="number" min="1" max="99" [(ngModel)]="bulkSeats" />
+        <input appInput id="bulk-seats" type="number" min="1" max="99" [(ngModel)]="bulkSeats" />
       </div>
     </app-form-dialog>
 
@@ -165,12 +166,12 @@ export function nextTableNames(existing: readonly string[], fromNumber: number, 
                      successMessage="Mesa guardada" (saved)="load()">
       <div class="flex flex-col gap-1">
         <label for="table-name" class="text-sm font-semibold">Nombre</label>
-        <input pInputText id="table-name" maxlength="20" [(ngModel)]="tableName" />
+        <input appInput id="table-name" maxlength="20" [(ngModel)]="tableName" />
       </div>
       <div class="grid grid-cols-2 gap-3">
         <div class="flex flex-col gap-1">
           <label for="table-seats" class="text-sm font-semibold">Puestos</label>
-          <input pInputText id="table-seats" type="number" min="1" max="99" [(ngModel)]="tableSeats" />
+          <input appInput id="table-seats" type="number" min="1" max="99" [(ngModel)]="tableSeats" />
         </div>
         <div class="flex flex-col gap-1">
           <label for="table-zone" class="text-sm font-semibold">Zona</label>
@@ -208,7 +209,7 @@ export function nextTableNames(existing: readonly string[], fromNumber: number, 
 })
 export class DiningSetupComponent implements OnInit {
   private readonly api = inject(DiningApi);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   private readonly auth = inject(AuthService);
 
   protected readonly branches = signal<BranchOption[]>([]);

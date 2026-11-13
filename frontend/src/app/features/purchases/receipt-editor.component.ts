@@ -8,9 +8,10 @@ import { Component, ElementRef, HostListener, OnInit, computed, inject, signal, 
 import { forkJoin } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
+import { ToastService } from '../../shared/ui/toast.service';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { CREDIT_METHOD_CODE, DEPOSIT_METHOD_CODE, Branch, Party, PaymentMethod, Product } from '../../core/api/api.models';
 import { CashApi } from '../../core/api/cash.api';
 import { CatalogApi } from '../../core/api/catalog.api';
@@ -65,7 +66,7 @@ import {
  */
 @Component({
   selector: 'app-receipt-editor',
-  imports: [XaskaIaLogoComponent, AskaLoaderComponent, InvoiceNewProductsComponent, AskaNudgeComponent, FormsModule, RouterLink, ButtonModule, InputTextModule, PageHeaderComponent, PesosInputDirective],
+  imports: [XaskaIaLogoComponent, AskaLoaderComponent, InvoiceNewProductsComponent, AskaNudgeComponent, FormsModule, RouterLink, ButtonComponent, ButtonLinkComponent, AppInputDirective, PageHeaderComponent, PesosInputDirective],
   template: `
     <app-page-header title="Recibir mercancía"
                      description="Registra lo que llegó contra la factura del proveedor. Revisa cada producto antes de aceptarlo." />
@@ -106,15 +107,15 @@ import {
                  accept="image/jpeg,image/png,application/pdf,.pdf" (change)="scanInvoice($event)" />
           <div class="flex flex-wrap gap-2">
             @if (canScan()) {
-              <p-button label="Tomar foto" icon="pi pi-camera" [loading]="scanning()"
-                        [disabled]="busy() || scanLimitReached()" (onClick)="cameraFile.click()" />
-              <p-button label="Fotos o PDF" icon="pi pi-images" [outlined]="true"
-                        [disabled]="busy() || scanLimitReached()" (onClick)="scanFile.click()" />
+              <app-button label="Tomar foto" icon="pi pi-camera" [loading]="scanning()"
+                        [disabled]="busy() || scanLimitReached()" (clicked)="cameraFile.click()" />
+              <app-button label="Fotos o PDF" icon="pi pi-images" [outlined]="true"
+                        [disabled]="busy() || scanLimitReached()" (clicked)="scanFile.click()" />
             }
             @if (canImport()) {
-              <p-button [label]="canScan() ? 'XML' : draft() ? 'Cargar otra' : 'Cargar factura'" icon="pi pi-upload"
+              <app-button [label]="canScan() ? 'XML' : draft() ? 'Cargar otra' : 'Cargar factura'" icon="pi pi-upload"
                         [loading]="importing()" [disabled]="scanning()" [outlined]="draft() !== null || canScan()"
-                        (onClick)="invoiceFile.click()" />
+                        (clicked)="invoiceFile.click()" />
             }
           </div>
         </div>
@@ -135,7 +136,7 @@ import {
               <span class="flex-1 min-w-48">{{ d.supplier.name || 'El proveedor' }} (NIT {{ d.supplier.documentNumber }})
                 no está en tus proveedores.</span>
               @if (canManageParties()) {
-                <p-button label="Crear proveedor" size="small" [loading]="creatingSupplier()" (onClick)="createSupplier()" />
+                <app-button label="Crear proveedor" size="small" [loading]="creatingSupplier()" (clicked)="createSupplier()" />
               } @else {
                 <span>Pídele a quien maneja los proveedores que lo registre.</span>
               }
@@ -159,13 +160,13 @@ import {
             <span class="pi pi-truck text-muted" aria-hidden="true"></span>
             <span class="font-medium">{{ s.displayName }}</span>
             <span class="text-sm text-muted">{{ docShort(s.documentType) }} {{ s.formattedDocument }}</span>
-            <p-button label="Cambiar" size="small" [text]="true" (onClick)="supplier.set(null)" />
+            <app-button label="Cambiar" size="small" [text]="true" (clicked)="supplier.set(null)" />
           </div>
         } @else {
           <form class="flex gap-2" (ngSubmit)="searchSuppliers()">
-            <input pInputText name="supplierSearch" class="flex-1" [(ngModel)]="supplierText"
+            <input appInput name="supplierSearch" class="flex-1" [(ngModel)]="supplierText"
                    aria-label="Buscar proveedor" placeholder="Nombre o NIT del proveedor" />
-            <p-button type="submit" label="Buscar" [loading]="searchingSuppliers()" />
+            <app-button type="submit" label="Buscar" [loading]="searchingSuppliers()" />
           </form>
           @if (supplierResults().length > 0) {
             <ul class="border rounded divide-y text-sm max-h-60 overflow-y-auto">
@@ -187,7 +188,7 @@ import {
 
       <label class="flex flex-col gap-1">
         <span class="text-sm font-medium">Número de la factura</span>
-        <input pInputText maxlength="40" class="uppercase" [(ngModel)]="invoice" placeholder="FV-12345" />
+        <input appInput maxlength="40" class="uppercase" [(ngModel)]="invoice" placeholder="FV-12345" />
       </label>
       <label class="flex flex-col gap-1">
         <span class="text-sm font-medium">Fecha de la factura</span>
@@ -207,9 +208,9 @@ import {
     <section class="card p-4 mt-4 max-w-5xl flex flex-col gap-3">
       <h2 class="font-bold tracking-tight">Lo que llegó</h2>
       <div class="flex flex-wrap gap-2 items-center">
-        <input pInputText class="flex-1 min-w-64" placeholder="Escanea el código o escribe SKU/nombre y presiona Enter"
+        <input appInput class="flex-1 min-w-64" placeholder="Escanea el código o escribe SKU/nombre y presiona Enter"
                aria-label="Agregar producto" [(ngModel)]="code" (keyup.enter)="add()" />
-        <p-button label="Agregar" [loading]="adding()" (onClick)="add()" />
+        <app-button label="Agregar" [loading]="adding()" (clicked)="add()" />
       </div>
       @if (results().length > 0) {
         <ul class="border rounded divide-y text-sm max-h-60 overflow-y-auto">
@@ -231,9 +232,9 @@ import {
           <div class="flex flex-wrap items-center gap-2">
             <h3 class="text-sm font-semibold flex-1">Sin producto en XASKA ({{ pending().length }})</h3>
             @if (canCreateProducts() && !creatingMissing()) {
-              <p-button size="small" icon="pi pi-plus-circle"
+              <app-button size="small" icon="pi pi-plus-circle"
                         [label]="pending().length === 1 ? 'Crearlo aquí' : 'Crear los ' + pending().length + ' que faltan'"
-                        (onClick)="creatingMissing.set(true)" />
+                        (clicked)="creatingMissing.set(true)" />
             }
           </div>
           <p class="text-xs text-muted">Elige a qué producto corresponde cada uno o créalo. XASKA lo recordará para la
@@ -251,14 +252,14 @@ import {
               </div>
               <div class="flex flex-wrap gap-2 items-center">
                 @for (c of p.candidates; track c.productId) {
-                  <p-button size="small" [outlined]="true" [label]="'¿Es ' + c.name + '?'" (onClick)="assignCandidate(i, c.productId)" />
+                  <app-button size="small" [outlined]="true" [label]="'¿Es ' + c.name + '?'" (clicked)="assignCandidate(i, c.productId)" />
                 }
-                <p-button size="small" [text]="true" label="Buscar otro" icon="pi pi-search" (onClick)="startAssign(i)" />
+                <app-button size="small" [text]="true" label="Buscar otro" icon="pi pi-search" (clicked)="startAssign(i)" />
                 @if (canCreateProducts()) {
-                  <a pButton class="p-button-sm" [text]="true" label="Crear producto" icon="pi pi-plus" target="_blank" rel="noopener"
+                  <a appButton size="small" [text]="true" label="Crear producto" icon="pi pi-plus" target="_blank" rel="noopener"
                      routerLink="/app/productos/nuevo" [queryParams]="newProductParams(p)"></a>
                 }
-                <p-button size="small" [text]="true" severity="danger" label="No lo recibo" (onClick)="dropPending(i)" />
+                <app-button size="small" [text]="true" severity="danger" label="No lo recibo" (clicked)="dropPending(i)" />
               </div>
             </article>
           }
@@ -292,14 +293,14 @@ import {
               }
             </span>
             <span class="flex gap-1">
-              <p-button [label]="line.rejected ? 'Aceptar' : 'Rechazar'" size="small" [text]="true"
-                        [severity]="line.rejected ? 'success' : 'warn'" (onClick)="toggleReject(i)" />
-              <p-button label="Quitar" size="small" [text]="true" severity="danger" (onClick)="remove(i)" />
+              <app-button [label]="line.rejected ? 'Aceptar' : 'Rechazar'" size="small" [text]="true"
+                        [severity]="line.rejected ? 'success' : 'warn'" (clicked)="toggleReject(i)" />
+              <app-button label="Quitar" size="small" [text]="true" severity="danger" (clicked)="remove(i)" />
             </span>
           </div>
           <label class="flex flex-col gap-1 md:col-span-2">
             <span class="text-xs font-medium">Cantidad</span>
-            <input pInputText type="number" min="0" step="any" [(ngModel)]="line.quantity" (ngModelChange)="touch()" />
+            <input appInput type="number" min="0" step="any" [(ngModel)]="line.quantity" (ngModelChange)="touch()" />
           </label>
           <label class="flex flex-col gap-1 md:col-span-2">
             <span class="text-xs font-medium">Presentación</span>
@@ -311,22 +312,22 @@ import {
           </label>
           <label class="flex flex-col gap-1 md:col-span-2">
             <span class="text-xs font-medium">Costo sin IVA</span>
-            <input pInputText appPesos="2" [(ngModel)]="line.unitCost" (ngModelChange)="touch()" />
+            <input appInput appPesos="2" [(ngModel)]="line.unitCost" (ngModelChange)="touch()" />
           </label>
           <label class="flex flex-col gap-1 md:col-span-1">
             <span class="text-xs font-medium">IVA %</span>
-            <input pInputText type="number" min="0" max="100" step="1" [(ngModel)]="line.taxRate" (ngModelChange)="touch()" />
+            <input appInput type="number" min="0" max="100" step="1" [(ngModel)]="line.taxRate" (ngModelChange)="touch()" />
           </label>
           @if (line.rejected) {
             <label class="flex flex-col gap-1 md:col-span-3">
               <span class="text-xs font-medium">Por qué lo rechazas</span>
-              <input pInputText maxlength="200" [(ngModel)]="line.rejectReason" (ngModelChange)="touch()"
+              <input appInput maxlength="200" [(ngModel)]="line.rejectReason" (ngModelChange)="touch()"
                      placeholder="Empaque roto, vencido, no coincide con la factura…" />
             </label>
           } @else {
             <label class="flex flex-col gap-1 md:col-span-2">
               <span class="text-xs font-medium">Lote{{ line.tracksLots ? '' : ' (opcional)' }}</span>
-              <input pInputText maxlength="40" class="uppercase" [(ngModel)]="line.lotNumber" (ngModelChange)="touch()" />
+              <input appInput maxlength="40" class="uppercase" [(ngModel)]="line.lotNumber" (ngModelChange)="touch()" />
             </label>
             <label class="flex flex-col gap-1 md:col-span-1">
               <span class="text-xs font-medium">Vence</span>
@@ -354,7 +355,7 @@ import {
       @if (coldNeeded()) {
         <label class="flex flex-col gap-1 max-w-xs">
           <span class="text-sm font-medium">Temperatura de los productos de nevera (°C)</span>
-          <input pInputText type="number" step="0.1" [min]="coldMin" [max]="coldMax" [(ngModel)]="temperature" (ngModelChange)="touch()" />
+          <input appInput type="number" step="0.1" [min]="coldMin" [max]="coldMax" [(ngModel)]="temperature" (ngModelChange)="touch()" />
           <small class="text-xs text-muted">Mídela al abrir el empaque. Debe estar entre 2 y 8 °C; si no, rechaza esos productos.</small>
         </label>
       }
@@ -406,7 +407,7 @@ import {
         @if (selectedMethod() && !selectedMethod()!.affectsCash) {
           <label class="flex flex-col gap-1">
             <span class="text-xs font-medium">Referencia (opcional)</span>
-            <input pInputText maxlength="100" [(ngModel)]="reference" />
+            <input appInput maxlength="100" [(ngModel)]="reference" />
           </label>
         }
       } @else {
@@ -417,7 +418,7 @@ import {
       }
       <label class="flex flex-col gap-1 md:col-span-3">
         <span class="text-xs font-medium">Notas (opcional)</span>
-        <input pInputText maxlength="500" [(ngModel)]="notes" placeholder="Quién entregó, novedades, pedido incompleto…" />
+        <input appInput maxlength="500" [(ngModel)]="notes" placeholder="Quién entregó, novedades, pedido incompleto…" />
       </label>
     </section>
 
@@ -428,9 +429,9 @@ import {
       @if (problem(); as message) {
         <span class="text-sm text-warning basis-full text-right" role="status">{{ message }}</span>
       }
-      <a pButton routerLink="/app/compras" label="Cancelar" [text]="true" severity="secondary"></a>
-      <p-button label="Registrar recepción" icon="pi pi-check" [loading]="saving()" [disabled]="problem() !== null"
-                (onClick)="save()" />
+      <a appButton routerLink="/app/compras" label="Cancelar" [text]="true" severity="secondary"></a>
+      <app-button label="Registrar recepción" icon="pi pi-check" [loading]="saving()" [disabled]="problem() !== null"
+                (clicked)="save()" />
     </div>
   `,
   styles: `
@@ -452,7 +453,7 @@ export class ReceiptEditorComponent implements OnInit, HasUnsavedChanges {
   private readonly organization = inject(OrganizationApi);
   private readonly parties = inject(PartiesApi);
   private readonly cash = inject(CashApi);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   private readonly router = inject(Router);
   private readonly confirm = inject(ConfirmService);
   protected readonly canPay = permissionFlag('purchases:pay');

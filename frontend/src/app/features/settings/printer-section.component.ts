@@ -1,13 +1,14 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ToastService } from '../../shared/ui/toast.service';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 import { AuthService } from '../../core/auth/auth.service';
 import { CashDrawerService } from '../../core/printing/cash-drawer.service';
 import { testPageBytes } from '../../core/printing/escpos';
 import { printableLogo } from '../../core/printing/printable-logo';
 import { BrandingService } from '../../core/theme/branding.service';
-import { AGENT_DOWNLOAD, PrintAgentService } from '../../core/printing/print-agent.service';
+import { AGENT_DOWNLOAD, DRAWER_KEYS, PrintAgentService } from '../../core/printing/print-agent.service';
 import { ReceiptWidth, loadReceiptWidth, saveReceiptWidth } from '../../shared/receipt/receipt-prefs';
 
 /**
@@ -17,7 +18,7 @@ import { ReceiptWidth, loadReceiptWidth, saveReceiptWidth } from '../../shared/r
  */
 @Component({
   selector: 'app-printer-section',
-  imports: [FormsModule, ButtonModule],
+  imports: [FormsModule, ButtonComponent, ButtonLinkComponent],
   template: `
     <section class="card p-4 md:p-6 mt-6 flex flex-col gap-4 max-w-2xl" aria-labelledby="printer-title">
       <header>
@@ -43,9 +44,9 @@ import { ReceiptWidth, loadReceiptWidth, saveReceiptWidth } from '../../shared/r
                 dispositivos de este equipo, toca "Permitir".</li>
             </ol>
             <div class="flex flex-wrap gap-2">
-              <a pButton [href]="download" download label="Descargar XASKA Impresora" icon="pi pi-download"></a>
-              <p-button label="Buscar de nuevo" icon="pi pi-refresh" severity="secondary" [outlined]="true"
-                        (onClick)="agent.check()" />
+              <a appButton [href]="download" download label="Descargar XASKA Impresora" icon="pi pi-download"></a>
+              <app-button label="Buscar de nuevo" icon="pi pi-refresh" severity="secondary" [outlined]="true"
+                        (clicked)="agent.check()" />
             </div>
           </div>
         }
@@ -87,6 +88,20 @@ import { ReceiptWidth, loadReceiptWidth, saveReceiptWidth } from '../../shared/r
             <span>Abrir el cajón al cobrar en efectivo <span class="text-muted">(con tarjeta o transferencia no se abre;
               volver a imprimir un tiquete tampoco)</span></span>
           </label>
+          @if (canDrawer()) {
+            <label class="flex flex-wrap items-center gap-2">
+              <span>Tecla para abrir el cajón en Vender</span>
+              <select class="w-auto" [ngModel]="agent.prefs().drawerKey" (ngModelChange)="agent.update({ drawerKey: $event })"
+                      aria-describedby="drawer-key-help">
+                @for (k of drawerKeys; track k) {
+                  <option [ngValue]="k">{{ k }}</option>
+                }
+                <option [ngValue]="''">Ninguna</option>
+              </select>
+              <span id="drawer-key-help" class="text-muted">(solo en este equipo; queda en la auditoría como el botón
+                "Abrir cajón")</span>
+            </label>
+          }
           <label class="flex items-start gap-2">
             <input type="checkbox" class="size-4 mt-0.5" [ngModel]="agent.prefs().plain"
                    (ngModelChange)="agent.update({ plain: $event })" />
@@ -94,13 +109,13 @@ import { ReceiptWidth, loadReceiptWidth, saveReceiptWidth } from '../../shared/r
           </label>
         </div>
         <div class="flex flex-wrap gap-2">
-          <p-button label="Imprimir prueba" icon="pi pi-print" severity="secondary" [outlined]="true"
-                    [loading]="busy() === 'test'" (onClick)="test()" />
+          <app-button label="Imprimir prueba" icon="pi pi-print" severity="secondary" [outlined]="true"
+                    [loading]="busy() === 'test'" (clicked)="test()" />
           @if (canDrawer()) {
-            <p-button label="Probar el cajón" icon="pi pi-inbox" severity="secondary" [outlined]="true"
-                      [loading]="busy() === 'drawer'" (onClick)="drawer()" />
+            <app-button label="Probar el cajón" icon="pi pi-inbox" severity="secondary" [outlined]="true"
+                      [loading]="busy() === 'drawer'" (clicked)="drawer()" />
           }
-          <p-button label="Buscar de nuevo" icon="pi pi-refresh" severity="secondary" [text]="true" (onClick)="agent.check()" />
+          <app-button label="Buscar de nuevo" icon="pi pi-refresh" severity="secondary" [text]="true" (clicked)="agent.check()" />
         </div>
       }
     </section>
@@ -115,12 +130,13 @@ export class PrinterSectionComponent implements OnInit {
   protected readonly agent = inject(PrintAgentService);
   private readonly drawerService = inject(CashDrawerService);
   private readonly auth = inject(AuthService);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   private readonly brandLogo = inject(BrandingService).logo;
 
   protected readonly download = AGENT_DOWNLOAD;
   protected readonly width = signal<ReceiptWidth>(loadReceiptWidth());
   protected readonly busy = signal<'test' | 'drawer' | null>(null);
+  protected readonly drawerKeys = DRAWER_KEYS;
   protected readonly canDrawer = computed(() => this.auth.hasPermission('cash:drawer'));
 
   ngOnInit(): void {

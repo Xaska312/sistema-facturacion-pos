@@ -70,20 +70,60 @@ export function whatsAppNumber(phone: string | null | undefined): string | null 
   return digits.length >= 11 ? digits : null;
 }
 
-/** Mensaje amable para recordar el saldo. */
-export function reminderMessage(account: Pick<CreditAccount, 'name' | 'balance' | 'oldestDebtAt'>,
-                                businessName: string): string {
+/**
+ * Variables del recordatorio que el dueño escribe en Ajustes (decisión 344). Se reemplazan sin importar
+ * mayúsculas: {Cliente} también sirve.
+ */
+export const REMINDER_VARIABLES: readonly { key: string; meaning: string }[] = [
+  { key: '{cliente}', meaning: 'primer nombre del cliente' },
+  { key: '{saldo}', meaning: 'lo que debe, en pesos' },
+  { key: '{negocio}', meaning: 'nombre del negocio' },
+  { key: '{desde}', meaning: 'fecha de la deuda más antigua' },
+  { key: '{dias}', meaning: 'días que lleva debiendo' },
+];
+
+/** El mensaje de siempre, escrito con las variables: es el que se ofrece para editar y el de "Restaurar". */
+export const DEFAULT_REMINDER = 'Hola {cliente}, te saludamos de {negocio}. Te recordamos que tienes un saldo de '
+  + '{saldo}, pendiente desde el {desde}. Puedes abonar cuando quieras. ¡Gracias!';
+
+export const MAX_REMINDER = 500;
+
+/** Es el mensaje de siempre (vacío o igual al texto por defecto, sin contar espacios de los extremos). */
+export function isDefaultReminder(template: string | null | undefined): boolean {
+  const t = (template ?? '').trim();
+  return t === '' || t === DEFAULT_REMINDER;
+}
+
+type ReminderAccount = Pick<CreditAccount, 'name' | 'balance' | 'oldestDebtAt'>;
+
+/**
+ * Mensaje amable para recordar el saldo. Con {@code template} vacío sale el de siempre (sin "pendiente desde" si no
+ * se sabe la fecha); con uno propio se reemplazan las variables.
+ */
+export function reminderMessage(account: ReminderAccount, businessName: string, template = '',
+                                now: Date = new Date()): string {
   const firstName = account.name.trim().split(/\s+/)[0] ?? '';
-  const since = account.oldestDebtAt ? `, pendiente desde el ${formatDate(account.oldestDebtAt)}` : '';
-  return `Hola ${firstName}, te saludamos de ${businessName}. Te recordamos que tienes un saldo de `
-    + `${formatCop(account.balance)}${since}. Puedes abonar cuando quieras. ¡Gracias!`;
+  if (!template.trim()) {
+    const since = account.oldestDebtAt ? `, pendiente desde el ${formatDate(account.oldestDebtAt)}` : '';
+    return `Hola ${firstName}, te saludamos de ${businessName}. Te recordamos que tienes un saldo de `
+      + `${formatCop(account.balance)}${since}. Puedes abonar cuando quieras. ¡Gracias!`;
+  }
+  const values: Record<string, string> = {
+    cliente: firstName,
+    saldo: formatCop(account.balance),
+    negocio: businessName,
+    desde: account.oldestDebtAt ? formatDate(account.oldestDebtAt) : 'hoy',
+    dias: String(debtDays(account.oldestDebtAt, now) ?? 0),
+  };
+  return template.trim().replace(/\{(cliente|saldo|negocio|desde|dias|días)\}/gi,
+    (_, name: string) => values[name.toLowerCase().replace('í', 'i')] ?? '');
 }
 
 /** Enlace de WhatsApp con el mensaje listo; sin número, WhatsApp pide elegir el contacto. */
-export function whatsAppLink(account: Pick<CreditAccount, 'name' | 'balance' | 'oldestDebtAt' | 'phone'>,
-                             businessName: string): string {
+export function whatsAppLink(account: ReminderAccount & Pick<CreditAccount, 'phone'>, businessName: string,
+                             template = ''): string {
   const number = whatsAppNumber(account.phone);
-  const text = encodeURIComponent(reminderMessage(account, businessName));
+  const text = encodeURIComponent(reminderMessage(account, businessName, template));
   return number ? `https://wa.me/${number}?text=${text}` : `https://wa.me/?text=${text}`;
 }
 

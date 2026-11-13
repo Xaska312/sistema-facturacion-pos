@@ -1,6 +1,6 @@
 import { Component, inject, model, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { InputTextModule } from 'primeng/inputtext';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable, tap } from 'rxjs';
 import { PurchaseReceipt, PurchasesApi } from '../../core/api/purchases.api';
 import { newIdempotencyKey } from '../../core/api/sales.api';
@@ -14,7 +14,7 @@ import { ReturnDraft, returnDrafts, returnProblem, returnTotal } from './purchas
  */
 @Component({
   selector: 'app-purchase-return-dialog',
-  imports: [FormsModule, InputTextModule, FormDialogComponent],
+  imports: [FormsModule, AppInputDirective, FormDialogComponent],
   template: `
     @if (receipt(); as r) {
       <app-form-dialog [(visible)]="visible" [header]="'Devolver a ' + (r.summary.supplierName ?? 'proveedor')"
@@ -28,14 +28,14 @@ import { ReturnDraft, returnDrafts, returnProblem, returnTotal } from './purchas
               <span>{{ d.productName }}
                 <span class="block text-xs text-muted">{{ d.lotNumber ? 'Lote ' + d.lotNumber + ' · ' : '' }}puedes devolver
                   {{ q(d.max) }} {{ d.unitCode }}</span></span>
-              <input pInputText type="number" min="0" [max]="d.max" step="any" [(ngModel)]="d.quantity"
+              <input appInput type="number" min="0" [max]="d.max" step="any" [(ngModel)]="d.quantity"
                      [attr.aria-label]="'Cantidad a devolver de ' + d.productName" />
             </label>
           }
         </div>
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Motivo</span>
-          <input pInputText maxlength="255" [(ngModel)]="reason"
+          <input appInput maxlength="255" [(ngModel)]="reason"
                  placeholder="Vencido, averiado, retiro del mercado, no era lo pedido…" />
         </label>
         <p class="text-sm text-right">Valor a descontar <strong class="tabular-nums">{{ cop(total()) }}</strong></p>

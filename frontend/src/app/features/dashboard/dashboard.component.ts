@@ -1,8 +1,9 @@
 import { Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
-import { SkeletonModule } from 'primeng/skeleton';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
+import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { forkJoin, map, of } from 'rxjs';
 import { Branch, ReportSummary } from '../../core/api/api.models';
 import { OrganizationApi } from '../../core/api/organization.api';
@@ -47,7 +48,7 @@ interface DashboardView {
  */
 @Component({
   selector: 'app-dashboard',
-  imports: [RouterLink, ButtonModule, SkeletonModule, PeriodFilterComponent, StatCardComponent, ChartComponent,
+  imports: [RouterLink, ButtonComponent, ButtonLinkComponent, SkeletonComponent, PeriodFilterComponent, StatCardComponent, ChartComponent,
     EmptyStateComponent, StockAlertsComponent],
   template: `
     <app-period-filter data-tour="period" [selection]="selection()" [branches]="branches()" [showBranch]="branches().length > 1"
@@ -59,7 +60,7 @@ interface DashboardView {
           <i class="pi pi-cloud text-3xl text-muted" aria-hidden="true"></i>
           <p class="font-semibold">No pudimos cargar el tablero</p>
           <p class="text-sm text-muted">Revisa tu conexión e inténtalo de nuevo.</p>
-          <p-button label="Reintentar" icon="pi pi-refresh" (onClick)="load()" />
+          <app-button label="Reintentar" icon="pi pi-refresh" (clicked)="load()" />
         </div>
       } @else {
       @if (view(); as v) {
@@ -135,22 +136,22 @@ interface DashboardView {
         </div>
 
         <div>
-          <a pButton routerLink="/app/reportes" [queryParams]="reportsParams(null)" label="Ver todos los reportes"
+          <a appButton routerLink="/app/reportes" [queryParams]="reportsParams(null)" label="Ver todos los reportes"
              icon="pi pi-arrow-right" iconPos="right" [text]="true"></a>
         </div>
       } @else {
         <div class="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4" aria-label="Cargando indicadores">
           @for (i of [0, 1, 2, 3]; track i) {
             <div class="card p-4 flex flex-col gap-3">
-              <p-skeleton width="50%" height="0.875rem" />
-              <p-skeleton width="70%" height="1.75rem" />
-              <p-skeleton width="40%" height="0.75rem" />
+              <app-skeleton width="50%" height="0.875rem" />
+              <app-skeleton width="70%" height="1.75rem" />
+              <app-skeleton width="40%" height="0.75rem" />
             </div>
           }
         </div>
         <div class="grid gap-4 lg:grid-cols-3">
-          <div class="card p-4 lg:col-span-2"><p-skeleton height="18rem" /></div>
-          <div class="card p-4"><p-skeleton height="18rem" /></div>
+          <div class="card p-4 lg:col-span-2"><app-skeleton height="18rem" /></div>
+          <div class="card p-4"><app-skeleton height="18rem" /></div>
         </div>
       }
       }

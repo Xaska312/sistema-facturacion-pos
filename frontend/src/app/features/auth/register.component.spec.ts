@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { of } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { RegisterComponent } from './register.component';
@@ -14,7 +14,7 @@ describe('RegisterComponent', () => {
       emailVerified: false }));
     TestBed.configureTestingModule({
       imports: [RegisterComponent],
-      providers: [provideRouter([]), MessageService, { provide: AuthService, useValue: auth }],
+      providers: [provideRouter([]), ToastService, { provide: AuthService, useValue: auth }],
     });
   });
 

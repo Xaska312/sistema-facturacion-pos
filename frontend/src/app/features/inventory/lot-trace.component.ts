@@ -1,8 +1,9 @@
 import { Component, OnInit, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Product } from '../../core/api/api.models';
 import { CatalogApi } from '../../core/api/catalog.api';
 import { InventoryApi, LotTrace } from '../../core/api/inventory.api';
@@ -18,11 +19,11 @@ import { MOVEMENT_LABEL } from './labels';
  */
 @Component({
   selector: 'app-lot-trace',
-  imports: [FormsModule, RouterLink, ButtonModule, InputTextModule, PageHeaderComponent],
+  imports: [FormsModule, RouterLink, ButtonComponent, ButtonLinkComponent, AppInputDirective, PageHeaderComponent],
   template: `
     <app-page-header title="Trazabilidad de un lote"
                      description="De quién lo compraste y a quién se vendió. Úsalo ante una alerta sanitaria o un retiro del mercado.">
-      <a pButton routerLink="/app/inventario/vencimientos" label="Vencimientos" icon="pi pi-arrow-left" [text]="true"
+      <a appButton routerLink="/app/inventario/vencimientos" label="Vencimientos" icon="pi pi-arrow-left" [text]="true"
          severity="secondary"></a>
     </app-page-header>
 
@@ -32,13 +33,13 @@ import { MOVEMENT_LABEL } from './labels';
         @if (product(); as p) {
           <div class="flex flex-wrap items-center gap-2 border rounded-lg px-3 py-2">
             <span class="font-mono text-sm text-muted">{{ p.sku }}</span> {{ p.name }}
-            <p-button label="Cambiar" size="small" [text]="true" (onClick)="product.set(null); trace.set(null)" />
+            <app-button label="Cambiar" size="small" [text]="true" (clicked)="product.set(null); trace.set(null)" />
           </div>
         } @else {
           <form class="flex gap-2" (ngSubmit)="search()">
-            <input pInputText name="productSearch" class="flex-1" [(ngModel)]="text" aria-label="Buscar producto"
+            <input appInput name="productSearch" class="flex-1" [(ngModel)]="text" aria-label="Buscar producto"
                    placeholder="Nombre, SKU o principio activo" />
-            <p-button type="submit" label="Buscar" [loading]="searching()" />
+            <app-button type="submit" label="Buscar" [loading]="searching()" />
           </form>
           @if (results().length > 0) {
             <ul class="border rounded divide-y text-sm max-h-60 overflow-y-auto">
@@ -54,9 +55,9 @@ import { MOVEMENT_LABEL } from './labels';
       <form class="flex gap-2" (ngSubmit)="find()">
         <label class="flex flex-col gap-1 flex-1">
           <span class="text-sm font-medium">Lote</span>
-          <input pInputText name="lot" class="uppercase" maxlength="40" [(ngModel)]="lot" placeholder="L-12345" />
+          <input appInput name="lot" class="uppercase" maxlength="40" [(ngModel)]="lot" placeholder="L-12345" />
         </label>
-        <p-button type="submit" label="Trazar" class="self-end" [disabled]="!product() || !lot.trim()" [loading]="loading()" />
+        <app-button type="submit" label="Trazar" class="self-end" [disabled]="!product() || !lot.trim()" [loading]="loading()" />
       </form>
     </section>
 

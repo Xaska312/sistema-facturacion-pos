@@ -4,7 +4,7 @@ import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testin
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { By } from '@angular/platform-browser';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../ui/toast.service';
 import { Observable, Subject, throwError } from 'rxjs';
 import { ConfirmService } from '../confirm';
 import { FieldErrorComponent } from './field-error.component';
@@ -39,17 +39,17 @@ describe('FormDialogComponent', () => {
   let fixture: ComponentFixture<HostComponent>;
   let host: HostComponent;
   let confirm: jasmine.SpyObj<ConfirmService>;
-  let messages: jasmine.SpyObj<MessageService>;
+  let messages: jasmine.SpyObj<ToastService>;
 
   beforeEach(() => {
     confirm = jasmine.createSpyObj<ConfirmService>('ConfirmService', ['ask']);
-    messages = jasmine.createSpyObj<MessageService>('MessageService', ['add']);
+    messages = jasmine.createSpyObj<ToastService>('ToastService', ['add']);
     TestBed.configureTestingModule({
       imports: [HostComponent],
       providers: [
         provideNoopAnimations(),
         { provide: ConfirmService, useValue: confirm },
-        { provide: MessageService, useValue: messages },
+        { provide: ToastService, useValue: messages },
       ],
     });
     fixture = TestBed.createComponent(HostComponent);

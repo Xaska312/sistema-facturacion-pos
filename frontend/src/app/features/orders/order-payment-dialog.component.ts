@@ -1,6 +1,6 @@
 import { Component, inject, input, model, output, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { InputTextModule } from 'primeng/inputtext';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable, tap } from 'rxjs';
 import { CREDIT_METHOD_CODE, DEPOSIT_METHOD_CODE, Order, PaymentMethod } from '../../core/api/api.models';
 import { CashApi } from '../../core/api/cash.api';
@@ -28,7 +28,7 @@ import {
  */
 @Component({
   selector: 'app-order-payment-dialog',
-  imports: [FormsModule, InputTextModule, PesosInputDirective, FormDialogComponent, WithholdingBoxComponent],
+  imports: [FormsModule, AppInputDirective, PesosInputDirective, FormDialogComponent, WithholdingBoxComponent],
   template: `
     @if (order(); as o) {
       <app-form-dialog [(visible)]="visible" [header]="'Anticipo al pedido ' + o.number" width="28rem"
@@ -76,12 +76,12 @@ import {
                 <span class="text-muted font-normal">(opcional)</span>
               }
             </label>
-            <input pInputText id="order-reference" name="reference" maxlength="60" [(ngModel)]="reference" />
+            <input appInput id="order-reference" name="reference" maxlength="60" [(ngModel)]="reference" />
           </div>
         }
         <div class="flex flex-col gap-1">
           <label for="order-notes" class="text-sm font-medium">Nota <span class="text-muted font-normal">(opcional)</span></label>
-          <input pInputText id="order-notes" name="notes" maxlength="255" [(ngModel)]="notes" />
+          <input appInput id="order-notes" name="notes" maxlength="255" [(ngModel)]="notes" />
         </div>
       </app-form-dialog>
     }

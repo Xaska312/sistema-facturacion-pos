@@ -1,8 +1,10 @@
 import { Component, OnInit, inject, signal, viewChild } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ToastService } from '../../shared/ui/toast.service';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 import { CreditAccount, CreditEntry, CreditSummary, PageResponse } from '../../core/api/api.models';
 import { CreditApi } from '../../core/api/credit.api';
 import { AuthService } from '../../core/auth/auth.service';
@@ -20,7 +22,7 @@ import { debtAgeLabel, debtSeverity, whatsAppLink } from './credit-text';
 /** Fiados: lo que deben los clientes, por antigüedad; abonos y recordatorio por WhatsApp (decisión 255). */
 @Component({
   selector: 'app-credit',
-  imports: [FormsModule, RouterLink, ButtonModule, PageHeaderComponent, StatCardComponent, DataTableComponent,
+  imports: [FormsModule, RouterLink, ButtonComponent, ButtonLinkComponent, PageHeaderComponent, StatCardComponent, DataTableComponent,
     CellTemplateDirective, CreditPaymentDialogComponent],
   template: `
     <app-page-header title="Fiados"
@@ -69,9 +71,9 @@ import { debtAgeLabel, debtSeverity, whatsAppLink } from './credit-text';
       <ng-template #actions let-row>
         @if (row.balance > 0) {
           @if (canCollect()) {
-            <p-button label="Abonar" icon="pi pi-dollar" size="small" [text]="true" (onClick)="openPayment(row)" />
+            <app-button label="Abonar" icon="pi pi-dollar" size="small" [text]="true" (clicked)="openPayment(row)" />
           }
-          <a pButton [text]="true" size="small" icon="pi pi-whatsapp" label="Recordar" target="_blank"
+          <a appButton [text]="true" size="small" icon="pi pi-whatsapp" label="Recordar" target="_blank"
              rel="noopener noreferrer" [href]="whatsApp(row)"
              [attr.aria-label]="'Recordar a ' + row.name + ' por WhatsApp (abre WhatsApp)'"></a>
         }
@@ -86,7 +88,9 @@ export class CreditComponent implements OnInit {
   private readonly latest = new LatestRequest();
   private readonly api = inject(CreditApi);
   private readonly auth = inject(AuthService);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
+  /** Mensaje del recordatorio que eligió el dueño (decisión 344); '' = el de siempre. */
+  private readonly reminder = toSignal(this.api.reminderTemplate(), { initialValue: '' });
   private readonly paymentDialog = viewChild(CreditPaymentDialogComponent);
   protected readonly canCollect = permissionFlag('credit:collect');
 
@@ -140,7 +144,7 @@ export class CreditComponent implements OnInit {
   }
 
   protected whatsApp(account: CreditAccount): string {
-    return whatsAppLink(account, this.auth.currentTenant()?.tradeName ?? 'tu tienda');
+    return whatsAppLink(account, this.auth.currentTenant()?.tradeName ?? 'tu tienda', this.reminder());
   }
 
   openPayment(account: CreditAccount): void {

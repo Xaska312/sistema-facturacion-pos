@@ -1,7 +1,7 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { DialogComponent } from '../../shared/ui/dialog.component';
 import { forkJoin } from 'rxjs';
 import { PageResponse } from '../../core/api/api.models';
 import {
@@ -35,12 +35,12 @@ export function actorText(name: string | null, id: string | null): string {
  */
 @Component({
   selector: 'app-audit',
-  imports: [FormsModule, ButtonModule, DialogModule, DataTableComponent, PageHeaderComponent],
+  imports: [FormsModule, ButtonComponent, DialogComponent, DataTableComponent, PageHeaderComponent],
   template: `
     <app-page-header title="Auditoría"
                      description="Quién hizo qué y cuándo en el negocio: ventas, anulaciones, cajas, precios, inventario, usuarios y entradas al sistema. Los registros no se pueden modificar ni borrar.">
-      <p-button label="Exportar a Excel (CSV)" icon="pi pi-download" severity="secondary" [outlined]="true"
-                [loading]="exporting()" (onClick)="download()" />
+      <app-button label="Exportar a Excel (CSV)" icon="pi pi-download" severity="secondary" [outlined]="true"
+                [loading]="exporting()" (clicked)="download()" />
     </app-page-header>
 
     <app-data-table [columns]="columns" [page]="page()" [loading]="loading()" [trackBy]="trackById" [pageSize]="50"
@@ -86,12 +86,12 @@ export function actorText(name: string | null, id: string | null): string {
         </select>
       </label>
       <ng-template #actions let-row>
-        <p-button label="Ver" icon="pi pi-eye" size="small" [text]="true" (onClick)="open(row)"
+        <app-button label="Ver" icon="pi pi-eye" size="small" [text]="true" (clicked)="open(row)"
                   [ariaLabel]="'Ver detalle: ' + describe(row)" />
       </ng-template>
     </app-data-table>
 
-    <p-dialog [header]="detail() ? describe(detail()!) : 'Detalle'" [(visible)]="detailOpen" [modal]="true"
+    <app-dialog [header]="detail() ? describe(detail()!) : 'Detalle'" [(visible)]="detailOpen" [modal]="true"
               [style]="{ width: '40rem' }" [breakpoints]="{ '640px': '95vw' }">
       @if (detail(); as d) {
         <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm mb-4">
@@ -154,9 +154,9 @@ export function actorText(name: string | null, id: string | null): string {
         }
       }
       <ng-template #footer>
-        <p-button label="Cerrar" (onClick)="detailOpen = false" />
+        <app-button label="Cerrar" (clicked)="detailOpen = false" />
       </ng-template>
-    </p-dialog>
+    </app-dialog>
   `,
 })
 export class AuditComponent implements OnInit {

@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 import { OrderFilter, OrderRow, OrderSummary, PageResponse } from '../../core/api/api.models';
 import { OrdersApi } from '../../core/api/orders.api';
 import { permissionFlag } from '../../core/auth/permission-flag';
@@ -26,13 +26,13 @@ const FILTERS: { value: OrderFilter; label: string }[] = [
 /** Pedidos por encargo: por entregar (los más próximos primero), atrasados, entregados y cancelados (decisión 258). */
 @Component({
   selector: 'app-orders',
-  imports: [FormsModule, RouterLink, ButtonModule, PageHeaderComponent, StatCardComponent, StatusBadgeComponent,
+  imports: [FormsModule, RouterLink, ButtonLinkComponent, PageHeaderComponent, StatCardComponent, StatusBadgeComponent,
     DataTableComponent, CellTemplateDirective],
   template: `
     <app-page-header title="Pedidos"
                      description="Trabajos por encargo: lo que el cliente pidió, cuándo se entrega y cuánto ha abonado.">
       @if (canCreate()) {
-        <a pButton routerLink="/app/pedidos/nuevo" label="Nuevo pedido" icon="pi pi-plus"></a>
+        <a appButton routerLink="/app/pedidos/nuevo" label="Nuevo pedido" icon="pi pi-plus"></a>
       }
     </app-page-header>
 
@@ -80,7 +80,7 @@ const FILTERS: { value: OrderFilter; label: string }[] = [
         <span class="tabular-nums">{{ row.deliveredCount }} de {{ row.itemCount }}</span>
       </ng-template>
       <ng-template #actions let-row>
-        <a pButton [text]="true" size="small" label="Ver" icon="pi pi-eye" [routerLink]="['/app/pedidos', row.id]"></a>
+        <a appButton [text]="true" size="small" label="Ver" icon="pi pi-eye" [routerLink]="['/app/pedidos', row.id]"></a>
       </ng-template>
     </app-data-table>
   `,

@@ -1,7 +1,8 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ToastService } from '../../shared/ui/toast.service';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 import { Branch } from '../../core/api/api.models';
 import { OrganizationApi } from '../../core/api/organization.api';
 import {
@@ -28,7 +29,7 @@ import { orderTotal, orderedQuantity, supplierOrderMessage } from './purchase-te
  */
 @Component({
   selector: 'app-purchase-suggestions',
-  imports: [FormsModule, ButtonModule, PageHeaderComponent, EmptyStateComponent, XaskaIaLogoComponent],
+  imports: [FormsModule, ButtonComponent, ButtonLinkComponent, PageHeaderComponent, EmptyStateComponent, XaskaIaLogoComponent],
   template: `
     <app-page-header title="Qué comprar"
                      description="El pedido sugerido a cada proveedor según lo que vendes, lo que tienes y tus mínimos. Ajusta las cantidades y envíaselo." />
@@ -148,11 +149,11 @@ import { orderTotal, orderedQuantity, supplierOrderMessage } from './purchase-te
                   {{ reviewing() === key(g) ? 'Aska está revisando…' : 'Revisar con Aska' }}
                 </button>
               }
-              <p-button label="Copiar mensaje" icon="pi pi-copy" [outlined]="true" (onClick)="copy(g)" />
+              <app-button label="Copiar mensaje" icon="pi pi-copy" [outlined]="true" (clicked)="copy(g)" />
               @if (whatsApp(g); as link) {
-                <a pButton [href]="link" target="_blank" rel="noopener" label="WhatsApp" icon="pi pi-whatsapp" [outlined]="true"></a>
+                <a appButton [href]="link" target="_blank" rel="noopener" label="WhatsApp" icon="pi pi-whatsapp" [outlined]="true"></a>
               }
-              <p-button label="Imprimir o PDF" icon="pi pi-print" (onClick)="print(gi)" />
+              <app-button label="Imprimir o PDF" icon="pi pi-print" (clicked)="print(gi)" />
             </div>
 
             <article class="receipt-print-root order-sheet" [class]="'order-sheet-' + gi">
@@ -206,7 +207,7 @@ export class PurchaseSuggestionsComponent implements OnInit {
   private readonly api = inject(PurchasesApi);
   private readonly organization = inject(OrganizationApi);
   private readonly auth = inject(AuthService);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
 
   protected readonly canReceive = permissionFlag('purchases:receive');
   protected readonly canAsk = permissionFlag('ai:ask');

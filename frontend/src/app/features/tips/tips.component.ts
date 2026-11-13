@@ -1,8 +1,8 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { SkeletonModule } from 'primeng/skeleton';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { AppInputDirective } from '../../shared/ui/input.directive';
+import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { Observable } from 'rxjs';
 import { TipPayout, TipSummary, TipsApi } from '../../core/api/tips.api';
 import { FormDialogComponent } from '../../shared/forms/form-dialog.component';
@@ -19,12 +19,12 @@ import { shareTips } from './tip-shares';
  */
 @Component({
   selector: 'app-tips',
-  imports: [FormsModule, ButtonModule, InputTextModule, SkeletonModule, PageHeaderComponent, FormDialogComponent,
+  imports: [FormsModule, ButtonComponent, AppInputDirective, SkeletonComponent, PageHeaderComponent, FormDialogComponent,
     XIconComponent, PesosInputDirective],
   template: `
     <app-page-header title="Propinas" description="Lo que dejan los clientes es del equipo: aquí ves lo recogido y registras su reparto.">
       @if (summary(); as s) {
-        <p-button label="Repartir" icon="pi pi-users" [disabled]="s.pending <= 0 || s.people.length === 0" (onClick)="openPayout(s)" />
+        <app-button label="Repartir" icon="pi pi-users" [disabled]="s.pending <= 0 || s.people.length === 0" (clicked)="openPayout(s)" />
       }
     </app-page-header>
 
@@ -41,13 +41,13 @@ import { shareTips } from './tip-shares';
       }
       <label class="flex flex-col gap-1 text-sm">
         <span class="font-semibold">Desde</span>
-        <input pInputText type="date" [ngModel]="from()" (ngModelChange)="from.set($event)" />
+        <input appInput type="date" [ngModel]="from()" (ngModelChange)="from.set($event)" />
       </label>
       <label class="flex flex-col gap-1 text-sm">
         <span class="font-semibold">Hasta</span>
-        <input pInputText type="date" [ngModel]="to()" (ngModelChange)="to.set($event)" />
+        <input appInput type="date" [ngModel]="to()" (ngModelChange)="to.set($event)" />
       </label>
-      <p-button label="Ver" icon="pi pi-search" severity="secondary" [outlined]="true" (onClick)="load()" />
+      <app-button label="Ver" icon="pi pi-search" severity="secondary" [outlined]="true" (clicked)="load()" />
       <span class="text-xs text-muted">Máximo un mes.</span>
     </div>
 
@@ -111,7 +111,7 @@ import { shareTips } from './tip-shares';
     } @else if (!error()) {
       <div class="grid gap-4 md:grid-cols-3" aria-busy="true">
         @for (i of [0, 1, 2]; track i) {
-          <p-skeleton height="9rem" borderRadius="1.25rem" />
+          <app-skeleton height="9rem" borderRadius="1.25rem" />
         }
       </div>
     }
@@ -148,7 +148,7 @@ import { shareTips } from './tip-shares';
       </label>
       <label class="flex flex-col gap-1">
         <span class="text-sm font-semibold">Nota (opcional)</span>
-        <input pInputText maxlength="200" [ngModel]="notes()" (ngModelChange)="notes.set($event)" />
+        <input appInput maxlength="200" [ngModel]="notes()" (ngModelChange)="notes.set($event)" />
       </label>
     </app-form-dialog>
   `,

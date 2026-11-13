@@ -1,7 +1,7 @@
 import { HttpErrorResponse, HttpInterceptorFn, HttpRequest } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { catchError, switchMap, throwError } from 'rxjs';
 import { AUTH_API, AuthService } from './auth.service';
 import { decodeAccessToken } from './jwt';
@@ -51,7 +51,7 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
   }
   const auth = inject(AuthService);
   const router = inject(Router);
-  const messages = inject(MessageService);
+  const messages = inject(ToastService);
 
   const sentToken = auth.accessToken();
   return next(withToken(request, sentToken)).pipe(

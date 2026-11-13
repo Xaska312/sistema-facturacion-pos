@@ -222,6 +222,14 @@ export class AuthService {
     return this.http.post<void>(`/api/v1/tenants/${tenantId}/close`, { confirmation, password, reason });
   }
 
+  /**
+   * Cierra la sesión en los demás equipos y deja abierta esta (decisión 343). Va con la cookie: el servidor la usa
+   * para saber cuál no cerrar.
+   */
+  revokeOtherSessions(): Observable<{ closed: number }> {
+    return this.http.post<{ closed: number }>(`${AUTH_API}/sessions/revoke-others`, null, { withCredentials: true });
+  }
+
   logout(): Observable<void> {
     return this.http.post<void>(`${AUTH_API}/logout`, null, { withCredentials: true }).pipe(
       catchError(() => of(undefined)),

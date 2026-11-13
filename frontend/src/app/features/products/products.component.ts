@@ -1,7 +1,8 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 import { Category, PageResponse, Product } from '../../core/api/api.models';
 import { CatalogApi } from '../../core/api/catalog.api';
 import { ConfirmService } from '../../shared/confirm';
@@ -20,18 +21,18 @@ import { MANUAL_PRODUCTS_TRIGGER } from '../ai/aska-nudge';
 
 @Component({
   selector: 'app-products',
-  imports: [AskaNudgeComponent, FormsModule, RouterLink, ButtonModule, DataTableComponent, PageHeaderComponent, CellTemplateDirective,
+  imports: [AskaNudgeComponent, FormsModule, RouterLink, ButtonComponent, ButtonLinkComponent, DataTableComponent, PageHeaderComponent, CellTemplateDirective,
     XaskaIaLogoComponent],
   template: `
     <app-page-header title="Productos" [description]="'Lo que vendes: precio, impuesto, unidad y códigos de barras.'
                        + (hasVariants() ? ' Los productos con tallas y colores están en «Con tallas».' : '')">
       <!-- Solo con su módulo encendido (Fase 12a). -->
       @if (hasVariants()) {
-        <a pButton routerLink="/app/productos/modelos" label="Con tallas" icon="pi pi-th-large" severity="secondary"
+        <a appButton routerLink="/app/productos/modelos" label="Con tallas" icon="pi pi-th-large" severity="secondary"
            [outlined]="true"></a>
       }
       @if (hasScale()) {
-        <a pButton routerLink="/app/bascula" label="Báscula" icon="pi pi-calculator" severity="secondary"
+        <a appButton routerLink="/app/bascula" label="Báscula" icon="pi pi-calculator" severity="secondary"
            [outlined]="true"></a>
       }
       @if (canManage() && canAsk()) {
@@ -40,9 +41,9 @@ import { MANUAL_PRODUCTS_TRIGGER } from '../ai/aska-nudge';
         </a>
       }
       @if (canManage()) {
-        <a pButton routerLink="/app/productos/importar" label="Importar desde Excel" icon="pi pi-file-excel" severity="secondary"
+        <a appButton routerLink="/app/productos/importar" label="Importar desde Excel" icon="pi pi-file-excel" severity="secondary"
            [outlined]="true"></a>
-        <a pButton routerLink="/app/productos/nuevo" label="Nuevo producto" icon="pi pi-plus"></a>
+        <a appButton routerLink="/app/productos/nuevo" label="Nuevo producto" icon="pi pi-plus"></a>
       }
     </app-page-header>
 
@@ -92,14 +93,14 @@ import { MANUAL_PRODUCTS_TRIGGER } from '../ai/aska-nudge';
         }
       </ng-template>
       <ng-template #actions let-row>
-        <p-button label="Ver" icon="pi pi-eye" size="small" [text]="true" (onClick)="open(row)" />
+        <app-button label="Ver" icon="pi pi-eye" size="small" [text]="true" (clicked)="open(row)" />
         @if (canManage()) {
-          <p-button [label]="row.active ? 'Desactivar' : 'Activar'" size="small" [text]="true"
+          <app-button [label]="row.active ? 'Desactivar' : 'Activar'" size="small" [text]="true"
                     [icon]="row.active ? 'pi pi-ban' : 'pi pi-check-circle'"
-                    [severity]="row.active ? 'danger' : 'success'" (onClick)="toggle(row)" />
+                    [severity]="row.active ? 'danger' : 'success'" (clicked)="toggle(row)" />
           @if (!row.modelId) {
-            <p-button label="Eliminar" icon="pi pi-trash" size="small" [text]="true" severity="danger"
-                      (onClick)="remove(row)" />
+            <app-button label="Eliminar" icon="pi pi-trash" size="small" [text]="true" severity="danger"
+                      (clicked)="remove(row)" />
           }
         }
       </ng-template>

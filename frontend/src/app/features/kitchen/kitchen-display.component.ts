@@ -1,8 +1,8 @@
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { SkeletonModule } from 'primeng/skeleton';
+import { ToastService } from '../../shared/ui/toast.service';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { KitchenApi, KitchenStation, KitchenTicket, TicketStatus } from '../../core/api/kitchen.api';
 import { problemMessage } from '../../core/errors/problem';
 import { DiningEventsService } from '../../core/realtime/dining-events.service';
@@ -41,7 +41,7 @@ function saveStations(ids: readonly string[]): void {
  */
 @Component({
   selector: 'app-kitchen-display',
-  imports: [ButtonModule, SkeletonModule, XIconComponent, LiveReplacedComponent],
+  imports: [ButtonComponent, SkeletonComponent, XIconComponent, LiveReplacedComponent],
   template: `
     <div class="kds" [class.kds--full]="full()">
       <header class="flex flex-wrap items-center justify-between gap-3 mb-4">
@@ -57,10 +57,10 @@ function saveStations(ids: readonly string[]): void {
         </div>
         <div class="flex flex-wrap gap-2">
           @if (!soundOn()) {
-            <p-button label="Activar sonido" icon="pi pi-volume-up" (onClick)="enableSound()" />
+            <app-button label="Activar sonido" icon="pi pi-volume-up" (clicked)="enableSound()" />
           }
-          <p-button [label]="full() ? 'Salir de pantalla completa' : 'Pantalla completa'" icon="pi pi-window-maximize"
-                    severity="secondary" [outlined]="true" (onClick)="toggleFull()" />
+          <app-button [label]="full() ? 'Salir de pantalla completa' : 'Pantalla completa'" icon="pi pi-window-maximize"
+                    severity="secondary" [outlined]="true" (clicked)="toggleFull()" />
         </div>
       </header>
 
@@ -80,7 +80,7 @@ function saveStations(ids: readonly string[]): void {
       @if (alert(); as a) {
         <div class="alert" role="alert">
           <span><i class="pi pi-exclamation-triangle" aria-hidden="true"></i> {{ a }}</span>
-          <p-button label="Entendido" severity="danger" (onClick)="alert.set(null)" />
+          <app-button label="Entendido" severity="danger" (clicked)="alert.set(null)" />
         </div>
       }
 
@@ -148,7 +148,7 @@ function saveStations(ids: readonly string[]): void {
       } @else {
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-busy="true">
           @for (i of [0, 1, 2]; track i) {
-            <p-skeleton height="16rem" borderRadius="1.25rem" />
+            <app-skeleton height="16rem" borderRadius="1.25rem" />
           }
         </div>
       }
@@ -254,7 +254,7 @@ function saveStations(ids: readonly string[]): void {
 export class KitchenDisplayComponent implements OnInit {
   private readonly api = inject(KitchenApi);
   private readonly events = inject(DiningEventsService);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
 
   protected readonly stations = signal<KitchenStation[]>([]);
   protected readonly chosen = signal<string[]>(loadStations());

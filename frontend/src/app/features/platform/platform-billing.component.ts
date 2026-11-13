@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ToastService } from '../../shared/ui/toast.service';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { BillingAddon, BillingApi, PaymentRequestStatus, PaymentRequestView } from '../../core/api/billing.api';
 import { XaskaIaLogoComponent } from '../../shared/brand/xaska-ia-logo.component';
 import { ConfirmService } from '../../shared/confirm';
@@ -17,7 +17,7 @@ import { checkLines, statusLabel } from '../billing/billing-text';
  */
 @Component({
   selector: 'app-platform-billing',
-  imports: [FormsModule, ButtonModule, PageHeaderComponent, PesosInputDirective, XaskaIaLogoComponent],
+  imports: [FormsModule, ButtonComponent, PageHeaderComponent, PesosInputDirective, XaskaIaLogoComponent],
   template: `
     <app-page-header title="Pagos" description="Comprobantes de Bre-B por revisar, tu llave y los precios de los adicionales." />
 
@@ -61,12 +61,12 @@ import { checkLines, statusLabel } from '../billing/billing-text';
           @if (r.status === 'SENT' || r.status === 'PENDING') {
             <div class="flex flex-wrap gap-2 items-center">
               @if (r.proofAt) {
-                <p-button label="Ver comprobante" icon="pi pi-image" [outlined]="true" (onClick)="viewProof(r)" />
+                <app-button label="Ver comprobante" icon="pi pi-image" [outlined]="true" (clicked)="viewProof(r)" />
               }
               <input class="field flex-1 min-w-48" [(ngModel)]="reasons[r.id]" maxlength="300"
                      placeholder="Motivo si lo rechazas (lo ve el negocio)" [attr.aria-label]="'Motivo para ' + r.reference" />
-              <p-button label="Rechazar" severity="danger" [outlined]="true" [loading]="busy() === r.id" (onClick)="reject(r)" />
-              <p-button label="Aprobar" icon="pi pi-check" severity="success" [loading]="busy() === r.id" (onClick)="approve(r)" />
+              <app-button label="Rechazar" severity="danger" [outlined]="true" [loading]="busy() === r.id" (clicked)="reject(r)" />
+              <app-button label="Aprobar" icon="pi pi-check" severity="success" [loading]="busy() === r.id" (clicked)="approve(r)" />
             </div>
           }
         </article>
@@ -83,7 +83,7 @@ import { checkLines, statusLabel } from '../billing/billing-text';
         <label class="text-sm flex flex-col gap-1">Titular<input class="field" [(ngModel)]="breb.holderName" maxlength="120" /></label>
         <label class="text-sm flex flex-col gap-1">Banco o billetera<input class="field" [(ngModel)]="breb.bankName" maxlength="60" /></label>
         <label class="text-sm flex flex-col gap-1">Nota (opcional)<input class="field" [(ngModel)]="breb.notes" maxlength="300" /></label>
-        <p-button label="Guardar llave" [loading]="savingBreb()" (onClick)="saveBreb()" />
+        <app-button label="Guardar llave" [loading]="savingBreb()" (clicked)="saveBreb()" />
         <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-line">
           <span class="text-sm flex-1">QR del banco: {{ hasQr() ? 'cargado' : 'sin cargar' }}</span>
           <label class="upload-qr">
@@ -91,7 +91,7 @@ import { checkLines, statusLabel } from '../billing/billing-text';
             <input type="file" class="sr-only" accept="image/png,image/jpeg" (change)="uploadQr($event)" />
           </label>
           @if (hasQr()) {
-            <p-button label="Quitar" [text]="true" severity="danger" (onClick)="deleteQr()" />
+            <app-button label="Quitar" [text]="true" severity="danger" (clicked)="deleteQr()" />
           }
         </div>
       </section>
@@ -104,7 +104,7 @@ import { checkLines, statusLabel } from '../billing/billing-text';
             <span class="flex-1 min-w-40">{{ a.name }}</span>
             <input appPesos class="field w-32 text-right" [(ngModel)]="a.monthlyPrice" [attr.aria-label]="'Precio de ' + a.name" />
             <label class="flex items-center gap-1 text-xs"><input type="checkbox" [(ngModel)]="a.active" /> Activo</label>
-            <p-button icon="pi pi-check" [text]="true" [attr.aria-label]="'Guardar ' + a.name" (onClick)="saveAddon(a)" />
+            <app-button icon="pi pi-check" [text]="true" [attr.aria-label]="'Guardar ' + a.name" (clicked)="saveAddon(a)" />
           </div>
         }
       </section>
@@ -123,7 +123,7 @@ import { checkLines, statusLabel } from '../billing/billing-text';
 })
 export class PlatformBillingComponent implements OnInit {
   private readonly api = inject(BillingApi);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   private readonly confirm = inject(ConfirmService);
 
   protected readonly filters: { value: PaymentRequestStatus | null; label: string }[] = [

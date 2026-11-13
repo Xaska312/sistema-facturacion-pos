@@ -2,9 +2,9 @@ import { focusOnDesktop } from '../../shared/touch';
 import { Component, OnInit, computed, inject, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { SkeletonModule } from 'primeng/skeleton';
+import { ToastService } from '../../shared/ui/toast.service';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { CashSession, RegisterOption } from '../../core/api/api.models';
 import { CashApi } from '../../core/api/cash.api';
 import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
@@ -18,7 +18,7 @@ import { permissionFlag } from '../../core/auth/permission-flag';
  */
 @Component({
   selector: 'app-open-cash',
-  imports: [FormsModule, PesosInputDirective, RouterLink, ButtonModule, SkeletonModule, XIconComponent],
+  imports: [FormsModule, PesosInputDirective, RouterLink, ButtonComponent, SkeletonComponent, XIconComponent],
   template: `
     <section class="card w-full max-w-xl p-6 flex flex-col gap-5 rounded-[1.75rem]" aria-labelledby="open-cash-title">
       <div class="flex items-start gap-3">
@@ -42,14 +42,14 @@ import { permissionFlag } from '../../core/auth/permission-flag';
           "Abrir, mover y cerrar caja".</p>
         <a routerLink="/app" class="text-brand font-medium">Volver al menú</a>
       } @else if (registers() === null) {
-        <p-skeleton height="4.5rem" borderRadius="0.75rem" />
+        <app-skeleton height="4.5rem" borderRadius="0.75rem" />
       } @else {
         @if (joinable().length > 0) {
           <div class="flex flex-col gap-2">
             <p class="text-sm font-medium">Cajas abiertas donde puedes vender</p>
             @for (r of joinable(); track r.id) {
-              <p-button styleClass="w-full min-h-14 justify-start" icon="pi pi-shopping-cart" [loading]="joining() === r.id"
-                        [disabled]="joining() !== null" (onClick)="join(r)"
+              <app-button styleClass="w-full min-h-14 justify-start" icon="pi pi-shopping-cart" [loading]="joining() === r.id"
+                        [disabled]="joining() !== null" (clicked)="join(r)"
                         [label]="'Vender en ' + r.code + ' · ' + r.name + ' (abierta por ' + (r.busyBy ?? 'otro usuario') + ')'" />
             }
           </div>
@@ -58,7 +58,7 @@ import { permissionFlag } from '../../core/auth/permission-flag';
           @if (joinable().length === 0) {
             <p class="text-sm" role="alert">Aún no hay una caja compartida abierta. Pide a quien abre la caja que la
               abra, o que te asigne el permiso "Abrir, mover y cerrar caja".</p>
-            <p-button label="Volver a revisar" icon="pi pi-refresh" [text]="true" (onClick)="ngOnInit()" />
+            <app-button label="Volver a revisar" icon="pi pi-refresh" [text]="true" (clicked)="ngOnInit()" />
           }
         } @else if (openable().length === 0) {
           @if (joinable().length === 0) {
@@ -103,7 +103,7 @@ import { permissionFlag } from '../../core/auth/permission-flag';
                      aria-describedby="opening-hint" />
               <span id="opening-hint" class="text-sm text-muted">El dinero que hay en el cajón antes de la primera venta.</span>
             </div>
-            <p-button type="submit" label="Abrir caja" icon="pi pi-lock-open" size="large" styleClass="w-full min-h-14 text-lg"
+            <app-button type="submit" label="Abrir caja" icon="pi pi-lock-open" size="large" styleClass="w-full min-h-14 text-lg"
                       [disabled]="!registerId() || openingAmount === null || openingAmount < 0" [loading]="saving()" />
           </form>
         }
@@ -135,7 +135,7 @@ import { permissionFlag } from '../../core/auth/permission-flag';
 })
 export class OpenCashComponent implements OnInit {
   private readonly cash = inject(CashApi);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   protected readonly canOperate = permissionFlag('cash:operate');
   /** Quien vende sin poder abrir caja puede unirse a una compartida (decisión 256). */
   protected readonly canSell = permissionFlag('sales:create');

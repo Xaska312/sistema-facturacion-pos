@@ -80,7 +80,7 @@ describe('DataTableComponent', () => {
     const { fixture, host, element } = setup();
     host.loading.set(true);
     fixture.detectChanges();
-    expect(element.querySelectorAll('p-skeleton').length).toBeGreaterThan(0);
+    expect(element.querySelectorAll('app-skeleton').length).toBeGreaterThan(0);
   });
 
   it('estado vacío con acción', () => {

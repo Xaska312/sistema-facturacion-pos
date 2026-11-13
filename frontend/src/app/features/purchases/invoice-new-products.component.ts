@@ -1,7 +1,7 @@
 import { Component, OnInit, computed, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { Category, SizeScale, Tax, Unit } from '../../core/api/api.models';
 import { CatalogApi, InvoiceCreatedLine } from '../../core/api/catalog.api';
 import { OrganizationApi } from '../../core/api/organization.api';
@@ -17,7 +17,7 @@ import { NewProductRow, rowProblem, sizesNotice, sizesTotal, toItems, toRows } f
  */
 @Component({
   selector: 'app-invoice-new-products',
-  imports: [FormsModule, ButtonModule],
+  imports: [FormsModule, ButtonComponent],
   template: `
     <section class="new-products flex flex-col gap-3" aria-labelledby="new-products-title">
       <div class="flex flex-wrap items-center gap-3">
@@ -126,9 +126,9 @@ import { NewProductRow, rowProblem, sizesNotice, sizesTotal, toItems, toRows } f
               Se van a crear <strong>{{ selectedCount() }}</strong> {{ selectedCount() === 1 ? 'producto' : 'productos' }}.
             }
           </p>
-          <p-button label="Cancelar" [text]="true" (onClick)="closed.emit()" />
-          <p-button [label]="'Crear ' + selectedCount()" icon="pi pi-check" severity="success" [loading]="saving()"
-                    [disabled]="selectedCount() === 0 || problems() > 0" (onClick)="save()" />
+          <app-button label="Cancelar" [text]="true" (clicked)="closed.emit()" />
+          <app-button [label]="'Crear ' + selectedCount()" icon="pi pi-check" severity="success" [loading]="saving()"
+                    [disabled]="selectedCount() === 0 || problems() > 0" (clicked)="save()" />
         </div>
       }
     </section>

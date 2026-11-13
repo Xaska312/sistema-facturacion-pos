@@ -1,6 +1,6 @@
 import { Component, inject, model, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { InputTextModule } from 'primeng/inputtext';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable, tap } from 'rxjs';
 import { CREDIT_METHOD_CODE, DEPOSIT_METHOD_CODE, PaymentMethod } from '../../core/api/api.models';
 import { CashApi } from '../../core/api/cash.api';
@@ -19,7 +19,7 @@ import { receiptNumber } from './purchase-text';
  */
 @Component({
   selector: 'app-supplier-payment-dialog',
-  imports: [FormsModule, InputTextModule, PesosInputDirective, FormDialogComponent],
+  imports: [FormsModule, AppInputDirective, PesosInputDirective, FormDialogComponent],
   template: `
     @if (receipt(); as r) {
       <app-form-dialog [(visible)]="visible" [header]="'Pago a ' + (r.supplierName ?? 'proveedor')" width="28rem"
@@ -54,7 +54,7 @@ import { receiptNumber } from './purchase-text';
         @if (selected() && !selected()!.affectsCash) {
           <div class="flex flex-col gap-1">
             <label for="supplier-reference" class="text-sm font-medium">Referencia <span class="text-muted font-normal">(opcional)</span></label>
-            <input pInputText id="supplier-reference" name="reference" maxlength="100" [(ngModel)]="reference" />
+            <input appInput id="supplier-reference" name="reference" maxlength="100" [(ngModel)]="reference" />
           </div>
         }
       </app-form-dialog>

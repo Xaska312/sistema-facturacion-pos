@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable } from 'rxjs';
 import { Branch, City, Department, PageResponse } from '../../core/api/api.models';
 import { OrganizationApi } from '../../core/api/organization.api';
@@ -19,13 +19,13 @@ const CODE_PATTERN = /^[A-Za-z0-9_-]{2,20}$/;
 
 @Component({
   selector: 'app-branches',
-  imports: [ReactiveFormsModule, ButtonModule, InputTextModule, DataTableComponent, PageHeaderComponent,
+  imports: [ReactiveFormsModule, ButtonComponent, AppInputDirective, DataTableComponent, PageHeaderComponent,
     FormDialogComponent, FieldErrorComponent],
   template: `
     <app-page-header title="Sucursales"
                      description="Los puntos de venta de tu negocio. Cada caja y cada existencia pertenecen a una sucursal.">
       @if (canManage()) {
-        <p-button label="Nueva sucursal" icon="pi pi-plus" (onClick)="openCreate()" />
+        <app-button label="Nueva sucursal" icon="pi pi-plus" (clicked)="openCreate()" />
       }
     </app-page-header>
 
@@ -36,10 +36,10 @@ const CODE_PATTERN = /^[A-Za-z0-9_-]{2,20}$/;
                     (queryChange)="load($event)">
       <ng-template #actions let-row>
         @if (canManage()) {
-          <p-button label="Editar" icon="pi pi-pencil" size="small" [text]="true" (onClick)="openEdit(row)" />
-          <p-button [label]="row.active ? 'Desactivar' : 'Activar'" size="small" [text]="true"
+          <app-button label="Editar" icon="pi pi-pencil" size="small" [text]="true" (clicked)="openEdit(row)" />
+          <app-button [label]="row.active ? 'Desactivar' : 'Activar'" size="small" [text]="true"
                     [icon]="row.active ? 'pi pi-ban' : 'pi pi-check-circle'"
-                    [severity]="row.active ? 'danger' : 'success'" (onClick)="toggle(row)" />
+                    [severity]="row.active ? 'danger' : 'success'" (clicked)="toggle(row)" />
         }
       </ng-template>
     </app-data-table>
@@ -50,7 +50,7 @@ const CODE_PATTERN = /^[A-Za-z0-9_-]{2,20}$/;
         @if (!editing()) {
           <div class="flex flex-col gap-1">
             <label for="branch-code" class="text-sm font-medium">Código</label>
-            <input pInputText id="branch-code" formControlName="code" placeholder="NORTE" autocomplete="off"
+            <input appInput id="branch-code" formControlName="code" placeholder="NORTE" autocomplete="off"
                    aria-describedby="branch-code-help" />
             <small id="branch-code-help" class="text-xs text-muted">Corto y sin espacios. No se puede cambiar después.</small>
             <app-field-error [control]="form.controls.code"
@@ -59,12 +59,12 @@ const CODE_PATTERN = /^[A-Za-z0-9_-]{2,20}$/;
         }
         <div class="flex flex-col gap-1">
           <label for="branch-name" class="text-sm font-medium">Nombre</label>
-          <input pInputText id="branch-name" formControlName="name" placeholder="Sede norte" />
+          <input appInput id="branch-name" formControlName="name" placeholder="Sede norte" />
           <app-field-error [control]="form.controls.name" />
         </div>
         <div class="flex flex-col gap-1">
           <label for="branch-address" class="text-sm font-medium">Dirección <span class="text-muted font-normal">(opcional)</span></label>
-          <input pInputText id="branch-address" formControlName="address" />
+          <input appInput id="branch-address" formControlName="address" />
         </div>
         <div class="grid sm:grid-cols-2 gap-3">
           <div class="flex flex-col gap-1">
@@ -90,7 +90,7 @@ const CODE_PATTERN = /^[A-Za-z0-9_-]{2,20}$/;
         </div>
         <div class="flex flex-col gap-1">
           <label for="branch-phone" class="text-sm font-medium">Teléfono <span class="text-muted font-normal">(opcional)</span></label>
-          <input pInputText id="branch-phone" formControlName="phone" inputmode="tel" />
+          <input appInput id="branch-phone" formControlName="phone" inputmode="tel" />
           <app-field-error [control]="form.controls.phone" />
         </div>
       </div>

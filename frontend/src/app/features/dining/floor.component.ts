@@ -1,9 +1,10 @@
 import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { SkeletonModule } from 'primeng/skeleton';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
+import { AppInputDirective } from '../../shared/ui/input.directive';
+import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { Observable } from 'rxjs';
 import { DiningApi, Floor, FloorTable, Tab, TabKind } from '../../core/api/dining.api';
 import { permissionFlag } from '../../core/auth/permission-flag';
@@ -30,14 +31,14 @@ const REFRESH_MS = 15_000;
  */
 @Component({
   selector: 'app-floor',
-  imports: [FormsModule, RouterLink, ButtonModule, InputTextModule, SkeletonModule, PageHeaderComponent, LiveReplacedComponent,
+  imports: [FormsModule, RouterLink, ButtonComponent, ButtonLinkComponent, AppInputDirective, SkeletonComponent, PageHeaderComponent, LiveReplacedComponent,
     FormDialogComponent, EmptyStateComponent, XIconComponent, TablePlanComponent, CountStepperComponent],
   template: `
     <app-page-header title="Mesas" description="Toca una mesa libre para abrir su cuenta o una ocupada para pedir y cobrar.">
-      <p-button label="Para llevar" icon="pi pi-shopping-bag" severity="secondary" [outlined]="true" (onClick)="openOther('TAKEAWAY')" />
-      <p-button label="Domicilio" icon="pi pi-send" severity="secondary" [outlined]="true" (onClick)="openOther('DELIVERY')" />
+      <app-button label="Para llevar" icon="pi pi-shopping-bag" severity="secondary" [outlined]="true" (clicked)="openOther('TAKEAWAY')" />
+      <app-button label="Domicilio" icon="pi pi-send" severity="secondary" [outlined]="true" (clicked)="openOther('DELIVERY')" />
       @if (canManage()) {
-        <a pButton routerLink="/app/mesas/configurar" label="Configurar" icon="pi pi-cog" severity="secondary"
+        <a appButton routerLink="/app/mesas/configurar" label="Configurar" icon="pi pi-cog" severity="secondary"
            [text]="true"></a>
       }
     </app-page-header>
@@ -149,7 +150,7 @@ const REFRESH_MS = 15_000;
     } @else {
       <div class="grid gap-3 grid-cols-2 sm:grid-cols-4" aria-busy="true">
         @for (i of [0, 1, 2, 3, 4, 5, 6, 7]; track i) {
-          <p-skeleton height="7rem" borderRadius="1.25rem" />
+          <app-skeleton height="7rem" borderRadius="1.25rem" />
         }
       </div>
     }
@@ -166,16 +167,16 @@ const REFRESH_MS = 15_000;
         <div class="flex flex-col gap-1">
           <label for="customer-name" class="text-sm font-semibold">Nombre del cliente
             @if (openKind() === 'TAKEAWAY') { <span class="font-normal text-muted">(opcional)</span> }</label>
-          <input pInputText id="customer-name" maxlength="120" [(ngModel)]="customerName" />
+          <input appInput id="customer-name" maxlength="120" [(ngModel)]="customerName" />
         </div>
         @if (openKind() === 'DELIVERY') {
           <div class="flex flex-col gap-1">
             <label for="phone" class="text-sm font-semibold">Teléfono</label>
-            <input pInputText id="phone" maxlength="30" inputmode="tel" [(ngModel)]="phone" />
+            <input appInput id="phone" maxlength="30" inputmode="tel" [(ngModel)]="phone" />
           </div>
           <div class="flex flex-col gap-1">
             <label for="address" class="text-sm font-semibold">Dirección</label>
-            <input pInputText id="address" maxlength="200" [(ngModel)]="address" />
+            <input appInput id="address" maxlength="200" [(ngModel)]="address" />
           </div>
         }
       }

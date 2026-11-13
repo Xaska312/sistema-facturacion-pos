@@ -1,9 +1,11 @@
 import { Component, effect, inject, input, signal, untracked, viewChild } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
+import { ToastService } from '../../shared/ui/toast.service';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable, tap } from 'rxjs';
 import { CreditAccount, CreditEntry, PageResponse } from '../../core/api/api.models';
 import { CreditApi } from '../../core/api/credit.api';
@@ -25,11 +27,11 @@ import { ENTRY_LABEL, balanceLabel, debtAgeLabel, entryDetail, whatsAppLink } fr
 /** Cuenta de fiado de un cliente: saldo, cupo, estado de cuenta, abonos y su anulación (decisión 255). */
 @Component({
   selector: 'app-credit-account',
-  imports: [FormsModule, RouterLink, ButtonModule, InputTextModule, PageHeaderComponent, StatCardComponent,
+  imports: [FormsModule, RouterLink, ButtonComponent, ButtonLinkComponent, AppInputDirective, PageHeaderComponent, StatCardComponent,
     DataTableComponent, CellTemplateDirective, CreditPaymentDialogComponent, FormDialogComponent],
   template: `
     <app-page-header [title]="account()?.name ?? 'Fiado del cliente'" [description]="subtitle()">
-      <a pButton routerLink="/app/fiados" label="Todos los fiados" icon="pi pi-arrow-left" severity="secondary"
+      <a appButton routerLink="/app/fiados" label="Todos los fiados" icon="pi pi-arrow-left" severity="secondary"
          [outlined]="true"></a>
     </app-page-header>
 
@@ -44,10 +46,10 @@ import { ENTRY_LABEL, balanceLabel, debtAgeLabel, entryDetail, whatsAppLink } fr
       </div>
       <div class="flex flex-wrap gap-2 mb-4">
         @if (canCollect() && a.balance > 0) {
-          <p-button label="Recibir abono" icon="pi pi-dollar" (onClick)="openPayment()" />
+          <app-button label="Recibir abono" icon="pi pi-dollar" (clicked)="openPayment()" />
         }
         @if (a.balance > 0) {
-          <a pButton label="Recordar por WhatsApp" icon="pi pi-whatsapp" severity="secondary" [outlined]="true"
+          <a appButton label="Recordar por WhatsApp" icon="pi pi-whatsapp" severity="secondary" [outlined]="true"
              target="_blank" rel="noopener noreferrer" [href]="whatsApp(a)"></a>
         }
         @if (a.creditLimit <= 0) {
@@ -81,7 +83,7 @@ import { ENTRY_LABEL, balanceLabel, debtAgeLabel, entryDetail, whatsAppLink } fr
       </ng-template>
       <ng-template #actions let-row>
         @if (canManage() && row.type === 'PAYMENT' && !row.voided) {
-          <p-button label="Anular" icon="pi pi-ban" size="small" severity="danger" [text]="true" (onClick)="openVoid(row)" />
+          <app-button label="Anular" icon="pi pi-ban" size="small" severity="danger" [text]="true" (clicked)="openVoid(row)" />
         }
       </ng-template>
     </app-data-table>
@@ -95,7 +97,7 @@ import { ENTRY_LABEL, balanceLabel, debtAgeLabel, entryDetail, whatsAppLink } fr
                      description="La deuda vuelve a subir. Si fue en efectivo, el dinero sale de la caja.">
       <div class="flex flex-col gap-1">
         <label for="void-reason" class="text-sm font-medium">Motivo</label>
-        <input pInputText id="void-reason" maxlength="200" [(ngModel)]="voidReason" placeholder="Se registró dos veces" />
+        <input appInput id="void-reason" maxlength="200" [(ngModel)]="voidReason" placeholder="Se registró dos veces" />
       </div>
     </app-form-dialog>
   `,
@@ -108,7 +110,9 @@ export class CreditAccountComponent {
 
   private readonly api = inject(CreditApi);
   private readonly auth = inject(AuthService);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
+  /** Mensaje del recordatorio que eligió el dueño (decisión 344); '' = el de siempre. */
+  private readonly reminder = toSignal(this.api.reminderTemplate(), { initialValue: '' });
   private readonly paymentDialog = viewChild(CreditPaymentDialogComponent);
   protected readonly canCollect = permissionFlag('credit:collect');
   protected readonly canManage = permissionFlag('credit:manage');
@@ -182,7 +186,7 @@ export class CreditAccountComponent {
   }
 
   protected whatsApp(account: CreditAccount): string {
-    return whatsAppLink(account, this.auth.currentTenant()?.tradeName ?? 'tu tienda');
+    return whatsAppLink(account, this.auth.currentTenant()?.tradeName ?? 'tu tienda', this.reminder());
   }
 
   openPayment(): void {

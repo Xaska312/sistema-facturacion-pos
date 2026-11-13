@@ -40,13 +40,16 @@ public class BusinessSettingsService implements BusinessSettingsApi {
     static final String TIP_PERCENT = "tip_percent";
     static final int MAX_TIP_PERCENT = 20;
     static final String EXPIRY_ALERT_MONTHS = "expiry_alert_months";
+    /** Mensaje del recordatorio de fiado por WhatsApp (decisión 344); vacío = el de siempre. */
+    static final String CREDIT_REMINDER = "credit_reminder";
+    static final int MAX_CREDIT_REMINDER = 500;
 
     /** Monedas soportadas. En el MVP solo pesos colombianos. */
     private static final Set<String> CURRENCIES = Set.of("COP");
 
     private static final BusinessSettings DEFAULTS = new BusinessSettings(false, true, "America/Bogota", "COP",
             "Gracias por su compra", BigDecimal.ZERO.setScale(2), true, 15,
-            "Precios sujetos a cambio después de la fecha de validez.", 10, 3, "");
+            "Precios sujetos a cambio después de la fecha de validez.", 10, 3, "", "");
 
     private final BusinessSettingRepository repository;
     private final AuditLogger audit;
@@ -68,7 +71,8 @@ public class BusinessSettingsService implements BusinessSettingsApi {
                 values.getOrDefault(QUOTE_TERMS, DEFAULTS.quoteTerms()),
                 integer(values, TIP_PERCENT, DEFAULTS.tipPercent()),
                 integer(values, EXPIRY_ALERT_MONTHS, DEFAULTS.expiryAlertMonths()),
-                values.getOrDefault(RECEIPT_HEADER, DEFAULTS.receiptHeader()));
+                values.getOrDefault(RECEIPT_HEADER, DEFAULTS.receiptHeader()),
+                values.getOrDefault(CREDIT_REMINDER, DEFAULTS.creditReminder()));
     }
 
     @Transactional
@@ -93,6 +97,7 @@ public class BusinessSettingsService implements BusinessSettingsApi {
                 actor);
         put(rows, TIP_PERCENT, ValueType.INTEGER, Integer.toString(requested.tipPercent()), actor);
         put(rows, EXPIRY_ALERT_MONTHS, ValueType.INTEGER, Integer.toString(requested.expiryAlertMonths()), actor);
+        put(rows, CREDIT_REMINDER, ValueType.STRING, cleanReminder(requested.creditReminder()), actor);
 
         BusinessSettings after = current();
         audit.log("SETTINGS_UPDATED", "business_settings", null, asMap(before), asMap(after));
@@ -142,6 +147,9 @@ public class BusinessSettingsService implements BusinessSettingsApi {
         if (header.lines().count() > MAX_HEADER_LINES) {
             throw new BusinessRuleException("El encabezado de los documentos admite hasta " + MAX_HEADER_LINES + " renglones.");
         }
+        if (cleanReminder(s.creditReminder()).length() > MAX_CREDIT_REMINDER) {
+            throw new BusinessRuleException("El recordatorio de fiado supera " + MAX_CREDIT_REMINDER + " caracteres.");
+        }
         if (s.quoteTerms() != null && s.quoteTerms().length() > 1000) {
             throw new BusinessRuleException("Las condiciones de las cotizaciones superan 1.000 caracteres.");
         }
@@ -154,6 +162,11 @@ public class BusinessSettingsService implements BusinessSettingsApi {
         }
         return header.lines().map(String::strip).filter(l -> !l.isEmpty())
                 .collect(Collectors.joining("\n"));
+    }
+
+    /** Sin espacios al inicio ni al final; null queda en "" (el mensaje de siempre). */
+    static String cleanReminder(String reminder) {
+        return reminder == null ? "" : reminder.strip();
     }
 
     private static boolean bool(Map<String, String> values, String key, boolean fallback) {
@@ -193,6 +206,7 @@ public class BusinessSettingsService implements BusinessSettingsApi {
         map.put(QUOTE_TERMS, s.quoteTerms());
         map.put(TIP_PERCENT, s.tipPercent());
         map.put(EXPIRY_ALERT_MONTHS, s.expiryAlertMonths());
+        map.put(CREDIT_REMINDER, s.creditReminder());
         return map;
     }
 }

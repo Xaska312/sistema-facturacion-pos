@@ -205,6 +205,8 @@ export interface BusinessSettings {
   tipPercent: number;
   /** Meses de anticipación del aviso de vencimiento de un lote (Fase 13-3), 1 a 12. */
   expiryAlertMonths: number;
+  /** Recordatorio de fiado por WhatsApp con {cliente}, {saldo}…; '' = el mensaje de siempre (decisión 344). */
+  creditReminder?: string;
 }
 
 export interface Department {

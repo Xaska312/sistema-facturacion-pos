@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { AuthService } from '../../core/auth/auth.service';
 import { InlineErrorScope } from '../../core/errors/inline-errors';
 import { problemMessage } from '../../core/errors/problem';
@@ -10,7 +10,7 @@ import { problemMessage } from '../../core/errors/problem';
  */
 @Component({
   selector: 'app-verify-email-banner',
-  imports: [ButtonModule],
+  imports: [ButtonComponent],
   template: `
     @if (auth.user(); as user) {
       @if (!user.emailVerified) {
@@ -24,9 +24,9 @@ import { problemMessage } from '../../core/errors/problem';
             <p>{{ notice() }}</p>
           }
           <div class="flex flex-wrap gap-2">
-            <p-button label="Reenviar correo" icon="pi pi-send" size="small" severity="secondary"
-                      [loading]="sending()" (onClick)="resend()" />
-            <p-button label="Ya lo confirmé" size="small" [text]="true" [loading]="checking()" (onClick)="check()" />
+            <app-button label="Reenviar correo" icon="pi pi-send" size="small" severity="secondary"
+                      [loading]="sending()" (clicked)="resend()" />
+            <app-button label="Ya lo confirmé" size="small" [text]="true" [loading]="checking()" (clicked)="check()" />
           </div>
         </div>
       }

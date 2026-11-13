@@ -1,10 +1,10 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
+import { ToastService } from '../../shared/ui/toast.service';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { DialogComponent } from '../../shared/ui/dialog.component';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable, tap, throwError } from 'rxjs';
 import { PageResponse, Sale, SaleRow, SaleStatus } from '../../core/api/api.models';
 import { SaleFilters, SalesApi } from '../../core/api/sales.api';
@@ -36,7 +36,7 @@ const SALE_STATUS: Record<SaleStatus, StatusKey> = { COMPLETED: 'completed', VOI
 /** Historial de ventas: detalle, reimpresión del tiquete y anulación (permiso sales:void). */
 @Component({
   selector: 'app-sales',
-  imports: [ReceiptSendComponent, FormsModule, ButtonModule, DialogModule, InputTextModule, DataTableComponent, HasPermissionDirective,
+  imports: [ReceiptSendComponent, FormsModule, ButtonComponent, DialogComponent, AppInputDirective, DataTableComponent, HasPermissionDirective,
     ReceiptComponent, PageHeaderComponent, FormDialogComponent],
   template: `
     <app-page-header title="Ventas" description="Todas las ventas registradas: detalle, reimpresión del tiquete y anulación." />
@@ -64,11 +64,11 @@ const SALE_STATUS: Record<SaleStatus, StatusKey> = { COMPLETED: 'completed', VOI
         </select>
       </label>
       <ng-template #actions let-row>
-        <p-button label="Ver" icon="pi pi-eye" size="small" [text]="true" (onClick)="open(row)" />
+        <app-button label="Ver" icon="pi pi-eye" size="small" [text]="true" (clicked)="open(row)" />
       </ng-template>
     </app-data-table>
 
-    <p-dialog [header]="detail() ? 'Venta ' + detail()!.documentNumber : 'Venta'" [(visible)]="detailOpen" [modal]="true"
+    <app-dialog [header]="detail() ? 'Venta ' + detail()!.documentNumber : 'Venta'" [(visible)]="detailOpen" [modal]="true"
               [style]="{ width: '30rem' }">
       @if (detail(); as sale) {
         @if (sale.status === 'VOIDED') {
@@ -85,17 +85,17 @@ const SALE_STATUS: Record<SaleStatus, StatusKey> = { COMPLETED: 'completed', VOI
         <div class="w-full flex flex-wrap items-center justify-end gap-2">
           @if (detail(); as sale) {
             @if (sale.status === 'COMPLETED') {
-              <p-button *hasPermission="'sales:void'" label="Anular" severity="danger" [text]="true"
-                        (onClick)="openVoid()" />
+              <app-button *hasPermission="'sales:void'" label="Anular" severity="danger" [text]="true"
+                        (clicked)="openVoid()" />
             }
             <span class="flex-1"></span>
             <app-receipt-send [sale]="sale" [logo]="brandLogo()" />
           }
-          <p-button label="Reimprimir" icon="pi pi-print" severity="secondary" styleClass="min-h-11" (onClick)="print()" />
-          <p-button label="Cerrar" styleClass="min-h-11" (onClick)="detailOpen = false" />
+          <app-button label="Reimprimir" icon="pi pi-print" severity="secondary" styleClass="min-h-11" (clicked)="print()" />
+          <app-button label="Cerrar" styleClass="min-h-11" (clicked)="detailOpen = false" />
         </div>
       </ng-template>
-    </p-dialog>
+    </app-dialog>
 
     <app-form-dialog [(visible)]="voidOpen" header="Anular venta" width="26rem" submitLabel="Anular venta"
                      submitIcon="pi pi-ban" [destructive]="true" [dirty]="voidReason.trim().length > 0"
@@ -104,7 +104,7 @@ const SALE_STATUS: Record<SaleStatus, StatusKey> = { COMPLETED: 'completed', VOI
                      description="La venta queda anulada (no se borra): los productos vuelven al inventario y el efectivo se descuenta de la caja.">
       <div class="flex flex-col gap-1">
         <label for="void-reason" class="text-sm font-medium">Motivo</label>
-        <input pInputText id="void-reason" maxlength="200" [(ngModel)]="voidReason" placeholder="Cliente devolvió el producto" />
+        <input appInput id="void-reason" maxlength="200" [(ngModel)]="voidReason" placeholder="Cliente devolvió el producto" />
       </div>
       @if (detail()?.tip; as tip) {
         @if (!tip.voided) {
@@ -127,7 +127,7 @@ export class SalesComponent implements OnInit {
   /** Cancela la petición anterior de la lista (QA UI-10). */
   private readonly latest = new LatestRequest();
   private readonly sales = inject(SalesApi);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   private readonly router = inject(Router);
   private readonly printer = inject(PrintAgentService);
   private readonly auth = inject(AuthService);

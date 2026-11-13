@@ -30,3 +30,6 @@ deploy/rclone/*
 # Resultados de la prueba de carga (k6)
 loadtest/resultados/*
 !loadtest/resultados/.gitkeep
+
+# Capturas de referencia del cambio de PrimeNG (dependen de las fuentes de cada equipo)
+e2e/tests/visual.spec.ts-snapshots/

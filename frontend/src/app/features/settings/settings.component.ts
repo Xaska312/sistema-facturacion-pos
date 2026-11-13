@@ -3,13 +3,14 @@ import { TechnicalDirectorSectionComponent } from '../pharmacy/technical-directo
 import { XaskaIaLogoComponent } from '../../shared/brand/xaska-ia-logo.component';
 import { DigestSettingsComponent } from '../ai/digest-settings.component';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
+import { ToastService } from '../../shared/ui/toast.service';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable } from 'rxjs';
-import { Subscription, SubscriptionStatus } from '../../core/api/api.models';
+import { BusinessSettings, Subscription, SubscriptionStatus } from '../../core/api/api.models';
 import { OrganizationApi } from '../../core/api/organization.api';
 import { SubscriptionApi } from '../../core/api/subscription.api';
 import { AuthService } from '../../core/auth/auth.service';
@@ -22,6 +23,8 @@ import { BrandingSectionComponent } from './branding-section.component';
 import { PrinterSectionComponent } from './printer-section.component';
 import { BusinessProfileSectionComponent } from './business-profile-section.component';
 import { maxLines } from '../../shared/receipt/doc-header';
+import { DEFAULT_REMINDER, MAX_REMINDER, REMINDER_VARIABLES, isDefaultReminder, reminderMessage }
+  from '../credit/credit-text';
 
 /** Zonas horarias de Colombia y vecinas más usadas; el backend acepta cualquier zona IANA válida. */
 export const TIMEZONES = ['America/Bogota', 'America/Panama', 'America/Lima', 'America/Guayaquil', 'America/Caracas'];
@@ -42,7 +45,7 @@ const TIMEZONE_LABEL: Record<string, string> = {
 
 @Component({
   selector: 'app-settings',
-  imports: [RouterLink, DigestSettingsComponent, XaskaIaLogoComponent, ConsumptionTaxSectionComponent, TechnicalDirectorSectionComponent, ReactiveFormsModule, FormsModule, ButtonModule, InputTextModule, PageHeaderComponent, FormDialogComponent,
+  imports: [RouterLink, DigestSettingsComponent, XaskaIaLogoComponent, ConsumptionTaxSectionComponent, TechnicalDirectorSectionComponent, ReactiveFormsModule, FormsModule, ButtonComponent, AppInputDirective, PageHeaderComponent, FormDialogComponent,
     BrandingSectionComponent, PrinterSectionComponent, BusinessProfileSectionComponent],
   template: `
     <app-page-header title="Ajustes del negocio" description="Cómo funciona tu negocio: tipo y módulos, inventario, impuestos, zona horaria, moneda, tiquete y marca." />
@@ -187,7 +190,7 @@ const TIMEZONE_LABEL: Record<string, string> = {
           </label>
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">Descuento máximo sin autorización (%)</span>
-            <input pInputText type="number" min="0" max="100" step="0.5" formControlName="maxDiscountPercent"
+            <input appInput type="number" min="0" max="100" step="0.5" formControlName="maxDiscountPercent"
                    aria-describedby="discount-help" />
             <span id="discount-help" class="text-xs text-muted">
               Cualquier vendedor puede descontar hasta este porcentaje por producto; más allá, solo quien tiene el
@@ -222,7 +225,7 @@ const TIMEZONE_LABEL: Record<string, string> = {
           <legend class="text-base font-semibold mb-2">Cotizaciones</legend>
           <label class="flex flex-col gap-1 max-w-xs">
             <span class="text-sm font-medium">Días de vigencia por defecto</span>
-            <input pInputText type="number" min="1" max="365" step="1" formControlName="quoteValidityDays"
+            <input appInput type="number" min="1" max="365" step="1" formControlName="quoteValidityDays"
                    aria-describedby="quote-days-help" />
             <span id="quote-days-help" class="text-xs text-muted">Una cotización nueva vale hasta hoy más estos días
               (de 1 a 365). Se puede cambiar en cada una.</span>
@@ -236,13 +239,43 @@ const TIMEZONE_LABEL: Record<string, string> = {
           </label>
         </fieldset>
       }
+      <!-- Decisión 344: el mensaje con que se recuerda el fiado por WhatsApp. -->
+      @if (hasCredit()) {
+        <fieldset class="flex flex-col gap-4" [disabled]="!canEdit()">
+          <legend class="text-base font-semibold mb-2">Fiados</legend>
+          <div class="flex flex-col gap-1">
+            <label for="credit-reminder" class="text-sm font-medium">Mensaje para recordar el fiado por WhatsApp</label>
+            <textarea #reminderBox id="credit-reminder" formControlName="creditReminder" rows="4"
+                      [maxlength]="maxReminder" class="border rounded px-2 py-2"
+                      aria-describedby="reminder-help reminder-preview"></textarea>
+            <span id="reminder-help" class="text-xs text-muted">Es el texto que se abre en WhatsApp con "Recordar" en
+              Fiados. Toca una variable para ponerla donde está el cursor; al enviarlo se cambia por el dato del
+              cliente.</span>
+            <div class="flex flex-wrap gap-2" role="group" aria-label="Variables del mensaje">
+              @for (v of reminderVariables; track v.key) {
+                <button type="button" class="reminder-var" [title]="v.meaning" [attr.aria-label]="'Poner ' + v.key + ': ' + v.meaning"
+                        (click)="insertVariable(reminderBox, v.key)">{{ v.key }}</button>
+              }
+            </div>
+            <p id="reminder-preview" class="text-sm rounded-lg bg-surface-alt px-3 py-2 mt-1">
+              <span class="text-xs text-muted block">Así le llega a un cliente de ejemplo:</span>{{ reminderPreview() }}
+            </p>
+            @if (!reminderIsDefault()) {
+              <div>
+                <app-button label="Volver al mensaje de siempre" icon="pi pi-replay" severity="secondary" [text]="true"
+                            size="small" (clicked)="restoreReminder()" />
+              </div>
+            }
+          </div>
+        </fieldset>
+      }
       <!-- Restaurante (Fase 12b-5): con Mesas apagado el valor se conserva pero no se muestra. -->
       @if (hasTables()) {
         <fieldset class="flex flex-col gap-4" [disabled]="!canEdit()">
           <legend class="text-base font-semibold mb-2">Mesas</legend>
           <label class="flex flex-col gap-1 max-w-xs">
             <span class="text-sm font-medium">Propina sugerida (%)</span>
-            <input pInputText type="number" min="0" max="20" step="1" formControlName="tipPercent"
+            <input appInput type="number" min="0" max="20" step="1" formControlName="tipPercent"
                    aria-describedby="tip-help" />
             <span id="tip-help" class="text-xs text-muted">Al cobrar una mesa se le pregunta al cliente si la incluye
               (es voluntaria y va aparte de la venta, sin impuestos). Lo usual es 10; 0 para no sugerirla.</span>
@@ -255,7 +288,7 @@ const TIMEZONE_LABEL: Record<string, string> = {
           <legend class="text-base font-semibold mb-2">Vencimientos</legend>
           <label class="flex flex-col gap-1 max-w-xs">
             <span class="text-sm font-medium">Avisar con cuántos meses de anticipación</span>
-            <input pInputText type="number" min="1" max="12" step="1" formControlName="expiryAlertMonths"
+            <input appInput type="number" min="1" max="12" step="1" formControlName="expiryAlertMonths"
                    aria-describedby="expiry-help" />
             <span id="expiry-help" class="text-xs text-muted">Los lotes que vencen dentro de ese tiempo salen en
               Vencimientos y con la marca "Vence pronto" al vender. Lo usual es 3.</span>
@@ -264,7 +297,7 @@ const TIMEZONE_LABEL: Record<string, string> = {
       }
       @if (canEdit()) {
         <div class="flex justify-end">
-          <p-button type="submit" label="Guardar" [loading]="saving()" [disabled]="form.invalid || form.pristine" />
+          <app-button type="submit" label="Guardar" [loading]="saving()" [disabled]="form.invalid || form.pristine" />
         </div>
       } @else {
         <p class="text-sm text-muted">Solo lectura: no tienes permiso para modificar los ajustes.</p>
@@ -297,7 +330,7 @@ const TIMEZONE_LABEL: Record<string, string> = {
           borran (ventas, inventario, clientes); para recuperarlo hay que pedirlo a soporte.
         </p>
         <div class="mt-3">
-          <p-button label="Eliminar negocio…" icon="pi pi-trash" severity="danger" [outlined]="true" (onClick)="openClose()" />
+          <app-button label="Eliminar negocio…" icon="pi pi-trash" severity="danger" [outlined]="true" (clicked)="openClose()" />
         </div>
       </section>
     }
@@ -310,16 +343,16 @@ const TIMEZONE_LABEL: Record<string, string> = {
       <div class="flex flex-col gap-4">
         <div class="flex flex-col gap-1">
           <label for="close-name" class="text-sm font-medium">Nombre del negocio</label>
-          <input pInputText id="close-name" autocomplete="off" [(ngModel)]="closeName" [placeholder]="tradeName() ?? ''" />
+          <input appInput id="close-name" autocomplete="off" [(ngModel)]="closeName" [placeholder]="tradeName() ?? ''" />
           <small class="text-muted">Escribe: <strong>{{ tradeName() }}</strong></small>
         </div>
         <div class="flex flex-col gap-1">
           <label for="close-password" class="text-sm font-medium">Tu contraseña</label>
-          <input pInputText id="close-password" type="password" autocomplete="current-password" [(ngModel)]="closePassword" />
+          <input appInput id="close-password" type="password" autocomplete="current-password" [(ngModel)]="closePassword" />
         </div>
         <div class="flex flex-col gap-1">
           <label for="close-reason" class="text-sm font-medium">Motivo (opcional)</label>
-          <input pInputText id="close-reason" maxlength="300" [(ngModel)]="closeReason" placeholder="Cerré el local" />
+          <input appInput id="close-reason" maxlength="300" [(ngModel)]="closeReason" placeholder="Cerré el local" />
         </div>
       </div>
     </app-form-dialog>
@@ -334,13 +367,18 @@ const TIMEZONE_LABEL: Record<string, string> = {
     .plans-cta-icon { display: grid; place-items: center; width: 2.5rem; height: 2.5rem; border-radius: 0.75rem;
       background: var(--xaska-panel-tile); color: var(--aska-amber); }
     .plans-cta-sub { color: var(--xaska-panel-muted); }
+    .reminder-var { padding: 0.125rem 0.625rem; border-radius: 9999px; font: 600 0.8125rem/1.5rem ui-monospace, monospace;
+      background: var(--brand-soft); color: var(--brand-soft-text); transition: transform var(--ui-duration) ease; }
+    .reminder-var:hover:not(:disabled) { transform: var(--ui-lift); }
+    .reminder-var:active:not(:disabled) { transform: var(--ui-press); }
+    .reminder-var:disabled { opacity: 0.6; cursor: default; }
   `,
 })
 export class SettingsComponent implements OnInit {
-  protected readonly headerPlaceholder = 'NIT: 1006122824-9\nCra. 138 #7-45 Ceiba\nCel: 3155145472';
+  protected readonly headerPlaceholder = 'NIT: 900.123.456-7\nCalle 10 # 5-20, Centro\nCel: 300 123 4567';
   private readonly api = inject(OrganizationApi);
   private readonly subscriptionApi = inject(SubscriptionApi);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
 
@@ -351,6 +389,9 @@ export class SettingsComponent implements OnInit {
   /** Resumen del día de Aska (decisión 299): con XASKA IA. */
   protected readonly canDigest = computed(() => this.canEdit() && this.auth.hasPermission('ai:ask'));
   protected readonly hasQuotes = computed(() => this.auth.hasPermission('module:quotes'));
+  protected readonly hasCredit = computed(() => this.auth.hasPermission('module:credit'));
+  protected readonly reminderVariables = REMINDER_VARIABLES;
+  protected readonly maxReminder = MAX_REMINDER;
   protected readonly hasTables = computed(() => this.auth.hasPermission('module:tables'));
   protected readonly hasMedicines = computed(() => this.auth.hasPermission('module:medicines'));
   /** Impresión directa (decisión 288: según el plan). */
@@ -383,11 +424,19 @@ export class SettingsComponent implements OnInit {
     quoteTerms: ['', Validators.maxLength(1000)],
     tipPercent: [10, [Validators.required, Validators.min(0), Validators.max(20)]],
     expiryAlertMonths: [3, [Validators.required, Validators.min(1), Validators.max(12)]],
+    creditReminder: [DEFAULT_REMINDER, Validators.maxLength(MAX_REMINDER)],
   });
+  private readonly reminderText = toSignal(this.form.controls.creditReminder.valueChanges,
+    { initialValue: DEFAULT_REMINDER });
+  /** El mensaje con datos de ejemplo (nunca de un cliente real). */
+  protected readonly reminderPreview = computed(() => reminderMessage(
+    { name: 'María Rodríguez', balance: 45000, oldestDebtAt: new Date(Date.now() - 12 * 86_400_000).toISOString() },
+    this.tradeName() || 'Tu negocio', this.reminderText() || DEFAULT_REMINDER));
+  protected readonly reminderIsDefault = computed(() => isDefaultReminder(this.reminderText()));
 
   ngOnInit(): void {
     this.api.settings().subscribe((settings) => {
-      this.form.reset(settings);
+      this.form.reset(this.toForm(settings));
       // Decisión 331: el aviso de Inicio trae aquí (#encabezado) para escribir el encabezado.
       if (globalThis.location?.hash === '#encabezado') {
         setTimeout(() => globalThis.document?.getElementById('encabezado')?.scrollIntoView({ block: 'center' }));
@@ -410,14 +459,40 @@ export class SettingsComponent implements OnInit {
 
   save(): void {
     this.saving.set(true);
-    this.api.updateSettings(this.form.getRawValue()).subscribe({
+    const value = this.form.getRawValue();
+    // El de siempre se guarda vacío: así sigue cambiando con la app y omite la fecha si no se sabe.
+    this.api.updateSettings({ ...value, creditReminder: isDefaultReminder(value.creditReminder) ? '' : value.creditReminder })
+      .subscribe({
       next: (settings) => {
         this.saving.set(false);
-        this.form.reset(settings);
+        this.form.reset(this.toForm(settings));
         this.messages.add({ severity: 'success', summary: 'Ajustes guardados' });
       },
       error: () => this.saving.set(false),
     });
+  }
+
+  /** Vacío en el servidor = el mensaje de siempre, que se muestra escrito para poder editarlo. */
+  private toForm(settings: BusinessSettings): BusinessSettings & { creditReminder: string } {
+    return { ...settings, creditReminder: settings.creditReminder?.trim() || DEFAULT_REMINDER };
+  }
+
+  protected insertVariable(box: HTMLTextAreaElement, key: string): void {
+    const control = this.form.controls.creditReminder;
+    const text = control.value;
+    const start = box.selectionStart ?? text.length;
+    const end = box.selectionEnd ?? text.length;
+    const next = (text.slice(0, start) + key + text.slice(end)).slice(0, MAX_REMINDER);
+    control.setValue(next);
+    control.markAsDirty();
+    box.focus();
+    const caret = Math.min(start + key.length, next.length);
+    setTimeout(() => box.setSelectionRange(caret, caret));
+  }
+
+  protected restoreReminder(): void {
+    this.form.controls.creditReminder.setValue(DEFAULT_REMINDER);
+    this.form.controls.creditReminder.markAsDirty();
   }
 
   openClose(): void {

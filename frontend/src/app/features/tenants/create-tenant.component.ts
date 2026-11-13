@@ -4,8 +4,8 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, ParamMap, Router, RouterLink } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { BusinessType, CreateTenantRequest } from '../../core/api/api.models';
 import { AuthService } from '../../core/auth/auth.service';
 import { problemMessage } from '../../core/errors/problem';
@@ -45,7 +45,7 @@ export function isActivationCodeRequired(error: unknown): boolean {
  */
 @Component({
   selector: 'app-create-tenant',
-  imports: [ReactiveFormsModule, RouterLink, ButtonModule, InputTextModule, VerifyEmailBannerComponent,
+  imports: [ReactiveFormsModule, RouterLink, ButtonComponent, AppInputDirective, VerifyEmailBannerComponent,
     AuthLayoutComponent, BusinessTypePickerComponent],
   styles: `
     .start { display: flex; gap: 0.75rem; align-items: flex-start; padding: 0.75rem 0.875rem; border-radius: 0.875rem;
@@ -67,15 +67,15 @@ export function isActivationCodeRequired(error: unknown): boolean {
           @if (step() === 1) {
             <label class="flex flex-col gap-1">
               <span class="text-sm font-medium">Nombre comercial</span>
-              <input pInputText formControlName="tradeName" (input)="suggestSlug()" />
+              <input appInput formControlName="tradeName" (input)="suggestSlug()" />
             </label>
             <label class="flex flex-col gap-1">
               <span class="text-sm font-medium">Razón social</span>
-              <input pInputText formControlName="legalName" />
+              <input appInput formControlName="legalName" />
             </label>
             <label class="flex flex-col gap-1">
               <span class="text-sm font-medium">Identificador</span>
-              <input pInputText formControlName="slug" (input)="slugTouched = true" />
+              <input appInput formControlName="slug" (input)="slugTouched = true" />
               <small class="text-muted">Minúsculas, números y "_" (3 a 41). No se puede cambiar después.</small>
             </label>
             <!-- Cómo empezar (decisión 303): prueba gratis, pagar ya con Bre-B o con un código de activación. -->
@@ -116,7 +116,7 @@ export function isActivationCodeRequired(error: unknown): boolean {
             @if (mode() === 'code') {
               <label class="flex flex-col gap-1">
                 <span class="text-sm font-medium">Código de activación</span>
-                <input pInputText formControlName="activationCode" id="activationCode" maxlength="40" placeholder="XXXX-XXXX-XXXX"
+                <input appInput formControlName="activationCode" id="activationCode" maxlength="40" placeholder="XXXX-XXXX-XXXX"
                        (input)="activationCodeError.set(null)"
                        autocomplete="off" [attr.aria-invalid]="activationCodeError() ? true : null" />
               </label>
@@ -127,7 +127,7 @@ export function isActivationCodeRequired(error: unknown): boolean {
             <!-- Decisión 312: código de invitación (llega en el enlace; se puede escribir). -->
             <label class="flex flex-col gap-1">
               <span class="text-sm font-medium">Código de invitación <span class="text-muted font-normal">(opcional)</span></span>
-              <input pInputText formControlName="referralCode" id="referralCode" maxlength="20" placeholder="ESQUIN-7KQ"
+              <input appInput formControlName="referralCode" id="referralCode" maxlength="20" placeholder="ESQUIN-7KQ"
                      class="uppercase" autocomplete="off" (input)="referralError.set(null)"
                      [attr.aria-invalid]="referralError() ? true : null" />
               @if (referralError()) {
@@ -143,7 +143,7 @@ export function isActivationCodeRequired(error: unknown): boolean {
             </div>
             <div class="flex justify-between mt-2">
               <a routerLink="/negocios" class="self-center text-sm text-muted hover:underline">Cancelar</a>
-              <p-button label="Continuar" [disabled]="form.invalid" (onClick)="step.set(2)" />
+              <app-button label="Continuar" [disabled]="form.invalid" (clicked)="step.set(2)" />
             </div>
           } @else {
             <dl class="grid grid-cols-3 gap-2 text-sm">
@@ -157,8 +157,8 @@ export function isActivationCodeRequired(error: unknown): boolean {
               Se creará tu negocio con una sede principal, una caja y los roles por defecto.
             </p>
             <div class="flex justify-between mt-2">
-              <p-button label="Atrás" [text]="true" severity="secondary" (onClick)="step.set(1)" />
-              <p-button label="Crear negocio" [loading]="saving()" [disabled]="!verified()" (onClick)="create()" />
+              <app-button label="Atrás" [text]="true" severity="secondary" (clicked)="step.set(1)" />
+              <app-button label="Crear negocio" [loading]="saving()" [disabled]="!verified()" (clicked)="create()" />
             </div>
           }
         </form>

@@ -1,6 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { AuthService } from '../../core/auth/auth.service';
 import { safeReturnUrl } from '../../core/auth/return-url';
 import { problemMessage } from '../../core/errors/problem';
@@ -14,7 +14,7 @@ import { AuthLayoutComponent } from '../../shared/layout/auth-layout.component';
  */
 @Component({
   selector: 'app-accept-legal',
-  imports: [RouterLink, ButtonModule, AuthLayoutComponent],
+  imports: [RouterLink, ButtonComponent, AuthLayoutComponent],
   template: `
     <app-auth-layout width="md">
       <section class="card p-6 sm:p-8 flex flex-col gap-4" aria-labelledby="accept-title">
@@ -31,10 +31,10 @@ import { AuthLayoutComponent } from '../../shared/layout/auth-layout.component';
           <p class="text-sm text-danger" role="alert">{{ error() }}</p>
         }
 
-        <p-button label="Acepto y continúo" icon="pi pi-check" styleClass="w-full" [loading]="saving()"
-                  (onClick)="accept()" />
-        <p-button label="Salir" severity="secondary" [text]="true" styleClass="w-full" [disabled]="saving()"
-                  (onClick)="logout()" />
+        <app-button label="Acepto y continúo" icon="pi pi-check" styleClass="w-full" [loading]="saving()"
+                  (clicked)="accept()" />
+        <app-button label="Salir" severity="secondary" [text]="true" styleClass="w-full" [disabled]="saving()"
+                  (clicked)="logout()" />
       </section>
     </app-auth-layout>
   `,

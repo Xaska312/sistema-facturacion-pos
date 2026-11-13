@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../shared/ui/toast.service';
 import { of } from 'rxjs';
 import { Party, PartyInput } from '../../core/api/api.models';
 import { PartiesApi } from '../../core/api/parties.api';
@@ -40,7 +40,7 @@ describe('NewCustomerDialogComponent', () => {
         provideNoopAnimations(),
         { provide: PartiesApi, useValue: api },
         { provide: ConfirmService, useValue: jasmine.createSpyObj<ConfirmService>('ConfirmService', ['ask']) },
-        { provide: MessageService, useValue: jasmine.createSpyObj<MessageService>('MessageService', ['add']) },
+        { provide: ToastService, useValue: jasmine.createSpyObj<ToastService>('ToastService', ['add']) },
       ],
     });
     fixture = TestBed.createComponent(NewCustomerDialogComponent);

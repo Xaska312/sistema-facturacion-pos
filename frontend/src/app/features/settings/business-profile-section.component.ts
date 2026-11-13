@@ -1,7 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { SkeletonModule } from 'primeng/skeleton';
+import { ToastService } from '../../shared/ui/toast.service';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { map, switchMap } from 'rxjs';
 import { BusinessType } from '../../core/api/api.models';
 import { BusinessProfile, BusinessProfileApi } from '../../core/api/business-profile.api';
@@ -25,7 +25,7 @@ import { XIconComponent } from '../../shared/icons/xicon.component';
  */
 @Component({
   selector: 'app-business-profile-section',
-  imports: [ButtonModule, SkeletonModule, XIconComponent, BusinessTypePickerComponent],
+  imports: [ButtonComponent, SkeletonComponent, XIconComponent, BusinessTypePickerComponent],
   template: `
     <section class="card p-4 md:p-6 mb-6 flex flex-col gap-5 max-w-3xl" aria-labelledby="profile-title">
       <div>
@@ -79,9 +79,9 @@ import { XIconComponent } from '../../shared/icons/xicon.component';
         @if (p.canEdit) {
           <div class="flex flex-wrap items-center justify-end gap-3">
             @if (dirty()) {
-              <p-button label="Deshacer" [text]="true" severity="secondary" [disabled]="saving()" (onClick)="reset(p)" />
+              <app-button label="Deshacer" [text]="true" severity="secondary" [disabled]="saving()" (clicked)="reset(p)" />
             }
-            <p-button label="Guardar tipo y módulos" [loading]="saving()" [disabled]="!dirty()" (onClick)="save()" />
+            <app-button label="Guardar tipo y módulos" [loading]="saving()" [disabled]="!dirty()" (clicked)="save()" />
           </div>
         } @else {
           <p class="text-sm text-muted">Solo el dueño del negocio cambia el tipo y los módulos.</p>
@@ -89,7 +89,7 @@ import { XIconComponent } from '../../shared/icons/xicon.component';
       } @else if (failed()) {
         <p class="text-sm text-danger" role="alert">No pudimos cargar el tipo de negocio. Recarga la página.</p>
       } @else {
-        <p-skeleton height="10rem" borderRadius="1.25rem" />
+        <app-skeleton height="10rem" borderRadius="1.25rem" />
       }
     </section>
   `,
@@ -111,7 +111,7 @@ import { XIconComponent } from '../../shared/icons/xicon.component';
 export class BusinessProfileSectionComponent {
   private readonly api = inject(BusinessProfileApi);
   private readonly auth = inject(AuthService);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
 
   protected readonly modules = BUSINESS_MODULES;
 

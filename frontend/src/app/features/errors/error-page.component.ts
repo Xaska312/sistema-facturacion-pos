@@ -1,12 +1,13 @@
 import { Location } from '@angular/common';
 import { Component, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 
 /** Página de error (404, 403) con acciones para volver. Los textos vienen del {@code data} de la ruta. */
 @Component({
   selector: 'app-error-page',
-  imports: [RouterLink, ButtonModule],
+  imports: [RouterLink, ButtonComponent, ButtonLinkComponent],
   template: `
     <section class="min-h-[60vh] flex items-center justify-center p-6" [class.min-h-screen]="standalone()">
       <div class="max-w-md text-center">
@@ -17,8 +18,8 @@ import { ButtonModule } from 'primeng/button';
         <h1 class="text-3xl font-extrabold tracking-tight mb-2">{{ heading() }}</h1>
         <p class="text-muted mb-6">{{ message() }}</p>
         <div class="flex flex-wrap justify-center gap-2">
-          <a pButton routerLink="/app" icon="pi pi-home" label="Ir al inicio"></a>
-          <p-button label="Volver" icon="pi pi-arrow-left" severity="secondary" [outlined]="true" (onClick)="back()" />
+          <a appButton routerLink="/app" icon="pi pi-home" label="Ir al inicio"></a>
+          <app-button label="Volver" icon="pi pi-arrow-left" severity="secondary" [outlined]="true" (clicked)="back()" />
         </div>
       </div>
     </section>

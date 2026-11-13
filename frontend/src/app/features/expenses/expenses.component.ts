@@ -1,8 +1,8 @@
 import { Component, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
+import { ToastService } from '../../shared/ui/toast.service';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable } from 'rxjs';
 import { Branch, PageResponse } from '../../core/api/api.models';
 import {
@@ -45,21 +45,21 @@ import { categoryShares, expenseBadge, expenseLine, expenseNumber, expenseSource
  */
 @Component({
   selector: 'app-expenses',
-  imports: [FormsModule, ButtonModule, InputTextModule, PageHeaderComponent, PeriodFilterComponent, StatCardComponent,
+  imports: [FormsModule, ButtonComponent, AppInputDirective, PageHeaderComponent, PeriodFilterComponent, StatCardComponent,
     StatusBadgeComponent, DataTableComponent, CellTemplateDirective, FormDialogComponent, ExpenseDialogComponent,
     ExpenseCategoriesDialogComponent, RecurringExpensesDialogComponent],
   template: `
     <app-page-header title="Gastos" glyph="expenses"
                      description="Todo lo que paga el negocio para funcionar: arriendo, servicios, nómina, transporte… En efectivo desde la caja o por banco, Nequi o tarjeta.">
-      <p-button label="Gastos fijos" icon="pi pi-replay" severity="secondary" [outlined]="true"
-                (onClick)="recurringDialog()?.open()" />
+      <app-button label="Gastos fijos" icon="pi pi-replay" severity="secondary" [outlined]="true"
+                (clicked)="recurringDialog()?.open()" />
       @if (canManage()) {
-        <p-button label="Categorías" icon="pi pi-tags" severity="secondary" [outlined]="true" (onClick)="categoriesDialog()?.open()" />
+        <app-button label="Categorías" icon="pi pi-tags" severity="secondary" [outlined]="true" (clicked)="categoriesDialog()?.open()" />
       }
-      <p-button label="Exportar" icon="pi pi-download" severity="secondary" [outlined]="true" [loading]="exporting()"
-                (onClick)="export()" />
+      <app-button label="Exportar" icon="pi pi-download" severity="secondary" [outlined]="true" [loading]="exporting()"
+                (clicked)="export()" />
       @if (canManage()) {
-        <p-button label="Registrar gasto" icon="pi pi-plus" (onClick)="dialog()?.openNew()" />
+        <app-button label="Registrar gasto" icon="pi pi-plus" (clicked)="dialog()?.openNew()" />
       }
     </app-page-header>
 
@@ -89,9 +89,9 @@ import { categoryShares, expenseBadge, expenseLine, expenseNumber, expenseSource
                 <span class="font-semibold tabular-nums">{{ cop(item.amount) }}</span>
                 @if (canManage()) {
                   <div class="flex gap-1">
-                    <p-button label="Pagar" size="small" icon="pi pi-check" (onClick)="dialog()?.openRecurring(item)" />
-                    <p-button [label]="skipText(item.frequency)" size="small" [text]="true" severity="secondary"
-                              (onClick)="askSkip(item)" />
+                    <app-button label="Pagar" size="small" icon="pi pi-check" (clicked)="dialog()?.openRecurring(item)" />
+                    <app-button [label]="skipText(item.frequency)" size="small" [text]="true" severity="secondary"
+                              (clicked)="askSkip(item)" />
                   </div>
                 }
               </li>
@@ -161,7 +161,7 @@ import { categoryShares, expenseBadge, expenseLine, expenseNumber, expenseSource
       </label>
       <label class="flex items-center gap-2 flex-1 min-w-48">
         <span class="sr-only">Buscar en la nota o la referencia</span>
-        <input pInputText class="w-full" placeholder="Buscar en la nota o la referencia" [ngModel]="text()"
+        <input appInput class="w-full" placeholder="Buscar en la nota o la referencia" [ngModel]="text()"
                (ngModelChange)="setText($event)" />
       </label>
       <label class="flex items-center gap-2 min-h-9 cursor-pointer">
@@ -169,7 +169,7 @@ import { categoryShares, expenseBadge, expenseLine, expenseNumber, expenseSource
         Ver anulados
       </label>
       @if (extraFilters()) {
-        <p-button label="Quitar filtros" size="small" [text]="true" icon="pi pi-filter-slash" (onClick)="clearFilters()" />
+        <app-button label="Quitar filtros" size="small" [text]="true" icon="pi pi-filter-slash" (clicked)="clearFilters()" />
       }
     </section>
 
@@ -199,14 +199,14 @@ import { categoryShares, expenseBadge, expenseLine, expenseNumber, expenseSource
         </ng-template>
         <ng-template #actions let-row>
           @if (row.hasDocument) {
-            <p-button icon="pi pi-paperclip" size="small" [text]="true" label="Soporte" (onClick)="download(row)" />
+            <app-button icon="pi pi-paperclip" size="small" [text]="true" label="Soporte" (clicked)="download(row)" />
           }
           @if (canManage() && row.status === 'ACTIVE') {
             @if (row.unclassified) {
-              <p-button icon="pi pi-tag" size="small" [text]="true" label="Clasificar" (onClick)="dialog()?.openClassify(row)" />
+              <app-button icon="pi pi-tag" size="small" [text]="true" label="Clasificar" (clicked)="dialog()?.openClassify(row)" />
             } @else {
-              <p-button icon="pi pi-pencil" size="small" [text]="true" label="Corregir" (onClick)="dialog()?.openEdit(row)" />
-              <p-button icon="pi pi-ban" size="small" [text]="true" severity="danger" label="Anular" (onClick)="askVoid(row)" />
+              <app-button icon="pi pi-pencil" size="small" [text]="true" label="Corregir" (clicked)="dialog()?.openEdit(row)" />
+              <app-button icon="pi pi-ban" size="small" [text]="true" severity="danger" label="Anular" (clicked)="askVoid(row)" />
             }
           }
         </ng-template>
@@ -232,7 +232,7 @@ import { categoryShares, expenseBadge, expenseLine, expenseNumber, expenseSource
           }
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">¿Por qué lo anulas?</span>
-            <input pInputText name="voidReason" maxlength="255" [(ngModel)]="voidReason"
+            <input appInput name="voidReason" maxlength="255" [(ngModel)]="voidReason"
                    placeholder="Ej.: se registró dos veces" />
           </label>
         }
@@ -245,7 +245,7 @@ export class ExpensesComponent implements OnInit {
   private readonly latestSummary = new LatestRequest();
   private readonly api = inject(ExpensesApi);
   private readonly organization = inject(OrganizationApi);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   private readonly recurring = inject(RecurringExpensesApi);
   private readonly confirm = inject(ConfirmService);
   protected readonly recurringDialog = viewChild(RecurringExpensesDialogComponent);

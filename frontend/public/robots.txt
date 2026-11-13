@@ -1,0 +1,16 @@
+# XASKA POS (decisión 345): se indexan solo las páginas públicas; la app y el API piden sesión.
+User-agent: *
+Allow: /$
+Allow: /login
+Allow: /precios
+Allow: /registro
+Disallow: /app/
+Disallow: /plataforma/
+Disallow: /negocios
+Disallow: /api/
+Disallow: /recuperar-clave
+Disallow: /restablecer-clave
+Disallow: /verificar-correo
+Disallow: /invitacion
+
+Sitemap: https://app.xaska.co/sitemap.xml

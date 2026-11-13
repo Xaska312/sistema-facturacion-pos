@@ -119,6 +119,38 @@ class AuthFlowIT extends IntegrationTest {
     }
 
     @Test
+    void revokeOtherSessionsKeepsThisOne() throws Exception {
+        String email = TestApi.uniqueEmail("otros-equipos");
+        api.register(email);
+        Session here = api.login(email);
+        Session other = api.login(email);
+        Session another = api.login(email);
+
+        // Sin la cookie de este navegador no se sabe cuál dejar abierta: 401 y no se cierra nada
+        mvc.perform(post("/api/v1/auth/sessions/revoke-others").header(HttpHeaders.AUTHORIZATION, here.bearer()))
+                .andExpect(status().isUnauthorized());
+        // La cookie de otra cuenta tampoco sirve
+        Session stranger = api.registerAndLogin("extrano");
+        mvc.perform(post("/api/v1/auth/sessions/revoke-others").header(HttpHeaders.AUTHORIZATION, here.bearer())
+                        .cookie(stranger.refreshCookie()))
+                .andExpect(status().isUnauthorized());
+
+        mvc.perform(post("/api/v1/auth/sessions/revoke-others").header(HttpHeaders.AUTHORIZATION, here.bearer())
+                        .cookie(here.refreshCookie()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.closed").value(2));
+
+        api.refreshRaw(other.refreshToken()).andExpect(status().isUnauthorized());
+        api.refreshRaw(another.refreshToken()).andExpect(status().isUnauthorized());
+        api.refreshRaw(here.refreshToken()).andExpect(status().isOk());
+        api.refreshRaw(stranger.refreshToken()).andExpect(status().isOk());
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM platform.security_events e JOIN platform.users u ON u.id = e.user_id
+                WHERE u.email = ? AND e.event = 'OTHER_SESSIONS_REVOKED'
+                """, Integer.class, email)).isEqualTo(1);
+    }
+
+    @Test
     void refreshWithoutCookieIsUnauthorized() throws Exception {
         mvc.perform(post("/api/v1/auth/refresh")).andExpect(status().isUnauthorized());
     }

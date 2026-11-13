@@ -2,9 +2,9 @@ import { isTouch } from '../../shared/touch';
 import { Component, HostListener, OnInit, computed, inject, input, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
+import { ToastService } from '../../shared/ui/toast.service';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Branch, InventoryDocument, InventoryDocumentType, Product } from '../../core/api/api.models';
 import { CatalogApi } from '../../core/api/catalog.api';
 import { InventoryApi } from '../../core/api/inventory.api';
@@ -36,7 +36,7 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
  */
 @Component({
   selector: 'app-inventory-document-editor',
-  imports: [FormsModule, PesosInputDirective, RouterLink, ButtonModule, InputTextModule, PageHeaderComponent,
+  imports: [FormsModule, PesosInputDirective, RouterLink, ButtonComponent, AppInputDirective, PageHeaderComponent,
     SizeGridDialogComponent],
   template: `
     @if (type(); as t) {
@@ -67,7 +67,7 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
         @if (t === 'ADJUSTMENT' || t === 'COUNT') {
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">Motivo{{ t === 'ADJUSTMENT' ? '' : ' (opcional)' }}</span>
-            <input pInputText [(ngModel)]="reason" maxlength="255"
+            <input appInput [(ngModel)]="reason" maxlength="255"
                    [placeholder]="t === 'ADJUSTMENT' ? 'Daño, vencimiento, donación…' : 'Conteo físico'" />
           </label>
         }
@@ -83,27 +83,27 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
           </label>
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">Cómo se dispuso</span>
-            <input pInputText [(ngModel)]="disposalMethod" maxlength="200"
+            <input appInput [(ngModel)]="disposalMethod" maxlength="200"
                    placeholder="Gestor de residuos que lo recogió y número de su acta" />
           </label>
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">Testigo (opcional)</span>
-            <input pInputText [(ngModel)]="witnessName" maxlength="160" placeholder="Nombre de quien lo presenció" />
+            <input appInput [(ngModel)]="witnessName" maxlength="160" placeholder="Nombre de quien lo presenció" />
           </label>
         }
         <label class="flex flex-col gap-1 md:col-span-3">
           <span class="text-sm font-medium">Notas</span>
-          <input pInputText [(ngModel)]="notes" maxlength="500" />
+          <input appInput [(ngModel)]="notes" maxlength="500" />
         </label>
       </section>
 
       <section class="card p-4 mt-4 max-w-5xl flex flex-col gap-3">
         <div class="flex flex-wrap gap-2 items-center">
-          <input pInputText class="flex-1 min-w-64" placeholder="Escanea el código o escribe SKU/nombre y presiona Enter"
+          <input appInput class="flex-1 min-w-64" placeholder="Escanea el código o escribe SKU/nombre y presiona Enter"
                  [(ngModel)]="code" (keyup.enter)="add()" [attr.autofocus]="desktop ? '' : null" />
-          <p-button label="Agregar" [loading]="adding()" (onClick)="add()" />
-          <p-button label="Por tallas" icon="pi pi-th-large" severity="secondary" [outlined]="true"
-                    (onClick)="sizeGrid()?.open()" />
+          <app-button label="Agregar" [loading]="adding()" (clicked)="add()" />
+          <app-button label="Por tallas" icon="pi pi-th-large" severity="secondary" [outlined]="true"
+                    (clicked)="sizeGrid()?.open()" />
         </div>
         @if (results().length > 0) {
           <ul class="border rounded divide-y text-sm max-h-60 overflow-y-auto">
@@ -144,7 +144,7 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
                       </select>
                     </td>
                   }
-                  <td class="p-2"><input pInputText type="number" min="0" step="any" class="w-28" [(ngModel)]="line.quantity" /></td>
+                  <td class="p-2"><input appInput type="number" min="0" step="any" class="w-28" [(ngModel)]="line.quantity" /></td>
                   <td class="p-2">
                     <select class="border rounded px-2 py-1" [(ngModel)]="line.unitId">
                       @for (u of line.units; track u.id) {
@@ -158,7 +158,7 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
                         <span class="text-xs text-muted">—</span>
                       } @else if (entry(t, line) || (t === 'COUNT' && !line.lotFixed)) {
                         <span class="flex gap-1">
-                          <input pInputText class="w-28 uppercase" maxlength="40" placeholder="Lote" [(ngModel)]="line.lotNumber"
+                          <input appInput class="w-28 uppercase" maxlength="40" placeholder="Lote" [(ngModel)]="line.lotNumber"
                                  [attr.aria-label]="'Lote de ' + line.name" />
                           <input type="date" class="border rounded px-1 py-1" [(ngModel)]="line.expirationDate"
                                  [attr.aria-label]="'Vencimiento de ' + line.name" />
@@ -187,7 +187,7 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
                   @if (t === 'INITIAL' || t === 'ADJUSTMENT') {
                     <td class="p-2">
                       @if (t === 'INITIAL' || line.direction === 'IN') {
-                        <input pInputText appPesos="2" class="w-32" [(ngModel)]="line.unitCost"
+                        <input appInput appPesos="2" class="w-32" [(ngModel)]="line.unitCost"
                                [placeholder]="t === 'ADJUSTMENT' ? 'Costo promedio' : ''" />
                       } @else {
                         <span class="text-muted text-xs">Costo promedio</span>
@@ -198,7 +198,7 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
                     @if (t === 'COUNT' && line.tracksLots) {
                       <button type="button" class="text-xs text-brand hover:underline mr-1" (click)="addLot(i)">+ Lote nuevo</button>
                     }
-                    <p-button label="Quitar" size="small" [text]="true" severity="danger" (onClick)="remove(i)" />
+                    <app-button label="Quitar" size="small" [text]="true" severity="danger" (clicked)="remove(i)" />
                   </td>
                 </tr>
               } @empty {
@@ -218,8 +218,8 @@ import { HasUnsavedChanges, warnIfUnsaved } from '../../shared/unsaved-changes';
         @if (problem(); as message) {
           <span class="text-sm text-warning">{{ message }}</span>
         }
-        <a routerLink="/app/inventario/movimientos"><p-button label="Cancelar" [text]="true" severity="secondary" /></a>
-        <p-button label="Registrar" [loading]="saving()" [disabled]="problem() !== null" (onClick)="save()" />
+        <a routerLink="/app/inventario/movimientos"><app-button label="Cancelar" [text]="true" severity="secondary" /></a>
+        <app-button label="Registrar" [loading]="saving()" [disabled]="problem() !== null" (clicked)="save()" />
       </div>
 
       <app-size-grid-dialog [type]="t" [branchId]="branchId" [lines]="lines()" (applied)="applyGrid($event)" />
@@ -241,7 +241,7 @@ export class InventoryDocumentEditorComponent implements OnInit, HasUnsavedChang
   private readonly api = inject(InventoryApi);
   private readonly catalog = inject(CatalogApi);
   private readonly organization = inject(OrganizationApi);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   private readonly router = inject(Router);
 
   protected readonly labels = DOCUMENT_LABEL;

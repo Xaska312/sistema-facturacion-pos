@@ -2,9 +2,10 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { SkeletonModule } from 'primeng/skeleton';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
+import { AppInputDirective } from '../../shared/ui/input.directive';
+import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { Observable, Subject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
 import { Category, Product } from '../../core/api/api.models';
 import { CatalogApi } from '../../core/api/catalog.api';
@@ -21,13 +22,13 @@ import { StationDraft, emptyStation, stationDraft, stationProblem, stationReceiv
  */
 @Component({
   selector: 'app-stations',
-  imports: [FormsModule, RouterLink, ButtonModule, InputTextModule, SkeletonModule, PageHeaderComponent,
+  imports: [FormsModule, RouterLink, ButtonComponent, ButtonLinkComponent, AppInputDirective, SkeletonComponent, PageHeaderComponent,
     FormDialogComponent, XIconComponent],
   template: `
     <app-page-header title="Estaciones de cocina" glyph="kitchen"
                      description="A dónde sale cada producto al enviar a cocina. Lo que no tenga estación va a la principal.">
-      <a pButton routerLink="/app/comandas" label="Comandas" icon="pi pi-arrow-left" severity="secondary" [text]="true"></a>
-      <p-button label="Nueva estación" icon="pi pi-plus" (onClick)="openNew()" />
+      <a appButton routerLink="/app/comandas" label="Comandas" icon="pi pi-arrow-left" severity="secondary" [text]="true"></a>
+      <app-button label="Nueva estación" icon="pi pi-plus" (clicked)="openNew()" />
     </app-page-header>
 
     @if (stations(); as list) {
@@ -42,8 +43,8 @@ import { StationDraft, emptyStation, stationDraft, stationProblem, stationReceiv
                   {{ s.main ? 'Principal' : s.active ? 'Activa' : 'Inactiva: lo suyo va a la principal' }}
                 </p>
               </div>
-              <p-button icon="pi pi-pencil" [text]="true" [rounded]="true" severity="secondary"
-                        [ariaLabel]="'Editar ' + s.name" (onClick)="openEdit(s)" />
+              <app-button icon="pi pi-pencil" [text]="true" [rounded]="true" severity="secondary"
+                        [ariaLabel]="'Editar ' + s.name" (clicked)="openEdit(s)" />
             </div>
             <p class="text-sm text-muted mt-auto"><span class="font-semibold text-fg">Recibe:</span> {{ receives(s) }}</p>
           </li>
@@ -52,7 +53,7 @@ import { StationDraft, emptyStation, stationDraft, stationProblem, stationReceiv
     } @else {
       <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3" aria-busy="true">
         @for (i of [0, 1]; track i) {
-          <p-skeleton height="9rem" borderRadius="1.25rem" />
+          <app-skeleton height="9rem" borderRadius="1.25rem" />
         }
       </div>
     }
@@ -62,7 +63,7 @@ import { StationDraft, emptyStation, stationDraft, stationProblem, stationReceiv
                      [successMessage]="editing() ? 'Estación guardada' : 'Estación creada'" (saved)="load()">
       <div class="flex flex-col gap-1">
         <label for="station-name" class="text-sm font-semibold">Nombre</label>
-        <input pInputText id="station-name" maxlength="40" placeholder="Bar, Parrilla, Postres…" [(ngModel)]="draft.name"
+        <input appInput id="station-name" maxlength="40" placeholder="Bar, Parrilla, Postres…" [(ngModel)]="draft.name"
                (ngModelChange)="touch()" />
       </div>
 
@@ -80,7 +81,7 @@ import { StationDraft, emptyStation, stationDraft, stationProblem, stationReceiv
           </div>
         }
         <label for="station-product" class="text-xs text-muted mt-1">Productos sueltos (mandan sobre su categoría):</label>
-        <input pInputText id="station-product" placeholder="Busca un producto por nombre o SKU" autocomplete="off"
+        <input appInput id="station-product" placeholder="Busca un producto por nombre o SKU" autocomplete="off"
                [ngModel]="productSearch" (ngModelChange)="searchProducts($event)" />
         @if (productResults().length > 0) {
           <ul class="border border-line rounded-xl divide-y divide-line max-h-48 overflow-auto" aria-label="Productos encontrados">

@@ -106,6 +106,22 @@ public class RefreshTokenService implements SessionApi {
         repository.revokeAllActive(userId, Instant.now());
     }
 
+    /**
+     * "Cerrar sesión en los otros equipos" (decisión 343): revoca todos los refresh tokens activos del usuario menos
+     * el de este navegador, que debe ser suyo y seguir vivo. Los accesos ya emitidos en los otros equipos caducan
+     * solos (duran minutos) y no pueden renovarse.
+     *
+     * @return cuántas sesiones se cerraron
+     */
+    public int revokeOthers(UUID userId, String currentRawToken) {
+        Instant now = Instant.now();
+        RefreshToken current = find(currentRawToken)
+                .filter(t -> t.getUserId().equals(userId))
+                .filter(t -> !t.isRevoked() && !t.isExpired(now))
+                .orElseThrow(() -> new UnauthorizedException(INVALID));
+        return repository.revokeAllActiveExcept(userId, current.getId(), now);
+    }
+
     @Override
     public void revokeTenantSessions(UUID userId, UUID tenantId) {
         repository.revokeActiveForTenant(userId, tenantId, Instant.now());

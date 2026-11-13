@@ -2,8 +2,8 @@ import { NgTemplateOutlet } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
-import { SkeletonModule } from 'primeng/skeleton';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { Observable } from 'rxjs';
 import {
   Branch,
@@ -63,13 +63,13 @@ const REPORT_PERIODS: readonly PeriodKey[] = ['today', 'yesterday', 'last7', 'la
  */
 @Component({
   selector: 'app-reports',
-  imports: [TermComponent, NgTemplateOutlet, ButtonModule, SkeletonModule, ChartComponent, PageHeaderComponent, PeriodFilterComponent,
+  imports: [TermComponent, NgTemplateOutlet, ButtonComponent, SkeletonComponent, ChartComponent, PageHeaderComponent, PeriodFilterComponent,
     StatCardComponent, DataTableComponent, CellTemplateDirective],
   template: `
     <app-page-header title="Reportes"
                      description="Ventas, utilidad, impuestos e inventario por periodo, con exportación a Excel (CSV).">
-      <p-button label="Exportar a Excel (CSV)" icon="pi pi-download" severity="secondary" [outlined]="true"
-                [loading]="exporting()" (onClick)="download()" />
+      <app-button label="Exportar a Excel (CSV)" icon="pi pi-download" severity="secondary" [outlined]="true"
+                [loading]="exporting()" (clicked)="download()" />
     </app-page-header>
 
     <div class="sticky top-14 z-20 -mx-4 md:-mx-6 px-4 md:px-6 py-2 mb-2 bg-ground">
@@ -106,7 +106,7 @@ const REPORT_PERIODS: readonly PeriodKey[] = ['today', 'yesterday', 'last7', 'la
       <div class="card p-8 flex flex-col items-center gap-3 text-center" role="alert">
         <p class="font-semibold">No pudimos cargar el reporte</p>
         <p class="text-sm text-muted">Revisa tu conexión e inténtalo de nuevo.</p>
-        <p-button label="Reintentar" icon="pi pi-refresh" (onClick)="reload()" />
+        <app-button label="Reintentar" icon="pi pi-refresh" (clicked)="reload()" />
       </div>
     } @else {
       @switch (tab()) {
@@ -139,7 +139,7 @@ const REPORT_PERIODS: readonly PeriodKey[] = ['today', 'yesterday', 'last7', 'la
           } @else {
             <div class="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
               @for (i of [0, 1, 2, 3]; track i) {
-                <div class="card p-4"><p-skeleton height="4.5rem" /></div>
+                <div class="card p-4"><app-skeleton height="4.5rem" /></div>
               }
             </div>
           }

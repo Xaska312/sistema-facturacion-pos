@@ -2,10 +2,10 @@ import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { rememberStartPlan } from '../billing/start-plan';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { PasswordModule } from 'primeng/password';
+import { ToastService } from '../../shared/ui/toast.service';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { AppInputDirective } from '../../shared/ui/input.directive';
+import { PasswordComponent } from '../../shared/ui/password.component';
 import { AuthService } from '../../core/auth/auth.service';
 import { problemMessage } from '../../core/errors/problem';
 import { safeReturnUrl } from '../../core/auth/return-url';
@@ -14,7 +14,7 @@ import { AuthLayoutComponent } from '../../shared/layout/auth-layout.component';
 
 @Component({
   selector: 'app-register',
-  imports: [ReactiveFormsModule, RouterLink, ButtonModule, InputTextModule, PasswordModule, AuthLayoutComponent],
+  imports: [ReactiveFormsModule, RouterLink, ButtonComponent, AppInputDirective, PasswordComponent, AuthLayoutComponent],
   template: `
     <app-auth-layout width="md">
       <form [formGroup]="form" (ngSubmit)="submit()"
@@ -23,19 +23,19 @@ import { AuthLayoutComponent } from '../../shared/layout/auth-layout.component';
 
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Nombre completo</span>
-          <input pInputText formControlName="fullName" autocomplete="name" />
+          <input appInput formControlName="fullName" autocomplete="name" />
         </label>
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Correo</span>
-          <input pInputText type="email" formControlName="email" autocomplete="email" />
+          <input appInput type="email" formControlName="email" autocomplete="email" />
         </label>
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Celular (opcional)</span>
-          <input pInputText formControlName="phone" autocomplete="tel" />
+          <input appInput formControlName="phone" autocomplete="tel" />
         </label>
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Contraseña</span>
-          <p-password formControlName="password" [toggleMask]="true" autocomplete="new-password"
+          <app-password formControlName="password" [toggleMask]="true" autocomplete="new-password"
                       styleClass="w-full" inputStyleClass="w-full"
                       promptLabel="Mínimo 10 caracteres, con letras y números" />
         </label>
@@ -57,7 +57,7 @@ import { AuthLayoutComponent } from '../../shared/layout/auth-layout.component';
           <p class="text-sm text-danger" role="alert">{{ error() }}</p>
         }
 
-        <p-button type="submit" label="Registrarme" [loading]="loading()" [disabled]="form.invalid" styleClass="w-full" />
+        <app-button type="submit" label="Registrarme" [loading]="loading()" [disabled]="form.invalid" styleClass="w-full" />
         <p class="text-sm text-center">
           ¿Ya tienes cuenta? <a routerLink="/login" [queryParams]="returnUrl ? { returnUrl: returnUrl } : {}"
                                 class="text-brand hover:underline">Inicia sesión</a>
@@ -72,7 +72,7 @@ import { AuthLayoutComponent } from '../../shared/layout/auth-layout.component';
 export class RegisterComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   private readonly query = inject(ActivatedRoute).snapshot.queryParamMap;
   protected readonly returnUrl = safeReturnUrl(this.query.get('returnUrl'));
 

@@ -3,8 +3,8 @@ import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angula
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
+import { ToastService } from '../../shared/ui/toast.service';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { BillingCycle } from '../../core/api/api.models';
 import { BillingAddon, BillingApi, BillingCatalog, BillingPlan, PaymentRequestView } from '../../core/api/billing.api';
 import { AuthService } from '../../core/auth/auth.service';
@@ -26,7 +26,7 @@ import { COUNTABLE, addonsForSale, annualSaving, checkLines, months, orderTotal,
  */
 @Component({
   selector: 'app-plans',
-  imports: [FormsModule, ButtonModule, PageHeaderComponent, XaskaIaLogoComponent, AskaLoaderComponent, ReferralCardComponent],
+  imports: [FormsModule, ButtonComponent, PageHeaderComponent, XaskaIaLogoComponent, AskaLoaderComponent, ReferralCardComponent],
   template: `
     <app-page-header title="Planes y pagos"
                      description="Renueva tu plan, agrega XASKA IA, módulos o más cupos y paga por Bre-B desde la app de tu banco." />
@@ -92,7 +92,7 @@ import { COUNTABLE, addonsForSale, annualSaving, checkLines, months, orderTotal,
               <p class="text-sm text-muted">{{ statusText(r.status) }} · pedido del {{ date(r.createdAt) }}</p>
             </div>
             @if (r.status === 'PENDING') {
-              <p-button label="Cancelar pedido" [text]="true" severity="secondary" (onClick)="cancel(r)" />
+              <app-button label="Cancelar pedido" [text]="true" severity="secondary" (clicked)="cancel(r)" />
             }
           </div>
           <div class="grid gap-3 sm:grid-cols-3">
@@ -231,8 +231,8 @@ import { COUNTABLE, addonsForSale, annualSaving, checkLines, months, orderTotal,
             <p class="text-xs text-muted">Total por {{ monthsLabel() }}</p>
             <p class="text-2xl font-extrabold tracking-tight">{{ cop(total()) }}</p>
           </div>
-          <p-button label="Pagar con Bre-B" icon="pi pi-qrcode" [disabled]="total() <= 0 || !c.breb.ready"
-                    [loading]="creating()" (onClick)="create()" />
+          <app-button label="Pagar con Bre-B" icon="pi pi-qrcode" [disabled]="total() <= 0 || !c.breb.ready"
+                    [loading]="creating()" (clicked)="create()" />
         </div>
       </section>
 
@@ -324,7 +324,7 @@ import { COUNTABLE, addonsForSale, annualSaving, checkLines, months, orderTotal,
 export class PlansComponent implements OnInit {
   private readonly api = inject(BillingApi);
   private readonly auth = inject(AuthService);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly String = String;

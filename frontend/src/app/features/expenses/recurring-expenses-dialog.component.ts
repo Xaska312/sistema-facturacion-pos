@@ -1,8 +1,8 @@
 import { Component, computed, inject, model, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { DialogComponent } from '../../shared/ui/dialog.component';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { Observable } from 'rxjs';
 import { Branch, Party, PaymentMethod } from '../../core/api/api.models';
 import { CashApi } from '../../core/api/cash.api';
@@ -31,14 +31,14 @@ import { frequencyLabel, recurringProblem } from './recurring-text';
  */
 @Component({
   selector: 'app-recurring-expenses-dialog',
-  imports: [FormsModule, ButtonModule, DialogModule, InputTextModule, PesosInputDirective, FormDialogComponent],
+  imports: [FormsModule, ButtonComponent, DialogComponent, AppInputDirective, PesosInputDirective, FormDialogComponent],
   template: `
-    <p-dialog header="Gastos fijos" [(visible)]="visible" [modal]="true" [style]="{ width: '40rem' }"
-              [breakpoints]="{ '640px': '96vw' }" (onHide)="changed.emit()">
+    <app-dialog header="Gastos fijos" [(visible)]="visible" [modal]="true" [style]="{ width: '40rem' }"
+              [breakpoints]="{ '640px': '96vw' }" (hidden)="changed.emit()">
       <p class="text-sm text-muted mb-3">Lo que pagas siempre, como el arriendo, la nómina o el internet. XASKA te avisa
         cuando toca y lo registras con un toque.</p>
       @if (canManage()) {
-        <p-button label="Nuevo gasto fijo" icon="pi pi-plus" class="block mb-3" (onClick)="openForm(null)" />
+        <app-button label="Nuevo gasto fijo" icon="pi pi-plus" class="block mb-3" (clicked)="openForm(null)" />
       }
       <ul class="flex flex-col">
         @for (r of items(); track r.id) {
@@ -51,25 +51,25 @@ import { frequencyLabel, recurringProblem } from './recurring-text';
             </div>
             <span class="font-semibold tabular-nums">{{ cop(r.amount) }}</span>
             @if (canManage()) {
-              <p-button icon="pi pi-pencil" size="small" [text]="true" severity="secondary"
-                        [ariaLabel]="'Cambiar ' + r.name" (onClick)="openForm(r)" />
-              <p-button [label]="r.active ? 'Apagar' : 'Prender'" size="small" [text]="true"
+              <app-button icon="pi pi-pencil" size="small" [text]="true" severity="secondary"
+                        [ariaLabel]="'Cambiar ' + r.name" (clicked)="openForm(r)" />
+              <app-button [label]="r.active ? 'Apagar' : 'Prender'" size="small" [text]="true"
                         [severity]="r.active ? 'secondary' : 'primary'" [loading]="toggling() === r.id"
-                        (onClick)="toggle(r)" />
+                        (clicked)="toggle(r)" />
             }
           </li>
         } @empty {
           <li class="py-6 text-center text-sm text-muted">{{ loaded() ? 'Aún no tienes gastos fijos.' : 'Cargando…' }}</li>
         }
       </ul>
-    </p-dialog>
+    </app-dialog>
 
     <app-form-dialog [(visible)]="formOpen" [header]="editing() ? 'Cambiar gasto fijo' : 'Nuevo gasto fijo'"
                      width="32rem" [submitLabel]="editing() ? 'Guardar' : 'Crear gasto fijo'" [dirty]="formDirty"
                      [invalidMessage]="problem()" [save]="saveRequest" [successMessage]="null" (saved)="onSaved()">
       <label class="flex flex-col gap-1">
         <span class="text-sm font-medium">Nombre</span>
-        <input pInputText name="name" maxlength="80" [(ngModel)]="name" (ngModelChange)="formDirty = true"
+        <input appInput name="name" maxlength="80" [(ngModel)]="name" (ngModelChange)="formDirty = true"
                placeholder="Ej.: Arriendo del local" />
       </label>
       <div class="flex flex-col gap-1">

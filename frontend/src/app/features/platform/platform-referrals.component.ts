@@ -1,9 +1,9 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
+import { ToastService } from '../../shared/ui/toast.service';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { DialogComponent } from '../../shared/ui/dialog.component';
+import { AppInputDirective } from '../../shared/ui/input.directive';
 import { BillingApi, Partner, PartnerInput, PartnerKind, ReferralRow } from '../../core/api/billing.api';
 import { problemMessage } from '../../core/errors/problem';
 import { copyToClipboard } from '../../shared/clipboard';
@@ -20,11 +20,11 @@ const EMPTY: PartnerInput = { name: '', kind: 'ACCOUNTANT', phone: null, email: 
  */
 @Component({
   selector: 'app-platform-referrals',
-  imports: [FormsModule, ButtonModule, DialogModule, InputTextModule, PageHeaderComponent],
+  imports: [FormsModule, ButtonComponent, DialogComponent, AppInputDirective, PageHeaderComponent],
   template: `
     <app-page-header title="Referidos y aliados"
                      description="Contadores y distribuidores que traen negocios (20 % del primer pago) y los negocios que entraron con un código.">
-      <p-button label="Nuevo aliado" icon="pi pi-plus" (onClick)="edit(null)" />
+      <app-button label="Nuevo aliado" icon="pi pi-plus" (clicked)="edit(null)" />
     </app-page-header>
 
     @if (owed() > 0) {
@@ -52,7 +52,7 @@ const EMPTY: PartnerInput = { name: '', kind: 'ACCOUNTANT', phone: null, email: 
                 <td class="pr-3">{{ p.paid }}</td>
                 <td class="pr-3 font-semibold">{{ cop(p.commissionOwed) }}</td>
                 <td class="pr-3 font-mono">{{ p.payoutKey ?? '—' }}</td>
-                <td><p-button label="Editar" size="small" [text]="true" (onClick)="edit(p)" /></td>
+                <td><app-button label="Editar" size="small" [text]="true" (clicked)="edit(p)" /></td>
               </tr>
             }
           </tbody>
@@ -87,7 +87,7 @@ const EMPTY: PartnerInput = { name: '', kind: 'ACCOUNTANT', phone: null, email: 
                 </td>
                 <td>
                   @if (r.commission !== null && !r.paidAt) {
-                    <p-button label="Marcar pagada" size="small" [text]="true" (onClick)="openPaid(r)" />
+                    <app-button label="Marcar pagada" size="small" [text]="true" (clicked)="openPaid(r)" />
                   }
                 </td>
               </tr>
@@ -97,50 +97,50 @@ const EMPTY: PartnerInput = { name: '', kind: 'ACCOUNTANT', phone: null, email: 
       }
     </section>
 
-    <p-dialog [(visible)]="editOpen" [modal]="true" [header]="editingId ? 'Editar aliado' : 'Nuevo aliado'"
+    <app-dialog [(visible)]="editOpen" [modal]="true" [header]="editingId ? 'Editar aliado' : 'Nuevo aliado'"
               [style]="{ width: '28rem', maxWidth: '94vw' }">
       <div class="flex flex-col gap-3">
         <label class="flex flex-col gap-1"><span class="text-sm font-medium">Nombre</span>
-          <input pInputText [(ngModel)]="draft.name" maxlength="120" /></label>
+          <input appInput [(ngModel)]="draft.name" maxlength="120" /></label>
         <label class="flex flex-col gap-1"><span class="text-sm font-medium">Tipo</span>
           <select class="border border-line rounded-[10px] px-3 min-h-11 bg-surface" [(ngModel)]="draft.kind">
             <option value="ACCOUNTANT">Contador</option><option value="DISTRIBUTOR">Distribuidor</option>
           </select></label>
         <div class="grid grid-cols-2 gap-3">
           <label class="flex flex-col gap-1"><span class="text-sm font-medium">Teléfono</span>
-            <input pInputText [(ngModel)]="draft.phone" maxlength="30" /></label>
+            <input appInput [(ngModel)]="draft.phone" maxlength="30" /></label>
           <label class="flex flex-col gap-1"><span class="text-sm font-medium">Llave Bre-B</span>
-            <input pInputText [(ngModel)]="draft.payoutKey" maxlength="64" placeholder="@LLAVE" /></label>
+            <input appInput [(ngModel)]="draft.payoutKey" maxlength="64" placeholder="@LLAVE" /></label>
         </div>
         <label class="flex flex-col gap-1"><span class="text-sm font-medium">Correo</span>
-          <input pInputText type="email" [(ngModel)]="draft.email" maxlength="160" /></label>
+          <input appInput type="email" [(ngModel)]="draft.email" maxlength="160" /></label>
         <label class="flex flex-col gap-1"><span class="text-sm font-medium">Nota</span>
-          <input pInputText [(ngModel)]="draft.note" maxlength="300" /></label>
+          <input appInput [(ngModel)]="draft.note" maxlength="300" /></label>
         <label class="flex items-center gap-2 text-sm"><input type="checkbox" [(ngModel)]="draft.active" /> Activo (su código
           sirve para registrarse)</label>
         <div class="flex justify-end gap-2 mt-2">
-          <p-button label="Cancelar" [text]="true" (onClick)="editOpen = false" />
-          <p-button label="Guardar" [loading]="saving()" (onClick)="save()" />
+          <app-button label="Cancelar" [text]="true" (clicked)="editOpen = false" />
+          <app-button label="Guardar" [loading]="saving()" (clicked)="save()" />
         </div>
       </div>
-    </p-dialog>
+    </app-dialog>
 
-    <p-dialog [(visible)]="paidOpen" [modal]="true" header="Marcar comisión pagada" [style]="{ width: '24rem', maxWidth: '94vw' }">
+    <app-dialog [(visible)]="paidOpen" [modal]="true" header="Marcar comisión pagada" [style]="{ width: '24rem', maxWidth: '94vw' }">
       @if (paying(); as r) {
         <p class="text-sm mb-3">{{ cop(r.commission ?? 0) }} a {{ r.partnerName }} por {{ r.referredName }}.
           Paga a {{ r.partnerPayoutKey ?? 'su llave' }} y escribe la referencia del pago.</p>
-        <input pInputText class="w-full" [(ngModel)]="reference" maxlength="60" placeholder="Referencia Bre-B" />
+        <input appInput class="w-full" [(ngModel)]="reference" maxlength="60" placeholder="Referencia Bre-B" />
         <div class="flex justify-end gap-2 mt-4">
-          <p-button label="Cancelar" [text]="true" (onClick)="paidOpen = false" />
-          <p-button label="Marcar pagada" [loading]="saving()" [disabled]="!reference.trim()" (onClick)="markPaid(r)" />
+          <app-button label="Cancelar" [text]="true" (clicked)="paidOpen = false" />
+          <app-button label="Marcar pagada" [loading]="saving()" [disabled]="!reference.trim()" (clicked)="markPaid(r)" />
         </div>
       }
-    </p-dialog>
+    </app-dialog>
   `,
 })
 export class PlatformReferralsComponent implements OnInit {
   private readonly api = inject(BillingApi);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
 
   protected readonly partners = signal<Partner[]>([]);
   protected readonly rows = signal<ReferralRow[]>([]);

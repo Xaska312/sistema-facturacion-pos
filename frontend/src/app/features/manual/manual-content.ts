@@ -312,6 +312,7 @@ export const MANUAL: readonly ManualChapter[] = [
             ['Enter', 'Agrega el código escrito; en el cobro registra la venta; después, empieza una nueva'],
             ['F2', 'Buscar un producto por nombre'],
             ['F4', 'Cobrar'],
+            ['F8', 'Abre el cajón monedero (con XASKA Impresora; la tecla se cambia o se quita en Ajustes → Impresora)'],
             ['Esc', 'Cierra lo que esté abierto; si no hay nada abierto, cancela la venta'],
             ['?', 'Ver los atajos y repetir el recorrido guiado'],
             ['3*código', 'Agrega 3 unidades de ese código'],

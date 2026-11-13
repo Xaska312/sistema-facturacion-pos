@@ -7,6 +7,7 @@ import com.poshibrido.credit.application.CreditService.PaymentCommand;
 import com.poshibrido.credit.application.CreditViews.AccountView;
 import com.poshibrido.credit.application.CreditViews.EntryView;
 import com.poshibrido.credit.application.CreditViews.Summary;
+import com.poshibrido.organization.application.BusinessSettingsApi;
 import com.poshibrido.shared.api.PageResponse;
 import com.poshibrido.shared.validation.WholePesos;
 import jakarta.validation.Valid;
@@ -39,6 +40,11 @@ public class CreditController {
 
     private final CreditQueryService queries;
     private final CreditService service;
+    private final BusinessSettingsApi settings;
+
+    /** Mensaje del recordatorio por WhatsApp; vacío = el de siempre (decisión 344). */
+    public record ReminderTemplate(String template) {
+    }
 
     public record PaymentRequest(@NotNull @DecimalMin(value = "0", inclusive = false)
                                  @Digits(integer = 12, fraction = 2) @WholePesos BigDecimal amount,
@@ -48,6 +54,13 @@ public class CreditController {
     }
 
     public record VoidRequest(@NotBlank @Size(max = 255) String reason) {
+    }
+
+    /** El mensaje con que se recuerda el fiado por WhatsApp (lo edita el dueño en Ajustes). */
+    @GetMapping("/reminder-template")
+    @PreAuthorize("hasAuthority('credit:read')")
+    public ReminderTemplate reminderTemplate() {
+        return new ReminderTemplate(settings.current().creditReminder());
     }
 
     /** Totales de lo que deben los clientes, por antigüedad. */

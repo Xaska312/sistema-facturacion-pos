@@ -32,16 +32,16 @@ class DocumentHeaderIT extends IntegrationTest {
         api.putWith(s, "/api/v1/settings", """
                 {"allowNegativeStock":false,"pricesIncludeTax":true,"timezone":"America/Bogota","currency":"COP",
                  "receiptFooter":"Gracias","maxDiscountPercent":0,
-                 "receiptHeader":"  NIT: 1006122824-9 \\n\\nCra. 138 #7-45 Ceiba\\nCel: 3155145472  "}
+                 "receiptHeader":"  NIT: 900.123.456-7 \\n\\nCalle 10 # 5-20, Centro\\nCel: 300 123 4567  "}
                 """).andExpect(status().isOk())
-                .andExpect(jsonPath("$.receiptHeader").value("NIT: 1006122824-9\nCra. 138 #7-45 Ceiba\nCel: 3155145472"));
+                .andExpect(jsonPath("$.receiptHeader").value("NIT: 900.123.456-7\nCalle 10 # 5-20, Centro\nCel: 300 123 4567"));
 
         // Un cliente que no manda el encabezado no lo borra
         api.putWith(s, "/api/v1/settings", """
                 {"allowNegativeStock":false,"pricesIncludeTax":true,"timezone":"America/Bogota","currency":"COP",
                  "receiptFooter":"Gracias","maxDiscountPercent":0}
                 """).andExpect(status().isOk())
-                .andExpect(jsonPath("$.receiptHeader").value("NIT: 1006122824-9\nCra. 138 #7-45 Ceiba\nCel: 3155145472"));
+                .andExpect(jsonPath("$.receiptHeader").value("NIT: 900.123.456-7\nCalle 10 # 5-20, Centro\nCel: 300 123 4567"));
 
         // Hasta 8 renglones
         api.putWith(s, "/api/v1/settings", """
@@ -51,12 +51,12 @@ class DocumentHeaderIT extends IntegrationTest {
 
         // Documentos del pedido y la cotización
         api.getWith(s, "/api/v1/branding/header").andExpect(status().isOk())
-                .andExpect(jsonPath("$.header").value("NIT: 1006122824-9\nCra. 138 #7-45 Ceiba\nCel: 3155145472"));
+                .andExpect(jsonPath("$.header").value("NIT: 900.123.456-7\nCalle 10 # 5-20, Centro\nCel: 300 123 4567"));
 
         // Tiquete de venta
         UUID soda = pos.productWithStock(s, "GAS", "2000", "10", "1000");
         pos.openCash(s, CAJA_1, "0");
         pos.sellCash(s, soda, "1", "2000").andExpect(status().isCreated())
-                .andExpect(jsonPath("$.receipt.header").value("NIT: 1006122824-9\nCra. 138 #7-45 Ceiba\nCel: 3155145472"));
+                .andExpect(jsonPath("$.receipt.header").value("NIT: 900.123.456-7\nCalle 10 # 5-20, Centro\nCel: 300 123 4567"));
     }
 }

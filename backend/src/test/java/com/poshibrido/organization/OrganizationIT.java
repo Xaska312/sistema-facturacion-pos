@@ -3,6 +3,7 @@ package com.poshibrido.organization;
 import com.jayway.jsonpath.JsonPath;
 import com.poshibrido.support.IntegrationTest;
 import com.poshibrido.support.TestApi.Owned;
+import com.poshibrido.support.TestApi.Session;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -115,6 +116,40 @@ class OrganizationIT extends IntegrationTest {
                 {"allowNegativeStock":true,"pricesIncludeTax":false,"timezone":"America/Bogota",
                  "currency":"COP","receiptFooter":"","maxDiscountPercent":150}
                 """).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void creditReminderTemplateIsEditableAndReadableWithCreditRead() throws Exception {
+        Owned owner = api.newTenant("recordatorio");
+        String base = """
+                {"allowNegativeStock":false,"pricesIncludeTax":true,"timezone":"America/Bogota",
+                 "currency":"COP","maxDiscountPercent":0%s}
+                """;
+        api.getWith(owner.tenant(), "/api/v1/settings").andExpect(jsonPath("$.creditReminder").value(""));
+        api.getWith(owner.tenant(), "/api/v1/credit/reminder-template").andExpect(status().isOk())
+                .andExpect(jsonPath("$.template").value(""));
+
+        api.putWith(owner.tenant(), "/api/v1/settings",
+                        base.formatted(",\"creditReminder\":\"  Hola {cliente}, debes {saldo} en {negocio}  \""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.creditReminder").value("Hola {cliente}, debes {saldo} en {negocio}"));
+        // Sin dato se conserva (las pantallas viejas no lo mandan)
+        api.putWith(owner.tenant(), "/api/v1/settings", base.formatted(""))
+                .andExpect(jsonPath("$.creditReminder").value("Hola {cliente}, debes {saldo} en {negocio}"));
+
+        // Lo lee quien ve el fiado, aunque no pueda ver los ajustes
+        Session cashier = api.joinAs(owner.tenant(), owner.tenantId(), "CASHIER").session();
+        api.getWith(cashier, "/api/v1/credit/reminder-template").andExpect(status().isOk())
+                .andExpect(jsonPath("$.template").value("Hola {cliente}, debes {saldo} en {negocio}"));
+        Session warehouse = api.joinAs(owner.tenant(), owner.tenantId(), "WAREHOUSE").session();
+        api.getWith(warehouse, "/api/v1/credit/reminder-template").andExpect(status().isForbidden());
+
+        api.putWith(owner.tenant(), "/api/v1/settings",
+                        base.formatted(",\"creditReminder\":\"" + "x".repeat(501) + "\""))
+                .andExpect(status().is(422));
+        // Vacío = vuelve al mensaje de siempre
+        api.putWith(owner.tenant(), "/api/v1/settings", base.formatted(",\"creditReminder\":\"\""))
+                .andExpect(jsonPath("$.creditReminder").value(""));
     }
 
     @Test

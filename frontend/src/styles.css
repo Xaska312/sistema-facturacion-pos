@@ -4,12 +4,39 @@
  * Sistema de diseño del POS (paleta A "Turquesa comercio").
  *
  * Los tokens de color viven SOLO aquí (claro en :root, oscuro en .app-dark). Tailwind los expone como
- * utilidades (bg-surface, text-muted, text-brand, bg-danger-soft…) con @theme, y el preset de PrimeNG
- * (core/theme/app-preset.ts) usa la misma paleta. Los templates no deben usar colores literales
+ * utilidades (bg-surface, text-muted, text-brand, bg-danger-soft…) con @theme, y los componentes propios de shared/ui
+ * usan los mismos tokens (decisiones 335 a 340). Los templates no deben usar colores literales
  * (slate-*, white, blue-*, #hex…): lo revisa tools/check-colors.mjs.
  */
 
 @custom-variant dark (&:where(.app-dark, .app-dark *));
+
+/*
+ * Medidas y movimiento de los componentes propios de shared/ui (decisiones 335 a 340; reemplazaron a PrimeNG).
+ * Hoy tienen los valores que ya usa la app (se ve igual). La fase E (dirección "Orgánica", aprobada por el usuario)
+ * cambia solo estos valores: esquinas 14/12/24 px, presión con rebote, sombra del color del negocio y halo de foco.
+ */
+:root {
+  /* Dirección "Orgánica" (decisión 341, elegida por el usuario entre tres bocetos). */
+  --ui-radius-control: 14px; /* botones */
+  --ui-radius-field: 12px; /* campos */
+  --ui-radius-overlay: 14px; /* menús, popovers, avisos */
+  --ui-radius-dialog: 24px;
+  --ui-press: scale(0.95); /* al presionar */
+  --ui-release: cubic-bezier(0.34, 1.56, 0.64, 1); /* suelta con un rebote corto */
+  --ui-release-duration: 220ms;
+  --ui-duration: 0.2s;
+  --ui-lift: translateY(-1px); /* al pasar el mouse por un botón sólido */
+  --ui-focus: 0 0 0 4px color-mix(in srgb, var(--brand) 28%, transparent); /* halo de foco */
+}
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --ui-duration: 0.01ms;
+    --ui-release-duration: 0.01ms;
+    --ui-press: none;
+    --ui-lift: none;
+  }
+}
 
 /* Identidad XASKA: Plus Jakarta Sans, servida desde el mismo dominio (la CSP no permite fuentes externas).
    Licencia SIL OFL 1.1 (public/fonts/OFL.txt). */
@@ -30,6 +57,122 @@
   --surface-alt: #eef2f2;
   --surface-border: #dbe2e2;
   --field-border: #839290;
+  /* Campos y barras de carga de shared/ui (decisión 335): los mismos valores que daba PrimeNG. */
+  --field-bg: var(--surface-alt); /* campos rellenos (dirección Orgánica) */
+  --field-focus-bg: var(--surface);
+  --field-text: #3b4a48;
+  --field-hover-border: #5f706e;
+  --field-placeholder: #5f706e;
+  --field-disabled-bg: #dbe2e2;
+  --field-disabled-text: #5f706e;
+  --field-invalid: #f87171;
+  --field-invalid-placeholder: #dc2626;
+  --field-shadow: 0 1px 2px 0 rgb(18 18 23 / 0.05);
+  --skeleton-bg: #dbe2e2;
+  --skeleton-shine: rgb(255 255 255 / 0.4);
+  /* Botones de shared/ui (decisión 337): los mismos colores que daba el preset de PrimeNG, por severidad. */
+  --brand-50: #eef2ff;
+  --brand-100: #e0e7ff;
+  --brand-200: #c7d2fe;
+  --brand-300: #a5b4fc;
+  --brand-400: #818cf8;
+  --brand-500: #6366f1;
+  --brand-600: #4f46e5;
+  --brand-700: #4338ca;
+  --brand-800: #3730a3;
+  --brand-900: #312e81;
+  --brand-950: #1e1b4b;
+  --brand-active: var(--brand-900);
+  --btn-primary-tint-hover: var(--brand-50);
+  --btn-primary-tint-active: var(--brand-100);
+  --btn-primary-outline: var(--brand-200);
+  --btn-secondary-bg: #eef2f2;
+  --btn-secondary-hover-bg: #dbe2e2;
+  --btn-secondary-active-bg: #c3cdcc;
+  --btn-secondary-fg: #4f5f5d;
+  --btn-secondary-hover-fg: #3b4a48;
+  --btn-secondary-active-fg: #263331;
+  --btn-secondary-ring: #4f5f5d;
+  --btn-secondary-tint-fg: #5f706e;
+  --btn-secondary-tint-hover: #f5f7f7;
+  --btn-secondary-tint-active: #eef2f2;
+  --btn-secondary-text-hover: #f5f7f7;
+  --btn-secondary-text-active: #eef2f2;
+  --btn-secondary-outline: #dbe2e2;
+  --btn-danger-bg: #b91c1c;
+  --btn-danger-hover-bg: #991b1b;
+  --btn-danger-active-bg: #7f1d1d;
+  --btn-danger-fg: #ffffff;
+  --btn-danger-ring: #ef4444;
+  --btn-danger-tint-hover: #fef2f2;
+  --btn-danger-tint-active: #fee2e2;
+  --btn-danger-outline: #b91c1c;
+  --btn-success-bg: #15803d;
+  --btn-success-hover-bg: #166534;
+  --btn-success-active-bg: #14532d;
+  --btn-success-fg: #ffffff;
+  --btn-success-ring: #22c55e;
+  --btn-success-tint-hover: #f0fdf4;
+  --btn-success-tint-active: #dcfce7;
+  --btn-success-outline: #15803d;
+  --btn-warn-bg: #c2410c;
+  --btn-warn-hover-bg: #9a3412;
+  --btn-warn-active-bg: #7c2d12;
+  --btn-warn-fg: #ffffff;
+  --btn-warn-ring: #f97316;
+  --btn-warn-tint-hover: #fff7ed;
+  --btn-warn-tint-active: #ffedd5;
+  --btn-warn-outline: #c2410c;
+  /* Diálogos de shared/ui (decisión 338): fondo y sombra como los de PrimeNG. */
+  --dialog-mask: rgb(0 0 0 / 0.4);
+  --dialog-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  /* Capas flotantes de shared/ui (decisión 339): avisos, menús, popover, tooltip y panel lateral, como en PrimeNG. */
+  --overlay-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --menu-item-focus-fg: #0b1214;
+  --menu-icon: #839290;
+  --menu-icon-focus: #5f706e;
+  --tooltip-bg: #3b4a48;
+  --tooltip-fg: #ffffff;
+  --toast-detail-fg: #3b4a48;
+  --toast-blur: 1.5px;
+  /* Paginador, selector y contraseña de shared/ui (decisión 340), como los de PrimeNG. */
+  --paginator-hover-fg: #3b4a48;
+  --paginator-selected-bg: var(--brand-50);
+  --paginator-selected-fg: var(--brand-hover);
+  --field-icon: #839290;
+  --strength-weak: #ef4444;
+  --strength-medium: #f59e0b;
+  --strength-strong: #22c55e;
+  --toast-success-bg: color-mix(in srgb, #f0fdf4, transparent 5%);
+  --toast-success-border: #bbf7d0;
+  --toast-success-fg: #166534;
+  --toast-success-ring: #16a34a;
+  --toast-success-close-hover: #dcfce7;
+  --toast-success-shadow: 0 4px 8px 0 color-mix(in srgb, #22c55e, transparent 96%);
+  --toast-info-bg: color-mix(in srgb, #eff6ff, transparent 5%);
+  --toast-info-border: #bfdbfe;
+  --toast-info-fg: #1d4ed8;
+  --toast-info-ring: #2563eb;
+  --toast-info-close-hover: #dbeafe;
+  --toast-info-shadow: 0 4px 8px 0 color-mix(in srgb, #3b82f6, transparent 96%);
+  --toast-warn-bg: color-mix(in srgb, #fefce8, transparent 5%);
+  --toast-warn-border: #fef08a;
+  --toast-warn-fg: #9a3412;
+  --toast-warn-ring: #ca8a04;
+  --toast-warn-close-hover: #fef9c3;
+  --toast-warn-shadow: 0 4px 8px 0 color-mix(in srgb, #eab308, transparent 96%);
+  --toast-error-bg: color-mix(in srgb, #fef2f2, transparent 5%);
+  --toast-error-border: #fecaca;
+  --toast-error-fg: #b91c1c;
+  --toast-error-ring: #dc2626;
+  --toast-error-close-hover: #fee2e2;
+  --toast-error-shadow: 0 4px 8px 0 color-mix(in srgb, #ef4444, transparent 96%);
+  --toast-secondary-bg: #eef2f2;
+  --toast-secondary-border: #dbe2e2;
+  --toast-secondary-fg: #4f5f5d;
+  --toast-secondary-ring: #4f5f5d;
+  --toast-secondary-close-hover: #dbe2e2;
+  --toast-secondary-shadow: 0 4px 8px 0 color-mix(in srgb, #5f706e, transparent 96%);
   --text: #12201f;
   --text-muted: #4f5f5d;
   --brand: #4338ca;
@@ -118,6 +261,99 @@
   --surface-alt: #1b2729;
   --surface-border: #2a3a3d;
   --field-border: #5f7174;
+  --field-bg: #0b1214;
+  --field-focus-bg: #0b1214;
+  --field-text: #ffffff;
+  --field-hover-border: #9cb0ad;
+  --field-placeholder: #9cb0ad;
+  --field-disabled-bg: #2a3a3d;
+  --field-disabled-text: #9cb0ad;
+  --field-invalid: #fca5a5;
+  --field-invalid-placeholder: #f87171;
+  --skeleton-bg: rgb(255 255 255 / 0.06);
+  --skeleton-shine: rgb(255 255 255 / 0.04);
+  --brand-active: var(--brand-200);
+  --btn-primary-tint-hover: color-mix(in srgb, var(--brand), transparent 96%);
+  --btn-primary-tint-active: color-mix(in srgb, var(--brand), transparent 84%);
+  --btn-primary-outline: var(--brand-700);
+  --btn-secondary-bg: #1b2729;
+  --btn-secondary-hover-bg: #2a3a3d;
+  --btn-secondary-active-bg: #3d4f52;
+  --btn-secondary-fg: #b9c8c6;
+  --btn-secondary-hover-fg: #d3dddc;
+  --btn-secondary-active-fg: #e6efee;
+  --btn-secondary-ring: #b9c8c6;
+  --btn-secondary-tint-fg: #9cb0ad;
+  --btn-secondary-tint-hover: rgb(255 255 255 / 0.04);
+  --btn-secondary-tint-active: rgb(255 255 255 / 0.16);
+  --btn-secondary-text-hover: #1b2729;
+  --btn-secondary-text-active: #2a3a3d;
+  --btn-secondary-outline: #2a3a3d;
+  --btn-danger-bg: #f87171;
+  --btn-danger-hover-bg: #fca5a5;
+  --btn-danger-active-bg: #fecaca;
+  --btn-danger-fg: #450a0a;
+  --btn-danger-ring: #f87171;
+  --btn-danger-tint-hover: color-mix(in srgb, #f87171, transparent 96%);
+  --btn-danger-tint-active: color-mix(in srgb, #f87171, transparent 84%);
+  --btn-success-bg: #4ade80;
+  --btn-success-hover-bg: #86efac;
+  --btn-success-active-bg: #bbf7d0;
+  --btn-success-fg: #052e16;
+  --btn-success-ring: #4ade80;
+  --btn-success-tint-hover: color-mix(in srgb, #4ade80, transparent 96%);
+  --btn-success-tint-active: color-mix(in srgb, #4ade80, transparent 84%);
+  --btn-warn-bg: #fb923c;
+  --btn-warn-hover-bg: #fdba74;
+  --btn-warn-active-bg: #fed7aa;
+  --btn-warn-fg: #431407;
+  --btn-warn-ring: #fb923c;
+  --btn-warn-tint-hover: color-mix(in srgb, #fb923c, transparent 96%);
+  --btn-warn-tint-active: color-mix(in srgb, #fb923c, transparent 84%);
+  --dialog-mask: rgb(0 0 0 / 0.6);
+  --menu-item-focus-fg: #ffffff;
+  --menu-icon: #5f7174;
+  --menu-icon-focus: #9cb0ad;
+  --tooltip-bg: #2a3a3d;
+  --toast-detail-fg: #ffffff;
+  --toast-blur: 10px;
+  --paginator-hover-fg: #b9c8c6;
+  --paginator-selected-bg: color-mix(in srgb, var(--brand), transparent 84%);
+  --paginator-selected-fg: rgb(255 255 255 / 0.87);
+  --field-icon: #9cb0ad;
+  --strength-weak: #f87171;
+  --strength-medium: #fbbf24;
+  --strength-strong: #4ade80;
+  --toast-success-bg: color-mix(in srgb, #22c55e, transparent 84%);
+  --toast-success-border: color-mix(in srgb, #15803d, transparent 64%);
+  --toast-success-fg: #22c55e;
+  --toast-success-ring: #22c55e;
+  --toast-success-close-hover: rgb(255 255 255 / 0.05);
+  --toast-success-shadow: 0 4px 8px 0 color-mix(in srgb, #22c55e, transparent 96%);
+  --toast-info-bg: color-mix(in srgb, #3b82f6, transparent 84%);
+  --toast-info-border: color-mix(in srgb, #1d4ed8, transparent 64%);
+  --toast-info-fg: #3b82f6;
+  --toast-info-ring: #3b82f6;
+  --toast-info-close-hover: rgb(255 255 255 / 0.05);
+  --toast-info-shadow: 0 4px 8px 0 color-mix(in srgb, #3b82f6, transparent 96%);
+  --toast-warn-bg: color-mix(in srgb, #eab308, transparent 84%);
+  --toast-warn-border: color-mix(in srgb, #a16207, transparent 64%);
+  --toast-warn-fg: #eab308;
+  --toast-warn-ring: #eab308;
+  --toast-warn-close-hover: rgb(255 255 255 / 0.05);
+  --toast-warn-shadow: 0 4px 8px 0 color-mix(in srgb, #eab308, transparent 96%);
+  --toast-error-bg: color-mix(in srgb, #ef4444, transparent 84%);
+  --toast-error-border: color-mix(in srgb, #b91c1c, transparent 64%);
+  --toast-error-fg: #ef4444;
+  --toast-error-ring: #ef4444;
+  --toast-error-close-hover: rgb(255 255 255 / 0.05);
+  --toast-error-shadow: 0 4px 8px 0 color-mix(in srgb, #ef4444, transparent 96%);
+  --toast-secondary-bg: #1b2729;
+  --toast-secondary-border: #2a3a3d;
+  --toast-secondary-fg: #b9c8c6;
+  --toast-secondary-ring: #b9c8c6;
+  --toast-secondary-close-hover: #2a3a3d;
+  --toast-secondary-shadow: 0 4px 8px 0 color-mix(in srgb, #5f7174, transparent 96%);
   --text: #e6efee;
   --text-muted: #9cb0ad;
   --brand: #818cf8;
@@ -161,7 +397,7 @@
 
 /*
  * Colores de marca del negocio (fase 8c): paleta cerrada, elegida en Ajustes → Marca. Cada bloque cambia los tokens
- * de marca y la paleta primaria de PrimeNG (--p-primary-*). En claro se usa el tono 700 con texto blanco y en oscuro
+ * de marca y su escala completa (--brand-50 a --brand-950). En claro se usa el tono 700 con texto blanco y en oscuro
  * el 400 con texto 950: todos pasan 4,5:1 (revisado con WCAG al generarlos). Índigo, el color de XASKA, es el de
  * :root y .app-dark (por defecto, decisión 249); turquesa, el de antes, quedó como un bloque más.
  * Las muestras de Ajustes están en src/app/core/theme/brand-palettes.ts.
@@ -193,17 +429,17 @@
   --brand-soft: #dbeafe;
   --focus-ring: #1d4ed8;
   --brand-soft-text: #1e40af;
-  --p-primary-50: #eff6ff;
-  --p-primary-100: #dbeafe;
-  --p-primary-200: #bfdbfe;
-  --p-primary-300: #93c5fd;
-  --p-primary-400: #60a5fa;
-  --p-primary-500: #3b82f6;
-  --p-primary-600: #2563eb;
-  --p-primary-700: #1d4ed8;
-  --p-primary-800: #1e40af;
-  --p-primary-900: #1e3a8a;
-  --p-primary-950: #172554;
+  --brand-50: #eff6ff;
+  --brand-100: #dbeafe;
+  --brand-200: #bfdbfe;
+  --brand-300: #93c5fd;
+  --brand-400: #60a5fa;
+  --brand-500: #3b82f6;
+  --brand-600: #2563eb;
+  --brand-700: #1d4ed8;
+  --brand-800: #1e40af;
+  --brand-900: #1e3a8a;
+  --brand-950: #172554;
 }
 :root[data-brand="azul"].app-dark {
   --brand: #60a5fa;
@@ -220,17 +456,17 @@
   --brand-soft: #ccfbf1;
   --focus-ring: #0f766e;
   --brand-soft-text: #115e59;
-  --p-primary-50: #f0fdfa;
-  --p-primary-100: #ccfbf1;
-  --p-primary-200: #99f6e4;
-  --p-primary-300: #5eead4;
-  --p-primary-400: #2dd4bf;
-  --p-primary-500: #14b8a6;
-  --p-primary-600: #0d9488;
-  --p-primary-700: #0f766e;
-  --p-primary-800: #115e59;
-  --p-primary-900: #134e4a;
-  --p-primary-950: #042f2e;
+  --brand-50: #f0fdfa;
+  --brand-100: #ccfbf1;
+  --brand-200: #99f6e4;
+  --brand-300: #5eead4;
+  --brand-400: #2dd4bf;
+  --brand-500: #14b8a6;
+  --brand-600: #0d9488;
+  --brand-700: #0f766e;
+  --brand-800: #115e59;
+  --brand-900: #134e4a;
+  --brand-950: #042f2e;
 }
 :root[data-brand="turquesa"].app-dark {
   --brand: #2dd4bf;
@@ -247,17 +483,17 @@
   --brand-soft: #ede9fe;
   --focus-ring: #6d28d9;
   --brand-soft-text: #5b21b6;
-  --p-primary-50: #f5f3ff;
-  --p-primary-100: #ede9fe;
-  --p-primary-200: #ddd6fe;
-  --p-primary-300: #c4b5fd;
-  --p-primary-400: #a78bfa;
-  --p-primary-500: #8b5cf6;
-  --p-primary-600: #7c3aed;
-  --p-primary-700: #6d28d9;
-  --p-primary-800: #5b21b6;
-  --p-primary-900: #4c1d95;
-  --p-primary-950: #2e1065;
+  --brand-50: #f5f3ff;
+  --brand-100: #ede9fe;
+  --brand-200: #ddd6fe;
+  --brand-300: #c4b5fd;
+  --brand-400: #a78bfa;
+  --brand-500: #8b5cf6;
+  --brand-600: #7c3aed;
+  --brand-700: #6d28d9;
+  --brand-800: #5b21b6;
+  --brand-900: #4c1d95;
+  --brand-950: #2e1065;
 }
 :root[data-brand="violeta"].app-dark {
   --brand: #a78bfa;
@@ -274,17 +510,17 @@
   --brand-soft: #fce7f3;
   --focus-ring: #be185d;
   --brand-soft-text: #9d174d;
-  --p-primary-50: #fdf2f8;
-  --p-primary-100: #fce7f3;
-  --p-primary-200: #fbcfe8;
-  --p-primary-300: #f9a8d4;
-  --p-primary-400: #f472b6;
-  --p-primary-500: #ec4899;
-  --p-primary-600: #db2777;
-  --p-primary-700: #be185d;
-  --p-primary-800: #9d174d;
-  --p-primary-900: #831843;
-  --p-primary-950: #500724;
+  --brand-50: #fdf2f8;
+  --brand-100: #fce7f3;
+  --brand-200: #fbcfe8;
+  --brand-300: #f9a8d4;
+  --brand-400: #f472b6;
+  --brand-500: #ec4899;
+  --brand-600: #db2777;
+  --brand-700: #be185d;
+  --brand-800: #9d174d;
+  --brand-900: #831843;
+  --brand-950: #500724;
 }
 :root[data-brand="rosa"].app-dark {
   --brand: #f472b6;
@@ -301,17 +537,17 @@
   --brand-soft: #ffedd5;
   --focus-ring: #c2410c;
   --brand-soft-text: #9a3412;
-  --p-primary-50: #fff7ed;
-  --p-primary-100: #ffedd5;
-  --p-primary-200: #fed7aa;
-  --p-primary-300: #fdba74;
-  --p-primary-400: #fb923c;
-  --p-primary-500: #f97316;
-  --p-primary-600: #ea580c;
-  --p-primary-700: #c2410c;
-  --p-primary-800: #9a3412;
-  --p-primary-900: #7c2d12;
-  --p-primary-950: #431407;
+  --brand-50: #fff7ed;
+  --brand-100: #ffedd5;
+  --brand-200: #fed7aa;
+  --brand-300: #fdba74;
+  --brand-400: #fb923c;
+  --brand-500: #f97316;
+  --brand-600: #ea580c;
+  --brand-700: #c2410c;
+  --brand-800: #9a3412;
+  --brand-900: #7c2d12;
+  --brand-950: #431407;
 }
 :root[data-brand="naranja"].app-dark {
   --brand: #fb923c;
@@ -328,17 +564,17 @@
   --brand-soft: #d1fae5;
   --focus-ring: #047857;
   --brand-soft-text: #065f46;
-  --p-primary-50: #ecfdf5;
-  --p-primary-100: #d1fae5;
-  --p-primary-200: #a7f3d0;
-  --p-primary-300: #6ee7b7;
-  --p-primary-400: #34d399;
-  --p-primary-500: #10b981;
-  --p-primary-600: #059669;
-  --p-primary-700: #047857;
-  --p-primary-800: #065f46;
-  --p-primary-900: #064e3b;
-  --p-primary-950: #022c22;
+  --brand-50: #ecfdf5;
+  --brand-100: #d1fae5;
+  --brand-200: #a7f3d0;
+  --brand-300: #6ee7b7;
+  --brand-400: #34d399;
+  --brand-500: #10b981;
+  --brand-600: #059669;
+  --brand-700: #047857;
+  --brand-800: #065f46;
+  --brand-900: #064e3b;
+  --brand-950: #022c22;
 }
 :root[data-brand="verde"].app-dark {
   --brand: #34d399;
@@ -355,17 +591,17 @@
   --brand-soft: #f1f5f9;
   --focus-ring: #334155;
   --brand-soft-text: #1e293b;
-  --p-primary-50: #f8fafc;
-  --p-primary-100: #f1f5f9;
-  --p-primary-200: #e2e8f0;
-  --p-primary-300: #cbd5e1;
-  --p-primary-400: #94a3b8;
-  --p-primary-500: #64748b;
-  --p-primary-600: #475569;
-  --p-primary-700: #334155;
-  --p-primary-800: #1e293b;
-  --p-primary-900: #0f172a;
-  --p-primary-950: #020617;
+  --brand-50: #f8fafc;
+  --brand-100: #f1f5f9;
+  --brand-200: #e2e8f0;
+  --brand-300: #cbd5e1;
+  --brand-400: #94a3b8;
+  --brand-500: #64748b;
+  --brand-600: #475569;
+  --brand-700: #334155;
+  --brand-800: #1e293b;
+  --brand-900: #0f172a;
+  --brand-950: #020617;
 }
 :root[data-brand="grafito"].app-dark {
   --brand: #94a3b8;
@@ -407,7 +643,7 @@
   --shadow-overlay: var(--elevation-overlay);
 }
 
-/* Estilos base (en la capa base: las utilidades de Tailwind y los estilos de PrimeNG ganan sobre ellos). */
+/* Estilos base (en la capa base: las utilidades de Tailwind y los estilos sin capa de shared/ui ganan sobre ellos). */
 @layer base {
   html,
   body {
@@ -440,11 +676,11 @@
     border-color: var(--surface-border);
   }
 
-  /* Campos nativos (select, fecha, textarea) mientras se migran a PrimeNG: mismo fondo y borde visible. */
+  /* Campos nativos (select, fecha, textarea): mismo fondo y borde visible que los campos de shared/ui. */
   select,
   textarea,
   input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"]) {
-    background-color: var(--surface);
+    background-color: var(--field-bg);
     border-color: var(--field-border);
   }
 
@@ -452,6 +688,1171 @@
   input[type="radio"] {
     accent-color: var(--brand);
   }
+}
+
+/*
+ * Reglas globales que ponía PrimeNG (sin capa) y que la app ya daba por hechas (decisión 340): los íconos de PrimeIcons
+ * miden 1rem aunque lleven una utilidad de tamaño de texto, y todo usa border-box.
+ */
+*,
+::before,
+::after {
+  box-sizing: border-box;
+}
+
+.pi {
+  font-size: 1rem;
+}
+
+/*
+ * Campo de texto de shared/ui ([appInput], decisión 335). Sin capa, como los estilos de PrimeNG que reemplaza:
+ * así gana a las reglas base y las utilidades de Tailwind que hoy no aplican siguen sin aplicar.
+ */
+.app-input {
+  font-family: inherit;
+  font-feature-settings: inherit;
+  font-size: 1rem;
+  color: var(--field-text);
+  background: var(--field-bg);
+  padding-block: 0.5rem;
+  padding-inline: 0.75rem;
+  border: 1px solid var(--field-border);
+  border-radius: var(--ui-radius-field);
+  box-shadow: var(--field-shadow);
+  outline-color: transparent;
+  appearance: none;
+  transition:
+    background var(--ui-duration),
+    color var(--ui-duration),
+    border-color var(--ui-duration),
+    outline-color var(--ui-duration),
+    box-shadow var(--ui-duration);
+}
+
+.app-input:enabled:hover {
+  border-color: var(--field-hover-border);
+}
+
+.app-input:enabled:focus {
+  border-color: var(--brand);
+  outline: none;
+  background: var(--field-focus-bg);
+  box-shadow: var(--ui-focus);
+}
+
+.app-input:disabled {
+  background: var(--field-disabled-bg);
+  color: var(--field-disabled-text);
+}
+
+.app-input::placeholder {
+  color: var(--field-placeholder);
+}
+
+.app-input.ng-invalid.ng-dirty {
+  border-color: var(--field-invalid);
+}
+
+.app-input.ng-invalid.ng-dirty::placeholder {
+  color: var(--field-invalid-placeholder);
+}
+
+/* Barra de carga de shared/ui (app-skeleton, decisión 335): mismo brillo que la de PrimeNG. */
+.app-skeleton {
+  display: block;
+  position: relative;
+  overflow: hidden;
+  background: var(--skeleton-bg);
+  border-radius: var(--ui-radius-control);
+}
+
+.app-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, var(--skeleton-shine), transparent);
+  animation: app-skeleton-shine 1.2s infinite;
+}
+
+@keyframes app-skeleton-shine {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/*
+ * Botón de shared/ui (app-button y a[appButton], decisión 337). Sin capa, como el de PrimeNG que reemplaza: así las
+ * utilidades de Tailwind que hoy no aplican (styleClass="justify-start", "font-bold"…) siguen sin aplicar.
+ * Cada severidad fija sus colores en variables --b-*; sólido, texto y contorno los usan.
+ */
+.ui-button {
+  --b-bg: var(--brand);
+  --b-hover-bg: var(--brand-hover);
+  --b-active-bg: var(--brand-active);
+  --b-fg: var(--brand-contrast);
+  --b-hover-fg: var(--brand-contrast);
+  --b-active-fg: var(--brand-contrast);
+  --b-ring: var(--brand);
+  --b-tint-fg: var(--brand);
+  --b-tint-hover: var(--btn-primary-tint-hover);
+  --b-tint-active: var(--btn-primary-tint-active);
+  --b-text-hover: var(--btn-primary-tint-hover);
+  --b-text-active: var(--btn-primary-tint-active);
+  --b-outline: var(--btn-primary-outline);
+  display: inline-flex;
+  position: relative;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  overflow: hidden;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--b-bg);
+  border-radius: var(--ui-radius-control);
+  background: var(--b-bg);
+  color: var(--b-fg);
+  font-family: inherit;
+  font-feature-settings: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+  user-select: none;
+  outline-color: transparent;
+  transition:
+    background var(--ui-duration),
+    color var(--ui-duration),
+    border-color var(--ui-duration),
+    outline-color var(--ui-duration),
+    box-shadow var(--ui-duration),
+    transform var(--ui-release-duration) var(--ui-release);
+}
+
+.ui-button-secondary {
+  --b-bg: var(--btn-secondary-bg);
+  --b-hover-bg: var(--btn-secondary-hover-bg);
+  --b-active-bg: var(--btn-secondary-active-bg);
+  --b-fg: var(--btn-secondary-fg);
+  --b-hover-fg: var(--btn-secondary-hover-fg);
+  --b-active-fg: var(--btn-secondary-active-fg);
+  --b-ring: var(--btn-secondary-ring);
+  --b-tint-fg: var(--btn-secondary-tint-fg);
+  --b-tint-hover: var(--btn-secondary-tint-hover);
+  --b-tint-active: var(--btn-secondary-tint-active);
+  --b-text-hover: var(--btn-secondary-text-hover);
+  --b-text-active: var(--btn-secondary-text-active);
+  --b-outline: var(--btn-secondary-outline);
+}
+
+.ui-button-danger,
+.ui-button-success,
+.ui-button-warn {
+  --b-fg: var(--b-solid-fg);
+  --b-hover-fg: var(--b-solid-fg);
+  --b-active-fg: var(--b-solid-fg);
+  --b-tint-fg: var(--b-bg);
+  --b-text-hover: var(--b-tint-hover);
+  --b-text-active: var(--b-tint-active);
+}
+
+.ui-button-danger {
+  --b-bg: var(--btn-danger-bg);
+  --b-hover-bg: var(--btn-danger-hover-bg);
+  --b-active-bg: var(--btn-danger-active-bg);
+  --b-solid-fg: var(--btn-danger-fg);
+  --b-ring: var(--btn-danger-ring);
+  --b-tint-hover: var(--btn-danger-tint-hover);
+  --b-tint-active: var(--btn-danger-tint-active);
+  --b-outline: var(--btn-danger-outline);
+}
+
+.ui-button-success {
+  --b-bg: var(--btn-success-bg);
+  --b-hover-bg: var(--btn-success-hover-bg);
+  --b-active-bg: var(--btn-success-active-bg);
+  --b-solid-fg: var(--btn-success-fg);
+  --b-ring: var(--btn-success-ring);
+  --b-tint-hover: var(--btn-success-tint-hover);
+  --b-tint-active: var(--btn-success-tint-active);
+  --b-outline: var(--btn-success-outline);
+}
+
+.ui-button-warn {
+  --b-bg: var(--btn-warn-bg);
+  --b-hover-bg: var(--btn-warn-hover-bg);
+  --b-active-bg: var(--btn-warn-active-bg);
+  --b-solid-fg: var(--btn-warn-fg);
+  --b-ring: var(--btn-warn-ring);
+  --b-tint-hover: var(--btn-warn-tint-hover);
+  --b-tint-active: var(--btn-warn-tint-active);
+  --b-outline: var(--btn-warn-outline);
+}
+
+.ui-button:not(:disabled):hover {
+  background: var(--b-hover-bg);
+  border-color: var(--b-hover-bg);
+  color: var(--b-hover-fg);
+}
+
+.ui-button:not(:disabled):active {
+  background: var(--b-active-bg);
+  border-color: var(--b-active-bg);
+  color: var(--b-active-fg);
+}
+
+.ui-button.ui-button-text {
+  background: transparent;
+  border-color: transparent;
+  color: var(--b-tint-fg);
+}
+
+.ui-button.ui-button-text:not(:disabled):hover {
+  background: var(--b-text-hover);
+  border-color: transparent;
+  color: var(--b-tint-fg);
+}
+
+.ui-button.ui-button-text:not(:disabled):active {
+  background: var(--b-text-active);
+  border-color: transparent;
+  color: var(--b-tint-fg);
+}
+
+.ui-button.ui-button-outlined {
+  background: transparent;
+  border-color: var(--b-outline);
+  color: var(--b-tint-fg);
+}
+
+.ui-button.ui-button-outlined:not(:disabled):hover {
+  background: var(--b-tint-hover);
+  border-color: var(--b-outline);
+  color: var(--b-tint-fg);
+}
+
+.ui-button.ui-button-outlined:not(:disabled):active {
+  background: var(--b-tint-active);
+  border-color: var(--b-outline);
+  color: var(--b-tint-fg);
+}
+
+/* Dirección Orgánica (decisión 341): se hunde al presionar y suelta con rebote; los sólidos de color llevan una
+   sombra de su propio color y suben 1px al pasar el mouse; el foco es un halo suave en vez de una línea. */
+.ui-button:not(:disabled):active {
+  transform: var(--ui-press);
+  transition-duration: var(--ui-duration), var(--ui-duration), var(--ui-duration), var(--ui-duration), var(--ui-duration), 60ms;
+}
+
+.ui-button:not(.ui-button-secondary):not(.ui-button-text):not(.ui-button-outlined) {
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--b-bg) 30%, transparent);
+}
+
+.ui-button:not(.ui-button-secondary):not(.ui-button-text):not(.ui-button-outlined):not(:disabled):hover {
+  transform: var(--ui-lift);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--b-bg) 38%, transparent);
+}
+
+.ui-button:not(.ui-button-secondary):not(.ui-button-text):not(.ui-button-outlined):not(:disabled):active {
+  transform: var(--ui-press);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--b-bg) 30%, transparent);
+}
+
+.ui-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--b-ring) 28%, transparent);
+}
+
+.ui-button:not(.ui-button-secondary):not(.ui-button-text):not(.ui-button-outlined):focus-visible {
+  box-shadow:
+    0 4px 12px color-mix(in srgb, var(--b-bg) 30%, transparent),
+    0 0 0 4px color-mix(in srgb, var(--b-ring) 28%, transparent);
+}
+
+.ui-button .ui-button-icon-right {
+  transition: transform var(--ui-release-duration) var(--ui-release);
+}
+
+.ui-button:not(:disabled):hover .ui-button-icon-right {
+  transform: translateX(4px);
+}
+
+/* Cargando: tres puntos que saltan (en lugar del círculo que gira). */
+.ui-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 1rem;
+}
+
+.ui-dots i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: ui-dot 1s infinite ease-in-out;
+}
+
+.ui-dots i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.ui-dots i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes ui-dot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+.ui-button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* Para un <label> con aspecto de botón (subir archivo) mientras está ocupado. */
+.ui-button-disabled,
+.ui-button-disabled * {
+  cursor: default;
+  pointer-events: none;
+  user-select: none;
+}
+
+.ui-button-disabled {
+  opacity: 0.6;
+}
+
+.ui-button-label {
+  font-weight: 600;
+}
+
+.ui-button-icon-right {
+  order: 1;
+}
+
+.ui-button-icon-only {
+  width: 2.5rem;
+  padding-inline: 0;
+  gap: 0;
+}
+
+/* Va antes de los tamaños (como en PrimeNG: el pequeño conserva su relleno). Sin texto, el botón conserva el alto de una línea. */
+.ui-button-icon-only::after {
+  content: "\00a0";
+  visibility: hidden;
+  width: 0;
+}
+
+.ui-button-sm {
+  font-size: 0.875rem;
+  padding: 0.375rem 0.625rem;
+}
+
+.ui-button-sm .ui-button-icon {
+  font-size: 0.875rem;
+}
+
+.ui-button-lg {
+  font-size: 1.125rem;
+  padding: 0.625rem 0.875rem;
+}
+
+.ui-button-lg .ui-button-icon {
+  font-size: 1.125rem;
+}
+
+.ui-button-sm.ui-button-icon-only {
+  width: 2rem;
+}
+
+.ui-button-lg.ui-button-icon-only {
+  width: 3rem;
+}
+
+.ui-button-rounded {
+  border-radius: 2rem;
+}
+
+.ui-button-icon-only.ui-button-rounded {
+  border-radius: 50%;
+  height: 2.5rem;
+}
+
+.ui-button-sm.ui-button-icon-only.ui-button-rounded {
+  height: 2rem;
+}
+
+.ui-button-lg.ui-button-icon-only.ui-button-rounded {
+  height: 3rem;
+}
+
+/* Diálogo de shared/ui (app-dialog y app-confirm-host, decisión 338): mismas medidas que el de PrimeNG. */
+.ui-dialog-mask {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.ui-dialog-mask-modal {
+  pointer-events: auto;
+  background: var(--dialog-mask);
+  animation: ui-dialog-mask-enter 150ms ease-out;
+}
+
+.ui-dialog {
+  display: flex;
+  flex-direction: column;
+  max-height: 90%;
+  pointer-events: auto;
+  transform: scale(1);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--ui-radius-dialog);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--dialog-shadow);
+  will-change: transform;
+  animation: ui-dialog-enter 280ms cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+.ui-dialog-header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem;
+}
+
+.ui-dialog-title {
+  font-size: 1.375rem;
+  font-weight: 800;
+}
+
+.ui-dialog-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ui-dialog-close-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.ui-dialog-content {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 0 1.5rem 1.5rem;
+}
+
+.ui-dialog-footer {
+  display: flex;
+  flex-shrink: 0;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0 1.5rem 1.5rem;
+}
+
+.ui-confirm-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Ícono en baldosa suave, como las del inicio (dirección Orgánica). */
+.ui-confirm-content .ui-confirm-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2.625rem;
+  height: 2.625rem;
+  border-radius: 14px;
+  background: var(--brand-soft);
+  color: var(--brand-soft-text);
+  font-size: 1.25rem;
+}
+
+.ui-confirm-content .ui-confirm-icon-danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+/* La página de atrás no se desplaza con un diálogo modal abierto. */
+.ui-overflow-hidden {
+  overflow: hidden;
+  padding-right: var(--ui-scrollbar-width, 0);
+}
+
+@keyframes ui-dialog-enter {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+}
+
+@keyframes ui-dialog-mask-enter {
+  from {
+    background: transparent;
+  }
+}
+
+/* Avisos de shared/ui (app-toast-host, decisión 339): mismas medidas y colores que los de PrimeNG. */
+.ui-toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 25rem;
+  white-space: pre-line;
+  word-break: break-word;
+}
+
+.ui-toast-empty {
+  pointer-events: none;
+}
+
+.ui-toast-message,
+.ui-toast-message-info {
+  --t-bg: var(--toast-info-bg);
+  --t-border: var(--toast-info-border);
+  --t-fg: var(--toast-info-fg);
+  --t-ring: var(--toast-info-ring);
+  --t-close-hover: var(--toast-info-close-hover);
+  --t-shadow: var(--toast-info-shadow);
+}
+
+.ui-toast-message-success {
+  --t-bg: var(--toast-success-bg);
+  --t-border: var(--toast-success-border);
+  --t-fg: var(--toast-success-fg);
+  --t-ring: var(--toast-success-ring);
+  --t-close-hover: var(--toast-success-close-hover);
+  --t-shadow: var(--toast-success-shadow);
+}
+
+.ui-toast-message-info {
+  --t-bg: var(--toast-info-bg);
+  --t-border: var(--toast-info-border);
+  --t-fg: var(--toast-info-fg);
+  --t-ring: var(--toast-info-ring);
+  --t-close-hover: var(--toast-info-close-hover);
+  --t-shadow: var(--toast-info-shadow);
+}
+
+.ui-toast-message-warn {
+  --t-bg: var(--toast-warn-bg);
+  --t-border: var(--toast-warn-border);
+  --t-fg: var(--toast-warn-fg);
+  --t-ring: var(--toast-warn-ring);
+  --t-close-hover: var(--toast-warn-close-hover);
+  --t-shadow: var(--toast-warn-shadow);
+}
+
+.ui-toast-message-error {
+  --t-bg: var(--toast-error-bg);
+  --t-border: var(--toast-error-border);
+  --t-fg: var(--toast-error-fg);
+  --t-ring: var(--toast-error-ring);
+  --t-close-hover: var(--toast-error-close-hover);
+  --t-shadow: var(--toast-error-shadow);
+}
+
+.ui-toast-message-secondary {
+  --t-bg: var(--toast-secondary-bg);
+  --t-border: var(--toast-secondary-border);
+  --t-fg: var(--toast-secondary-fg);
+  --t-ring: var(--toast-secondary-ring);
+  --t-close-hover: var(--toast-secondary-close-hover);
+  --t-shadow: var(--toast-secondary-shadow);
+}
+
+.ui-toast-message {
+  display: grid;
+  grid-template-rows: 1fr;
+  margin: 0 0 1rem 0;
+  border: 1px solid var(--t-border);
+  border-radius: 10px;
+  background: var(--t-bg);
+  color: var(--t-fg);
+  box-shadow: var(--t-shadow);
+  backdrop-filter: blur(var(--toast-blur));
+  animation: ui-toast-enter 400ms cubic-bezier(0.34, 1.5, 0.64, 1);
+}
+
+.ui-toast-message-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0.75rem;
+}
+
+/* El ícono va en un círculo suave de su color y aparece con un pequeño salto (dirección Orgánica). */
+.ui-toast-message-icon {
+  flex-shrink: 0;
+  box-sizing: content-box;
+  width: 1rem;
+  height: 1rem;
+  margin-top: -0.125rem;
+  padding: 0.375rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--t-fg) 14%, transparent);
+  animation: ui-toast-icon-pop 400ms 120ms cubic-bezier(0.34, 1.8, 0.64, 1) backwards;
+}
+
+.ui-toast-message-text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ui-toast-summary {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.ui-toast-detail {
+  color: var(--toast-detail-fg);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.ui-toast-close {
+  position: relative;
+  right: -25%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin: -25% 0 0 0;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  user-select: none;
+  outline-color: transparent;
+  transition:
+    background var(--ui-duration),
+    color var(--ui-duration),
+    outline-color var(--ui-duration),
+    box-shadow var(--ui-duration);
+}
+
+.ui-toast-close:hover {
+  background: var(--t-close-hover);
+}
+
+.ui-toast-close:focus-visible {
+  outline: 1px solid var(--t-ring);
+  outline-offset: 2px;
+}
+
+.ui-toast-close-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+@keyframes ui-toast-enter {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+}
+
+@keyframes ui-toast-icon-pop {
+  from {
+    transform: scale(0.4);
+  }
+}
+
+/* Menú emergente de shared/ui (app-menu, decisión 339). */
+.ui-menu {
+  position: absolute;
+  min-width: 12.5rem;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--ui-radius-control);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--overlay-shadow);
+  animation: ui-overlay-enter 300ms cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.ui-menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0.25rem;
+  list-style: none;
+  outline: 0 none;
+}
+
+.ui-menu-submenu-label {
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.ui-menu-separator {
+  border-block-start: 1px solid var(--surface-border);
+}
+
+.ui-menu-item-content {
+  overflow: hidden;
+  border-radius: 6px;
+  color: var(--text);
+  transition:
+    background var(--ui-duration),
+    color var(--ui-duration);
+}
+
+.ui-menu-item-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  overflow: hidden;
+  padding: 0.5rem 0.75rem;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+  outline: 0 none;
+}
+
+.ui-menu-item-label {
+  line-height: 1;
+}
+
+.ui-menu-item-icon {
+  color: var(--menu-icon);
+}
+
+.ui-menu-item.ui-focus .ui-menu-item-content,
+.ui-menu-item:not(.ui-disabled) .ui-menu-item-content:hover {
+  background: var(--surface-alt);
+  color: var(--menu-item-focus-fg);
+}
+
+.ui-menu-item.ui-focus .ui-menu-item-icon,
+.ui-menu-item:not(.ui-disabled) .ui-menu-item-content:hover .ui-menu-item-icon {
+  color: var(--menu-icon-focus);
+}
+
+.ui-menu-item.ui-disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Popover de shared/ui (app-popover, decisión 339): con flecha hacia el botón. */
+.ui-popover {
+  position: absolute;
+  margin-block-start: 10px;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--ui-radius-overlay);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--overlay-shadow);
+  will-change: transform;
+  animation: ui-overlay-enter 300ms cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.ui-popover-content {
+  padding: 0.75rem;
+}
+
+.ui-popover-flipped {
+  margin-block-start: -10px;
+  margin-block-end: 10px;
+}
+
+.ui-popover::after,
+.ui-popover::before {
+  content: " ";
+  position: absolute;
+  bottom: 100%;
+  left: calc(1.25rem + var(--ui-popover-arrow-left, 0px));
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.ui-popover::after {
+  margin-left: -8px;
+  border: 8px solid transparent;
+  border-bottom-color: var(--surface);
+}
+
+.ui-popover::before {
+  margin-left: -10px;
+  border: 10px solid transparent;
+  border-bottom-color: var(--surface-border);
+}
+
+.ui-popover-flipped::after,
+.ui-popover-flipped::before {
+  top: 100%;
+  bottom: auto;
+}
+
+.ui-popover.ui-popover-flipped::after {
+  border-bottom-color: transparent;
+  border-top-color: var(--surface);
+}
+
+.ui-popover.ui-popover-flipped::before {
+  border-bottom-color: transparent;
+  border-top-color: var(--surface-border);
+}
+
+/* Tooltip de shared/ui ([appTooltip], decisión 339). */
+.ui-tooltip {
+  position: absolute;
+  max-width: 12.5rem;
+  pointer-events: none;
+}
+
+.ui-tooltip-top,
+.ui-tooltip-bottom {
+  padding: 0.25rem 0;
+}
+
+.ui-tooltip-left,
+.ui-tooltip-right {
+  padding: 0 0.25rem;
+}
+
+.ui-tooltip-text {
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--ui-radius-overlay);
+  background: var(--tooltip-bg);
+  color: var(--tooltip-fg);
+  box-shadow: var(--overlay-shadow);
+  white-space: pre-line;
+  word-break: break-word;
+}
+
+.ui-tooltip-arrow {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-color: transparent;
+}
+
+.ui-tooltip-top .ui-tooltip-arrow {
+  margin-left: -0.25rem;
+  border-width: 0.25rem 0.25rem 0 0.25rem;
+  border-top-color: var(--tooltip-bg);
+}
+
+.ui-tooltip-bottom .ui-tooltip-arrow {
+  margin-left: -0.25rem;
+  border-width: 0 0.25rem 0.25rem 0.25rem;
+  border-bottom-color: var(--tooltip-bg);
+}
+
+.ui-tooltip-right .ui-tooltip-arrow {
+  margin-top: -0.25rem;
+  border-width: 0.25rem 0.25rem 0.25rem 0;
+  border-right-color: var(--tooltip-bg);
+}
+
+.ui-tooltip-left .ui-tooltip-arrow {
+  margin-top: -0.25rem;
+  border-width: 0.25rem 0 0.25rem 0.25rem;
+  border-left-color: var(--tooltip-bg);
+}
+
+/* Panel lateral de shared/ui (app-drawer, decisión 339). */
+.ui-drawer-mask {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: flex-end;
+  background: var(--dialog-mask);
+  animation: ui-dialog-mask-enter 300ms ease-out;
+}
+
+.ui-drawer-mask.ui-drawer-left {
+  justify-content: flex-start;
+}
+
+.ui-drawer {
+  display: flex;
+  flex-direction: column;
+  width: 20rem;
+  height: 100%;
+  border-color: var(--surface-border);
+  border-style: solid;
+  border-width: 0 0 0 1px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--dialog-shadow);
+  animation: ui-drawer-enter-right 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.ui-drawer-left .ui-drawer {
+  border-width: 0 1px 0 0;
+  animation-name: ui-drawer-enter-left;
+}
+
+.ui-drawer-header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem;
+}
+
+.ui-drawer-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.ui-drawer-content {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 0 1.5rem 1.5rem;
+}
+
+@keyframes ui-overlay-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.93);
+  }
+}
+
+@keyframes ui-drawer-enter-right {
+  from {
+    transform: translate3d(100%, 0, 0);
+  }
+}
+
+@keyframes ui-drawer-enter-left {
+  from {
+    transform: translate3d(-100%, 0, 0);
+  }
+}
+
+/* Paginador de shared/ui (app-paginator, decisión 340). */
+.ui-paginator {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  border-radius: var(--ui-radius-control);
+  color: var(--text);
+}
+
+.ui-paginator-pages {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.ui-paginator-nav {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  min-width: 2.5rem;
+  height: 2.5rem;
+  margin: 0;
+  padding: 0;
+  border: 0 none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background var(--ui-duration),
+    color var(--ui-duration),
+    outline-color var(--ui-duration),
+    box-shadow var(--ui-duration);
+}
+
+.ui-paginator-nav:not(:disabled):not(.ui-paginator-page-selected):hover {
+  background: var(--surface-alt);
+  color: var(--paginator-hover-fg);
+}
+
+.ui-paginator-nav:focus-visible {
+  outline: 1px solid var(--brand);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+.ui-paginator-nav:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.ui-paginator-page.ui-paginator-page-selected {
+  background: var(--paginator-selected-bg);
+  color: var(--paginator-selected-fg);
+}
+
+.ui-paginator-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Selector de filas por página: un <select> nativo transparente sobre la etiqueta y la flecha. */
+.ui-select {
+  position: relative;
+  display: inline-flex;
+  border: 1px solid var(--field-border);
+  border-radius: var(--ui-radius-field);
+  background: var(--field-bg);
+  box-shadow: var(--field-shadow);
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background var(--ui-duration),
+    border-color var(--ui-duration),
+    box-shadow var(--ui-duration);
+}
+
+.ui-select:hover {
+  border-color: var(--field-hover-border);
+}
+
+.ui-select:focus-within {
+  border-color: var(--brand);
+  background: var(--field-focus-bg);
+  box-shadow: var(--ui-focus);
+}
+
+.ui-select-label {
+  display: block;
+  padding: 0.5rem 0.75rem;
+  color: var(--field-text);
+  white-space: nowrap;
+}
+
+.ui-select-dropdown {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  color: var(--field-icon);
+}
+
+.ui-select-native {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  font: inherit;
+}
+
+/* Contraseña de shared/ui (app-password, decisión 340). */
+.ui-password {
+  position: relative;
+  display: inline-flex;
+}
+
+.ui-password.w-full {
+  display: flex;
+}
+
+.ui-password-input.ui-password-has-toggle {
+  padding-inline-end: 2.5rem;
+}
+
+.ui-password.ng-invalid.ng-dirty .ui-password-input {
+  border-color: var(--field-invalid);
+}
+
+.ui-password-toggle {
+  position: absolute;
+  top: 50%;
+  inset-inline-end: 0.75rem;
+  display: flex;
+  width: 1rem;
+  height: 1rem;
+  margin-top: -0.5rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--field-icon);
+  cursor: pointer;
+}
+
+.ui-password-toggle svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.ui-password-overlay {
+  position: absolute;
+  padding: 0.75rem;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--ui-radius-overlay);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--overlay-shadow);
+  animation: ui-overlay-enter 300ms cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.ui-password-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ui-password-meter {
+  height: 0.75rem;
+  border-radius: var(--ui-radius-control);
+  background: var(--surface-border);
+}
+
+.ui-password-meter-label {
+  width: 0;
+  height: 100%;
+  border-radius: var(--ui-radius-control);
+  transition: width 1s ease-in-out;
+}
+
+.ui-password-meter-weak {
+  background: var(--strength-weak);
+}
+
+.ui-password-meter-medium {
+  background: var(--strength-medium);
+}
+
+.ui-password-meter-strong {
+  background: var(--strength-strong);
 }
 
 /* Tarjeta estándar, en baldosa como el inicio (identidad, decisión 264; antes 0.75rem). */

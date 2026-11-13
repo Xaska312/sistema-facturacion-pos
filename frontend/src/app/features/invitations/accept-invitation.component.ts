@@ -2,7 +2,7 @@ import { DatePipe } from '@angular/common';
 import { Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { switchMap } from 'rxjs';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/ui/button.component';
 import { AccessApi } from '../../core/api/access.api';
 import { InvitationPreview } from '../../core/api/api.models';
 import { AuthService } from '../../core/auth/auth.service';
@@ -15,7 +15,7 @@ import { AuthLayoutComponent } from '../../shared/layout/auth-layout.component';
  */
 @Component({
   selector: 'app-accept-invitation',
-  imports: [RouterLink, DatePipe, ButtonModule, AuthLayoutComponent],
+  imports: [RouterLink, DatePipe, ButtonComponent, AuthLayoutComponent],
   template: `
     <app-auth-layout width="md">
       <section class="card p-6 sm:p-8 flex flex-col gap-4">
@@ -39,19 +39,19 @@ import { AuthLayoutComponent } from '../../shared/layout/auth-layout.component';
               <p class="text-sm text-muted">Para aceptarla, inicia sesión o crea tu cuenta con ese correo.</p>
               <div class="flex gap-2">
                 <a routerLink="/login" [queryParams]="{ returnUrl: here() }" class="flex-1">
-                  <p-button label="Iniciar sesión" styleClass="w-full" />
+                  <app-button label="Iniciar sesión" styleClass="w-full" />
                 </a>
                 <a routerLink="/registro" [queryParams]="{ returnUrl: here(), email: p.email }" class="flex-1">
-                  <p-button label="Crear cuenta" severity="secondary" styleClass="w-full" />
+                  <app-button label="Crear cuenta" severity="secondary" styleClass="w-full" />
                 </a>
               </div>
             } @else if (wrongAccount()) {
               <p class="text-warning">
                 Iniciaste sesión como {{ auth.user()?.email }}. Esta invitación es para {{ p.email }}.
               </p>
-              <p-button label="Cambiar de cuenta" severity="secondary" (onClick)="switchAccount()" />
+              <app-button label="Cambiar de cuenta" severity="secondary" (clicked)="switchAccount()" />
             } @else {
-              <p-button label="Aceptar invitación" [loading]="accepting()" (onClick)="accept()" />
+              <app-button label="Aceptar invitación" [loading]="accepting()" (clicked)="accept()" />
             }
           } @else {
             <p class="text-muted">Cargando invitación…</p>

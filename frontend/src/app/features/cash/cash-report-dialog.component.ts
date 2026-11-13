@@ -1,7 +1,8 @@
 import { Component, inject, input, model, signal } from '@angular/core';
 import { BrandingApi } from '../../core/api/branding.api';
-import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
+import { DialogComponent } from '../../shared/ui/dialog.component';
 import { CashReport } from '../../core/api/api.models';
 import { AuthService } from '../../core/auth/auth.service';
 import { BrandingService } from '../../core/theme/branding.service';
@@ -16,9 +17,9 @@ import { cashSummaryWhatsApp } from './cash-ticket-text';
  */
 @Component({
   selector: 'app-cash-report-dialog',
-  imports: [ButtonModule, DialogModule, CashReportComponent, CashTicketComponent],
+  imports: [ButtonComponent, ButtonLinkComponent, DialogComponent, CashReportComponent, CashTicketComponent],
   template: `
-    <p-dialog [header]="header()" [(visible)]="visible" [modal]="true" [style]="{ width: '32rem' }"
+    <app-dialog [header]="header()" [(visible)]="visible" [modal]="true" [style]="{ width: '32rem' }"
               [breakpoints]="{ '640px': '100vw' }">
       @if (report(); as r) {
         <app-cash-report [report]="r" />
@@ -28,14 +29,14 @@ import { cashSummaryWhatsApp } from './cash-ticket-text';
       <ng-template #footer>
         @if (report(); as r) {
           <div class="flex flex-wrap justify-end gap-2">
-            <a pButton label="Enviar por WhatsApp" icon="pi pi-whatsapp" severity="secondary" [outlined]="true"
+            <a appButton label="Enviar por WhatsApp" icon="pi pi-whatsapp" severity="secondary" [outlined]="true"
                target="_blank" rel="noopener noreferrer" [href]="whatsApp(r)"
                aria-label="Enviar el resumen de la caja por WhatsApp (abre WhatsApp)"></a>
-            <p-button label="Imprimir ticket" icon="pi pi-print" (onClick)="print()" />
+            <app-button label="Imprimir ticket" icon="pi pi-print" (clicked)="print()" />
           </div>
         }
       </ng-template>
-    </p-dialog>
+    </app-dialog>
   `,
 })
 export class CashReportDialogComponent {

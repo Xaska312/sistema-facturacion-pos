@@ -2,11 +2,12 @@ import { DatePipe } from '@angular/common';
 import { Component, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
-import { SkeletonModule } from 'primeng/skeleton';
+import { ToastService } from '../../shared/ui/toast.service';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
+import { DialogComponent } from '../../shared/ui/dialog.component';
+import { AppInputDirective } from '../../shared/ui/input.directive';
+import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import {
   CashMovement,
   CashReport,
@@ -38,16 +39,16 @@ import { ExpenseDialogComponent } from '../expenses/expense-dialog.component';
  */
 @Component({
   selector: 'app-cash',
-  imports: [TermComponent, SkeletonModule, FormsModule, PesosInputDirective, RouterLink, DatePipe, ButtonModule, DialogModule, InputTextModule, HasPermissionDirective,
+  imports: [TermComponent, SkeletonComponent, FormsModule, PesosInputDirective, RouterLink, DatePipe, ButtonComponent, ButtonLinkComponent, DialogComponent, AppInputDirective, HasPermissionDirective,
     CashReportDialogComponent, PageHeaderComponent, DataTableComponent, CellTemplateDirective, ExpenseDialogComponent],
   template: `
     <app-page-header title="Mi caja" description="Abre tu caja con la base de efectivo, registra ingresos o retiros y ciérrala al final del turno.">
-      <a *hasPermission="'cash:read'" pButton routerLink="/app/caja/historial" label="Historial de caja" icon="pi pi-history"
+      <a *hasPermission="'cash:read'" appButton routerLink="/app/caja/historial" label="Historial de caja" icon="pi pi-history"
          severity="secondary" [outlined]="true"></a>
     </app-page-header>
 
     @if (loading()) {
-      <div class="card p-4" aria-busy="true" aria-label="Cargando tu caja"><p-skeleton height="5rem" /></div>
+      <div class="card p-4" aria-busy="true" aria-label="Cargando tu caja"><app-skeleton height="5rem" /></div>
     } @else {
     @if (session(); as s) {
       <section class="card p-4 mb-4">
@@ -62,18 +63,18 @@ import { ExpenseDialogComponent } from '../expenses/expense-dialog.component';
             }
           </div>
           <div class="flex flex-wrap gap-2 items-start">
-            <a *hasPermission="'sales:create'" routerLink="/pos"><p-button label="Ir a vender" /></a>
-            <p-button label="Ingreso" severity="secondary" [outlined]="true" (onClick)="openMovement('INCOME')" />
-            <p-button label="Egreso" severity="secondary" [outlined]="true" (onClick)="expenseDialog()?.openCash()" />
+            <a *hasPermission="'sales:create'" routerLink="/pos"><app-button label="Ir a vender" /></a>
+            <app-button label="Ingreso" severity="secondary" [outlined]="true" (clicked)="openMovement('INCOME')" />
+            <app-button label="Egreso" severity="secondary" [outlined]="true" (clicked)="expenseDialog()?.openCash()" />
             @if (s.mine || canAudit()) {
-              <p-button label="Retiro" severity="secondary" [outlined]="true" (onClick)="openMovement('WITHDRAWAL')" />
+              <app-button label="Retiro" severity="secondary" [outlined]="true" (clicked)="openMovement('WITHDRAWAL')" />
             }
-            <p-button label="Informe parcial" severity="secondary" [text]="true" (onClick)="showPartial()" />
+            <app-button label="Informe parcial" severity="secondary" [text]="true" (clicked)="showPartial()" />
             @if (s.mine || canAudit()) {
-              <p-button label="Cerrar caja" severity="danger" (onClick)="openClose()" />
+              <app-button label="Cerrar caja" severity="danger" (clicked)="openClose()" />
             }
             @if (!s.mine) {
-              <p-button label="Dejar esta caja" severity="secondary" [text]="true" [loading]="saving()" (onClick)="leave()" />
+              <app-button label="Dejar esta caja" severity="secondary" [text]="true" [loading]="saving()" (clicked)="leave()" />
             }
           </div>
         </div>
@@ -93,7 +94,7 @@ import { ExpenseDialogComponent } from '../expenses/expense-dialog.component';
           <p class="mb-2 font-medium">Cajas compartidas abiertas</p>
           <div class="flex flex-wrap gap-2 mb-4">
             @for (r of joinable(); track r.id) {
-              <p-button icon="pi pi-users" [loading]="saving()" (onClick)="join(r)"
+              <app-button icon="pi pi-users" [loading]="saving()" (clicked)="join(r)"
                         [label]="'Vender en ' + r.code + ' (abierta por ' + (r.busyBy ?? 'otra persona') + ')'" />
             }
           </div>
@@ -119,39 +120,39 @@ import { ExpenseDialogComponent } from '../expenses/expense-dialog.component';
         <div class="flex flex-wrap items-end gap-3">
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">Base de efectivo</span>
-            <input pInputText appPesos class="w-48" [(ngModel)]="openingAmount" />
+            <input appInput appPesos class="w-48" [(ngModel)]="openingAmount" />
           </label>
           <label class="flex flex-col gap-1 flex-1 min-w-48">
             <span class="text-sm font-medium">Notas (opcional)</span>
-            <input pInputText maxlength="255" [(ngModel)]="openingNotes" />
+            <input appInput maxlength="255" [(ngModel)]="openingNotes" />
           </label>
-          <p-button label="Abrir caja" [disabled]="!registerId || openingAmount === null || openingAmount < 0"
-                    [loading]="saving()" (onClick)="open()" />
+          <app-button label="Abrir caja" [disabled]="!registerId || openingAmount === null || openingAmount < 0"
+                    [loading]="saving()" (clicked)="open()" />
         </div>
       </section>
     }
     }
 
-    <p-dialog [header]="movementTitle()" [(visible)]="movementOpen" [modal]="true" [style]="{ width: '26rem' }">
+    <app-dialog [header]="movementTitle()" [(visible)]="movementOpen" [modal]="true" [style]="{ width: '26rem' }">
       <div class="flex flex-col gap-3">
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Valor</span>
-          <input pInputText appPesos [(ngModel)]="movementAmount" />
+          <input appInput appPesos [(ngModel)]="movementAmount" />
         </label>
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Motivo</span>
-          <input pInputText maxlength="255" [(ngModel)]="movementReason" placeholder="Ej.: pago de domicilio" />
+          <input appInput maxlength="255" [(ngModel)]="movementReason" placeholder="Ej.: pago de domicilio" />
         </label>
       </div>
       <ng-template #footer>
-        <p-button label="Cancelar" [text]="true" severity="secondary" (onClick)="movementOpen = false" />
-        <p-button label="Registrar" [loading]="saving()"
+        <app-button label="Cancelar" [text]="true" severity="secondary" (clicked)="movementOpen = false" />
+        <app-button label="Registrar" [loading]="saving()"
                   [disabled]="!movementAmount || movementAmount <= 0 || !movementReason.trim()"
-                  (onClick)="saveMovement()" />
+                  (clicked)="saveMovement()" />
       </ng-template>
-    </p-dialog>
+    </app-dialog>
 
-    <p-dialog header="Cerrar caja" [(visible)]="closeOpen" [modal]="true" [style]="{ width: '28rem' }">
+    <app-dialog header="Cerrar caja" [(visible)]="closeOpen" [modal]="true" [style]="{ width: '28rem' }">
       <p class="text-sm text-muted mb-3">
         Cuenta el efectivo que hay en la caja (billetes y monedas) y escribe el total. Es un
         <app-term term="cierre-ciego">cierre ciego</app-term>: no ves cuánto debería haber. Con lo que cuentes se
@@ -160,19 +161,19 @@ import { ExpenseDialogComponent } from '../expenses/expense-dialog.component';
       <div class="flex flex-col gap-3">
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Efectivo contado</span>
-          <input pInputText appPesos [(ngModel)]="countedAmount" />
+          <input appInput appPesos [(ngModel)]="countedAmount" />
         </label>
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Notas (opcional)</span>
-          <input pInputText maxlength="500" [(ngModel)]="closingNotes" />
+          <input appInput maxlength="500" [(ngModel)]="closingNotes" />
         </label>
       </div>
       <ng-template #footer>
-        <p-button label="Cancelar" [text]="true" severity="secondary" (onClick)="closeOpen = false" />
-        <p-button label="Cerrar caja" severity="danger" [loading]="saving()"
-                  [disabled]="countedAmount === null || countedAmount < 0" (onClick)="close()" />
+        <app-button label="Cancelar" [text]="true" severity="secondary" (clicked)="closeOpen = false" />
+        <app-button label="Cerrar caja" severity="danger" [loading]="saving()"
+                  [disabled]="countedAmount === null || countedAmount < 0" (clicked)="close()" />
       </ng-template>
-    </p-dialog>
+    </app-dialog>
 
     <!-- El egreso es un gasto con categoría (decisión 320): sale del efectivo de esta caja. -->
     <app-expense-dialog (saved)="onExpenseSaved()" />
@@ -183,7 +184,7 @@ import { ExpenseDialogComponent } from '../expenses/expense-dialog.component';
 })
 export class CashComponent implements OnInit {
   private readonly cash = inject(CashApi);
-  private readonly messages = inject(MessageService);
+  private readonly messages = inject(ToastService);
 
   protected readonly cop = formatCop;
   protected readonly movementId = (row: CashMovement): string => row.id;

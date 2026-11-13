@@ -113,6 +113,17 @@ describe('tiquete ESC/POS (decisión 286)', () => {
   it('base64 para el programa y preferencias por defecto', () => {
     expect(toBase64(Uint8Array.from([0x1b, 0x70, 0x00]))).toBe('G3AA');
     localStorage.removeItem('xaska.printer');
-    expect(loadPrinterPrefs()).toEqual({ enabled: false, printer: null, autoPrint: false, drawerOnCash: true, plain: false });
+    expect(loadPrinterPrefs()).toEqual({ enabled: false, printer: null, autoPrint: false, drawerOnCash: true, plain: false,
+      drawerKey: 'F8' });
+  });
+
+  it('tecla del cajón: guarda una tecla permitida o ninguna; lo demás vuelve a F8 (decisión 342)', () => {
+    localStorage.setItem('xaska.printer', JSON.stringify({ drawerKey: 'F9' }));
+    expect(loadPrinterPrefs().drawerKey).toBe('F9');
+    localStorage.setItem('xaska.printer', JSON.stringify({ drawerKey: '' }));
+    expect(loadPrinterPrefs().drawerKey).toBe('');
+    localStorage.setItem('xaska.printer', JSON.stringify({ drawerKey: 'F5' }));
+    expect(loadPrinterPrefs().drawerKey).toBe('F8');
+    localStorage.removeItem('xaska.printer');
   });
 });
