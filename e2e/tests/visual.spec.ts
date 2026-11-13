@@ -105,7 +105,7 @@ for (const theme of THEMES) {
         await route.continue();
       });
       await page.goto('/app/productos');
-      await expect(page.locator('p-skeleton, app-skeleton').first()).toBeVisible();
+      await expect(page.locator('app-skeleton').first()).toBeVisible();
       await shot(page, `10-cargando-${tag}`, false);
     });
   }

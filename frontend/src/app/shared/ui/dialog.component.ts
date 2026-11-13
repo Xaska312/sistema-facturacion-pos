@@ -20,15 +20,12 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
-import { ZIndexUtils } from 'primeng/utils';
+import { MODAL_Z_INDEX, clearZIndex, setZIndex } from './overlay';
 
 /** Elementos que pueden recibir el foco, en el orden en que se buscan al abrir. */
 const FOCUSABLE =
   'button:not([disabled]), [href], input:not([disabled]):not([type="hidden"]), select:not([disabled]), ' +
   'textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
-/** Capa de los diálogos: la misma cuenta que usa PrimeNG para que sus menús y avisos queden encima (hasta la fase D). */
-const MODAL_Z_INDEX = 1100;
 
 let nextId = 0;
 let scrollLocks = 0;
@@ -184,7 +181,7 @@ export class DialogComponent implements OnDestroy {
           if (!panel || !mask || !this.open()) {
             return;
           }
-          ZIndexUtils.set('modal', panel, MODAL_Z_INDEX);
+          setZIndex('modal', panel, MODAL_Z_INDEX);
           mask.style.zIndex = String(parseInt(panel.style.zIndex, 10) - 1);
           this.zIndexElement = panel;
           if (this.focusOnShow()) {
@@ -213,7 +210,7 @@ export class DialogComponent implements OnDestroy {
 
   private release(): void {
     if (this.zIndexElement) {
-      ZIndexUtils.clear(this.zIndexElement);
+      clearZIndex(this.zIndexElement);
       this.zIndexElement = null;
     }
     if (this.lockedScroll) {

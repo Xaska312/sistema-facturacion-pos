@@ -3,7 +3,7 @@ import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Va
 import { Router, RouterLink } from '@angular/router';
 import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
-import { PasswordModule } from 'primeng/password';
+import { PasswordComponent } from '../../shared/ui/password.component';
 import { AuthService } from '../../core/auth/auth.service';
 import { InlineErrorScope } from '../../core/errors/inline-errors';
 import { problemMessage } from '../../core/errors/problem';
@@ -19,7 +19,7 @@ export function samePasswords(group: AbstractControl): ValidationErrors | null {
 /** Página del enlace "Crear una contraseña nueva" ({@code /restablecer-clave?token=…}). */
 @Component({
   selector: 'app-reset-password',
-  imports: [ReactiveFormsModule, RouterLink, ButtonComponent, PasswordModule, AuthLayoutComponent],
+  imports: [ReactiveFormsModule, RouterLink, ButtonComponent, PasswordComponent, AuthLayoutComponent],
   template: `
     <app-auth-layout>
       <form [formGroup]="form" (ngSubmit)="submit()" class="card p-6 sm:p-8 flex flex-col gap-4">
@@ -29,13 +29,13 @@ export function samePasswords(group: AbstractControl): ValidationErrors | null {
         } @else {
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">Contraseña nueva</span>
-            <p-password formControlName="password" [toggleMask]="true" autocomplete="new-password"
+            <app-password formControlName="password" [toggleMask]="true" autocomplete="new-password"
                         styleClass="w-full" inputStyleClass="w-full"
                         promptLabel="Mínimo 10 caracteres, con letras y números" />
           </label>
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">Repítela</span>
-            <p-password formControlName="repeat" [feedback]="false" [toggleMask]="true" autocomplete="new-password"
+            <app-password formControlName="repeat" [feedback]="false" [toggleMask]="true" autocomplete="new-password"
                         styleClass="w-full" inputStyleClass="w-full" />
           </label>
           @if (form.hasError('mismatch')) {

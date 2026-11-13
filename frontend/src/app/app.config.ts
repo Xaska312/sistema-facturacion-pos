@@ -3,7 +3,6 @@ import { ApplicationConfig, inject, isDevMode, provideAppInitializer, provideZon
 import { provideServiceWorker } from '@angular/service-worker';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { TitleStrategy, provideRouter, withComponentInputBinding } from '@angular/router';
-import { providePrimeNG } from 'primeng/config';
 import { firstValueFrom } from 'rxjs';
 import { routes } from './app.routes';
 import { BrandingService } from './core/theme/branding.service';
@@ -11,9 +10,6 @@ import { AuthService } from './core/auth/auth.service';
 import { authInterceptor } from './core/auth/auth.interceptor';
 import { errorInterceptor } from './core/errors/error.interceptor';
 import { loadingInterceptor } from './core/loading/loading';
-import { AppPreset } from './core/theme/app-preset';
-import { PRIMENG_ES } from './core/theme/primeng-es';
-import { DARK_CLASS } from './core/theme/theme-mode';
 import { ThemeService } from './core/theme/theme.service';
 import { AppTitleStrategy } from './core/title/app-title.strategy';
 
@@ -25,10 +21,6 @@ export const appConfig: ApplicationConfig = {
     // La barra de carga va primero para cubrir también el reintento tras renovar el token.
     provideHttpClient(withInterceptors([loadingInterceptor, authInterceptor, errorInterceptor])),
     provideAnimationsAsync(),
-    providePrimeNG({
-      theme: { preset: AppPreset, options: { darkModeSelector: `.${DARK_CLASS}` } },
-      translation: PRIMENG_ES,
-    }),
     // Mantiene sincronizada la clase del modo oscuro (public/theme-init.js ya la aplicó antes del primer render).
     provideAppInitializer(() => {
       inject(ThemeService);

@@ -1,22 +1,27 @@
-# shared/ui — componentes propios (reemplazo de PrimeNG)
+# shared/ui — componentes propios (reemplazaron a PrimeNG)
 
-Decisión 335. Se construyen por fases sobre `@angular/cdk` (Overlay, Dialog, A11y, Menu) y conviven con PrimeNG
-hasta la fase D, cuando se quitan `primeng`, `@primeuix/themes`, `providePrimeNG` y `core/theme/app-preset.ts`.
+Decisiones 335 a 340. Construidos sobre `@angular/cdk` (A11y: `CdkTrapFocus`) y estilos propios en `styles.css`
+(clases `.ui-*`, `.app-input`, `.app-skeleton` y tokens). PrimeNG ya no está en el proyecto; los íconos `pi pi-*` siguen
+siendo de PrimeIcons (MIT, paquete aparte).
 
-| Fase | Componentes | Reemplaza |
+| Pieza | Archivo | Reemplazó a |
 | --- | --- | --- |
-| A1 | `[appInput]`, `app-skeleton` | `pInputText`, `p-skeleton` |
-| A2 | `app-button`, `a[appButton]` | `p-button`, `a[pButton]` |
-| B | `app-dialog`, confirmación de `ConfirmService` | `p-dialog`, `p-confirmdialog` |
-| C | `ToastService`, `app-menu`, `app-popover`, `[appTooltip]`, `app-drawer` | toast, menu, popover, tooltip, drawer |
-| D | `app-paginator`, `app-password` | paginator, password |
-| E | Dirección visual "Orgánica" (solo cambian las variables `--ui-*` de `styles.css`) | — |
+| `[appInput]` | `input.directive.ts` | `pInputText` |
+| `app-skeleton` | `skeleton.component.ts` | `p-skeleton` |
+| `app-button`, `a[appButton]` | `button.component.ts`, `button-link.component.ts` | `p-button`, `a[pButton]` |
+| `app-dialog`, `app-confirm-host` | `dialog.component.ts`, `confirm-host.component.ts` | `p-dialog`, `p-confirmdialog` |
+| `ToastService`, `app-toast-host` | `toast.service.ts`, `toast-host.component.ts` | `MessageService`, `p-toast` |
+| `app-menu` (+ `MenuItem`) | `menu.component.ts`, `menu-item.ts` | `p-menu` |
+| `app-popover`, `[appTooltip]`, `app-drawer` | `popover.component.ts`, `tooltip.directive.ts`, `drawer.component.ts` | `p-popover`, `pTooltip`, `p-drawer` |
+| `app-paginator`, `app-password` | `paginator.component.ts`, `password.component.ts` | `p-paginator`, `p-password` |
+| Capas y posición | `overlay.ts` | `ZIndexUtils`, `absolutePosition` |
 
 Reglas:
 
-- Mismos nombres de entradas que PrimeNG para que el cambio en las pantallas sea mínimo (lo hace un script).
-- Solo tokens de color (`tools/check-colors.mjs`) y las medidas `--ui-*` de `styles.css`: nada de valores sueltos.
-- Accesibilidad igual o mejor que hoy: `type="button"` por defecto, `role="dialog"` con título enlazado, foco atrapado
-  y devuelto, Escape, `aria-live` en los avisos, teclado en los menús, `prefers-reduced-motion`.
-- Sin cambios de funcionalidad ni de diseño hasta la fase E. Antes de cada fase y después: capturas de
-  `e2e/tests/visual.spec.ts` (`VISUAL=1`).
+- Mismos nombres de entradas que tenía PrimeNG; los eventos `on…` pasaron a `(clicked)`, `(shown)`, `(hidden)`,
+  `(pageChange)`.
+- Solo tokens de color (`tools/check-colors.mjs`) y las medidas `--ui-*` de `styles.css`.
+- Accesibilidad igual o mejor: `type="button"` por defecto, `role="dialog"` con título enlazado, foco atrapado y
+  devuelto, Escape, `role="alert"` en los avisos, teclado en los menús, `prefers-reduced-motion`.
+- Siguiente (fase E, aprobada): la dirección visual "Orgánica" cambiando sobre todo las variables `--ui-*`.
+- Antes y después de cambiar algo visible: capturas de `e2e/tests/visual.spec.ts` (`VISUAL=1`).

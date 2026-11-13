@@ -1,21 +1,29 @@
 import { EmbeddedViewRef, TemplateRef, ViewContainerRef } from '@angular/core';
-import { ZIndexUtils } from 'primeng/utils';
 
 /**
- * Utilidades de las capas flotantes propias (menú, popover, tooltip, avisos; decisión 339).
- * Las capas siguen la misma cuenta de z-index que PrimeNG (`ZIndexUtils`) mientras queden piezas suyas; en la fase D
- * se cambia por una copia propia.
+ * Utilidades de las capas flotantes propias (diálogos, menús, popover, tooltip, avisos; decisiones 339 y 340).
+ * El z-index sigue la misma cuenta que usaba PrimeNG: cada capa nueva queda encima de la última abierta (un menú abierto
+ * desde un diálogo queda sobre el diálogo y los avisos sobre todo).
  */
 export const OVERLAY_Z_INDEX = 1000;
 export const MODAL_Z_INDEX = 1100;
 export const TOOLTIP_Z_INDEX = 1100;
 
-export function setZIndex(key: 'overlay' | 'modal' | 'tooltip', element: HTMLElement, base: number): void {
-  ZIndexUtils.set(key, element, base);
+type LayerKey = 'overlay' | 'modal' | 'tooltip';
+
+let layers: { key: LayerKey; value: number }[] = [];
+
+export function setZIndex(key: LayerKey, element: HTMLElement, base: number): void {
+  const last = layers.length > 0 ? layers[layers.length - 1] : { key, value: base };
+  const value = last.value + (last.key === key ? 0 : base) + 2;
+  layers.push({ key, value });
+  element.style.zIndex = String(value);
 }
 
 export function clearZIndex(element: HTMLElement): void {
-  ZIndexUtils.clear(element);
+  const value = parseInt(element.style.zIndex, 10) || 0;
+  layers = layers.filter((layer) => layer.value !== value);
+  element.style.zIndex = '';
 }
 
 /** Pinta una plantilla directamente en <body> (para que ningún contenedor con overflow la corte). */

@@ -2,7 +2,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { Component, TemplateRef, computed, contentChild, contentChildren, inject, input, output, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AppInputDirective } from '../ui/input.directive';
-import { PaginatorModule, PaginatorState } from 'primeng/paginator';
+import { PageChange, PaginatorComponent } from '../ui/paginator.component';
 import { SkeletonComponent } from '../ui/skeleton.component';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { PageResponse } from '../../core/api/api.models';
@@ -43,7 +43,7 @@ const SEARCH_DEBOUNCE_MS = 350;
  */
 @Component({
   selector: 'app-data-table',
-  imports: [NgTemplateOutlet, AppInputDirective, PaginatorModule, SkeletonComponent, EmptyStateComponent, StatusBadgeComponent],
+  imports: [NgTemplateOutlet, AppInputDirective, PaginatorComponent, SkeletonComponent, EmptyStateComponent, StatusBadgeComponent],
   template: `
     <div class="flex flex-wrap items-center gap-2 mb-3 empty:hidden">
       @if (searchPlaceholder(); as placeholder) {
@@ -169,9 +169,9 @@ const SEARCH_DEBOUNCE_MS = 350;
         <div class="flex flex-wrap items-center justify-between gap-2 mt-3 text-sm">
           <span class="text-muted" aria-live="polite">{{ rangeText() }}</span>
           @if (p.totalPages > 1 || pageSizeOptions().length > 0) {
-            <p-paginator [first]="p.page * p.size" [rows]="p.size" [totalRecords]="p.totalElements"
+            <app-paginator [first]="p.page * p.size" [rows]="p.size" [totalRecords]="p.totalElements"
                          [rowsPerPageOptions]="pageSizeOptionsList()" [pageLinkSize]="viewport.isDesktop() ? 5 : 3"
-                         (onPageChange)="onPage($event)" [style]="{ background: 'transparent', padding: '0' }" />
+                         (pageChange)="onPage($event)" />
           }
         </div>
       }
@@ -301,7 +301,7 @@ export class DataTableComponent<T> {
     this.emit({ page: 0, search: null });
   }
 
-  protected onPage(event: PaginatorState): void {
+  protected onPage(event: PageChange): void {
     const current = this.query();
     const size = event.rows ?? current.size;
     this.emit({ size, page: size !== current.size ? 0 : (event.page ?? 0) });

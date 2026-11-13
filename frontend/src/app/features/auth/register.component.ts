@@ -5,7 +5,7 @@ import { rememberStartPlan } from '../billing/start-plan';
 import { ToastService } from '../../shared/ui/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
-import { PasswordModule } from 'primeng/password';
+import { PasswordComponent } from '../../shared/ui/password.component';
 import { AuthService } from '../../core/auth/auth.service';
 import { problemMessage } from '../../core/errors/problem';
 import { safeReturnUrl } from '../../core/auth/return-url';
@@ -14,7 +14,7 @@ import { AuthLayoutComponent } from '../../shared/layout/auth-layout.component';
 
 @Component({
   selector: 'app-register',
-  imports: [ReactiveFormsModule, RouterLink, ButtonComponent, AppInputDirective, PasswordModule, AuthLayoutComponent],
+  imports: [ReactiveFormsModule, RouterLink, ButtonComponent, AppInputDirective, PasswordComponent, AuthLayoutComponent],
   template: `
     <app-auth-layout width="md">
       <form [formGroup]="form" (ngSubmit)="submit()"
@@ -35,7 +35,7 @@ import { AuthLayoutComponent } from '../../shared/layout/auth-layout.component';
         </label>
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Contraseña</span>
-          <p-password formControlName="password" [toggleMask]="true" autocomplete="new-password"
+          <app-password formControlName="password" [toggleMask]="true" autocomplete="new-password"
                       styleClass="w-full" inputStyleClass="w-full"
                       promptLabel="Mínimo 10 caracteres, con letras y números" />
         </label>

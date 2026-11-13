@@ -3,7 +3,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
-import { PasswordModule } from 'primeng/password';
+import { PasswordComponent } from '../../shared/ui/password.component';
 import { AuthService } from '../../core/auth/auth.service';
 import { problemMessage } from '../../core/errors/problem';
 import { safeReturnUrl } from '../../core/auth/return-url';
@@ -11,7 +11,7 @@ import { AuthLayoutComponent } from '../../shared/layout/auth-layout.component';
 
 @Component({
   selector: 'app-login',
-  imports: [ReactiveFormsModule, RouterLink, ButtonComponent, AppInputDirective, PasswordModule, AuthLayoutComponent],
+  imports: [ReactiveFormsModule, RouterLink, ButtonComponent, AppInputDirective, PasswordComponent, AuthLayoutComponent],
   template: `
     <app-auth-layout>
       <form [formGroup]="form" (ngSubmit)="submit()" class="card p-6 sm:p-8 flex flex-col gap-4">
@@ -27,7 +27,7 @@ import { AuthLayoutComponent } from '../../shared/layout/auth-layout.component';
 
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Contraseña</span>
-          <p-password formControlName="password" [feedback]="false" [toggleMask]="true"
+          <app-password formControlName="password" [feedback]="false" [toggleMask]="true"
                       autocomplete="current-password" styleClass="w-full" inputStyleClass="w-full" />
         </label>
         <a routerLink="/recuperar-clave" [queryParams]="form.controls.email.valid ? { email: form.controls.email.value } : {}"
