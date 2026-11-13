@@ -1,6 +1,7 @@
 # Frontend — XASKA POS
 
-Angular 21 (standalone, signals, interceptores funcionales) + PrimeNG 21 (tema Aura con `@primeuix/themes`) + Tailwind 4. Node 24.
+Angular 21 (standalone, signals, interceptores funcionales) + componentes propios en `src/app/shared/ui` sobre `@angular/cdk`
+(decisiones 335–341; ver su `README.md`) + Tailwind 4. Íconos: PrimeIcons (MIT). Node 24.
 En producción la app queda guardada en el equipo con `@angular/service-worker` (`ngsw-config.json`, decisión 333); en
 desarrollo (`npm start`) no se usa.
 

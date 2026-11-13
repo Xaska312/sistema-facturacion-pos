@@ -201,6 +201,16 @@ _Dueño y un cajero, con la impresora térmica y un celular_
 | ☐ | 85 | Publicar una versión nueva con equipos abiertos. | Sale "Hay una versión nueva de XASKA" con Actualizar; no recarga sola. |
 | ☐ | 86 | Cambiar el costo de un producto con ventas y revisar su kardex. | Se guarda; muestra el margen y, si bajó, sugiere el precio; el kardex tiene "Cambio de costo" con antes y después; las ventas pasadas no cambian. |
 
+## 15. Componentes propios y pendientes de noviembre (decisiones 335–345)
+
+| OK | # | Prueba | Resultado esperado |
+|---|---|---|---|
+| ☐ | 87 | Recorrer Vender, Productos, Clientes y Ajustes en claro y oscuro: abrir un diálogo, confirmar una anulación, ver un aviso, abrir el menú del usuario y pasar de página. | Todo se ve como antes, con esquinas más redondas; los botones se hunden y rebotan; Esc cierra; el foco queda en el diálogo y vuelve al botón al cerrar. |
+| ☐ | 88 | En el computador de la caja con XASKA Impresora: en Vender pulsar F8; en Ajustes → Impresora cambiarla a F9 y luego a "Ninguna". | F8 abre el cajón (como "Abrir cajón", que muestra la tecla); después F9; con "Ninguna" ninguna tecla lo abre. Con el cobro abierto la tecla no hace nada. |
+| ☐ | 89 | Entrar con la misma cuenta en el PC y en el celular; en el PC: menú del usuario → "Cerrar sesión en los otros equipos". | Pide confirmar y avisa "Se cerró 1 sesión…"; el PC sigue trabajando; en el celular, a los pocos minutos, pide iniciar sesión de nuevo. |
+| ☐ | 90 | Ajustes → Fiados: cambiar el mensaje con {cliente} y {saldo}, guardar; en Fiados tocar "Recordar" (también como cajero). Luego "Volver al mensaje de siempre". | La vista previa cambia mientras se escribe; WhatsApp abre con el mensaje nuevo y los datos del cliente; al restaurar vuelve el mensaje de siempre. |
+| ☐ | 91 | Abrir `https://app.xaska.co/robots.txt` y `/sitemap.xml`; compartir el enlace de precios por WhatsApp. | Abren como texto y XML; la vista previa muestra el logo y la descripción de XASKA POS. |
+
 ## Hallazgos
 
 Anota aquí lo que no salió como se esperaba (número de prueba, qué pasó, captura) y compártelo para corregirlo antes de abrir.
