@@ -44,7 +44,7 @@ let scrollLocks = 0;
   template: `
     @if (open()) {
       <div #mask class="ui-dialog-mask" [class.ui-dialog-mask-modal]="modal()"
-           (mousedown)="pressedOnMask = $event.target === mask" (click)="onMaskClick($event)">
+           (mousedown)="onMaskDown($event)" (click)="onMaskClick($event)">
         <div #panel [class]="panelClass()" [attr.role]="role()" aria-modal="true"
              [attr.aria-labelledby]="showHeader() && header() ? titleId : null" [ngStyle]="panelStyle()"
              cdkTrapFocus (keydown.escape)="onEscape($event)">
@@ -150,6 +150,15 @@ export class DialogComponent implements OnDestroy {
       event.stopPropagation();
       this.close();
     }
+  }
+
+  /**
+   * Recuerda si el clic empezó en la máscara. No devuelve nada a propósito: si el manejador del template devolviera
+   * false (como hacía "pressedOnMask = $event.target === mask"), Angular llamaría a preventDefault() y los campos del
+   * diálogo no recibirían el foco al tocarlos con el dedo o el mouse (decisión 350).
+   */
+  protected onMaskDown(event: MouseEvent): void {
+    this.pressedOnMask = event.target === this.mask()?.nativeElement;
   }
 
   protected onMaskClick(event: MouseEvent): void {
