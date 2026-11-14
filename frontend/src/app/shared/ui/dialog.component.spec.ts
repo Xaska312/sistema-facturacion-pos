@@ -111,6 +111,14 @@ describe('DialogComponent', () => {
     expect(panel()).toBeNull();
   });
 
+  it('tocar un campo del diálogo no se bloquea: el navegador le puede dar el foco (decisión 350)', () => {
+    openDialog();
+    const field = panel()!.querySelector<HTMLInputElement>('#name')!;
+    const down = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
+    field.dispatchEvent(down);
+    expect(down.defaultPrevented).toBeFalse();
+  });
+
   it('usa el ancho pedido y el de breakpoints en pantallas angostas', () => {
     openDialog();
     const narrow = window.matchMedia('screen and (max-width: 640px)').matches;

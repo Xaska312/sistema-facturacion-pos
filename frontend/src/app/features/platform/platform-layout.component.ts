@@ -83,11 +83,6 @@ import { PLATFORM_MENU } from './platform-menu';
     }
     .back-button:hover { background: var(--surface-border); }
     @media (max-width: 639px) { .back-button { padding: 0; width: 2.75rem; justify-content: center; } }
-    .dock-more { display: none; }
-    @media (max-width: 639px) {
-      .dock-item--extra { display: none; }
-      .dock-more { display: inline-flex; }
-    }
     .dock {
       position: fixed;
       left: 50%;
@@ -126,6 +121,16 @@ import { PLATFORM_MENU } from './platform-menu';
       background: var(--brand);
       color: var(--brand-contrast);
       --xicon-fill: var(--brand-contrast);
+    }
+    /*
+     * Decisión 351: "Más" solo en el celular, y ahí las secciones que guarda se esconden. Con dos clases para ganarle a
+     * .dock-item { display: inline-flex } (antes iba antes en la hoja con la misma especificidad y perdía: salían
+     * duplicadas en el computador y el celular seguía con todas).
+     */
+    .dock-item.dock-more { display: none; }
+    @media (max-width: 639px) {
+      .dock-item.dock-item--extra { display: none; }
+      .dock-item.dock-more { display: inline-flex; }
     }
     /* En pantallas angostas solo los íconos; el nombre queda para lectores de pantalla y en el globo de ayuda. */
     @media (max-width: 767px) {
