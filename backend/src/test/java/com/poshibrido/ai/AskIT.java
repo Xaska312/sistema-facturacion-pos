@@ -142,6 +142,7 @@ class AskIT extends IntegrationTest {
         Session s = renew(owner.tenant());
         PosTestSupport pos = new PosTestSupport(api);
         UUID soda = pos.productWithStock(s, "GAS", "2000", "10", "1000");
+        pos.service(s, "ENVIO", "5000");
         pos.openCash(s, PosTestSupport.CAJA_1, "50000");
         pos.sellCash(s, soda, "2", "4000").andExpect(status().isCreated());
 
@@ -155,7 +156,10 @@ class AskIT extends IntegrationTest {
                         Map.of("type", "tool_use", "id", "m", "name", "margen_productos", "input", Map.of()),
                         Map.of("type", "tool_use", "id", "x", "name", "producto", "input", Map.of("buscar", "GAS")),
                         Map.of("type", "tool_use", "id", "a", "name", "ayuda_app",
-                                "input", Map.of("buscar", "anular una venta")))),
+                                "input", Map.of("buscar", "anular una venta")),
+                        Map.of("type", "tool_use", "id", "q", "name", "que_comprar", "input", Map.of()),
+                        Map.of("type", "tool_use", "id", "s", "name", "existencias", "input", Map.of("buscar", "ENVIO")),
+                        Map.of("type", "tool_use", "id", "f", "name", "tablero_finanzas", "input", Map.of()))),
                 Map.of("stop_reason", "end_turn", "usage", usage(), "content", List.of(
                         Map.of("type", "text", "text", "Listo."))))
                 .when(ai).send(any());
@@ -176,7 +180,10 @@ class AskIT extends IntegrationTest {
                 .contains("efectivoEsperadoAhora").contains("54000")
                 .contains("productosRevisados").contains("margenPorcentaje")
                 .contains("precioSinIva").contains("gananciaPorUnidad")
-                .contains("Anular una venta").contains("https://app.xaska.co/manual#anular-venta");
+                .contains("Anular una venta").contains("https://app.xaska.co/manual#anular-venta")
+                // Decisión 360: qué comprar, productos sin inventario y el periodo del punto de equilibrio.
+                .contains("dondeHacerlo").contains("no manejan inventario").contains("Servicio ENVIO")
+                .contains("ÚLTIMOS 30 DÍAS");
     }
 
     private Session renew(Session session) throws Exception {

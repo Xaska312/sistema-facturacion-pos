@@ -13,6 +13,7 @@ import com.poshibrido.organization.application.BranchService;
 import com.poshibrido.organization.application.BusinessSettingsApi;
 import com.poshibrido.organization.domain.Branch;
 import com.poshibrido.purchasing.application.PurchaseService;
+import com.poshibrido.purchasing.application.PurchaseSuggestionService;
 import com.poshibrido.reporting.application.ReportFilter;
 import com.poshibrido.reporting.application.ReportQueryService;
 import jakarta.persistence.EntityManager;
@@ -62,6 +63,7 @@ public class AskTools {
     private final WithholdingService withholdings;
     private final BusinessSettingsApi settings;
     private final AskaManual manual;
+    private final PurchaseSuggestionService suggestions;
 
     @PersistenceContext
     private EntityManager em;
@@ -165,6 +167,12 @@ public class AskTools {
             new Tool("cuentas_por_pagar", "purchases:read", "Cuentas por pagar",
                     "Lo que se le debe a los proveedores: total, vencido, lo que vence en 7 días y las facturas.",
                     schema(Map.of()), (t, in) -> t.payables()),
+            // Decisión 360: lo mismo que la pestaña "Qué comprar" (por lo que se vende, no solo por el mínimo).
+            new Tool("que_comprar", "purchases:read", "Qué comprar",
+                    "Qué pedirle a cada proveedor según lo que se vende al día (últimos 7 y 30 días), lo que hay y "
+                            + "los días que debe alcanzar, con la cantidad sugerida y el valor aproximado. Úsala para "
+                            + "\"qué debo pedir\" o \"qué se me va a acabar\": no depende de que haya mínimos.",
+                    schema(Map.of("sucursal", SUCURSAL)), (t, in) -> t.toBuy(in)),
             new Tool("cajas", "cash:read", "Cajas",
                     "Turnos de caja abiertos o cerrados en un rango, con lo esperado, lo contado y la diferencia. En "
                             + "las cajas abiertas trae cuánto efectivo debería haber ahora y de dónde sale (base, "
@@ -191,7 +199,7 @@ public class AskTools {
                             + "que deben los clientes (fiados y pedidos), lo que se debe a proveedores, gastos contra "
                             + "el mes pasado, gastos fijos por pagar y el punto de equilibrio (cuánto hay que vender "
                             + "al mes y al día para cubrir los gastos).",
-                    schema(Map.of()), (t, in) -> t.financeDashboard.dashboard()),
+                    schema(Map.of()), (t, in) -> t.financeBoard()),
             new Tool("retenciones", "finance:read", "Retenciones",
                     "Retenciones que los clientes le hicieron al negocio en un rango: total por tipo (retefuente, "
                             + "reteIVA, reteICA), por cliente y los certificados que faltan por recibir.",
@@ -443,7 +451,20 @@ public class AskTools {
                 rows.add(m);
             }
         }
-        return rows.isEmpty() ? "No hay productos con \"" + search + "\"." : first(rows, 40);
+        if (rows.isEmpty()) {
+            // Decisión 360: los que no manejan inventario (platos, servicios) no salen en existencias.
+            @SuppressWarnings("unchecked")
+            List<Object> untracked = em.createNativeQuery("""
+                    SELECT p.name FROM products p
+                    WHERE p.active AND p.deleted_at IS NULL AND NOT p.track_inventory
+                      AND (p.name ILIKE ?1 OR p.sku ILIKE ?1) ORDER BY p.name LIMIT 10""")
+                    .setParameter(1, "%" + search.replace("%", "").replace("_", "") + "%").getResultList();
+            return untracked.isEmpty() ? "No hay productos con \"" + search + "\"."
+                    : "Estos productos no manejan inventario (se venden sin contar existencias, como platos preparados "
+                    + "o servicios), así que no tienen existencia: " + String.join(", ", untracked.stream()
+                    .map(String::valueOf).toList()) + ".";
+        }
+        return first(rows, 40);
     }
 
     private Object slowMovers(Map<String, Object> in) {
@@ -473,6 +494,56 @@ public class AskTools {
             m.put("resumen", credit.summary());
         }
         m.put("clientes", credit.accounts(search, CreditQueryService.Filter.DEBT, 0, 20).content());
+        return m;
+    }
+
+    private Object financeBoard() {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("nota", "Ventas, utilidad, flujo y gastos son del mes en curso. En breakEven, grossMargin y "
+                + "averageDailySales salen de los ÚLTIMOS 30 DÍAS (no del mes): dilo así y no los mezcles con el margen "
+                + "del mes.");
+        m.put("tablero", financeDashboard.dashboard());
+        return m;
+    }
+
+    private Object toBuy(Map<String, Object> in) {
+        UUID branchId = branch(in);
+        List<Branch> active = activeBranches();
+        if (branchId == null) {
+            if (active.isEmpty()) {
+                return "No hay sucursales activas.";
+            }
+            branchId = active.getFirst().getId();
+        }
+        UUID chosen = branchId;
+        String branchName = active.stream().filter(b -> b.getId().equals(chosen)).map(Branch::getName).findFirst()
+                .orElse("");
+        var result = suggestions.suggestions(branchId);
+        List<Map<String, Object>> groups = new ArrayList<>();
+        for (var g : result.groups()) {
+            Map<String, Object> gm = new LinkedHashMap<>();
+            gm.put("proveedor", g.supplierName() == null ? "Sin compras registradas" : g.supplierName());
+            gm.put("diasQueDebeAlcanzar", g.coverageDays());
+            gm.put("valorAproximado", g.estimatedTotal());
+            gm.put("productos", g.lines().stream().limit(15).map(l -> {
+                Map<String, Object> lm = new LinkedHashMap<>();
+                lm.put("producto", l.name());
+                lm.put("unidad", l.unitCode());
+                lm.put("hay", l.stock());
+                lm.put("vendeAlDia", l.dailyAverage());
+                lm.put("pedir", l.suggested());
+                lm.put("valorAproximado", l.estimatedTotal());
+                return lm;
+            }).toList());
+            groups.add(gm);
+        }
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("sucursal", branchName);
+        if (active.size() > 1 && in.get("sucursal") == null) {
+            m.put("nota", "El negocio tiene varias sucursales: esto es de " + branchName + ".");
+        }
+        m.put("proveedores", groups.isEmpty() ? "No hay nada que pedir por ahora." : first(groups, 10));
+        m.put("dondeHacerlo", "Aska → Qué comprar, donde se revisa y se envía el pedido por WhatsApp.");
         return m;
     }
 
