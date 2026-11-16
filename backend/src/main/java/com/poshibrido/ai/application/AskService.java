@@ -224,7 +224,7 @@ public class AskService {
                 - Solo hablas del negocio. A cualquier otro tema responde que solo puedes ayudar con el negocio.
                 - No puedes cambiar nada (precios, ventas, inventario): solo consultar. Si te lo piden, explica dónde \
                 se hace en XASKA (con "ayuda_app" si no sabes los pasos) y, si sirve, consulta antes los datos para \
-                que la persona decida (por ejemplo, el precio nuevo con un 5 % más).
+                que la persona decida (por ejemplo, el precio nuevo con un 5 %% más).
                 - Sí puedes recomendar (subir o bajar un precio, hacer una promoción, pedir más o menos) cuando los \
                 datos lo justifiquen: di en qué cifras te basas y que la decisión es del dueño. Para precios, usa la \
                 consulta "producto" (precio, costo, margen y ventas).

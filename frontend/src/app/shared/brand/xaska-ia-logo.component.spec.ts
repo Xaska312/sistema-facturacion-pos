@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { XaskaIaLogoComponent } from './xaska-ia-logo.component';
 
-describe('XaskaIaLogoComponent (decisión 295)', () => {
+describe('XaskaIaLogoComponent (decisiones 295 y 358)', () => {
   function render(inputs: Partial<Record<'wordmark' | 'label' | 'size', unknown>> = {}) {
     const fixture = TestBed.createComponent(XaskaIaLogoComponent);
     for (const [name, value] of Object.entries(inputs)) {
@@ -27,11 +27,15 @@ describe('XaskaIaLogoComponent (decisión 295)', () => {
     expect(el.querySelector('.xia-sm')).not.toBeNull();
   });
 
-  it('cada logo usa sus propios degradados para el volumen', () => {
+  it('burbuja con degradado propio, la A y el rombo ámbar (decisión 358)', () => {
     const a = render().querySelector('linearGradient')?.id;
     const b = render().querySelector('linearGradient')?.id;
     expect(a).toMatch(/^xia-tile-\d+$/);
     expect(a).not.toBe(b);
-    expect(render().querySelector('rect')?.getAttribute('fill')).toMatch(/^url\(#xia-tile-\d+\)$/);
+    const el = render();
+    expect(el.querySelector('path')?.getAttribute('fill')).toMatch(/^url\(#xia-tile-\d+\)$/);
+    expect(el.querySelector('.ink')).not.toBeNull();
+    expect(el.querySelector('.spark')).not.toBeNull();
+    expect(el.querySelector('rect')).toBeNull();
   });
 });
