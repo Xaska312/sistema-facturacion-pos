@@ -23,6 +23,7 @@ import { heldKey } from './held-sales';
 import { PosComponent } from './pos.component';
 import { OfflineCatalogService } from '../../core/offline/offline-catalog.service';
 import { OfflineSalesService } from '../../core/offline/offline-sales.service';
+import { OfflineDrawerService } from '../../core/offline/offline-drawer.service';
 
 const config: PosConfig = {
   pricesIncludeTax: true, maxDiscountPercent: 0, allowNegativeStock: false, currency: 'COP', receiptFooter: null,
@@ -108,6 +109,8 @@ describe('PosComponent: celular, pausar venta y cliente nuevo', () => {
             prepare: () => Promise.resolve(), noteNetworkError: () => undefined },
         },
         { provide: OfflineCatalogService, useValue: { prepare: () => Promise.resolve(), ready: signal(false) } },
+        // Decisión 352: las aperturas del cajón sin internet no se prueban aquí.
+        { provide: OfflineDrawerService, useValue: { record: () => Promise.resolve(), sync: () => Promise.resolve() } },
         {
           provide: AuthService,
           useValue: {
