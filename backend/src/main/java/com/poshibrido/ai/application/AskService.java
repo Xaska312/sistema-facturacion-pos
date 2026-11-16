@@ -57,7 +57,15 @@ public class AskService {
     private EntityManager em;
 
     /** Un mensaje anterior de la conversación ({@code role}: user o assistant). */
-    public record Turn(String role, String text) {
+    /**
+     * Un turno de la conversación. En los de Aska, {@code consulted} son las consultas que hizo para responder
+     * (decisión 355): sin ellas la IA creía que las cifras anteriores eran inventadas y se desmentía.
+     */
+    public record Turn(String role, String text, List<String> consulted) {
+
+        public Turn(String role, String text) {
+            this(role, text, List.of());
+        }
     }
 
     /** La respuesta, lo que se consultó para darla y las preguntas del mes. */
@@ -173,6 +181,11 @@ public class AskService {
                 continue;
             }
             String text = t.text().length() > MAX_HISTORY_TEXT ? t.text().substring(0, MAX_HISTORY_TEXT) : t.text();
+            if ("assistant".equals(t.role()) && t.consulted() != null && !t.consulted().isEmpty()) {
+                text = text + "\n[Consultó: " + String.join(" · ", t.consulted().stream()
+                        .filter(c -> c != null && !c.isBlank()).limit(6)
+                        .map(c -> c.length() > 60 ? c.substring(0, 60) : c).toList()) + "]";
+            }
             messages.add(Map.of("role", t.role(), "content", text));
             expected = "user".equals(expected) ? "assistant" : "user";
         }
@@ -196,10 +209,22 @@ public class AskService {
                 Hoy es %s %s (zona %s); "esta semana" empieza el lunes. Moneda: pesos colombianos.
                 Reglas:
                 - Nunca inventes cifras: todo número sale de una herramienta. Si no hay herramienta para algo, dilo.
+                - Tus respuestas anteriores en esta conversación ya salieron de consultas (al final dicen [Consultó: …]): \
+                no te retractes ni digas que no las consultaste. Si necesitas un dato que no tienes, consúltalo ahora. \
+                No escribas [Consultó: …] en tu respuesta: la app lo muestra sola.
+                - Di siempre el periodo de las cifras (del 1 al 16 de noviembre). Si la persona no dice otro, sigue con \
+                el mismo periodo de la pregunta anterior, para que las cifras de un producto no cambien de una \
+                respuesta a otra.
+                - Ganancia y margen se comparan siempre sin IVA (el costo se guarda sin IVA). Para "qué deja poca \
+                ganancia" o el margen de una categoría (gaseosas, aseo…) usa "margen_productos", que revisa todo el \
+                catálogo y no solo lo vendido.
+                - Si preguntan cómo se hace algo en XASKA (anular, cerrar la caja, crear un producto…), usa \
+                "ayuda_app" y responde con los pasos numerados (1., 2., 3.) y el enlace a la sección del manual.
                 - Si una herramienta dice que no hay permiso, dile a la persona que su usuario no puede ver eso.
                 - Solo hablas del negocio. A cualquier otro tema responde que solo puedes ayudar con el negocio.
                 - No puedes cambiar nada (precios, ventas, inventario): solo consultar. Si te lo piden, explica dónde \
-                se hace en XASKA.
+                se hace en XASKA (con "ayuda_app" si no sabes los pasos) y, si sirve, consulta antes los datos para \
+                que la persona decida (por ejemplo, el precio nuevo con un 5 % más).
                 - Sí puedes recomendar (subir o bajar un precio, hacer una promoción, pedir más o menos) cuando los \
                 datos lo justifiquen: di en qué cifras te basas y que la decisión es del dueño. Para precios, usa la \
                 consulta "producto" (precio, costo, margen y ventas).

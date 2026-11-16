@@ -8,6 +8,8 @@ import { ImportReport } from './api.models';
 export interface AskTurn {
   role: 'user' | 'assistant';
   text: string;
+  /** Lo que Aska consultó para esa respuesta (decisión 355). */
+  consulted?: string[];
 }
 
 /** Preguntas del mes: {@code limit} 0 = el negocio no tiene XASKA IA. */

@@ -10,6 +10,7 @@ import com.poshibrido.finance.application.WithholdingService;
 import com.poshibrido.inventory.application.InventoryQueryService;
 import com.poshibrido.inventory.application.LotQueryService;
 import com.poshibrido.organization.application.BranchService;
+import com.poshibrido.organization.application.BusinessSettingsApi;
 import com.poshibrido.organization.domain.Branch;
 import com.poshibrido.purchasing.application.PurchaseService;
 import com.poshibrido.reporting.application.ReportFilter;
@@ -59,6 +60,8 @@ public class AskTools {
     private final IncomeStatementService incomeStatement;
     private final FinanceDashboardService financeDashboard;
     private final WithholdingService withholdings;
+    private final BusinessSettingsApi settings;
+    private final AskaManual manual;
 
     @PersistenceContext
     private EntityManager em;
@@ -82,22 +85,35 @@ public class AskTools {
     static final List<Tool> TOOLS = List.of(
             new Tool("sucursales", null, "Sucursales", "Lista las sucursales activas del negocio.",
                     schema(Map.of()), (t, in) -> t.branchList()),
+            // Decisión 357: cómo se hace algo en XASKA, del manual de uso.
+            new Tool("ayuda_app", null, "Manual de XASKA",
+                    "Busca en el manual de uso de XASKA POS cómo se hace algo en la app (anular una venta, cerrar la "
+                            + "caja, crear un producto, cargar una compra, dar un fiado…): pasos, consejos, quién "
+                            + "puede hacerlo y el enlace a la sección.",
+                    schema(Map.of("buscar", Map.of("type", "string",
+                            "description", "Lo que la persona quiere hacer, en pocas palabras.")), "buscar"),
+                    (t, in) -> t.manual.search(text(in.get("buscar")))),
             new Tool("resumen_ventas", "reports:read", "Resumen de ventas",
                     "Totales de ventas en un rango: cantidad de ventas, total, base, impuestos, descuentos, ticket "
                             + "promedio, costo, utilidad, margen y anuladas.",
                     schema(Map.of("desde", DESDE, "hasta", HASTA, "sucursal", SUCURSAL)),
                     (t, in) -> t.reports.summary(t.filter(in))),
             new Tool("ventas_agrupadas", "reports:read", "Ventas agrupadas",
-                    "Ventas de un rango agrupadas por día, sucursal, vendedor, medio de pago o categoría.",
+                    "Ventas de un rango agrupadas por día, sucursal, vendedor, medio de pago, categoría, hora del "
+                            + "día (a qué hora se vende más) o día de la semana (qué día se vende más, con el "
+                            + "promedio por día).",
                     schema(Map.of("agrupar", Map.of("type", "string",
-                                    "enum", List.of("dia", "sucursal", "vendedor", "medio_pago", "categoria")),
+                                    "enum", List.of("dia", "sucursal", "vendedor", "medio_pago", "categoria", "hora",
+                                            "dia_semana")),
                             "desde", DESDE, "hasta", HASTA, "sucursal", SUCURSAL), "agrupar"),
                     (t, in) -> t.grouped(in)),
             new Tool("producto", "reports:read", "Ficha del producto",
-                    "Precio de venta, costo, margen, existencia total y ventas de 7 y 30 días (unidades y precio "
-                            + "promedio cobrado) de los productos que coinciden con un texto. Úsala para preguntas de "
-                            + "precios, promociones o si un producto deja ganancia.",
-                    schema(Map.of("buscar", Map.of("type", "string", "description", "Nombre o SKU del producto.")), "buscar"),
+                    "Precio de venta, costo, ganancia por unidad y margen (sin IVA), existencia total y ventas de 7 "
+                            + "y 30 días (unidades y precio promedio cobrado) de los productos cuyo nombre, SKU o "
+                            + "categoría coincide con un texto. Úsala para preguntas de precios, promociones o si un "
+                            + "producto deja ganancia.",
+                    schema(Map.of("buscar", Map.of("type", "string",
+                            "description", "Nombre, SKU o categoría del producto.")), "buscar"),
                     (t, in) -> t.product(in)),
             new Tool("productos_vendidos", "reports:read", "Productos más vendidos",
                     "Productos más vendidos en un rango, por valor o por cantidad, con costo y utilidad.",
@@ -106,6 +122,15 @@ public class AskTools {
                             "limite", Map.of("type", "integer", "description", "De 1 a 30; 10 si no se indica."))),
                     (t, in) -> t.reports.topProducts(t.filter(in), clamp(integer(in.get("limite"), 10), 1, 30),
                             "cantidad".equals(in.get("ordenar")))),
+            new Tool("margen_productos", "reports:read", "Margen de los productos",
+                    "Precio, costo y margen (sin IVA) de TODO el catálogo activo, no solo de lo vendido, ordenado del "
+                            + "que menos deja al que más (o al revés), con cuántos venden por debajo del costo, cuántos "
+                            + "dejan menos del 10 % y cuántos tienen el costo en cero. Con categoria, solo esa "
+                            + "categoría y sus subcategorías (gaseosas, aseo, licores…).",
+                    schema(Map.of("categoria", Map.of("type", "string", "description", "Nombre de la categoría."),
+                            "orden", Map.of("type", "string", "enum", List.of("menor_margen", "mayor_margen")),
+                            "limite", Map.of("type", "integer", "description", "De 1 a 40; 20 si no se indica."))),
+                    (t, in) -> t.margins(in)),
             new Tool("mis_ventas_hoy", "sales:read", "Mis ventas de hoy",
                     "Las ventas de hoy de quien pregunta: cantidad, total, ticket promedio y medios de pago.",
                     schema(Map.of()), (t, in) -> t.reports.myDay(com.poshibrido.shared.security.CurrentActor.requireUserId())),
@@ -141,7 +166,9 @@ public class AskTools {
                     "Lo que se le debe a los proveedores: total, vencido, lo que vence en 7 días y las facturas.",
                     schema(Map.of()), (t, in) -> t.payables()),
             new Tool("cajas", "cash:read", "Cajas",
-                    "Turnos de caja abiertos o cerrados en un rango, con lo esperado, lo contado y la diferencia.",
+                    "Turnos de caja abiertos o cerrados en un rango, con lo esperado, lo contado y la diferencia. En "
+                            + "las cajas abiertas trae cuánto efectivo debería haber ahora y de dónde sale (base, "
+                            + "ventas, abonos, gastos, retiros…), si el usuario puede verlo.",
                     schema(Map.of("estado", Map.of("type", "string", "enum", List.of("abiertas", "cerradas")),
                             "desde", DESDE, "hasta", HASTA, "sucursal", SUCURSAL)),
                     (t, in) -> t.cashSessions(in)),
@@ -237,25 +264,28 @@ public class AskTools {
         Instant d30 = today.minusDays(30).atStartOfDay(zone).toInstant();
         @SuppressWarnings("unchecked")
         List<Object[]> rows = em.createNativeQuery("""
-                SELECT p.sku, p.name, u.code, p.sale_price, p.cost,
+                SELECT p.sku, p.name, u.code, p.sale_price, p.cost, tx.rate, c.name,
                        coalesce((SELECT sum(b.quantity) FROM stock_balances b
                                  WHERE b.product_id = p.id AND b.lot_id IS NULL), 0),
                        coalesce(x.q7, 0), coalesce(x.t7, 0), coalesce(x.q30, 0), coalesce(x.t30, 0)
                 FROM products p
                 JOIN units u ON u.id = p.base_unit_id
+                JOIN taxes tx ON tx.id = p.tax_id
+                LEFT JOIN categories c ON c.id = p.category_id
                 LEFT JOIN LATERAL (
                     SELECT sum(si.base_quantity) FILTER (WHERE s.created_at >= ?3) AS q7,
                            sum(si.total) FILTER (WHERE s.created_at >= ?3) AS t7,
                            sum(si.base_quantity) AS q30, sum(si.total) AS t30
                     FROM sale_items si JOIN sales s ON s.id = si.sale_id
                     WHERE si.product_id = p.id AND s.status = 'COMPLETED' AND s.created_at >= ?2) x ON TRUE
-                WHERE p.active AND (p.name ILIKE ?1 OR p.sku ILIKE ?1)
+                WHERE p.active AND p.deleted_at IS NULL AND (p.name ILIKE ?1 OR p.sku ILIKE ?1 OR c.name ILIKE ?1)
                 ORDER BY p.name LIMIT 10""")
                 .setParameter(1, "%" + search.replace("%", "").replace("_", "") + "%")
                 .setParameter(2, Timestamp.from(d30)).setParameter(3, Timestamp.from(d7)).getResultList();
         if (rows.isEmpty()) {
             return "No hay productos activos con \"" + search + "\".";
         }
+        boolean withTax = settings.current().pricesIncludeTax();
         List<Map<String, Object>> out = new ArrayList<>();
         for (Object[] r : rows) {
             BigDecimal price = decimal(r[3]);
@@ -263,25 +293,103 @@ public class AskTools {
             Map<String, Object> m = new LinkedHashMap<>();
             m.put("sku", r[0]);
             m.put("producto", r[1]);
+            m.put("categoria", r[6]);
             m.put("unidad", r[2]);
             m.put("precioVenta", price);
-            m.put("costo", cost);
-            m.put("margenPorcentaje", price.signum() == 0 ? null
-                    : price.subtract(cost).multiply(BigDecimal.valueOf(100)).divide(price, 1, RoundingMode.HALF_UP));
-            m.put("existenciaTotal", decimal(r[5]));
-            m.put("vendido7dias", decimal(r[6]));
-            m.put("cobrado7dias", decimal(r[7]));
-            m.put("vendido30dias", decimal(r[8]));
-            m.put("cobrado30dias", decimal(r[9]));
-            BigDecimal q30 = decimal(r[8]);
+            m.put("costoSinIva", cost);
+            m.putAll(margin(price, cost, decimal(r[5]), withTax));
+            m.put("existenciaTotal", decimal(r[7]));
+            m.put("vendido7dias", decimal(r[8]));
+            m.put("cobrado7dias", decimal(r[9]));
+            m.put("vendido30dias", decimal(r[10]));
+            m.put("cobrado30dias", decimal(r[11]));
+            BigDecimal q30 = decimal(r[10]);
             m.put("precioPromedioCobrado30dias", q30.signum() == 0 ? null
-                    : decimal(r[9]).divide(q30, 0, RoundingMode.HALF_UP));
+                    : decimal(r[11]).divide(q30, 0, RoundingMode.HALF_UP));
             out.add(m);
         }
         Map<String, Object> result = new LinkedHashMap<>();
-        result.put("nota", "precioVenta es el de la ficha (con IVA si el negocio vende con IVA incluido); lo cobrado "
-                + "incluye descuentos e impuestos.");
+        result.put("nota", MARGIN_NOTE + " Lo cobrado incluye descuentos e impuestos.");
         result.put("productos", out);
+        return result;
+    }
+
+    static final String MARGIN_NOTE = "precioVenta es el de la ficha (con IVA si el negocio vende con IVA incluido). "
+            + "El costo se guarda sin IVA, así que la ganancia y el margen comparan sin IVA con sin IVA: margen = "
+            + "ganancia ÷ precio sin IVA; sobreCosto = ganancia ÷ costo. Con el costo en cero el margen no es real.";
+
+    /** Ganancia y márgenes sin IVA (decisión 348): el costo ya está sin IVA; al precio se le quita si lo trae. */
+    static Map<String, Object> margin(BigDecimal price, BigDecimal cost, BigDecimal taxRate, boolean priceWithTax) {
+        BigDecimal net = priceWithTax && taxRate.signum() > 0
+                ? price.multiply(BigDecimal.valueOf(100)).divide(BigDecimal.valueOf(100).add(taxRate), 2, RoundingMode.HALF_UP)
+                : price;
+        BigDecimal gain = net.subtract(cost);
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("precioSinIva", net);
+        m.put("gananciaPorUnidad", gain);
+        m.put("margenPorcentaje", net.signum() == 0 ? null
+                : gain.multiply(BigDecimal.valueOf(100)).divide(net, 1, RoundingMode.HALF_UP));
+        m.put("sobreCostoPorcentaje", cost.signum() == 0 ? null
+                : gain.multiply(BigDecimal.valueOf(100)).divide(cost, 1, RoundingMode.HALF_UP));
+        m.put("costoEnCero", cost.signum() == 0);
+        return m;
+    }
+
+    private Object margins(Map<String, Object> in) {
+        String category = text(in.get("categoria"));
+        int limit = clamp(integer(in.get("limite"), 20), 1, 40);
+        boolean highest = "mayor_margen".equals(in.get("orden"));
+        String like = category == null ? null : "%" + category.replace("%", "").replace("_", "") + "%";
+        @SuppressWarnings("unchecked")
+        List<Object[]> rows = em.createNativeQuery("""
+                SELECT p.sku, p.name, coalesce(c.name, 'Sin categoría'), p.sale_price, p.cost, tx.rate
+                FROM products p
+                JOIN taxes tx ON tx.id = p.tax_id
+                LEFT JOIN categories c ON c.id = p.category_id
+                LEFT JOIN categories parent ON parent.id = c.parent_id
+                WHERE p.active AND p.deleted_at IS NULL AND NOT p.open_price
+                  AND (CAST(?1 AS text) IS NULL OR c.name ILIKE ?1 OR parent.name ILIKE ?1)""")
+                .setParameter(1, like).getResultList();
+        if (rows.isEmpty()) {
+            return category == null ? "No hay productos activos con precio fijo."
+                    : "No hay productos activos en una categoría que se llame como \"" + category + "\".";
+        }
+        boolean withTax = settings.current().pricesIncludeTax();
+        List<Map<String, Object>> all = new ArrayList<>();
+        int belowCost = 0;
+        int under10 = 0;
+        int zeroCost = 0;
+        for (Object[] r : rows) {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("sku", r[0]);
+            m.put("producto", r[1]);
+            m.put("categoria", r[2]);
+            m.put("precioVenta", decimal(r[3]));
+            m.put("costoSinIva", decimal(r[4]));
+            m.putAll(margin(decimal(r[3]), decimal(r[4]), decimal(r[5]), withTax));
+            if ((Boolean) m.get("costoEnCero")) {
+                zeroCost++;
+                continue;
+            }
+            BigDecimal pct = (BigDecimal) m.get("margenPorcentaje");
+            if (pct != null && pct.signum() < 0) {
+                belowCost++;
+            }
+            if (pct != null && pct.compareTo(BigDecimal.TEN) < 0) {
+                under10++;
+            }
+            all.add(m);
+        }
+        java.util.Comparator<Map<String, Object>> byMargin = java.util.Comparator.comparing(
+                m -> m.get("margenPorcentaje") == null ? BigDecimal.ZERO : (BigDecimal) m.get("margenPorcentaje"));
+        all.sort(highest ? byMargin.reversed() : byMargin);
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("nota", MARGIN_NOTE + " Los de costo en cero no van en la lista: solo se cuentan.");
+        result.put("productosRevisados", rows.size());
+        result.put("debajoDelCosto", belowCost);
+        result.put("menosDel10Porciento", under10);
+        result.put("conCostoEnCero", zeroCost);
+        result.put("productos", all.subList(0, Math.min(limit, all.size())));
         return result;
     }
 
@@ -297,7 +405,17 @@ public class AskTools {
             case "vendedor" -> reports.bySeller(f);
             case "medio_pago" -> reports.byPaymentMethod(f);
             case "categoria" -> reports.byCategory(f);
-            default -> throw new IllegalArgumentException("agrupar debe ser dia, sucursal, vendedor, medio_pago o categoria.");
+            // Decisión 356: solo las horas con ventas, como "14:00".
+            case "hora" -> reports.byHour(f).stream().filter(h -> h.salesCount() > 0).map(h -> {
+                Map<String, Object> m = new LinkedHashMap<>();
+                m.put("hora", "%02d:00".formatted(h.hour()));
+                m.put("ventas", h.salesCount());
+                m.put("total", h.total());
+                return m;
+            }).toList();
+            case "dia_semana" -> reports.byWeekday(f);
+            default -> throw new IllegalArgumentException(
+                    "agrupar debe ser dia, sucursal, vendedor, medio_pago, categoria, hora o dia_semana.");
         };
     }
 
@@ -373,7 +491,41 @@ public class AskTools {
                 : "cerradas".equals(in.get("estado")) ? CashSessionStatus.CLOSED : null;
         LocalDate from = date(in.get("desde"));
         LocalDate to = date(in.get("hasta"));
-        return cash.search(null, branch(in), status, null, from, to == null ? from : to, 0, 20).getContent();
+        var sessions = cash.search(null, branch(in), status, null, from, to == null ? from : to, 0, 20).getContent();
+        // Decisión 356: en las abiertas, el efectivo que debería haber ahora (el mismo parcial X de la pantalla).
+        List<Object> out = new ArrayList<>();
+        for (var session : sessions) {
+            if (session.status() != CashSessionStatus.OPEN) {
+                out.add(session);
+                continue;
+            }
+            var report = cash.report(session.id());
+            var c = report.cash();
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("turno", session);
+            m.put("ventasDelTurno", report.salesTotal());
+            if (report.auditView()) {
+                m.put("efectivoEsperadoAhora", c.expected());
+                Map<String, Object> d = new LinkedHashMap<>();
+                d.put("base", c.opening());
+                d.put("ventasEnEfectivo", c.sales());
+                d.put("devolucionesPorAnulaciones", c.voidRefunds());
+                d.put("ingresos", c.incomes());
+                d.put("abonosDeFiados", c.creditPayments());
+                d.put("abonosDePedidos", c.orderPayments());
+                d.put("gastos", c.expenses());
+                d.put("retiros", c.withdrawals());
+                d.put("pagosAProveedores", c.supplierPayments());
+                d.put("propinas", c.tips());
+                d.put("propinasEntregadas", c.tipPayouts());
+                m.put("desgloseEfectivo", d);
+            } else {
+                m.put("efectivoEsperadoAhora", null);
+                m.put("nota", "Cierre ciego: este usuario no puede ver el efectivo esperado de la caja.");
+            }
+            out.add(m);
+        }
+        return out;
     }
 
     private Object expenseReport(Map<String, Object> in) {

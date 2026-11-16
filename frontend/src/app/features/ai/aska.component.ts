@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
+import { NgTemplateOutlet } from '@angular/common';
 import { AiApi, AskTurn, AskUsage } from '../../core/api/ai.api';
 import { problemMessage } from '../../core/errors/problem';
 import { AuthService } from '../../core/auth/auth.service';
@@ -27,7 +28,7 @@ interface Message {
  */
 @Component({
   selector: 'app-aska',
-  imports: [FormsModule, RouterLink, XaskaIaLogoComponent, XIconComponent],
+  imports: [FormsModule, NgTemplateOutlet, RouterLink, XaskaIaLogoComponent, XIconComponent],
   template: `
     @if (!open()) {
       <button type="button" class="aska-fab" aria-haspopup="dialog" aria-label="Pregúntale a Aska, la IA de tu negocio"
@@ -92,13 +93,28 @@ interface Message {
               <div class="flex gap-2 items-start">
                 <app-xaska-ia-logo size="sm" />
                 <div class="aska-it">
+                  <ng-template #parts let-parts>
+                    @for (part of parts; track $index) {
+                      @if (part.href) {
+                        <a class="aska-link" [href]="part.href" target="_blank" rel="noopener">{{ part.text }}</a>
+                      } @else {
+                        <span [class.aska-strong]="part.strong">{{ part.text }}</span>
+                      }
+                    }
+                  </ng-template>
                   @for (b of a.blocks; track $index) {
                     @if (b.kind === 'p') {
-                      <p>@for (part of b.parts; track $index) {<span [class.aska-strong]="part.strong">{{ part.text }}</span>}</p>
+                      <p><ng-container *ngTemplateOutlet="parts; context: { $implicit: b.parts }" /></p>
+                    } @else if (b.kind === 'steps') {
+                      <ol class="list-decimal pl-5 flex flex-col gap-1">
+                        @for (item of b.items; track $index) {
+                          <li><ng-container *ngTemplateOutlet="parts; context: { $implicit: item }" /></li>
+                        }
+                      </ol>
                     } @else {
                       <ul class="list-disc pl-5 flex flex-col gap-0.5">
                         @for (item of b.items; track $index) {
-                          <li>@for (part of item; track $index) {<span [class.aska-strong]="part.strong">{{ part.text }}</span>}</li>
+                          <li><ng-container *ngTemplateOutlet="parts; context: { $implicit: item }" /></li>
                         }
                       </ul>
                     }
@@ -167,18 +183,17 @@ interface Message {
       display: flex; align-items: center; gap: 0.75rem; flex-direction: row-reverse;
       padding: 0; border: 0; background: transparent; cursor: pointer;
     }
-    /* El logo ya trae su aro y su sombra: el botón solo suma una luz dorada que respira y crece al pasar el mouse. */
+    /* Decisión 358: el logo es plano; el botón solo suma una sombra suave que crece al pasar el mouse. */
     .aska-fab app-xaska-ia-logo {
-      border-radius: 1rem; transition: transform 160ms ease, filter 160ms ease;
-      filter: drop-shadow(0 12px 20px var(--aska-shadow)) drop-shadow(0 0 14px var(--xaska-ia-halo));
-      animation: aska-halo 3.2s ease-in-out infinite;
+      transition: transform 160ms ease, filter 160ms ease;
+      filter: drop-shadow(0 10px 18px var(--aska-shadow));
     }
     .aska-fab:hover app-xaska-ia-logo, .aska-fab:focus-visible app-xaska-ia-logo {
-      transform: translateY(-2px) scale(1.05); animation: none;
-      filter: drop-shadow(0 14px 24px var(--aska-shadow)) drop-shadow(0 0 22px var(--xaska-ia-halo-strong));
+      transform: translateY(-2px) scale(1.05);
+      filter: drop-shadow(0 14px 24px var(--aska-shadow));
     }
     .aska-fab:focus-visible { outline: none; }
-    .aska-fab:focus-visible app-xaska-ia-logo { box-shadow: 0 0 0 3px var(--surface), 0 0 0 6px var(--aska-amber); }
+    .aska-fab:focus-visible app-xaska-ia-logo { border-radius: 1rem; box-shadow: 0 0 0 3px var(--surface), 0 0 0 6px var(--aska-amber); }
     .aska-fab-label {
       padding: 0.625rem 0.875rem; border-radius: 0.875rem; font-size: 0.8125rem; font-weight: 600; white-space: nowrap;
       background: var(--xaska-panel); color: var(--xaska-panel-fg); box-shadow: var(--elevation-overlay);
@@ -186,11 +201,6 @@ interface Message {
     }
     .aska-fab-label strong { color: var(--aska-amber); }
     .aska-fab:hover .aska-fab-label, .aska-fab:focus-visible .aska-fab-label { opacity: 1; transform: none; }
-    @keyframes aska-halo {
-      0%, 100% { filter: drop-shadow(0 12px 20px var(--aska-shadow)) drop-shadow(0 0 12px var(--xaska-ia-halo)); }
-      50% { filter: drop-shadow(0 12px 20px var(--aska-shadow)) drop-shadow(0 0 22px var(--xaska-ia-halo-strong)); }
-    }
-    @media (prefers-reduced-motion: reduce) { .aska-fab app-xaska-ia-logo { animation: none; } }
 
     .aska-backdrop { position: fixed; inset: 0; z-index: 46; background: var(--aska-backdrop); }
     .aska-panel {
@@ -246,6 +256,7 @@ interface Message {
       font-size: 0.875rem; line-height: 1.55;
     }
     .aska-strong { color: var(--aska-soft-fg); font-weight: 800; }
+    .aska-link { color: var(--aska-soft-fg); font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
     .aska-figure { display: flex; flex-direction: column; gap: 0.125rem; padding: 0.625rem; border-radius: 0.75rem; background: var(--aska-soft); }
     .aska-figure-label { font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--aska-soft-fg); }
     .aska-figure-value { font-size: 1.0625rem; font-weight: 800; }
@@ -411,7 +422,10 @@ export class AskaComponent {
     }
     // Lo que no se pudo responder sale de la conversación (la pregunta y el aviso).
     const kept = this.messages().filter((m, i, all) => m.role !== 'problem' && all[i + 1]?.role !== 'problem');
-    const history: AskTurn[] = kept.map((m) => ({ role: m.role as 'user' | 'assistant', text: m.text }));
+    // Decisión 355: con lo que consultó cada respuesta, para que Aska no crea que inventó las cifras.
+    const history: AskTurn[] = kept.map((m) => m.role === 'assistant'
+      ? { role: 'assistant', text: m.text, consulted: m.consulted }
+      : { role: 'user', text: m.text });
     this.messages.set([...kept, { role: 'user', text: q, parsed: null, consulted: [] }]);
     this.question = '';
     this.loading.set(true);

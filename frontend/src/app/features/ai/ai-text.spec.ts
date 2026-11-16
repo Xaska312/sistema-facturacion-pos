@@ -2,7 +2,8 @@ import { firstName, inline, parseAnswer, suggestionsFor, usageText } from './ai-
 
 describe('Aska (decisiones 296 y 298)', () => {
   it('sugiere solo lo que la persona puede ver', () => {
-    expect(suggestionsFor((p) => p === 'sales:read').map((s) => s.text)).toEqual(['¿Cuánto he vendido hoy?']);
+    expect(suggestionsFor((p) => p === 'sales:read').map((s) => s.text))
+      .toEqual(['¿Cuánto he vendido hoy?', '¿Cómo anulo una venta?']);
     expect(suggestionsFor(() => true).length).toBe(4);
   });
 
@@ -16,6 +17,14 @@ describe('Aska (decisiones 296 y 298)', () => {
       [{ text: 'Pan: $200.000', strong: false }]] });
     expect(parsed.figures).toEqual([{ label: 'Ticket promedio', value: '$20.389' }, { label: 'Ventas', value: '63' }]);
     expect(parsed.followUps).toEqual(['¿Y la semana pasada?', '¿Qué se vendió menos?']);
+  });
+
+  it('arma pasos numerados y enlaza solo las secciones del manual (decisión 357)', () => {
+    const parsed = parseAnswer('Para anular:\n1. Entra a Ventas.\n2) Toca **Anular**.\nhttps://app.xaska.co/manual#anular');
+    expect(parsed.blocks[1]).toEqual({ kind: 'steps', items: [[{ text: 'Entra a Ventas.', strong: false }],
+      [{ text: 'Toca ', strong: false }, { text: 'Anular', strong: true }, { text: '.', strong: false }]] });
+    expect(parsed.blocks[2]).toEqual({ kind: 'p', parts: [{ text: 'Ver en el manual', strong: false, href: '/manual#anular' }] });
+    expect(inline('Mira https://otro.com/pagina')).toEqual([{ text: 'Mira https://otro.com/pagina', strong: false }]);
   });
 
   it('no interpreta HTML: queda como texto', () => {

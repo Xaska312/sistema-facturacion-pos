@@ -49,6 +49,8 @@ jobs:
         run: npm run lint
       - name: Sin colores literales en templates (modo oscuro)
         run: npm run check:colors
+      - name: Manual de Aska al día (decisión 357)
+        run: npm run check:manual
       - name: Build
         run: npm run build
       - name: Tests

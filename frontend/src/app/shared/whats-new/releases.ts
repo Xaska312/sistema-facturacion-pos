@@ -11,6 +11,16 @@ export interface Release {
 
 export const RELEASES: readonly Release[] = [
   {
+    id: '2026-11-17',
+    title: 'Aska, más útil y con cara nueva',
+    items: [
+      'Pregúntale a Aska a qué hora y qué día vendes más, o qué productos te dejan poca ganancia, incluso por categoría.',
+      'En una caja abierta, Aska te dice cuánto efectivo debería haber ahora y de dónde sale.',
+      'Pregúntale cómo se hace algo ("¿cómo anulo una venta?") y te da los pasos con el enlace al manual.',
+      'Aska estrena logo: la burbuja índigo con la A, abajo a la derecha.',
+    ],
+  },
+  {
     id: '2026-11-16',
     title: 'Vender sin internet, más completo',
     items: [

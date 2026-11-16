@@ -1332,7 +1332,7 @@ export const MANUAL: readonly ManualChapter[] = [
         summary: 'Escribe una pregunta como "¿cuánto vendí hoy?" o "¿qué se me vence este mes?" y Aska la responde '
           + 'con tus reportes, con las cifras clave resaltadas. Solo consulta: nunca cambia nada.',
         steps: [
-          'Toca el botón de Aska (el ícono IA índigo con la chispa), abajo a la derecha, desde cualquier pantalla.',
+          'Toca el botón de Aska (la burbuja índigo con la A), abajo a la derecha, desde cualquier pantalla.',
           'Escribe tu pregunta o toca uno de los ejemplos, y espera unos segundos.',
           'Sigue preguntando sobre lo mismo ("¿y la semana pasada?") o toca una de las preguntas que Aska te propone. '
             + 'Con "Nueva conversación" empiezas otra.',
@@ -1340,6 +1340,9 @@ export const MANUAL: readonly ManualChapter[] = [
         tips: [
           'Responde sobre ventas, productos, inventario y vencimientos, fiados, cuentas por pagar, cajas y finanzas: '
             + 'gastos, cuánto ganaste (estado de resultados), el punto de equilibrio y las retenciones.',
+          'También te dice a qué hora y qué día vendes más, qué productos te dejan poca ganancia (en todo el catálogo o '
+            + 'en una categoría, como "las gaseosas"), cuánto efectivo debería haber ahora en una caja abierta y cómo se '
+            + 'hace algo en XASKA ("¿cómo anulo una venta?"), con los pasos y el enlace a este manual.',
           'En la prueba gratis de 14 días, arriba verás cuántos días te quedan: tócalo para ver los tres retos (leer una '
             + 'factura, preguntar qué se agota y cargar tu cuaderno), que se marcan solos al hacerlos.',
           'Cada usuario solo recibe respuestas de lo que su rol le deja ver: un cajero no ve la utilidad del negocio.',
