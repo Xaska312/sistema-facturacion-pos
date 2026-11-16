@@ -580,6 +580,24 @@
   "who": "Propietario, Administrador y Bodeguero."
  },
  {
+  "id": "editar-producto",
+  "chapter": "Productos e inventario",
+  "title": "Cambiar el precio o editar un producto",
+  "summary": "El precio, el costo, el nombre, la categoría y los códigos se cambian en la ficha del producto. El cambio vale desde la siguiente venta.",
+  "steps": [
+   "Ve a Productos y busca el producto por nombre, SKU o código de barras.",
+   "Toca \"Ver\" en su fila para abrir la ficha.",
+   "Cambia el precio de venta (o el costo, el nombre, la categoría, el impuesto…) y toca \"Guardar\"."
+  ],
+  "tips": [
+   "Las ventas ya hechas conservan el precio con el que se cobraron: el cambio no toca el pasado.",
+   "Mientras escribes, la ficha te muestra cuánto ganas por unidad y el margen con el precio nuevo.",
+   "Antes de subir un precio puedes preguntarle a Aska cuánto te deja hoy ese producto o una categoría.",
+   "En los productos con tallas y colores el precio se cambia en el modelo y vale para todas sus tallas."
+  ],
+  "who": "Propietario, Administrador y Bodeguero."
+ },
+ {
   "id": "precio-libre",
   "chapter": "Productos e inventario",
   "title": "Precio libre: impresiones, servicios y \"Varios\"",

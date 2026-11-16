@@ -132,7 +132,7 @@ public class AskService {
                                 + "No se descontó de tus preguntas.");
                     }
                     record("OK", input, output, calls, actor);
-                    return new Answer(text.trim(), List.copyOf(consulted), new Usage(true, limit, used + 1));
+                    return new Answer(clean(text), List.copyOf(consulted), new Usage(true, limit, used + 1));
                 }
                 messages.add(Map.of("role", "assistant", "content", content));
                 List<Map<String, Object>> results = new ArrayList<>();
@@ -166,6 +166,15 @@ public class AskService {
         record("FAILED", input, output, calls, actor);
         throw new BusinessRuleException("La pregunta necesitó demasiadas consultas. Hazla más concreta (por ejemplo, "
                 + "con un rango de fechas). No se descontó de tus preguntas.");
+    }
+
+    /**
+     * Quita las marcas "[Consultó: …]" que la IA copia del historial (decisión 359): la app ya muestra debajo de cada
+     * respuesta lo que se consultó.
+     */
+    static String clean(String text) {
+        return text.replaceAll("\\[Consult[oó]:[^\\]\\n]*\\]", "").replaceAll("(?m)^[ \\t]+$", "")
+                .replaceAll("\\n{3,}", "\n\n").trim();
     }
 
     /** Historial (solo texto, alternado, empezando por el usuario) más la pregunta nueva. */
