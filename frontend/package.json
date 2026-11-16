@@ -9,7 +9,9 @@
     "test": "ng test",
     "test:ci": "ng test --watch=false --browsers=ChromeHeadless",
     "lint": "ng lint",
-    "check:colors": "node ../tools/check-colors.mjs"
+    "check:colors": "node ../tools/check-colors.mjs",
+    "export:manual": "node ../tools/export-manual.mjs",
+    "check:manual": "node ../tools/export-manual.mjs --check"
   },
   "private": true,
   "dependencies": {

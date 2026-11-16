@@ -4,6 +4,8 @@ import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { Observable, catchError, forkJoin, map, of } from 'rxjs';
 import { Category, PageResponse, Product, ProductModelRow } from '../../core/api/api.models';
 import { CatalogApi } from '../../core/api/catalog.api';
+import { OfflineCatalogService } from '../../core/offline/offline-catalog.service';
+import { OfflineSalesService, isNetworkError } from '../../core/offline/offline-sales.service';
 import { formatCop } from '../../shared/money';
 import { stockLabel } from './pos-labels';
 import { GridCard, firstName, gridCards, initial } from './pos-cards';
@@ -206,6 +208,14 @@ const EMPTY_MODELS: PageResponse<ProductModelRow> = { content: [], page: 0, size
 export class ProductGridComponent implements OnInit {
   private readonly catalog = inject(CatalogApi);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly offlineSales = inject(OfflineSalesService);
+  private readonly offlineCatalog = inject(OfflineCatalogService);
+  /**
+   * Sin internet (decisión 353) la cuadrícula y las categorías salen de la copia del catálogo que guarda Vender, como
+   * el lector y la búsqueda. Al volver la conexión se recarga desde el servidor.
+   */
+  protected readonly offline = computed(() => this.offlineSales.offline() && this.offlineCatalog.ready());
+  private readonly serverCategories = signal<Category[]>([]);
 
   /** Ids de los favoritos, en orden. */
   readonly favoriteIds = input<readonly string[]>([]);
@@ -225,7 +235,8 @@ export class ProductGridComponent implements OnInit {
   protected readonly cop = formatCop;
   protected readonly initial = initial;
   protected readonly placeholders = [0, 1, 2, 3, 4, 5, 6, 7];
-  protected readonly categories = signal<Category[]>([]);
+  protected readonly categories = computed(() =>
+    (this.offline() ? this.offlineCatalog.gridCategories() : this.serverCategories()));
   protected readonly visibleCategories = computed(() => {
     const only = this.onlyCategories();
     return only === null ? this.categories() : this.categories().filter((c) => only.includes(c.id));
@@ -259,6 +270,15 @@ export class ProductGridComponent implements OnInit {
   private readonly favoriteSet = computed(() => new Set(this.favoriteIds()));
 
   constructor() {
+    // Decisión 353: al quedarse sin internet o al volver, se recarga la pestaña abierta desde la copia o el servidor.
+    let wasOffline: boolean | undefined;
+    effect(() => {
+      const now = this.offline();
+      if (wasOffline !== undefined && now !== wasOffline) {
+        untracked(() => this.select(this.tab()));
+      }
+      wasOffline = now;
+    });
     // Al cambiar de carta: su primera categoría (o Favoritos si no tiene); sin carta, Todos. También cuando las
     // categorías llegan con una carta ya elegida.
     let lastOnly: string | undefined;
@@ -289,7 +309,7 @@ export class ProductGridComponent implements OnInit {
 
   ngOnInit(): void {
     this.catalog.categories().pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((list) => this.categories.set(list.filter((c) => c.active)));
+      .subscribe({ next: (list) => this.serverCategories.set(list.filter((c) => c.active)), error: () => undefined });
     this.select(this.favoriteIds().length > 0 ? 'favorites' : 'all');
   }
 
@@ -326,8 +346,28 @@ export class ProductGridComponent implements OnInit {
     return product.trackInventory ? stockLabel(this.stock().get(product.id)) : null;
   }
 
+  /** Sin internet: toda la pestaña de una vez desde la copia del catálogo (decisión 353). */
+  private loadOffline(tab: GridTab): void {
+    this.requestSeq++;
+    if (tab === 'favorites') {
+      const byId = new Map(this.offlineCatalog.gridProducts(null).map((p) => [p.id, p]));
+      this.favoriteProducts.set(this.favoriteIds().map((id) => byId.get(id)).filter((p): p is Product => !!p));
+    } else {
+      this.loaded.set(this.offlineCatalog.gridProducts(tab === 'all' ? null : tab));
+      this.loadedModels.set([]);
+      this.moreProductsAfter.set(null);
+      this.moreModelsAfter.set(null);
+      this.hasMore.set(false);
+    }
+    this.loading.set(false);
+  }
+
   private loadPage(): void {
     const tab = this.tab();
+    if (this.offline()) {
+      this.loadOffline(tab);
+      return;
+    }
     const seq = ++this.requestSeq;
     this.loading.set(true);
     const categoryId = tab === 'all' ? undefined : tab;
@@ -352,9 +392,15 @@ export class ProductGridComponent implements OnInit {
           this.hasMore.set(moreProducts || moreModels);
           this.loading.set(false);
         },
-        error: () => {
-          if (seq === this.requestSeq) {
-            this.loading.set(false);
+        error: (error: unknown) => {
+          if (seq !== this.requestSeq) {
+            return;
+          }
+          this.loading.set(false);
+          // El servidor no respondió: Vender pasa a sin conexión y la cuadrícula sale de la copia (decisión 353).
+          if (isNetworkError(error) && this.offlineCatalog.ready()) {
+            this.offlineSales.noteNetworkError();
+            this.loadOffline(tab);
           }
         },
       });
@@ -362,6 +408,10 @@ export class ProductGridComponent implements OnInit {
 
   /** Cada favorito se pide al servidor (precio y estado al día); los borrados o inactivos no se muestran. */
   private loadFavorites(): void {
+    if (this.offline()) {
+      this.loadOffline('favorites');
+      return;
+    }
     const ids = this.favoriteIds();
     const seq = ++this.requestSeq;
     if (ids.length === 0) {

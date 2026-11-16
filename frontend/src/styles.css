@@ -230,11 +230,9 @@
   --xaska-ia-tag-bg: #4338ca;
   --xaska-ia-tag-text: #fef3c7;
   /* Volumen del logo XASKA IA ("noche con aro de luz"): índigo a noche, brillo suave, aro lavanda, sombra y halo. */
-  --xaska-ia-tile-top: #3730a3;
-  --xaska-ia-tile-bottom: #1e1b4b;
-  --xaska-ia-gloss: rgb(255 255 255 / 0.1);
-  --xaska-ia-ring: rgb(129 140 248 / 0.9);
-  --xaska-ia-ink-shadow: rgb(30 27 75 / 0.6);
+  /* Decisión 358: burbuja con degradado ligero, sin brillo ni aro. */
+  --xaska-ia-tile-top: #6366f1;
+  --xaska-ia-tile-bottom: #4338ca;
   --xaska-ia-shadow: rgb(30 27 75 / 0.45);
   --xaska-ia-spark-glow: rgb(252 211 77 / 0.85);
   /* Luz dorada detrás del logo (leve) y la del botón flotante de Aska (más fuerte al pasar el mouse). */

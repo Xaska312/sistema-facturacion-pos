@@ -1,10 +1,10 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { OfflineCatalog, OfflineCatalogItem, ProductLookup } from '../api/api.models';
+import { Category, OfflineCatalog, OfflineCatalogItem, Product, ProductLookup } from '../api/api.models';
 import { SalesApi } from '../api/sales.api';
 import { AuthService } from '../auth/auth.service';
 import { idbGet, idbSet } from './idb';
-import { findByCode, findByProduct, lookupFromItem, searchItems } from './offline-catalog';
+import { findByCode, findByProduct, gridCategories, gridProducts, lookupFromItem, searchItems } from './offline-catalog';
 
 /** Cada cuánto se renueva la copia mientras hay internet. */
 const REFRESH_MS = 10 * 60 * 1000;
@@ -74,6 +74,16 @@ export class OfflineCatalogService {
   price(productId: string, unitId: string | null): ProductLookup | null {
     const item = findByProduct(this.items(), productId, unitId);
     return item ? lookupFromItem(item) : null;
+  }
+
+  /** Productos para la cuadrícula sin internet (decisión 353). */
+  gridProducts(categoryId: string | null): Product[] {
+    return gridProducts(this.items(), this.catalog()?.categories ?? [], categoryId);
+  }
+
+  /** Categorías para la cuadrícula sin internet (decisión 353). */
+  gridCategories(): Category[] {
+    return gridCategories(this.catalog()?.categories ?? []);
   }
 
   search(text: string): OfflineCatalogItem[] {

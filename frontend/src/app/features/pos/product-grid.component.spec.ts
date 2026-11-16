@@ -4,6 +4,10 @@ import { of, throwError } from 'rxjs';
 import { Category, PageResponse, Product, ProductModelRow } from '../../core/api/api.models';
 import { CatalogApi } from '../../core/api/catalog.api';
 import { ProductGridComponent } from './product-grid.component';
+import { signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { OfflineCatalogService } from '../../core/offline/offline-catalog.service';
+import { OfflineSalesService } from '../../core/offline/offline-sales.service';
 
 const product = (id: string, name: string, over: Partial<Product> = {}): Product => ({
   id, sku: id.toUpperCase(), name, description: null, categoryId: null, categoryName: null, baseUnitId: 'u',
@@ -28,6 +32,16 @@ describe('ProductGridComponent', () => {
     { id: 'c2', parentId: null, name: 'Vieja', active: false },
   ];
 
+  const offlineState = signal(false);
+  const offlineSales = { offline: offlineState, noteNetworkError: jasmine.createSpy('noteNetworkError')
+    .and.callFake(() => offlineState.set(true)) };
+  const offlineCatalog = {
+    ready: signal(true),
+    gridProducts: jasmine.createSpy('gridProducts').and.returnValue([product('x', 'Jugo copia')]),
+    gridCategories: jasmine.createSpy('gridCategories')
+      .and.returnValue([{ id: 'k1', parentId: null, name: 'Bebidas copia', active: true }]),
+  };
+
   const create = (favoriteIds: string[] = []): void => {
     fixture = TestBed.createComponent(ProductGridComponent);
     fixture.componentRef.setInput('favoriteIds', favoriteIds);
@@ -37,6 +51,7 @@ describe('ProductGridComponent', () => {
   const element = (): HTMLElement => fixture.nativeElement as HTMLElement;
 
   beforeEach(() => {
+    offlineState.set(false);
     catalog = jasmine.createSpyObj<CatalogApi>('CatalogApi', ['categories', 'products', 'product', 'productModels']);
     catalog.categories.and.returnValue(of(categories));
     catalog.productModels.and.returnValue(of(page<ProductModelRow>([])));
@@ -48,8 +63,22 @@ describe('ProductGridComponent', () => {
     ])));
     TestBed.configureTestingModule({
       imports: [ProductGridComponent],
-      providers: [provideNoopAnimations(), { provide: CatalogApi, useValue: catalog }],
+      providers: [provideNoopAnimations(), { provide: CatalogApi, useValue: catalog },
+        { provide: OfflineSalesService, useValue: offlineSales },
+        { provide: OfflineCatalogService, useValue: offlineCatalog }],
     });
+  });
+
+  it('sin internet muestra los productos y las categorías de la copia del catálogo (decisión 353)', () => {
+    catalog.categories.and.returnValue(throwError(() => new HttpErrorResponse({ status: 0 })));
+    catalog.products.and.returnValue(throwError(() => new HttpErrorResponse({ status: 0 })));
+    catalog.productModels.and.returnValue(throwError(() => new HttpErrorResponse({ status: 0 })));
+    create();
+    expect(offlineSales.noteNetworkError).toHaveBeenCalled();
+    const text = element().textContent ?? '';
+    expect(text).toContain('Jugo copia');
+    expect(text).toContain('Bebidas copia');
+    expect(offlineCatalog.gridProducts).toHaveBeenCalledWith(null);
   });
 
   it('sin favoritos abre "Todos" con existencia y solo productos y categorías activos', () => {

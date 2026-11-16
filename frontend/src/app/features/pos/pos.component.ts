@@ -861,7 +861,12 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   /** XASKA Impresora (decisión 286): tiquete directo en la térmica y el cajón. */
   private readonly printer = inject(PrintAgentService);
   private readonly drawerService = inject(CashDrawerService);
-  protected readonly canOpenDrawer = computed(() => this.printer.ready() && this.auth.hasPermission('cash:drawer'));
+  /**
+   * Con XASKA Impresora en este equipo y el permiso. Decisión 352: también si el equipo ya lo usa aunque aún no haya
+   * respondido (al abrir sin internet o mientras se busca); al tocarlo se vuelve a buscar.
+   */
+  protected readonly canOpenDrawer = computed(() => (this.printer.ready() || this.printer.prefs().enabled)
+    && this.auth.hasPermission('cash:drawer'));
   /** Tecla del cajón de este equipo (decisión 342); '' si no tiene o no puede abrirlo. */
   protected readonly drawerKey = computed(() => (this.canOpenDrawer() ? this.printer.prefs().drawerKey : ''));
   /**

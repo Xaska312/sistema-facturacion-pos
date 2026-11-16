@@ -115,7 +115,13 @@ public class CashController {
         service.leave();
     }
 
-    public record DrawerRequest(@jakarta.validation.constraints.Size(max = 200) String reason) {
+    /**
+     * {@code key} y {@code openedAt}: apertura hecha sin internet que se registra al volver la conexión (decisión 352);
+     * con la misma clave no se registra dos veces.
+     */
+    public record DrawerRequest(@jakarta.validation.constraints.Size(max = 200) String reason,
+                                @jakarta.validation.constraints.Size(max = 64) String key,
+                                java.time.Instant openedAt) {
     }
 
     /** Abrir el cajón sin una venta (decisión 286): solo deja el registro; el cajón lo abre XASKA Impresora. 204. */
@@ -123,7 +129,11 @@ public class CashController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasAuthority('cash:drawer')")
     public void drawerOpened(@Valid @RequestBody(required = false) DrawerRequest request) {
-        service.drawerOpened(request == null ? null : request.reason());
+        if (request != null && request.key() != null) {
+            service.drawerOpenedOffline(request.reason(), request.key(), request.openedAt());
+        } else {
+            service.drawerOpened(request == null ? null : request.reason());
+        }
     }
 
     @PostMapping("/cash/sessions/{id}/close")

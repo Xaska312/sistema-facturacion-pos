@@ -205,7 +205,7 @@ export const MANUAL: readonly ManualChapter[] = [
           'La primera vez elige el ancho del papel (80 mm o 58 mm); el navegador lo recuerda en ese equipo.',
           'Para reimprimir una venta anterior, búscala en Ventas, ábrela y toca "Reimprimir".',
           'Con "Enviar" le mandas el recibo al cliente: "WhatsApp (texto)" abre WhatsApp con los productos, el total y cómo pagó, y eliges el contacto; "Imagen del tiquete" lo manda como una foto igual al tiquete impreso, con tu logo (en el celular se abre el menú de compartir; en el computador se descarga el PNG para adjuntarlo).',
-          'Si se va el internet, sigue vendiendo: arriba sale "Sin conexión". Busca con el lector o F2 en la copia del catálogo que guarda el equipo, cobra en efectivo, tarjeta o transferencia e imprime: el tiquete sale con un número provisional y "Pendiente de enviar". Cuando vuelve el internet las ventas se envían solas y toman su número oficial. Sin conexión no se fía, no se aplica retención, se vende a Consumidor final y la caja se cierra cuando hayan llegado todas las ventas.',
+          'Si se va el internet, sigue vendiendo: arriba sale "Sin conexión". Busca con el lector, con F2 o tocando los productos y las categorías de la copia del catálogo que guarda el equipo, cobra en efectivo, tarjeta o transferencia e imprime: el tiquete sale con un número provisional y "Pendiente de enviar". Cuando vuelve el internet las ventas se envían solas y toman su número oficial. Sin conexión no se fía, no se aplica retención, se vende a Consumidor final y la caja se cierra cuando hayan llegado todas las ventas. El botón "Abrir cajón" (y su tecla) también funciona sin internet: el registro llega a la auditoría cuando vuelve la conexión.',
           'El equipo donde tienes la caja abierta también abre Vender sin internet (por ejemplo, si se reinició el computador durante el corte), hasta 24 horas después de la última vez que tuvo conexión. Al cerrar la caja o la sesión, el equipo lo olvida.',
         ],
         tips: [
@@ -1332,7 +1332,7 @@ export const MANUAL: readonly ManualChapter[] = [
         summary: 'Escribe una pregunta como "¿cuánto vendí hoy?" o "¿qué se me vence este mes?" y Aska la responde '
           + 'con tus reportes, con las cifras clave resaltadas. Solo consulta: nunca cambia nada.',
         steps: [
-          'Toca el botón de Aska (el ícono IA índigo con la chispa), abajo a la derecha, desde cualquier pantalla.',
+          'Toca el botón de Aska (la burbuja índigo con la A), abajo a la derecha, desde cualquier pantalla.',
           'Escribe tu pregunta o toca uno de los ejemplos, y espera unos segundos.',
           'Sigue preguntando sobre lo mismo ("¿y la semana pasada?") o toca una de las preguntas que Aska te propone. '
             + 'Con "Nueva conversación" empiezas otra.',
@@ -1340,6 +1340,9 @@ export const MANUAL: readonly ManualChapter[] = [
         tips: [
           'Responde sobre ventas, productos, inventario y vencimientos, fiados, cuentas por pagar, cajas y finanzas: '
             + 'gastos, cuánto ganaste (estado de resultados), el punto de equilibrio y las retenciones.',
+          'También te dice a qué hora y qué día vendes más, qué productos te dejan poca ganancia (en todo el catálogo o '
+            + 'en una categoría, como "las gaseosas"), cuánto efectivo debería haber ahora en una caja abierta y cómo se '
+            + 'hace algo en XASKA ("¿cómo anulo una venta?"), con los pasos y el enlace a este manual.',
           'En la prueba gratis de 14 días, arriba verás cuántos días te quedan: tócalo para ver los tres retos (leer una '
             + 'factura, preguntar qué se agota y cargar tu cuaderno), que se marcan solos al hacerlos.',
           'Cada usuario solo recibe respuestas de lo que su rol le deja ver: un cajero no ve la utilidad del negocio.',

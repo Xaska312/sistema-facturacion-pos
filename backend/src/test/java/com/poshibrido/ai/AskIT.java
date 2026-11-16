@@ -2,6 +2,7 @@ package com.poshibrido.ai;
 
 import com.poshibrido.ai.application.AnthropicMessages;
 import com.poshibrido.ai.application.AnthropicMessages.AiUnavailableException;
+import com.poshibrido.sales.PosTestSupport;
 import com.poshibrido.support.IntegrationTest;
 import com.poshibrido.support.TestApi;
 import com.poshibrido.support.TestApi.Owned;
@@ -12,6 +13,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -125,6 +127,56 @@ class AskIT extends IntegrationTest {
                     .andExpect(status().isOk());
         }
         api.postWith(s, "/api/v1/ai/ask", "{\"question\":\"  \"}").andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void answersHoursWeekdaysExpectedCashMarginsAndHowToUseTheApp() throws Exception {
+        when(ai.available()).thenReturn(true);
+        when(ai.model()).thenReturn("claude-haiku-5-5");
+        Owned owner = api.newTenant("pregunta-mas");
+        Session admin = platformAdmin();
+        api.putWith(admin, "/api/v1/platform/tenants/%s/subscription/extras".formatted(owner.tenantId()),
+                "{\"modules\":[],\"features\":[\"AI\"],\"branches\":0,\"registers\":0,\"users\":0}")
+                .andExpect(status().isOk());
+        Session s = renew(owner.tenant());
+        PosTestSupport pos = new PosTestSupport(api);
+        UUID soda = pos.productWithStock(s, "GAS", "2000", "10", "1000");
+        pos.openCash(s, PosTestSupport.CAJA_1, "50000");
+        pos.sellCash(s, soda, "2", "4000").andExpect(status().isCreated());
+
+        // Decisiones 355 a 357: en una vuelta Aska pide la hora, el día de la semana, la caja abierta, el margen de
+        // todo el catálogo y el manual; la respuesta anterior llega con lo que consultó.
+        doReturn(Map.of("stop_reason", "tool_use", "usage", usage(), "content", List.of(
+                        Map.of("type", "tool_use", "id", "h", "name", "ventas_agrupadas", "input", Map.of("agrupar", "hora")),
+                        Map.of("type", "tool_use", "id", "w", "name", "ventas_agrupadas",
+                                "input", Map.of("agrupar", "dia_semana")),
+                        Map.of("type", "tool_use", "id", "c", "name", "cajas", "input", Map.of("estado", "abiertas")),
+                        Map.of("type", "tool_use", "id", "m", "name", "margen_productos", "input", Map.of()),
+                        Map.of("type", "tool_use", "id", "x", "name", "producto", "input", Map.of("buscar", "GAS")),
+                        Map.of("type", "tool_use", "id", "a", "name", "ayuda_app",
+                                "input", Map.of("buscar", "anular una venta")))),
+                Map.of("stop_reason", "end_turn", "usage", usage(), "content", List.of(
+                        Map.of("type", "text", "text", "Listo."))))
+                .when(ai).send(any());
+        api.postWith(s, "/api/v1/ai/ask", """
+                {"question":"¿Y qué más?","history":[{"role":"user","text":"¿Cómo voy?"},
+                 {"role":"assistant","text":"Vas bien: $4.000.","consulted":["Resumen de ventas"]}]}""")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.consulted[0]").value("Ventas agrupadas"));
+        ArgumentCaptor<Map<String, Object>> sent = ArgumentCaptor.forClass(Map.class);
+        verify(ai, atLeastOnce()).send(sent.capture());
+        List<Map<String, Object>> first = (List<Map<String, Object>>) sent.getAllValues().getFirst().get("messages");
+        assertThat(first.get(1).get("content")).isEqualTo("Vas bien: $4.000.\n[Consultó: Resumen de ventas]");
+        assertThat(String.valueOf(sent.getAllValues().getFirst().get("system"))).contains("no te retractes");
+        String results = String.valueOf(((List<Map<String, Object>>) sent.getAllValues().get(1).get("messages")).getLast());
+        assertThat(results).doesNotContain("is_error")
+                .contains("\"hora\":").contains("\"ventas\":1")
+                .contains("averagePerDay")
+                .contains("efectivoEsperadoAhora").contains("54000")
+                .contains("productosRevisados").contains("margenPorcentaje")
+                .contains("precioSinIva").contains("gananciaPorUnidad")
+                .contains("Anular una venta").contains("https://app.xaska.co/manual#anular-venta");
     }
 
     private Session renew(Session session) throws Exception {

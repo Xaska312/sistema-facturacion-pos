@@ -17,6 +17,7 @@ import com.poshibrido.reporting.application.ReportViews.SlowMoverRow;
 import com.poshibrido.reporting.application.ReportViews.SlowMovers;
 import com.poshibrido.reporting.application.ReportViews.Summary;
 import com.poshibrido.reporting.application.ReportViews.TaxRow;
+import com.poshibrido.reporting.application.ReportViews.WeekdayRow;
 import com.poshibrido.shared.error.BusinessRuleException;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -400,7 +401,8 @@ public class ReportQueryService {
                 byPaymentMethod(filter));
     }
 
-    private List<HourRow> byHour(ReportFilter filter) {
+    /** Ventas por hora del día (las 24 horas, en la hora local del negocio). */
+    public List<HourRow> byHour(ReportFilter filter) {
         Map<Integer, HourRow> found = new HashMap<>();
         Query query = sales("WITH " + FILTERED + """
                 SELECT CAST(extract(hour FROM f.created_at AT TIME ZONE :tz) AS integer) AS hour_of_day,
@@ -418,6 +420,28 @@ public class ReportQueryService {
             hours.add(found.getOrDefault(h, new HourRow(h, 0, BigDecimal.ZERO)));
         }
         return hours;
+    }
+
+    /** Ventas por día de la semana, con el promedio por día que tuvo ventas (decisión 356). */
+    public List<WeekdayRow> byWeekday(ReportFilter filter) {
+        String[] names = {"lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"};
+        Query query = sales("WITH " + FILTERED + """
+                SELECT CAST(extract(isodow FROM f.created_at AT TIME ZONE :tz) AS integer) AS weekday,
+                       count(DISTINCT CAST(f.created_at AT TIME ZONE :tz AS date)) AS days, count(*) AS sales_count,
+                       sum(f.total) AS total
+                FROM filtered f GROUP BY 1 ORDER BY 1
+                """, filter);
+        query.setParameter("tz", filter.period().zone().getId());
+        List<WeekdayRow> result = new ArrayList<>();
+        for (Object row : query.getResultList()) {
+            Object[] r = (Object[]) row;
+            int weekday = ((Number) r[0]).intValue();
+            int days = ((Number) r[1]).intValue();
+            BigDecimal total = Rows.decimal(r[3]);
+            result.add(new WeekdayRow(weekday, names[weekday - 1], days, Rows.lng(r[2]), total,
+                    average(total, days)));
+        }
+        return result;
     }
 
     private List<DayRow> last7Days(ReportFilter filter) {

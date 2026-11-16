@@ -1,4 +1,4 @@
-import { OfflineCatalogItem, ProductLookup } from '../api/api.models';
+import { Category, OfflineCatalogItem, OfflineCategory, Product, ProductLookup } from '../api/api.models';
 
 /** Búsquedas sobre la copia del catálogo para vender sin internet (decisión 332). Funciones puras para probarlas. */
 export function lookupFromItem(item: OfflineCatalogItem): ProductLookup {
@@ -62,4 +62,51 @@ export function searchItems(items: readonly OfflineCatalogItem[], text: string, 
     }
   }
   return out;
+}
+
+/** La categoría y todas las que cuelgan de ella (como filtra el servidor). */
+function withDescendants(categories: readonly OfflineCategory[], id: string): Set<string> {
+  const out = new Set([id]);
+  let grew = true;
+  while (grew) {
+    grew = false;
+    for (const c of categories) {
+      if (c.parentId && out.has(c.parentId) && !out.has(c.id)) {
+        out.add(c.id);
+        grew = true;
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * Los productos de la copia para la cuadrícula de Vender sin internet (decisión 353): uno por producto (su unidad
+ * base), por nombre, de la categoría pedida y sus subcategorías (null = todos). Son tarjetas: solo traen lo que pinta
+ * la cuadrícula y el id con que Vender lo agrega desde la misma copia.
+ */
+export function gridProducts(items: readonly OfflineCatalogItem[], categories: readonly OfflineCategory[],
+                             categoryId: string | null): Product[] {
+  const allowed = categoryId === null ? null : withDescendants(categories, categoryId);
+  const seen = new Set<string>();
+  const out: Product[] = [];
+  for (const item of items) {
+    if (item.factor !== 1 || seen.has(item.productId)) {
+      continue;
+    }
+    if (allowed && !(item.categoryId && allowed.has(item.categoryId))) {
+      continue;
+    }
+    seen.add(item.productId);
+    out.push({
+      id: item.productId, sku: item.sku, name: item.name, salePrice: item.price, openPrice: item.openPrice,
+      trackInventory: item.trackInventory, active: true, categoryId: item.categoryId ?? null, modelId: null,
+    } as unknown as Product);
+  }
+  return out.sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }));
+}
+
+/** Las categorías de la copia como las de la cuadrícula (decisión 353). */
+export function gridCategories(categories: readonly OfflineCategory[]): Category[] {
+  return categories.map((c) => ({ id: c.id, parentId: c.parentId, name: c.name, active: true }) as unknown as Category);
 }

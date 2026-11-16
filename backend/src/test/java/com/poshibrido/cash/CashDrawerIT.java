@@ -7,6 +7,7 @@ import com.poshibrido.support.TestApi.Session;
 import org.junit.jupiter.api.Test;
 
 import static com.poshibrido.sales.PosTestSupport.CAJA_1;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -35,5 +36,18 @@ class CashDrawerIT extends IntegrationTest {
 
         api.getWith(s, "/api/v1/audit?action=CASH_DRAWER_OPENED").andExpect(jsonPath("$.totalElements").value(1))
                 .andExpect(jsonPath("$.content[0].entity").value("cash_session"));
+
+        // Decisión 352: abierto sin internet, se registra al volver; con la misma clave, una sola vez
+        String offline = """
+                {"key":"cajon-sc-1","openedAt":"%s"}
+                """.formatted(java.time.Instant.now().minusSeconds(600));
+        api.postWith(s, "/api/v1/cash/drawer-openings", offline).andExpect(status().isNoContent());
+        api.postWith(s, "/api/v1/cash/drawer-openings", offline).andExpect(status().isNoContent());
+        api.getWith(s, "/api/v1/audit?action=CASH_DRAWER_OPENED").andExpect(jsonPath("$.totalElements").value(2));
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM t_" + owner.slug() + ".audit_log WHERE action = "
+                + "'CASH_DRAWER_OPENED' AND after_data ->> 'offline' = 'true' AND after_data ->> 'openedAt' IS NOT NULL",
+                Integer.class)).isEqualTo(1);
+        // Sin caja abierta (ya se cerró) el registro igual queda: el cajón ya se abrió en el equipo
+        api.postWith(cashier, "/api/v1/cash/drawer-openings", "{\"key\":\"cajon-sc-2\"}").andExpect(status().isNoContent());
     }
 }

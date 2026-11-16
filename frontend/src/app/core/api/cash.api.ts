@@ -13,7 +13,8 @@ import {
   WITHHOLDING_METHOD_CODE,
 } from './api.models';
 import { pageParams } from './organization.api';
-import { SILENT_CLIENT_ERRORS } from '../errors/error.interceptor';
+import { SILENT_ALL_ERRORS, SILENT_CLIENT_ERRORS } from '../errors/error.interceptor';
+import { SKIP_GLOBAL_LOADING } from '../loading/loading';
 
 export interface CashSessionFilters {
   status: CashSessionStatus | null;
@@ -45,6 +46,12 @@ export class CashApi {
   drawerOpened(reason: string | null): Observable<void> {
     return this.http.post<void>('/api/v1/cash/drawer-openings', { reason },
       { context: new HttpContext().set(SILENT_CLIENT_ERRORS, true) });
+  }
+
+  /** Apertura del cajón hecha sin internet, al volver la conexión (decisión 352); la clave evita duplicarla. */
+  drawerOpenedOffline(opening: { key: string; reason: string | null; openedAt: string }): Observable<void> {
+    return this.http.post<void>('/api/v1/cash/drawer-openings', opening,
+      { context: new HttpContext().set(SILENT_ALL_ERRORS, true).set(SKIP_GLOBAL_LOADING, true) });
   }
 
   /** Vender en una caja compartida que abrió otra persona (decisión 256). */

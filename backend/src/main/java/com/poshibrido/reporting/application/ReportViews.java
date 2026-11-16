@@ -83,6 +83,11 @@ public final class ReportViews {
     public record DayRow(LocalDate date, long salesCount, BigDecimal total) {
     }
 
+    /** Ventas por día de la semana (1 = lunes … 7 = domingo) y cuántos de esos días tuvo el periodo con ventas. */
+    public record WeekdayRow(int weekday, String name, int daysWithSales, long salesCount, BigDecimal total,
+                             BigDecimal averagePerDay) {
+    }
+
     /** Tablero del día (permiso reports:read). */
     public record Dashboard(LocalDate date, Summary today, BigDecimal yesterdayTotal, List<HourRow> byHour,
                             List<DayRow> last7Days, List<ProductRow> topProducts, List<PaymentRow> byPaymentMethod) {
