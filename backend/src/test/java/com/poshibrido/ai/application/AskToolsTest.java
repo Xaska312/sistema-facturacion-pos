@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class AskToolsTest {
 
     private final AskTools tools = new AskTools(null, null, null, null, null, null, null, null, null, null, null,
-            null, null);
+            null, null, null);
 
     private static List<String> names(List<Map<String, Object>> definitions) {
         return definitions.stream().map(d -> String.valueOf(d.get("name"))).toList();
