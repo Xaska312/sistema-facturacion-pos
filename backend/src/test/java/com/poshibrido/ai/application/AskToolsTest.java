@@ -67,6 +67,14 @@ class AskToolsTest {
     }
 
     @Test
+    void theAnswerDoesNotRepeatWhatWasConsulted() {
+        // Decisión 359: la IA copiaba la marca del historial en su respuesta.
+        assertThat(AskService.clean("Vendes más el martes.\n\n[Consultó: Ventas por hora · Ventas por día]\n\nCIFRA: Día | martes"))
+                .isEqualTo("Vendes más el martes.\n\nCIFRA: Día | martes");
+        assertThat(AskService.clean("No hay. [Consultó: Producto] [Consultó: Categoría]")).isEqualTo("No hay.");
+    }
+
+    @Test
     void marginComparesWithoutTaxOnBothSides() {
         // Decisión 356 (y 348): la leche de $6.800 con IVA 19 % y costo $4.747,90 sin IVA deja 16,9 %, no 30 %.
         Map<String, Object> m = AskTools.margin(new java.math.BigDecimal("6800"), new java.math.BigDecimal("4747.90"),

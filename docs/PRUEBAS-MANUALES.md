@@ -211,6 +211,21 @@ _Dueño y un cajero, con la impresora térmica y un celular_
 | ☐ | 90 | Ajustes → Fiados: cambiar el mensaje con {cliente} y {saldo}, guardar; en Fiados tocar "Recordar" (también como cajero). Luego "Volver al mensaje de siempre". | La vista previa cambia mientras se escribe; WhatsApp abre con el mensaje nuevo y los datos del cliente; al restaurar vuelve el mensaje de siempre. |
 | ☐ | 91 | Abrir `https://app.xaska.co/robots.txt` y `/sitemap.xml`; compartir el enlace de precios por WhatsApp. | Abren como texto y XML; la vista previa muestra el logo y la descripción de XASKA POS. |
 
+## 16. Costo con IVA, sin internet, novedades y Aska (decisiones 346–359)
+
+_Dueño y un cajero, con XASKA Impresora y cajón; XASKA IA activo_
+
+| OK | # | Prueba | Resultado esperado |
+|---|---|---|---|
+| ☐ | 92 | Crear un producto con IVA 19 %, precio $6.800 y costo $5.650 (como lo cobra el proveedor). | La ficha muestra el costo sin IVA (unos $4.748), la ganancia de $966 por unidad, 20,4 % sobre el costo y margen 16,9 %. |
+| ☐ | 93 | Productos → "Revisar costos con IVA": marcar uno sospechoso y "Quitar el IVA". | El costo baja, el kardex tiene "Cambio de costo … al quitarle el IVA" y la utilidad de sus ventas pasadas sube en Reportes. |
+| ☐ | 94 | En un diálogo (cierre de caja, producto) tocar los campos con el dedo en el celular y con el mouse. | Reciben el foco y se puede escribir sin usar Tab. |
+| ☐ | 95 | Con la caja abierta y XASKA Impresora, desconectar el wifi y tocar "Abrir cajón" (y F8). Reconectar. | El cajón abre sin internet; al volver la conexión la apertura aparece una sola vez en Auditoría con "sin conexión" y la hora en que pasó. |
+| ☐ | 96 | Sin internet, en Vender (tablet o celular) tocar categorías y productos de la cuadrícula. | Se ven los productos y las categorías de la copia y se agregan al carrito; al reconectar la pestaña se recarga. |
+| ☐ | 97 | Después de desplegar, entrar a Inicio. | Sale la tarjeta "Nuevo" con la última novedad; "Entendido" la esconde; en el menú del usuario, "Novedades" las muestra todas. |
+| ☐ | 98 | Abrir Aska y hacer 4 preguntas seguidas: "¿cómo me fue este mes?", "¿a qué hora y qué día vendo más?", "¿cuánto debería haber en la caja?" y "¿qué productos me dejan poca ganancia?". | Responde las cuatro con el periodo, no dice que se equivocó en las anteriores ni escribe "[Consultó: …]"; la caja da el esperado con el desglose. Con un cajero de cierre ciego no da el esperado. |
+| ☐ | 99 | Preguntarle a Aska "¿cómo anulo una venta?" y "¿cómo cambio el precio de un producto?". | Da los pasos numerados y "Ver en el manual" abre la sección correcta. El botón de Aska es la burbuja índigo con la A. |
+
 ## Hallazgos
 
 Anota aquí lo que no salió como se esperaba (número de prueba, qué pasó, captura) y compártelo para corregirlo antes de abrir.

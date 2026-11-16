@@ -232,14 +232,16 @@ la venta. Las lecturas de temperatura (`quality_readings`) son inmutables (trigg
 Programa de Windows en Go (`frontend/print-agent`, sin dependencias) que escucha en `127.0.0.1:17777` solo para los
 orígenes de XASKA y manda los bytes ESC/POS en RAW a la cola de Windows. La app arma el tiquete
 (`core/printing/escpos.ts`) y le habla con `fetch` (nunca con `HttpClient`, para que el token no salga del navegador).
-"Abrir cajón" primero queda en la auditoría (`POST /cash/drawer-openings`) y luego manda el pulso.
+"Abrir cajón" primero queda en la auditoría (`POST /cash/drawer-openings`) y luego manda el pulso. Sin conexión (o si
+el servidor no responde) el pulso sale de una vez y la apertura se guarda en IndexedDB (`OfflineDrawerService`, por
+negocio y usuario); se envía al volver la conexión con `{key, openedAt}` y el servidor no la repite (decisión 352).
 
 ## Vender sin internet (decisiones 332–333)
 ```
 Vender ──(con conexión)──▶ GET /sales/offline-catalog ──▶ IndexedDB (copia del catálogo por negocio, cada 10 min)
        └─ con la caja abierta ─▶ localStorage: la caja recordada (usuario, permisos, caja, ajustes, medios; sin token, 24 h)
 Sin conexión (navegador sin red o 0/502–504):
-   lector, F2 y precio ─▶ copia del catálogo
+   lector, F2, precio, cuadrícula y categorías ─▶ copia del catálogo (decisión 353)
    cobrar ─▶ cola en IndexedDB {Idempotency-Key, venta con `offline: {number, soldAt}`} ─▶ tiquete "SIN CONEXIÓN"
 Al volver la conexión (y cada 30 s): POST /sales en orden con la misma clave (no duplica);
    error de red → espera; 4xx → "con problema" con el motivo y "Reintentar" (nunca se borra sola)
@@ -247,6 +249,18 @@ Al volver la conexión (y cada 30 s): POST /sales en orden con la misma clave (n
 `@angular/service-worker` (`ngsw-config.json`, solo en producción) guarda la app; si al abrirla la renovación del
 token no llega al servidor y hay una caja recordada vigente, `AuthService.restore` abre la sesión sin token y la app va
 a Vender. La primera petición con conexión recibe 401, el interceptor renueva el token con la cookie y repite.
+
+## Aska: preguntas (decisiones 296 y 355–359)
+```
+panel ──POST /ai/ask {question, history[{role, text, consulted}]}──▶ AskService
+   └─ Anthropic Messages con herramientas de solo lectura (AskTools), filtradas por los permisos de quien pregunta
+        ventas, productos y margen (sin IVA), inventario, fiados, cajas (con el esperado si hay cash:audit),
+        finanzas y ayuda_app ─▶ AskaManual (classpath aska/manual.json)
+   ◀─ {answer (sin marcas "[Consultó: …]"), consulted[], usage}
+```
+El historial lleva lo que consultó cada respuesta para que la IA no crea que inventó las cifras. El manual se escribe
+una vez, en `frontend/src/app/features/manual/manual-content.ts`; `tools/export-manual.mjs` lo copia al backend y CI
+falla si el JSON quedó viejo. No se guarda el texto de las preguntas.
 
 ## Producción
 Un servidor con `docker compose` (`deploy/docker-compose.prod.yml`): **web** (Caddy con la app Angular compilada:
