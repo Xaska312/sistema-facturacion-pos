@@ -32,14 +32,16 @@
 | Seguridad y carga | ✅ Pruebas de seguridad, carga y uso real y sus correcciones (276–277) |
 | 13 — Farmacia | ✅ 13-1 ficha del medicamento y catálogo CUM, 13-2 compras, 13-3 lotes y vencimientos, 13-4 dispensación, 13-6 temperatura, eventos adversos e informe; Droguería abierta (279–282, 287). ⏳ 13-5 control especial |
 | Planes | ✅ Emprende, Negocio y Empresa con extras desde la consola; Términos 1.2 y Política 1.2 (decisión 288) |
-| XASKA IA (Aska) | ✅ Adicional pagado: facturas con foto, preguntas, qué comprar, resumen del día, cargar catálogo e inventario, avisos y prueba gratis (295–313) |
+| XASKA IA (Aska) | ✅ Adicional pagado: facturas con foto, preguntas, qué comprar, resumen del día, cargar catálogo e inventario, avisos y prueba gratis (295–313). Mejoras de noviembre: no se desmiente, hora y día de la semana, caja esperada, margen de todo el catálogo, manual de uso y logo nuevo (355–359) |
 | Planes y pagos | ✅ Bre-B con comprobante revisado por Aska, registro abierto, precios públicos, precio fundador, referidos y aliados (302–305, 312) |
 | Finanzas | ✅ Gastos, gastos fijos, retenciones, estado de resultados, tablero y Aska (320–325) |
 | Celular y documentos | ✅ Modo teléfono, recibo como imagen y botón Enviar, encabezado libre de los documentos, todos los municipios (314–315, 326–328, 331) |
 | Angular 21 | ✅ Frontend en Angular 21 con Node 24 (329–330). ⏳ Angular 22 (ya sin el bloqueo de PrimeNG) |
 | Componentes propios | ✅ PrimeNG reemplazado por componentes propios sobre `@angular/cdk` y dirección visual "Orgánica"; paquete inicial de 834 a 530 kB (335–341) |
 | Pendientes de noviembre | ✅ Tecla del cajón, cerrar sesión en los otros equipos, recordatorio de fiado editable, robots.txt y sitemap (342–345) |
-| Vender sin internet | ✅ Copia del catálogo, cola de ventas con número provisional y la app que abre sin conexión en el equipo de la caja (332–333) |
+| Vender sin internet | ✅ Copia del catálogo, cola de ventas con número provisional y la app que abre sin conexión en el equipo de la caja (332–333); abrir el cajón, productos y categorías sin internet (352–353) |
+| Costo con IVA y ajustes | ✅ Costo como lo cobra el proveedor, revisar costos con IVA, prueba gratis visible desde el registro, diálogos que reciben el toque y consola en el celular (346–351) |
+| Novedades | ✅ Tarjeta en Inicio y "Novedades" en el menú del usuario después de cada actualización (354) |
 | Facturación electrónica | ⏳ Pendiente (espera al contador) |
 
 ## Requisitos
@@ -445,6 +447,22 @@ la app sin conexión hasta 24 horas (service worker y la caja recordada, sin tok
 **Costo (334).** El costo de un producto con movimientos se cambia a mano o por importación, con su renglón "Cambio de
 costo" en el kardex y el margen con una sugerencia de precio.
 
+**Costo con IVA y ajustes (346–351).** El costo se escribe como lo cobra el proveedor, con IVA, y la app se lo quita
+para calcular la ganancia; la ficha muestra la ganancia por unidad, el porcentaje sobre el costo y el margen, y
+"Revisar costos con IVA" corrige los costos viejos y la utilidad de las ventas pasadas (348–349). Además: la prueba
+gratis se ve desde el registro (346), Aska lee 5 listas en la prueba (347), los campos de los diálogos vuelven a
+recibir el toque (350) y "Más" de la consola solo sale en el celular (351).
+
+**Sin internet, segunda parte (352–354).** "Abrir cajón" funciona sin internet y la apertura llega a la auditoría al
+volver la conexión, sin duplicarse; Vender muestra los productos y las categorías desde la copia del catálogo; y
+después de cada actualización la app cuenta lo nuevo (`shared/whats-new/releases.ts`).
+
+**Aska, mejoras de noviembre (355–359).** Probada en producción: ya no se desmiente (la app le manda lo que consultó en
+cada respuesta), dice siempre el periodo, agrupa por hora y por día de la semana, da el efectivo esperado de una caja
+abierta (respetando el cierre ciego), revisa el margen de todo el catálogo o de una categoría sin IVA y explica cómo
+se usa la app con el manual (`npm run export:manual` lo copia a `backend/src/main/resources/aska/manual.json`; CI
+revisa que esté al día). Logo nuevo: burbuja de chat con la A de XASKA y el rombo ámbar.
+
 | Qué | Test |
 |---|---|
 | Fiado, caja compartida, pedidos, cotizaciones | `CreditIT`, `CashIT`, `OrdersIT`, `QuotesIT` |
@@ -458,4 +476,7 @@ costo" en el kardex y el margen con una sugerencia de precio.
 | Documentos y municipios | `DocumentHeaderIT`, `OrganizationIT`, `ticket-image.spec`, `doc-header.spec` |
 | Sin internet | `OfflineSalesIT`, `offline-catalog.spec`, `offline-sale.spec`, `offline-boot.spec` |
 | Costo y eliminar productos | `InventoryIT`, `ProductDeleteIT` |
+| Costo con IVA | `CostReviewIT`, `InventoryIT`, `cost-tax.spec`, `report-views.spec` |
+| Sin internet: cajón y cuadrícula | `CashDrawerIT`, `OfflineSalesIT`, `cash-drawer.service.spec`, `product-grid.component.spec` |
+| Aska (noviembre) | `AskIT`, `AskToolsTest`, `AskaManualTest`, `ai-text.spec` |
 
