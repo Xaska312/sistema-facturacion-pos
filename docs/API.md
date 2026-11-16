@@ -247,7 +247,7 @@ Operar: `cash:operate`. Historial: `cash:read` (sin él, cada usuario ve solo su
 | GET | `/sales?from=&to=&branchId=&status=&cashSessionId=&search=&page=&size=` | `sales:read` | `search`: número (`POS-12` o `12`) o nombre/documento del cliente |
 | GET | `/sales/{id}` | `sales:read` | Venta con ítems, pagos, impuestos y encabezado del tiquete |
 | GET | `/sales/config` | `sales:create` | `{pricesIncludeTax, maxDiscountPercent, allowNegativeStock, currency, receiptFooter, businessName, finalConsumerId, tipPercent, receiptHeader}` |
-| GET | `/sales/offline-catalog` | `sales:create` | Decisión 332, copia del catálogo para vender sin internet: `{generatedAt, items: [{productId, sku, name, unitId, unitCode, factor, price (general), taxId, taxType, taxRate, trackInventory, openPrice, allowsDecimals, codes[] (SKU y códigos de barras de esa presentación)}]}`, una fila por producto activo y presentación; sin los medicamentos bajo fórmula |
+| GET | `/sales/offline-catalog` | `sales:create` | Decisión 332, copia del catálogo para vender sin internet: `{generatedAt, items: [{productId, sku, name, unitId, unitCode, factor, price (general), taxId, taxType, taxRate, trackInventory, openPrice, allowsDecimals, codes[] (SKU y códigos de barras de esa presentación), categoryId}], categories: [{id, parentId, name}]}`, una fila por producto activo y presentación; sin los medicamentos bajo fórmula. `categoryId` y `categories` (decisión 353): para la cuadrícula de Vender sin internet |
 | GET | `/sales/price?productId=&unitId=&customerId=` | `sales:create` o `tables:operate` | Precio vigente para el cliente (el mesero lo usa al pedir desde la mesa, decisión 293) |
 
 Cuerpo de venta:
@@ -562,7 +562,7 @@ Con el módulo `MEDICINES`. Permisos nuevos `pharmacy:dispense` y `pharmacy:reco
 
 | Método | Ruta | Permiso | Notas |
 |---|---|---|---|
-| POST | `/cash/drawer-openings` | `cash:drawer` | `{reason?}` (máx. 200). Exige caja abierta (422 si no). Solo registra `CASH_DRAWER_OPENED` en la auditoría; el cajón lo abre XASKA Impresora. 204 |
+| POST | `/cash/drawer-openings` | `cash:drawer` | `{reason?}` (máx. 200). Exige caja abierta (422 si no). Solo registra `CASH_DRAWER_OPENED` en la auditoría; el cajón lo abre XASKA Impresora. 204. Decisión 352: con `{key, openedAt, reason?}` es una apertura hecha sin internet que se registra al volver la conexión: no exige caja abierta, guarda `offline: true` y la hora (si es creíble: no futura ni de hace más de 7 días) y con la misma `key` no se registra dos veces |
 
 ### XASKA Impresora (programa local, `http://127.0.0.1:17777`)
 

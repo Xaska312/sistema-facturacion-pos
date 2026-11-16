@@ -18,7 +18,8 @@ import java.util.UUID;
 /**
  * Copia del catálogo para vender sin internet (decisión 332): cada producto activo en cada presentación con su precio
  * general (el del consumidor final), impuesto y los códigos que lo encuentran (SKU y códigos de barras). No trae los
- * medicamentos bajo fórmula: esos piden sus datos y se venden con conexión.
+ * medicamentos bajo fórmula: esos piden sus datos y se venden con conexión. Desde la decisión 353 trae la categoría de
+ * cada producto y las categorías activas, para que la cuadrícula de Vender funcione sin internet.
  */
 @Service
 public class OfflineCatalogService {
@@ -28,10 +29,14 @@ public class OfflineCatalogService {
 
     public record Item(UUID productId, String sku, String name, UUID unitId, String unitCode, BigDecimal factor,
                        BigDecimal price, UUID taxId, String taxType, BigDecimal taxRate, boolean trackInventory,
-                       boolean openPrice, boolean allowsDecimals, List<String> codes) {
+                       boolean openPrice, boolean allowsDecimals, List<String> codes, UUID categoryId) {
     }
 
-    public record Catalog(Instant generatedAt, List<Item> items) {
+    /** Categoría activa, para la cuadrícula de Vender sin internet (decisión 353). */
+    public record CategoryItem(UUID id, UUID parentId, String name) {
+    }
+
+    public record Catalog(Instant generatedAt, List<Item> items, List<CategoryItem> categories) {
     }
 
     @Transactional(readOnly = true)
@@ -39,7 +44,7 @@ public class OfflineCatalogService {
     public Catalog current() {
         List<Object[]> products = em.createNativeQuery("""
                 SELECT p.id, p.sku, p.name, p.base_unit_id, u.code, u.allows_decimals, p.sale_price, t.id, t.type,
-                       t.rate, p.track_inventory, p.open_price
+                       t.rate, p.track_inventory, p.open_price, p.category_id
                 FROM products p
                 JOIN units u ON u.id = p.base_unit_id
                 JOIN taxes t ON t.id = p.tax_id
@@ -77,7 +82,7 @@ public class OfflineCatalogService {
             baseCodes.addAll(productCodes.getOrDefault(null, List.of()));
             items.add(new Item(id, sku, (String) p[2], baseUnit, (String) p[4], BigDecimal.ONE, basePrice,
                     (UUID) p[7], (String) p[8], (BigDecimal) p[9], (Boolean) p[10], (Boolean) p[11],
-                    (Boolean) p[5], baseCodes));
+                    (Boolean) p[5], baseCodes, (UUID) p[12]));
             for (Object[] c : conversionsByProduct.getOrDefault(id, List.of())) {
                 UUID unit = (UUID) c[1];
                 BigDecimal factor = (BigDecimal) c[3];
@@ -85,9 +90,14 @@ public class OfflineCatalogService {
                         : basePrice.multiply(factor).setScale(2, RoundingMode.HALF_UP);
                 items.add(new Item(id, sku, (String) p[2], unit, (String) c[2], factor, price, (UUID) p[7],
                         (String) p[8], (BigDecimal) p[9], (Boolean) p[10], (Boolean) p[11], (Boolean) p[5],
-                        productCodes.getOrDefault(unit, List.of())));
+                        productCodes.getOrDefault(unit, List.of()), (UUID) p[12]));
             }
         }
-        return new Catalog(Instant.now(), items);
+        List<CategoryItem> categories = new ArrayList<>();
+        for (Object[] c : (List<Object[]>) em.createNativeQuery(
+                "SELECT id, parent_id, name FROM categories WHERE active ORDER BY name").getResultList()) {
+            categories.add(new CategoryItem((UUID) c[0], (UUID) c[1], (String) c[2]));
+        }
+        return new Catalog(Instant.now(), items, categories);
     }
 }

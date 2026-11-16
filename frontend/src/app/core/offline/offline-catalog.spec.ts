@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { OfflineCatalogItem } from '../api/api.models';
-import { findByCode, findByProduct, lookupFromItem, searchItems } from './offline-catalog';
+import { findByCode, findByProduct, gridProducts, lookupFromItem, searchItems } from './offline-catalog';
 import { isNetworkError, provisionalNumber } from './offline-sales.service';
 
 function item(over: Partial<OfflineCatalogItem>): OfflineCatalogItem {
@@ -44,5 +44,19 @@ describe('Copia del catálogo sin conexión (decisión 332)', () => {
     expect(isNetworkError(new HttpErrorResponse({ status: 503 }))).toBeTrue();
     expect(isNetworkError(new HttpErrorResponse({ status: 422 }))).toBeFalse();
     expect(isNetworkError(new Error('x'))).toBeFalse();
+  });
+
+  it('la cuadrícula sin internet: un producto por tarjeta, por categoría con sus subcategorías (decisión 353)', () => {
+    const items = [
+      item({ categoryId: 'bebidas' }),
+      item({ unitId: 'cja', unitCode: 'CJ', factor: 12, price: 27000, codes: [], categoryId: 'bebidas' }),
+      item({ productId: 'p2', sku: 'AGUA', name: 'Agua Cielo', categoryId: 'aguas' }),
+      item({ productId: 'p3', sku: 'PAN', name: 'Pan', categoryId: null }),
+    ];
+    const cats = [{ id: 'bebidas', parentId: null, name: 'Bebidas' }, { id: 'aguas', parentId: 'bebidas', name: 'Aguas' }];
+    expect(gridProducts(items, cats, null).map((p) => p.name)).toEqual(['Agua Cielo', 'Gaseosa Colombiana 400 ml', 'Pan']);
+    expect(gridProducts(items, cats, 'bebidas').map((p) => p.id)).toEqual(['p2', 'p1']);
+    expect(gridProducts(items, cats, 'aguas').map((p) => p.id)).toEqual(['p2']);
+    expect(gridProducts(items, cats, null)[1].salePrice).toBe(2500);
   });
 });

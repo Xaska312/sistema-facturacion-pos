@@ -27,6 +27,8 @@ import { buildBreadcrumbs } from './breadcrumbs';
 import { EXACT_MATCH_ROUTES, MENU, dockItems, initials, visibleMenu } from './menu';
 import { planPill, subscriptionBanner } from './subscription-banner';
 import { ConfirmService } from '../../shared/confirm';
+import { WhatsNewService } from '../../shared/whats-new/whats-new.service';
+import { WhatsNewDialogComponent } from '../../shared/whats-new/whats-new-dialog.component';
 import { ToastService } from '../../shared/ui/toast.service';
 
 interface ThemeOption extends PrimeMenuItem {
@@ -41,6 +43,7 @@ interface ThemeOption extends PrimeMenuItem {
 @Component({
   selector: 'app-shell',
   imports: [RouterOutlet, RouterLink, RouterLinkActive, DrawerComponent, MenuComponent, TooltipDirective, HelpPanelComponent,
+    WhatsNewDialogComponent,
     XaskaLogoComponent, XIconComponent, AskaComponent, AskaWelcomeComponent],
   template: `
     <button type="button" class="skip-link" (click)="focusMain()">Saltar al contenido</button>
@@ -133,6 +136,7 @@ interface ThemeOption extends PrimeMenuItem {
           <i class="pi pi-chevron-down text-xs text-muted" aria-hidden="true"></i>
         </button>
         <app-menu #userMenu [model]="userItems()" [popup]="true" appendTo="body" />
+        <app-whats-new-dialog />
       </header>
 
       @if (banner(); as b) {
@@ -325,6 +329,7 @@ export class ShellComponent {
   protected readonly theme = inject(ThemeService);
   private readonly router = inject(Router);
   private readonly confirm = inject(ConfirmService);
+  private readonly whatsNew = inject(WhatsNewService);
   private readonly messages = inject(ToastService);
   private readonly tours = inject(TourService);
   private readonly subscriptionApi = inject(SubscriptionApi);
@@ -406,6 +411,7 @@ export class ShellComponent {
         ...(this.auth.isPlatformAdmin()
           ? [{ label: 'Consola de plataforma', icon: 'pi pi-server', command: () => void this.router.navigate(['/plataforma']) }]
           : []),
+        { label: 'Novedades', icon: 'pi pi-megaphone', command: () => this.whatsNew.show() },
         { separator: true },
         { label: 'Cerrar sesión en los otros equipos', icon: 'pi pi-desktop', command: () => this.askRevokeOthers() },
         { label: 'Salir', icon: 'pi pi-sign-out', command: () => this.logout() },

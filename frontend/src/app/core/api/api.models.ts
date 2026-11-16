@@ -1612,9 +1612,20 @@ export interface OfflineCatalogItem {
   allowsDecimals: boolean;
   /** SKU y códigos de barras que encuentran esta presentación. */
   codes: string[];
+  /** Categoría del producto (decisión 353); null sin categoría. Las copias viejas no la traen. */
+  categoryId?: string | null;
+}
+
+/** Categoría activa en la copia del catálogo (decisión 353). */
+export interface OfflineCategory {
+  id: string;
+  parentId: string | null;
+  name: string;
 }
 
 export interface OfflineCatalog {
   generatedAt: string;
   items: OfflineCatalogItem[];
+  /** Las copias anteriores a la decisión 353 no la traen. */
+  categories?: OfflineCategory[];
 }

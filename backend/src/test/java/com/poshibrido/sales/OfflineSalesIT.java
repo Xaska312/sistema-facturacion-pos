@@ -15,6 +15,7 @@ import java.util.UUID;
 import static com.poshibrido.sales.PosTestSupport.CAJA_1;
 import static com.poshibrido.sales.PosTestSupport.CASH;
 import static com.poshibrido.sales.PosTestSupport.body;
+import static com.poshibrido.sales.PosTestSupport.id;
 import static com.poshibrido.sales.PosTestSupport.key;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -46,6 +47,19 @@ class OfflineSalesIT extends IntegrationTest {
                 .contains("GAS");
         assertThat(JsonPath.<List<Boolean>>read(json, "$.items[?(@.productId == '" + service + "')].trackInventory"))
                 .containsExactly(false);
+
+        // Decisión 353: la categoría de cada producto y las categorías activas, para la cuadrícula sin internet
+        UUID drinks = id(api.postWith(s, "/api/v1/categories", """
+                {"name":"Bebidas"}
+                """).andExpect(status().isCreated()), "$.id");
+        UUID juice = id(api.postWith(s, "/api/v1/products", """
+                {"sku":"JUGO","name":"Jugo","baseUnitId":"%s","taxId":"%s","categoryId":"%s","cost":0,"salePrice":3000,
+                 "trackInventory":false}
+                """.formatted(PosTestSupport.UND, PosTestSupport.IVA19, drinks)).andExpect(status().isCreated()), "$.id");
+        json = body(api.getWith(s, "/api/v1/sales/offline-catalog"));
+        assertThat(JsonPath.<List<String>>read(json, "$.items[?(@.productId == '" + juice + "')].categoryId"))
+                .containsExactly(drinks.toString());
+        assertThat(JsonPath.<List<String>>read(json, "$.categories[*].name")).contains("Bebidas");
     }
 
     @Test

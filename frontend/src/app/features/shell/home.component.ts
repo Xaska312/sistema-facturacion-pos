@@ -1,4 +1,5 @@
 import { AskaRecapCardComponent } from '../ai/aska-recap-card.component';
+import { WhatsNewCardComponent } from '../../shared/whats-new/whats-new-card.component';
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
@@ -44,7 +45,7 @@ export function glyphFor(route: string): XIconName {
  */
 @Component({
   selector: 'app-home',
-  imports: [AskaRecapCardComponent, RouterLink, SkeletonComponent, XIconComponent, DashboardComponent, MyDayComponent, StockAlertsComponent,
+  imports: [WhatsNewCardComponent, AskaRecapCardComponent, RouterLink, SkeletonComponent, XIconComponent, DashboardComponent, MyDayComponent, StockAlertsComponent,
     FirstStepsComponent, RecurringAlertComponent, OrdersAlertComponent, QualityAlertComponent, DigestCardComponent, AskaTeaserComponent, HeaderReminderComponent],
   template: `
     <h1 class="sr-only">{{ title }}</h1>
@@ -86,6 +87,9 @@ export function glyphFor(route: string): XIconName {
     }
 
     <app-first-steps class="block mb-5" />
+
+    <!-- Decisión 354: lo nuevo desde la última vez. -->
+    <app-whats-new-card class="block mb-5 empty:hidden" />
 
     <!-- Lo que hiciste con Aska el mes pasado (decisión 309): al dueño, los primeros 7 días del mes. -->
     @if (auth.hasPermission('settings:manage')) {

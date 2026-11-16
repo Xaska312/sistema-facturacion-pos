@@ -182,6 +182,34 @@ public class CashSessionService {
         audit.log("CASH_DRAWER_OPENED", "cash_session", open.getFirst(), null, data);
     }
 
+    /**
+     * Apertura del cajón hecha sin internet (decisión 352): el cajón ya se abrió en el equipo y aquí solo queda el
+     * registro, con la hora en que pasó y la marca "sin conexión". Con la misma clave no se registra dos veces (el
+     * equipo reintenta si no le llegó la respuesta). Si la caja ya se cerró, el registro queda igual, sin sesión.
+     */
+    @Transactional
+    public void drawerOpenedOffline(String reason, String key, java.time.Instant openedAt) {
+        UUID actor = CurrentActor.requireUserId();
+        String cleanKey = key.strip();
+        Number seen = (Number) em.createNativeQuery("""
+                SELECT count(*) FROM audit_log
+                WHERE action = 'CASH_DRAWER_OPENED' AND actor_id = ?1 AND after_data ->> 'key' = ?2
+                """).setParameter(1, actor).setParameter(2, cleanKey).getSingleResult();
+        if (seen.longValue() > 0) {
+            return;
+        }
+        java.time.Instant now = java.time.Instant.now();
+        boolean credible = openedAt != null && !openedAt.isAfter(now.plusSeconds(300))
+                && openedAt.isAfter(now.minus(java.time.Duration.ofDays(7)));
+        List<UUID> open = sessions.lockOpenOf(actor);
+        Map<String, Object> data = new java.util.LinkedHashMap<>();
+        data.put("reason", reason == null || reason.isBlank() ? null : reason.strip());
+        data.put("offline", true);
+        data.put("openedAt", credible ? openedAt.toString() : null);
+        data.put("key", cleanKey);
+        audit.log("CASH_DRAWER_OPENED", "cash_session", open.isEmpty() ? null : open.getFirst(), null, data);
+    }
+
     @Transactional
     public SessionView open(UUID registerId, BigDecimal openingAmount, String notes) {
         UUID actor = CurrentActor.requireUserId();
