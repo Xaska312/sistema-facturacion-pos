@@ -92,6 +92,12 @@ export const routes: Routes = [
           import('./features/platform/platform-subscriptions.component').then((m) => m.PlatformSubscriptionsComponent),
       },
       {
+        path: 'whatsapp',
+        title: 'Plataforma: WhatsApp',
+        loadComponent: () =>
+          import('./features/platform/platform-whatsapp.component').then((m) => m.PlatformWhatsAppComponent),
+      },
+      {
         path: 'codigos',
         title: 'Plataforma: códigos de activación',
         loadComponent: () =>

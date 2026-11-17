@@ -15,6 +15,7 @@ export const PLATFORM_MENU: readonly PlatformMenuItem[] = [
   { route: '/plataforma/planes', label: 'Planes', glyph: 'plans' },
   { route: '/plataforma/pagos', label: 'Pagos', glyph: 'cash' },
   { route: '/plataforma/referidos', label: 'Referidos', glyph: 'customers' },
+  { route: '/plataforma/whatsapp', label: 'WhatsApp', glyph: 'chat' },
   { route: '/plataforma/seguridad', label: 'Seguridad', glyph: 'security' },
   { route: '/plataforma/cum', label: 'CUM', glyph: 'type-pharmacy' },
 ];

@@ -9,6 +9,8 @@ import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import com.poshibrido.whatsapp.application.WhatsAppClient;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
@@ -71,6 +73,12 @@ public abstract class IntegrationTest {
         registry.add("app.ai.recap-schedule", () -> "false");
         // Los tests crean negocios sin código (prueba gratis); SubscriptionIT prueba el código obligatorio.
         registry.add("app.subscription.trial-without-code", () -> "true");
+        // Agente de WhatsApp (decisión 362): valores de prueba y sin segundo plano.
+        registry.add("app.whatsapp.verify-token", () -> "token-de-prueba");
+        registry.add("app.whatsapp.app-secret", () -> "secreto-de-prueba");
+        registry.add("app.whatsapp.access-token", () -> "acceso-de-prueba");
+        registry.add("app.whatsapp.phone-number-id", () -> "1234567890");
+        registry.add("app.whatsapp.async", () -> "false");
     }
 
     @Autowired
@@ -84,6 +92,13 @@ public abstract class IntegrationTest {
 
     @Autowired
     protected RecordingMailSender mailbox;
+
+    /**
+     * Envíos a WhatsApp simulados en todas las pruebas (decisión 362): declararlo aquí, y no en cada clase, evita un
+     * contexto de Spring más (cada uno abre su propio grupo de conexiones a la base).
+     */
+    @MockitoBean
+    protected WhatsAppClient whatsapp;
 
     protected MockMvc mvc;
     protected TestApi api;

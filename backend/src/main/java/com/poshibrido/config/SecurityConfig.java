@@ -87,6 +87,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/invitations/preview").permitAll()
                         // Planes y precios para quien aún no se registra (decisión 303).
                         .requestMatchers(HttpMethod.GET, "/api/v1/public/pricing").permitAll()
+                        // Webhook del agente de WhatsApp (decisión 362): lo protege la firma de Meta, no un token.
+                        .requestMatchers("/api/v1/public/whatsapp/webhook").permitAll()
                         .requestMatchers("/api/v1/auth/**", "/api/v1/tenants", "/api/v1/tenants/**",
                                 "/api/v1/invitations/**", "/api/v1/locations/**").authenticated()
                         .requestMatchers("/api/v1/platform/**").hasAuthority(PLATFORM_ADMIN)

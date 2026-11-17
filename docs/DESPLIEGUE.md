@@ -383,6 +383,35 @@ negocio se suspende. Salen por [Resend](https://resend.com) (plan gratis: 100 po
 - En **Emails** de Resend ves cada correo enviado, entregado o rebotado. Si alguien no recibe la invitación, el
   dueño puede copiar el enlace que aparece al invitar y mandarlo por WhatsApp.
 
+## 14. Agente de WhatsApp de XASKA (decisión 362)
+
+El agente responde en el número de XASKA (el **324**, dedicado: sale del WhatsApp normal) con el manual, los planes y
+los equipos, y te pasa la conversación (correo a `WHATSAPP_HANDOFF_EMAIL` + consola **Plataforma → WhatsApp**) cuando
+la persona pide a alguien, quiere cotizar o tiene un problema. Para empezar no hace falta el número: Meta da uno de
+prueba que escribe hasta a 5 números tuyos.
+
+1. **App de Meta.** developers.facebook.com → Crear aplicación → nombre "XASKA", correo soporte@xaska.co → caso de uso
+   "Conecta con los clientes a través de WhatsApp" → porfolio "XASKA Soluciones Tecnológicas".
+2. **Número de prueba.** En la app: WhatsApp → Configuración de la API. Agrega tu celular como destinatario y envía la
+   plantilla `hello_world` para comprobar. Copia el **Identificador del número de teléfono** (`WHATSAPP_PHONE_NUMBER_ID`).
+3. **Clave secreta.** Configuración de la app → Básica → "Clave secreta de la app" (`WHATSAPP_APP_SECRET`).
+4. **Token permanente.** business.facebook.com → Configuración → Usuarios del sistema → Agregar (administrador) →
+   Asignar activos: la app (control total) y la cuenta de WhatsApp → Generar token con `whatsapp_business_messaging`
+   y `whatsapp_business_management`, sin vencimiento (`WHATSAPP_ACCESS_TOKEN`). El token de 24 horas de la
+   pantalla de configuración no sirve en producción.
+5. **Variables.** En `~/xaska/deploy/.env` del servidor: las cuatro `WHATSAPP_*` y un `WHATSAPP_VERIFY_TOKEN` que
+   inventes (texto largo). Luego `docker compose up -d backend`. **Nunca las pegues en un chat.**
+6. **Webhook.** En la app: WhatsApp → Configuración → Webhook → URL `https://app.xaska.co/api/v1/public/whatsapp/webhook`
+   y el mismo token de verificación → Verificar y guardar → suscribir el campo **messages**.
+7. **Probar.** Escríbele al número de prueba desde tu celular: debe responder el asistente y aparecer en
+   Plataforma → WhatsApp. Escribe "quiero hablar con una persona" y revisa que llegue el correo.
+8. **Número real (después).** Agregar el 324 (sin WhatsApp instalado en él, o borrando la cuenta antes), aprobar el
+   nombre visible "XASKA", agregar un método de pago y, si Meta lo pide, verificar el negocio. Desde el 1 de octubre
+   de 2026 Meta cobra también los mensajes de servicio (respuestas dentro de las 24 horas): revisa la tarifa en pesos
+   en la documentación de precios de WhatsApp antes de abrirlo al público.
+
+Si el asistente no tiene `ANTHROPIC_API_KEY`, se disculpa y pasa cada conversación a una persona.
+
 ## Lista de seguridad antes de abrir a clientes
 
 - [ ] `JWT_SECRET`, `DB_PASSWORD` y `POSTGRES_ADMIN_PASSWORD` nuevos y distintos; `.env` con permisos 600.

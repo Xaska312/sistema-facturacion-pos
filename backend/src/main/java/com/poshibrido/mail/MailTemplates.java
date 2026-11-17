@@ -95,6 +95,22 @@ public class MailTemplates {
                 "Si crees que es un error o quieres reactivarlo, responde a este correo o comunícate con soporte.");
     }
 
+    /** Una conversación del agente de WhatsApp pasó a una persona (decisión 362). */
+    public MailMessage whatsappHandoff(String to, String who, String phone, String reason, String summary,
+                                       String conversationId) {
+        List<String> paragraphs = new java.util.ArrayList<>();
+        paragraphs.add(who + " (" + phone + ") necesita que le responda una persona en WhatsApp.");
+        paragraphs.add("Motivo: " + (reason == null || reason.isBlank() ? "no indicado" : reason) + ".");
+        if (summary != null && !summary.isBlank()) {
+            paragraphs.add("Resumen: " + summary);
+        }
+        paragraphs.add("El asistente ya no responde en esta conversación hasta que la devuelvas. Tienes 24 horas desde "
+                + "su último mensaje para escribirle con texto libre.");
+        return message(to, "WhatsApp: " + who + " quiere hablar con una persona", "whatsapp-persona",
+                "Hola:", paragraphs, "Abrir la conversación",
+                properties.link("/plataforma/whatsapp?c=" + conversationId), null);
+    }
+
     public MailMessage tenantReactivated(String to, String ownerName, String businessName) {
         return message(to, businessName + " está activo de nuevo", "negocio-reactivado",
                 "Hola, " + ownerName + ":",

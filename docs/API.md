@@ -294,6 +294,19 @@ Permiso `audit:read` (Dueño, Administrador y Contador). Solo lectura: los regis
 
 Acciones que se registran además de los cambios de cada módulo: `BUSINESS_CREATED` (al crear el negocio), `SESSION_STARTED` (entrar al negocio), `SESSION_ENDED` (cerrar sesión), `REPORT_EXPORTED`, `AUDIT_EXPORTED`.
 
+## Agente de WhatsApp (decisión 362)
+Webhook público protegido con la firma de Meta (`X-Hub-Signature-256`, HMAC-SHA256 con `WHATSAPP_APP_SECRET`); sin
+configuración responde 404. La consola es solo para administradores de plataforma.
+| Método | Ruta | Respuesta |
+|---|---|---|
+| GET | `/public/whatsapp/webhook?hub.mode=subscribe&hub.verify_token=&hub.challenge=` | El reto si el token coincide; 403 si no |
+| POST | `/public/whatsapp/webhook` | 200 a todo aviso firmado (los mensajes se procesan en segundo plano; el mismo `wamid` no se procesa dos veces); 401 sin firma válida |
+| GET | `/platform/whatsapp/state` | `{receives, sends, ai}`: qué está configurado |
+| GET | `/platform/whatsapp/conversations?status=BOT\|HUMAN\|CLOSED` | Las 200 más recientes `{id, phone, profileName, status, lastInboundAt, leadName, leadBusiness, leadCity, leadNeed, handoffReason, handoffAt, createdAt, updatedAt, lastMessage}` |
+| GET | `/platform/whatsapp/conversations/{id}` | `{conversation, windowOpen, messages: [{id, author: CUSTOMER\|BOT\|HUMAN, body, createdAt}]}` |
+| POST | `/platform/whatsapp/conversations/{id}/reply` | `{text (≤2000)}`: responde alguien de XASKA (la conversación queda `HUMAN`). 422 si pasaron más de 24 horas desde el último mensaje de la persona o WhatsApp lo rechaza |
+| POST | `/platform/whatsapp/conversations/{id}/take` \| `/bot` \| `/close` | La toma una persona, vuelve al asistente o se cierra. Devuelve el detalle |
+
 ## Eventos de seguridad (plataforma, Fase 7-2)
 Solo administradores de plataforma (`platform_admin`; token con `padm`). Tabla `platform.security_events`, solo inserción.
 | Método | Ruta | Respuesta |

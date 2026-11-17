@@ -86,6 +86,9 @@ export const XICONS = {
     fill: '<path d="M12 3 3 8l9 5 9-5z"/>' },
   security: { stroke: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><rect x="9" y="11" width="6" height="5" rx="1"/><path d="M10.5 11V9.5a1.5 1.5 0 0 1 3 0V11"/>',
     fill: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>' },
+  // Agente de WhatsApp (decisión 362).
+  chat: { stroke: '<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>',
+    fill: '<path d="M4 5h16v11H9l-5 4z"/>' },
   // Tipos de negocio y módulos (Fase 12a).
   'type-retail': { stroke: '<path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/><path d="M9 12a3 3 0 0 0 6 0"/>',
     fill: '<path d="M5 8h14l-1 12H6z"/>' },

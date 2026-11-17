@@ -42,6 +42,7 @@
 | Vender sin internet | ✅ Copia del catálogo, cola de ventas con número provisional y la app que abre sin conexión en el equipo de la caja (332–333); abrir el cajón, productos y categorías sin internet (352–353) |
 | Costo con IVA y ajustes | ✅ Costo como lo cobra el proveedor, revisar costos con IVA, prueba gratis visible desde el registro, diálogos que reciben el toque y consola en el celular (346–351) |
 | Novedades | ✅ Tarjeta en Inicio y "Novedades" en el menú del usuario después de cada actualización (354) |
+| Agente de WhatsApp | 🧪 El número de XASKA responde con el manual, los planes y los equipos, y pasa a una persona con aviso por correo; consola Plataforma → WhatsApp (362) |
 | Facturación electrónica | ⏳ Pendiente (espera al contador) |
 
 ## Requisitos

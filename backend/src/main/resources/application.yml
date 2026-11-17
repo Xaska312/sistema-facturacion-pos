@@ -74,6 +74,15 @@ app:
     anthropic-api-key: ${ANTHROPIC_API_KEY:}
     invoice-model: ${AI_INVOICE_MODEL:claude-haiku-5-5}
     timeout-seconds: ${AI_TIMEOUT_SECONDS:90}
+  whatsapp:
+    # Agente de WhatsApp de XASKA (decisión 362). Sin estas variables el webhook responde 404 y nada se envía.
+    verify-token: ${WHATSAPP_VERIFY_TOKEN:}
+    app-secret: ${WHATSAPP_APP_SECRET:}
+    access-token: ${WHATSAPP_ACCESS_TOKEN:}
+    phone-number-id: ${WHATSAPP_PHONE_NUMBER_ID:}
+    graph-version: ${WHATSAPP_GRAPH_VERSION:v25.0}
+    handoff-email: ${WHATSAPP_HANDOFF_EMAIL:soporte@xaska.co}
+    async: true
   mail:
     # Remitente. Sin dominio propio, Resend solo permite onboarding@resend.dev y enviar a tu propio correo.
     from: ${MAIL_FROM:XASKA POS <onboarding@resend.dev>}

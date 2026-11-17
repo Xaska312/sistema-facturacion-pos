@@ -84,6 +84,12 @@ services:
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       # Lectura de facturas con IA (decisión 295). Sin clave queda apagada.
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # Agente de WhatsApp de XASKA (decisión 362). Sin estas variables el webhook responde 404 y no se envía nada.
+      WHATSAPP_VERIFY_TOKEN: ${WHATSAPP_VERIFY_TOKEN:-}
+      WHATSAPP_APP_SECRET: ${WHATSAPP_APP_SECRET:-}
+      WHATSAPP_ACCESS_TOKEN: ${WHATSAPP_ACCESS_TOKEN:-}
+      WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-}
+      WHATSAPP_HANDOFF_EMAIL: ${WHATSAPP_HANDOFF_EMAIL:-soporte@xaska.co}
       MAIL_FROM: ${MAIL_FROM:-XASKA POS <onboarding@resend.dev>}
       # O por SMTP (piloto con Gmail y una contraseña de aplicación; ver docs/DESPLIEGUE.md). Con RESEND_API_KEY gana Resend.
       SPRING_MAIL_HOST: ${SMTP_HOST:-}
