@@ -71,6 +71,14 @@ describe('ShellComponent', () => {
     expect(element.querySelector('.avatar')?.textContent?.trim()).toBe('AP');
   });
 
+  it('el diálogo de Novedades no queda dentro del encabezado (decisión 361)', () => {
+    const fixture = TestBed.createComponent(ShellComponent);
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.querySelector('app-whats-new-dialog')).not.toBeNull();
+    expect(element.querySelector('header app-whats-new-dialog')).toBeNull();
+  });
+
   it('"Cerrar sesión en los otros equipos" pide confirmar y avisa cuántas cerró (decisión 343)', () => {
     const fixture = TestBed.createComponent(ShellComponent);
     fixture.detectChanges();

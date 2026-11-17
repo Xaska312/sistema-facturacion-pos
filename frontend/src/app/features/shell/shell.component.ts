@@ -136,7 +136,6 @@ interface ThemeOption extends PrimeMenuItem {
           <i class="pi pi-chevron-down text-xs text-muted" aria-hidden="true"></i>
         </button>
         <app-menu #userMenu [model]="userItems()" [popup]="true" appendTo="body" />
-        <app-whats-new-dialog />
       </header>
 
       @if (banner(); as b) {
@@ -175,6 +174,9 @@ interface ThemeOption extends PrimeMenuItem {
       <app-aska-welcome />
       <app-aska />
     }
+
+    <!-- Decisión 361: fuera del encabezado; su backdrop-blur volvía el diálogo relativo a la barra y lo recortaba. -->
+    <app-whats-new-dialog />
 
     <nav class="dock" aria-label="Módulos">
       @for (item of dock(); track item.route; let i = $index) {
