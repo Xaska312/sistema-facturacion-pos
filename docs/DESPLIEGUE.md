@@ -391,7 +391,9 @@ la persona pide a alguien, quiere cotizar o tiene un problema. Para empezar no h
 prueba que escribe hasta a 5 números tuyos.
 
 1. **App de Meta.** developers.facebook.com → Crear aplicación → nombre "XASKA", correo soporte@xaska.co → caso de uso
-   "Conecta con los clientes a través de WhatsApp" → porfolio "XASKA Soluciones Tecnológicas".
+   "Conecta con los clientes a través de WhatsApp" → el porfolio **"Xaska"**, el que tiene la página de Facebook y el
+   Instagram de XASKA (no "XASKA Soluciones Tecnológicas", que quedó vacío). Antes, revisa en Calidad de la cuenta que
+   "Xaska" no tenga restricciones.
 2. **Número de prueba.** En la app: WhatsApp → Configuración de la API. Agrega tu celular como destinatario y envía la
    plantilla `hello_world` para comprobar. Copia el **Identificador del número de teléfono** (`WHATSAPP_PHONE_NUMBER_ID`).
 3. **Clave secreta.** Configuración de la app → Básica → "Clave secreta de la app" (`WHATSAPP_APP_SECRET`).
