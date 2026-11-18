@@ -36,12 +36,15 @@ public class WhatsAppConsole {
         Conversation conversation = conversations.get(id);
         conversations.requireWindow(conversation);
         String body = text.strip();
-        String waId;
-        try {
-            waId = client.sendText(conversation.phone(), body);
-        } catch (WhatsAppClient.SendException ex) {
-            throw new BusinessRuleException(ex.getMessage());
+        String waId = null;
+        if (!conversation.web()) {
+            try {
+                waId = client.sendText(conversation.phone(), body);
+            } catch (WhatsAppClient.SendException ex) {
+                throw new BusinessRuleException(ex.getMessage());
+            }
         }
+        // En el chat de xaska.co no hay a dónde enviarlo: queda guardado y el chat lo muestra al consultar.
         conversations.outbound(id, "HUMAN", body, waId);
         if (conversation.status() != Status.HUMAN) {
             conversations.setStatus(id, Status.HUMAN);

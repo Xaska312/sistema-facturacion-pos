@@ -226,6 +226,69 @@ class WhatsAppAgentIT extends IntegrationTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void askaAnswersTheChatOfXaskaCoAndAPersonCanReplyFromTheConsole() throws Exception {
+        String session = UUID.randomUUID().toString();
+        doReturn(Map.of("stop_reason", "end_turn", "usage", usage(), "content", List.of(
+                Map.of("type", "text", "text", "¡Hola! Soy Aska. ¿Qué tipo de negocio tienes?"))))
+                .when(ai).send(any());
+
+        // Desde xaska.co (CORS solo para esa página, sin cookies).
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options("/api/v1/public/aska/chat")
+                        .header("Origin", "https://xaska.co").header("Access-Control-Request-Method", "POST")
+                        .header("Access-Control-Request-Headers", "content-type"))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+                        .string("Access-Control-Allow-Origin", "https://xaska.co"));
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options("/api/v1/public/aska/chat")
+                        .header("Origin", "https://otra.com").header("Access-Control-Request-Method", "POST"))
+                .andExpect(status().isForbidden());
+
+        mvc.perform(post("/api/v1/public/aska/chat").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"session\":\"" + session + "\",\"text\":\"Hola, tengo un bar\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("BOT"))
+                .andExpect(jsonPath("$.messages.length()").value(1))
+                .andExpect(jsonPath("$.messages[0].author").value("BOT"))
+                .andExpect(jsonPath("$.messages[0].body").value("¡Hola! Soy Aska. ¿Qué tipo de negocio tienes?"));
+        ArgumentCaptor<Map<String, Object>> request = ArgumentCaptor.forClass(Map.class);
+        verify(ai).send(request.capture());
+        assertThat(String.valueOf(request.getValue().get("system"))).contains("Eres Aska").contains("chat de la página xaska.co");
+        verify(whatsapp, never()).sendText(anyString(), anyString());
+
+        // Al volver a la página ve toda la conversación.
+        mvc.perform(get("/api/v1/public/aska/chat/" + session)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.messages.length()").value(2))
+                .andExpect(jsonPath("$.messages[0].author").value("CUSTOMER"));
+
+        // En la consola sale como chat web; una persona responde y el chat lo recibe sin pasar por WhatsApp.
+        UUID id = UUID.fromString(jdbc.queryForObject(
+                "SELECT CAST(id AS text) FROM platform.wa_conversations WHERE web_session = CAST(? AS uuid)", String.class, session));
+        Session admin = platformAdmin();
+        api.getWith(admin, "/api/v1/platform/whatsapp/conversations/" + id).andExpect(status().isOk())
+                .andExpect(jsonPath("$.conversation.channel").value("WEB"))
+                .andExpect(jsonPath("$.windowOpen").value(true));
+        String after = java.time.Instant.now().toString();
+        api.postWith(admin, "/api/v1/platform/whatsapp/conversations/" + id + "/reply", "{\"text\":\"Hola, soy Daniel.\"}")
+                .andExpect(status().isOk());
+        verify(whatsapp, never()).sendText(anyString(), anyString());
+        mvc.perform(get("/api/v1/public/aska/chat/" + session).param("after", after))
+                .andExpect(jsonPath("$.status").value("HUMAN"))
+                .andExpect(jsonPath("$.messages.length()").value(1))
+                .andExpect(jsonPath("$.messages[0].author").value("HUMAN"));
+
+        // Con una persona, Aska ya no responde: el mensaje queda para ella.
+        clearInvocations(ai);
+        mvc.perform(post("/api/v1/public/aska/chat").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"session\":\"" + session + "\",\"text\":\"Gracias\"}"))
+                .andExpect(jsonPath("$.status").value("HUMAN")).andExpect(jsonPath("$.messages.length()").value(0));
+        verify(ai, never()).send(any());
+        mvc.perform(post("/api/v1/public/aska/chat").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"session\":\"" + session + "\",\"text\":\"  \"}"))
+                .andExpect(status().is(422));
+    }
+
+    @Test
     void onlyPlatformAdminsSeeTheConversations() throws Exception {
         Session owner = api.newTenant("wa-ajeno").tenant();
         api.getWith(owner, "/api/v1/platform/whatsapp/conversations").andExpect(status().isForbidden());

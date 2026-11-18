@@ -1,3 +1,4 @@
+import { supportWhatsAppLink } from '../../shared/support';
 import { Component, DestroyRef, ElementRef, HostListener, computed, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRouteSnapshot, NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
@@ -414,6 +415,8 @@ export class ShellComponent {
           ? [{ label: 'Consola de plataforma', icon: 'pi pi-server', command: () => void this.router.navigate(['/plataforma']) }]
           : []),
         { label: 'Novedades', icon: 'pi pi-megaphone', command: () => this.whatsNew.show() },
+        // Decisión 364: el WhatsApp de XASKA (responde Aska y pasa con una persona).
+        { label: 'Ayuda por WhatsApp', icon: 'pi pi-whatsapp', url: supportWhatsAppLink(), target: '_blank' },
         { separator: true },
         { label: 'Cerrar sesión en los otros equipos', icon: 'pi pi-desktop', command: () => this.askRevokeOthers() },
         { label: 'Salir', icon: 'pi pi-sign-out', command: () => this.logout() },

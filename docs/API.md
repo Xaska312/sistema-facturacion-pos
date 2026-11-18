@@ -228,7 +228,9 @@ Los `POST` responden 201 con el documento y aceptan el encabezado `Idempotency-K
 Operar: `cash:operate`. Historial: `cash:read` (sin él, cada usuario ve solo sus sesiones). Esperado, diferencia y desglose del efectivo: `cash:audit` (cierre ciego).
 | Método | Ruta | Descripción |
 |---|---|---|
-| GET | `/payment-methods` | Medios de pago activos `{id, code: CASH\|CARD\|TRANSFER, name, affectsCash, requiresReference}` (`sales:create`, `sales:read`, `cash:read` o `cash:operate`) |
+| GET | `/payment-methods` | Medios de pago activos `{id, code: CASH\|CARD\|TRANSFER\|ADDI\|SISTECREDITO…, name, affectsCash, requiresReference}` (`sales:create`, `sales:read`, `cash:read` o `cash:operate`) |
+| GET | `/payment-methods/optional` | Addi y Sistecrédito con `{id, code, name, active}` (decisión 366, `settings:read`) |
+| PUT | `/payment-methods/optional/{id}` | `{active}` los prende o apaga (`settings:manage`); 422 con cualquier otro medio |
 | GET | `/cash/registers` | Cajas activas de las sucursales del usuario (todas con `branches:manage`) con `busy`/`busyBy`, `shared` y `openSessionId` (sesión abierta de una caja compartida). `cash:operate` o `sales:create` |
 | GET | `/cash/sessions/current` | Sesión donde vende el usuario: la que abrió o la compartida a la que se unió (`mine` false, `shared` true); **204** si no tiene (`cash:operate` o `sales:create`) |
 | POST | `/cash/sessions/{id}/join` | Vender en una caja compartida abierta (decisión 256). 422 si la caja es personal; 409 si el usuario tiene su propia caja abierta o la sesión ya se cerró; 403 sucursal no asignada. Deja la compartida anterior |
@@ -301,8 +303,10 @@ configuración responde 404. La consola es solo para administradores de platafor
 |---|---|---|
 | GET | `/public/whatsapp/webhook?hub.mode=subscribe&hub.verify_token=&hub.challenge=` | El reto si el token coincide; 403 si no |
 | POST | `/public/whatsapp/webhook` | 200 a todo aviso firmado (los mensajes se procesan en segundo plano; el mismo `wamid` no se procesa dos veces); 401 sin firma válida |
+| POST | `/public/aska/chat` | Chat de Aska en xaska.co (decisión 364), público con CORS solo para `ASKA_WEB_ORIGINS`. `{session: uuid, text}` → `{status: BOT\|HUMAN\|CLOSED, messages}` con la respuesta de Aska (vacío si la atiende una persona); 422 sin texto, 429 pasado el tope por IP |
+| GET | `/public/aska/chat/{session}?after=` | Toda la conversación o, con `after` (ISO), solo lo nuevo de XASKA (Aska o una persona) |
 | GET | `/platform/whatsapp/state` | `{receives, sends, ai}`: qué está configurado |
-| GET | `/platform/whatsapp/conversations?status=BOT\|HUMAN\|CLOSED` | Las 200 más recientes `{id, phone, profileName, status, lastInboundAt, leadName, leadBusiness, leadCity, leadNeed, handoffReason, handoffAt, createdAt, updatedAt, lastMessage}` |
+| GET | `/platform/whatsapp/conversations?status=BOT\|HUMAN\|CLOSED` | Las 200 más recientes `{id, channel: WHATSAPP\|WEB, phone (nulo en la web), profileName, status, lastInboundAt, leadName, leadBusiness, leadCity, leadNeed, leadPhone, handoffReason, handoffAt, createdAt, updatedAt, lastMessage}` |
 | GET | `/platform/whatsapp/conversations/{id}` | `{conversation, windowOpen, messages: [{id, author: CUSTOMER\|BOT\|HUMAN, body, createdAt}]}` |
 | POST | `/platform/whatsapp/conversations/{id}/reply` | `{text (≤2000)}`: responde alguien de XASKA (la conversación queda `HUMAN`). 422 si pasaron más de 24 horas desde el último mensaje de la persona o WhatsApp lo rechaza |
 | POST | `/platform/whatsapp/conversations/{id}/take` \| `/bot` \| `/close` | La toma una persona, vuelve al asistente o se cierra. Devuelve el detalle |

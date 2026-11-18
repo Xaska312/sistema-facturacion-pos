@@ -11,6 +11,15 @@ export interface Release {
 
 export const RELEASES: readonly Release[] = [
   {
+    id: '2026-11-18',
+    title: 'Addi, Sistecrédito y ayuda por WhatsApp',
+    items: [
+      '¿Eres aliado de Addi o Sistecrédito? Préndelos en Ajustes → "Otros medios de pago" y cobra con ellos en Vender, con su referencia.',
+      'En el cierre de caja y en los reportes salen aparte, para que cuadres lo que te consignan.',
+      '¿Dudas? En el menú de tu usuario está "Ayuda por WhatsApp": te responde Aska al instante y, si hace falta, una persona de XASKA.',
+    ],
+  },
+  {
     id: '2026-11-17',
     title: 'Aska, más útil y con cara nueva',
     items: [

@@ -17,7 +17,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-/** Conversaciones y mensajes del agente de WhatsApp ({@code platform.wa_*}, decisión 362). */
+/**
+ * Conversaciones y mensajes de Aska con quien escribe a XASKA ({@code platform.wa_*}): por WhatsApp (decisión 362) o
+ * por el chat de xaska.co (canal WEB, decisión 364).
+ */
 @Service
 public class WhatsAppConversations {
 
@@ -26,14 +29,21 @@ public class WhatsAppConversations {
 
     public enum Status { BOT, HUMAN, CLOSED }
 
-    public record Conversation(UUID id, String phone, String profileName, Status status, Instant lastInboundAt,
-                               String leadName, String leadBusiness, String leadCity, String leadNeed,
+    public static final String WHATSAPP = "WHATSAPP";
+    public static final String WEB = "WEB";
+
+    public record Conversation(UUID id, String channel, String phone, String profileName, Status status, Instant lastInboundAt,
+                               String leadName, String leadBusiness, String leadCity, String leadNeed, String leadPhone,
                                String handoffReason, Instant handoffAt, Instant createdAt, Instant updatedAt,
                                String lastMessage) {
 
-        /** Todavía se le puede escribir con texto libre. */
+        /** Todavía se le puede escribir con texto libre (en la web, siempre: lee las respuestas al volver). */
         public boolean windowOpen() {
-            return lastInboundAt != null && lastInboundAt.isAfter(Instant.now().minus(SERVICE_WINDOW));
+            return web() || lastInboundAt != null && lastInboundAt.isAfter(Instant.now().minus(SERVICE_WINDOW));
+        }
+
+        public boolean web() {
+            return WEB.equals(channel);
         }
     }
 
@@ -44,20 +54,20 @@ public class WhatsAppConversations {
     }
 
     /** Lo que se sabe de la persona (lo llena el agente). Nulo = no cambia. */
-    public record Lead(String name, String business, String city, String need) {
+    public record Lead(String name, String business, String city, String need, String phone) {
     }
 
     private static final String COLUMNS = """
-            c.id, c.phone, c.profile_name, c.status, c.last_inbound_at, c.lead_name, c.lead_business, c.lead_city,
-            c.lead_need, c.handoff_reason, c.handoff_at, c.created_at, c.updated_at,
+            c.id, c.channel, c.phone, c.profile_name, c.status, c.last_inbound_at, c.lead_name, c.lead_business, c.lead_city,
+            c.lead_need, c.lead_phone, c.handoff_reason, c.handoff_at, c.created_at, c.updated_at,
             (SELECT m.body FROM platform.wa_messages m WHERE m.conversation_id = c.id
               ORDER BY m.created_at DESC LIMIT 1) AS last_message""";
 
     private static final RowMapper<Conversation> CONVERSATION = (rs, i) -> new Conversation(
-            rs.getObject("id", UUID.class), rs.getString("phone"), rs.getString("profile_name"),
+            rs.getObject("id", UUID.class), rs.getString("channel"), rs.getString("phone"), rs.getString("profile_name"),
             Status.valueOf(rs.getString("status")), instant(rs.getTimestamp("last_inbound_at")),
             rs.getString("lead_name"), rs.getString("lead_business"), rs.getString("lead_city"),
-            rs.getString("lead_need"), rs.getString("handoff_reason"), instant(rs.getTimestamp("handoff_at")),
+            rs.getString("lead_need"), rs.getString("lead_phone"), rs.getString("handoff_reason"), instant(rs.getTimestamp("handoff_at")),
             instant(rs.getTimestamp("created_at")), instant(rs.getTimestamp("updated_at")),
             rs.getString("last_message"));
 
@@ -101,6 +111,46 @@ public class WhatsAppConversations {
             return Optional.empty();
         }
         return Optional.of(conversation);
+    }
+
+    /**
+     * Guarda un mensaje del chat de xaska.co y devuelve su conversación (la crea con la primera palabra). Una
+     * conversación cerrada vuelve a quedar con Aska.
+     */
+    @Transactional
+    public Conversation webInbound(UUID session, String body) {
+        Timestamp now = Timestamp.from(Instant.now());
+        jdbc.update("""
+                INSERT INTO platform.wa_conversations (id, channel, web_session, status, last_inbound_at, updated_at)
+                VALUES (?, 'WEB', ?, 'BOT', ?, ?)
+                ON CONFLICT (web_session) DO UPDATE SET
+                    status = CASE WHEN platform.wa_conversations.status = 'CLOSED' THEN 'BOT'
+                                  ELSE platform.wa_conversations.status END,
+                    last_inbound_at = EXCLUDED.last_inbound_at, updated_at = EXCLUDED.updated_at""",
+                Ids.newId(), session, now, now);
+        Conversation conversation = jdbc.query("SELECT " + COLUMNS + " FROM platform.wa_conversations c WHERE c.web_session = ?",
+                CONVERSATION, session).getFirst();
+        jdbc.update("""
+                INSERT INTO platform.wa_messages (id, conversation_id, author, body, created_at)
+                VALUES (?, ?, 'CUSTOMER', ?, ?)""", Ids.newId(), conversation.id(), body, now);
+        return conversation;
+    }
+
+    /** La conversación de una sesión del chat de xaska.co, si ya escribió. */
+    @Transactional(readOnly = true)
+    public Optional<Conversation> byWebSession(UUID session) {
+        return jdbc.query("SELECT " + COLUMNS + " FROM platform.wa_conversations c WHERE c.web_session = ?",
+                CONVERSATION, session).stream().findFirst();
+    }
+
+    /** Respuestas de Aska en todo el chat de xaska.co desde un momento, para el tope diario de la web. */
+    @Transactional(readOnly = true)
+    public int webBotRepliesSince(Instant since) {
+        Integer count = jdbc.queryForObject("""
+                SELECT count(*) FROM platform.wa_messages m JOIN platform.wa_conversations c ON c.id = m.conversation_id
+                 WHERE c.channel = 'WEB' AND m.author = 'BOT' AND m.created_at >= ?""",
+                Integer.class, Timestamp.from(since));
+        return count == null ? 0 : count;
     }
 
     /** Guarda lo que se le envió a la persona (del agente o de alguien de XASKA). */
@@ -147,10 +197,11 @@ public class WhatsAppConversations {
         jdbc.update("""
                 UPDATE platform.wa_conversations SET
                     lead_name = coalesce(?, lead_name), lead_business = coalesce(?, lead_business),
-                    lead_city = coalesce(?, lead_city), lead_need = coalesce(?, lead_need), updated_at = now()
+                    lead_city = coalesce(?, lead_city), lead_need = coalesce(?, lead_need),
+                    lead_phone = coalesce(?, lead_phone), updated_at = now()
                  WHERE id = ?""",
                 blankToNull(lead.name(), 120), blankToNull(lead.business(), 160), blankToNull(lead.city(), 80),
-                blankToNull(lead.need(), 500), conversationId);
+                blankToNull(lead.need(), 500), phone(lead.phone()), conversationId);
     }
 
     /** Pasa la conversación a una persona: el agente deja de responder en ella. */
@@ -212,6 +263,18 @@ public class WhatsAppConversations {
 
     private static Instant instant(Timestamp t) {
         return t == null ? null : t.toInstant();
+    }
+
+    /** Un teléfono que dejó la persona: solo dígitos (con el 57 de Colombia si escribió 10); nulo si no parece uno. */
+    static String phone(String value) {
+        if (value == null) {
+            return null;
+        }
+        String digits = value.replaceAll("\\D", "");
+        if (digits.length() == 10 && digits.startsWith("3")) {
+            digits = "57" + digits;
+        }
+        return digits.length() >= 7 && digits.length() <= 15 ? digits : null;
     }
 
     static String blankToNull(String value, int max) {

@@ -29,6 +29,7 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
+import com.poshibrido.whatsapp.application.AskaWebProperties;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -89,6 +90,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/public/pricing").permitAll()
                         // Webhook del agente de WhatsApp (decisión 362): lo protege la firma de Meta, no un token.
                         .requestMatchers("/api/v1/public/whatsapp/webhook").permitAll()
+                        // Chat de Aska en xaska.co (decisión 364): público, con topes por IP y por día.
+                        .requestMatchers("/api/v1/public/aska/chat", "/api/v1/public/aska/chat/*").permitAll()
                         .requestMatchers("/api/v1/auth/**", "/api/v1/tenants", "/api/v1/tenants/**",
                                 "/api/v1/invitations/**", "/api/v1/locations/**").authenticated()
                         .requestMatchers("/api/v1/platform/**").hasAuthority(PLATFORM_ADMIN)
@@ -137,7 +140,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public CorsConfigurationSource corsConfigurationSource(CorsProperties properties) {
+    public CorsConfigurationSource corsConfigurationSource(CorsProperties properties, AskaWebProperties askaWeb) {
         List<String> origins = properties.allowedOrigins() == null ? List.of() : properties.allowedOrigins();
         if (origins.stream().anyMatch(o -> o.contains("*"))) {
             throw new IllegalStateException("CORS_ALLOWED_ORIGINS no admite comodines");
@@ -150,6 +153,18 @@ public class SecurityConfig {
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        // El chat de Aska lo usa xaska.co, sin cookies ni token (decisión 364). Va antes: gana la primera que coincide.
+        if (askaWeb.origins().stream().anyMatch(o -> o.contains("*"))) {
+            throw new IllegalStateException("ASKA_WEB_ORIGINS no admite comodines");
+        }
+        CorsConfiguration chat = new CorsConfiguration();
+        chat.setAllowedOrigins(askaWeb.origins());
+        chat.setAllowedMethods(List.of("GET", "POST", "OPTIONS"));
+        chat.setAllowedHeaders(List.of("Content-Type"));
+        chat.setExposedHeaders(List.of("Retry-After"));
+        chat.setAllowCredentials(false);
+        chat.setMaxAge(3600L);
+        source.registerCorsConfiguration("/api/v1/public/aska/**", chat);
         source.registerCorsConfiguration("/api/**", config);
         return source;
     }

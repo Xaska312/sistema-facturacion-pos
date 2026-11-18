@@ -1,3 +1,4 @@
+import { supportWhatsAppLink } from '../support';
 import { Component, input, output } from '@angular/core';
 import { TourId } from '../tour/tour';
 import { GLOSSARY } from './glossary';
@@ -39,6 +40,11 @@ import { HelpTopic } from './screen-help';
           <i class="pi pi-book text-xs mr-1" aria-hidden="true"></i>Leer más en el manual de uso
         </a>
       }
+
+      <!-- Decisión 364: si con esto no basta, el WhatsApp de XASKA. -->
+      <a [href]="whatsapp" target="_blank" rel="noopener" class="text-sm text-brand hover:underline">
+        <i class="pi pi-whatsapp text-xs mr-1" aria-hidden="true"></i>¿Sigues con dudas? Escríbenos por WhatsApp
+      </a>
 
       @if (showTour()) {
         @if (topic().tour; as tour) {
@@ -82,6 +88,7 @@ import { HelpTopic } from './screen-help';
 })
 export class HelpPanelComponent {
   readonly topic = input.required<HelpTopic>();
+  protected readonly whatsapp = supportWhatsAppLink();
   /** Si el usuario puede ver el recorrido de esta pantalla (ver HelpTopic.tourPermission). */
   readonly showTour = input(true);
   readonly startTour = output<TourId>();

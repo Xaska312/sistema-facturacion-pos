@@ -52,6 +52,8 @@ export function isActivationCodeRequired(error: unknown): boolean {
       border: 1.5px solid var(--color-line); cursor: pointer; }
     .start input { margin-top: 0.25rem; }
     .start-on { border-color: var(--aska); background: var(--aska-soft); }
+    .free-tag { padding: 0.0625rem 0.5rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700;
+      background: var(--success-soft); color: var(--success-soft-fg); }
   `,
   template: `
     <app-auth-layout width="lg">
@@ -89,8 +91,13 @@ export function isActivationCodeRequired(error: unknown): boolean {
               @if (trialAvailable()) {
                 <label class="start" [class.start-on]="mode() === 'trial'">
                   <input type="radio" name="start" [checked]="mode() === 'trial'" (change)="setMode('trial')" />
-                  <span><span class="block font-semibold">Probar gratis {{ trialDays() }} días</span>
-                    <span class="block text-xs text-muted">Con todo incluido. Pagas después solo si te sirve.</span></span>
+                  <span><span class="flex flex-wrap items-center gap-2 font-semibold">Probar gratis {{ trialDays() }} días
+                      <span class="free-tag">Hoy pagas $0</span></span>
+                    <span class="block text-xs text-muted">Con todo incluido, sin tarjeta. Al terminar decides si pagas; si no, no se cobra nada.</span>
+                    @if (chosenPlanName(); as plan) {
+                      <!-- Decisión 365: quien eligió un plan en "Planes y precios" también empieza gratis. -->
+                      <span class="block text-xs text-success mt-1">Elegiste el plan {{ plan }}: lo pruebas gratis y lo pagas solo si te sirve.</span>
+                    }</span>
                 </label>
               }
               <label class="start" [class.start-on]="mode() === 'pay'">
@@ -183,6 +190,12 @@ export class CreateTenantComponent {
   readonly mode = signal<'trial' | 'pay' | 'code'>('trial');
   readonly plans = signal<BillingPlan[]>([]);
   readonly payPlan = signal('');
+  /** El plan que eligió en "Planes y precios", para decirle que también empieza gratis. */
+  protected readonly chosenPlanName = computed(() => {
+    const wanted = this.startPlan?.plan;
+    return this.trialAvailable() && this.mode() === 'trial' && wanted
+      ? this.plans().find((p) => p.code === wanted)?.name ?? null : null;
+  });
   private readonly startPlan = startPlanFrom(inject(ActivatedRoute).snapshot.queryParamMap);
   protected readonly modeLabel = computed(() => this.mode() === 'trial' ? `Prueba gratis de ${this.trialDays()} días`
     : this.mode() === 'pay' ? `Pagar ya: ${this.plans().find((p) => p.code === this.payPlan())?.name ?? ''}` : 'Con código de activación');
@@ -223,10 +236,8 @@ export class CreateTenantComponent {
         this.plans.set(p.plans);
         const wanted = this.startPlan?.plan;
         this.payPlan.set(p.plans.some((x) => x.code === wanted) ? wanted! : (p.plans[1] ?? p.plans[0])?.code ?? '');
-        if (wanted && p.plans.some((x) => x.code === wanted)) {
-          // Eligió un plan en "Planes y precios": se propone pagarlo (puede volver a la prueba).
-          this.setMode('pay');
-        }
+        // Decisión 365: aunque haya elegido un plan en "Planes y precios", empieza con la prueba gratis (la gente creía
+        // que tenía que pagar para crear el negocio). El plan queda elegido para cuando quiera pagar.
       },
       error: () => undefined,
     });
