@@ -122,6 +122,16 @@ public class WhatsAppConversations {
                  ORDER BY created_at""", MESSAGE, conversationId, limit);
     }
 
+    /** El id de WhatsApp del último mensaje de la persona: si ya no es el que se iba a responder, llegó otro. */
+    @Transactional(readOnly = true)
+    public String latestInbound(UUID conversationId) {
+        List<String> ids = jdbc.queryForList("""
+                SELECT wa_message_id FROM platform.wa_messages
+                 WHERE conversation_id = ? AND author = 'CUSTOMER' ORDER BY created_at DESC LIMIT 1""",
+                String.class, conversationId);
+        return ids.isEmpty() ? null : ids.getFirst();
+    }
+
     /** Respuestas del agente desde un momento, para el tope por conversación. */
     @Transactional(readOnly = true)
     public int botRepliesSince(UUID conversationId, Instant since) {

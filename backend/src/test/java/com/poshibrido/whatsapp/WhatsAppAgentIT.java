@@ -3,9 +3,12 @@ package com.poshibrido.whatsapp;
 import com.poshibrido.ai.application.AnthropicMessages;
 import com.poshibrido.support.IntegrationTest;
 import com.poshibrido.support.TestApi.Session;
+import com.poshibrido.whatsapp.application.WhatsAppConversations;
+import com.poshibrido.whatsapp.application.WhatsAppInbound;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.ResultActions;
@@ -24,6 +27,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
@@ -47,6 +51,10 @@ class WhatsAppAgentIT extends IntegrationTest {
 
     @MockitoBean
     private AnthropicMessages ai;
+    @Autowired
+    private WhatsAppConversations conversations;
+    @Autowired
+    private WhatsAppInbound inbound;
 
 
     @BeforeEach
@@ -178,9 +186,43 @@ class WhatsAppAgentIT extends IntegrationTest {
         when(ai.available()).thenReturn(false);
         String phone = "57311" + (System.nanoTime() % 10_000_000);
         signed(message(phone, "wamid.sinia-" + phone, "Hola")).andExpect(status().isOk());
-        verify(whatsapp).sendText(eq(phone), org.mockito.ArgumentMatchers.contains("una persona del equipo"));
+        verify(whatsapp).sendText(eq(phone), org.mockito.ArgumentMatchers.contains("alguien del equipo"));
         assertThat(jdbc.queryForObject("SELECT status FROM platform.wa_conversations WHERE phone = ?", String.class, phone))
                 .isEqualTo("HUMAN");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void inABurstOfMessagesItAnswersOnlyTheLastOneWithAllOfThem() throws Exception {
+        String phone = "57312" + (System.nanoTime() % 10_000_000);
+        UUID id = conversations.inbound(phone, "Felipe", "wamid.r1-" + phone, "Un producto").orElseThrow().id();
+        conversations.inbound(phone, "Felipe", "wamid.r2-" + phone, "Y precios").orElseThrow();
+        doReturn(Map.of("stop_reason", "end_turn", "usage", usage(), "content", List.of(
+                Map.of("type", "text", "text", "¿Te refieres al precio de venta de un producto?"))))
+                .when(ai).send(any());
+
+        // El primero ya no es el último: no se responde por separado.
+        inbound.respond(id, "wamid.r1-" + phone, true);
+        verify(ai, never()).send(any());
+        verify(whatsapp, never()).sendText(anyString(), anyString());
+
+        // El último responde por los dos, con ambos en el historial.
+        inbound.respond(id, "wamid.r2-" + phone, true);
+        ArgumentCaptor<Map<String, Object>> request = ArgumentCaptor.forClass(Map.class);
+        verify(ai).send(request.capture());
+        assertThat(String.valueOf(request.getValue().get("messages"))).contains("Un producto\nY precios");
+        verify(whatsapp, times(1)).sendText(eq(phone), anyString());
+
+        // Si escribe otra vez mientras se piensa la respuesta, esa respuesta no se manda (la da el mensaje nuevo).
+        clearInvocations(ai, whatsapp);
+        conversations.inbound(phone, "Felipe", "wamid.r3-" + phone, "Mayorista");
+        doAnswer(i -> {
+            conversations.inbound(phone, "Felipe", "wamid.r4-" + phone, "¿Se puede?");
+            return Map.of("stop_reason", "end_turn", "usage", usage(), "content", List.of(
+                    Map.of("type", "text", "text", "Vieja")));
+        }).when(ai).send(any());
+        inbound.respond(id, "wamid.r3-" + phone, true);
+        verify(whatsapp, never()).sendText(anyString(), anyString());
     }
 
     @Test
