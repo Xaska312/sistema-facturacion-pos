@@ -10,12 +10,19 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Lo que llega de Meta al webhook (decisión 362): guarda cada mensaje y, si la conversación está con el agente, le
  * responde. Se procesa en segundo plano para contestarle a Meta de una vez (si tarda, Meta reenvía el aviso).
+ * <p>
+ * La gente escribe en ráfagas ("Un producto" / "Y precios" / "Mayorista"): el agente espera unos segundos y responde
+ * solo al último mensaje, con todos los anteriores en el historial, y nunca responde dos veces a la vez en la misma
+ * conversación (decisión 363).
  */
 @Slf4j
 @Service
@@ -24,17 +31,21 @@ public class WhatsAppInbound {
     /** Tope de respuestas del agente por conversación en un día; al pasarlo, la atiende una persona. */
     static final int DAILY_BOT_REPLIES = 40;
     static final int MAX_INBOUND = 2000;
-    static final String ONLY_TEXT = "Por ahora solo puedo leer mensajes de texto. ¿Me lo cuentas por escrito?";
+    static final String ONLY_TEXT = "Por ahora solo leo mensajes de texto 🙈 ¿Me lo cuentas por escrito?";
+    /** Cuánto se espera a que la persona termine de escribir antes de responder (solo en segundo plano). */
+    static final Duration DEBOUNCE = Duration.ofSeconds(6);
 
     private final WhatsAppConversations conversations;
     private final WhatsAppAgent agent;
     private final WhatsAppClient client;
     private final WhatsAppProperties properties;
-    private final ExecutorService executor = Executors.newFixedThreadPool(2, runnable -> {
+    private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2, runnable -> {
         Thread thread = new Thread(runnable, "whatsapp-agent");
         thread.setDaemon(true);
         return thread;
     });
+    /** Un candado por conversación: una sola respuesta a la vez. */
+    private final Map<UUID, Object> locks = new ConcurrentHashMap<>();
 
     public WhatsAppInbound(WhatsAppConversations conversations, WhatsAppAgent agent, WhatsAppClient client,
                            WhatsAppProperties properties) {
@@ -67,28 +78,54 @@ public class WhatsAppInbound {
             boolean text = "text".equals(in.type()) && in.text() != null && !in.text().isBlank();
             String body = text ? clip(in.text()) : "[" + in.type() + "]";
             Optional<Conversation> stored = conversations.inbound(in.from(), in.profileName(), in.waMessageId(), body);
-            if (stored.isEmpty()) {
+            if (stored.isEmpty() || stored.get().status() != Status.BOT) {
                 return;
             }
-            Conversation conversation = stored.get();
-            if (conversation.status() != Status.BOT) {
-                return;
-            }
-            if (conversations.botRepliesSince(conversation.id(), Instant.now().minus(Duration.ofDays(1)))
-                    >= DAILY_BOT_REPLIES) {
-                agent.handoff(conversation, "La conversación pasó el tope de respuestas del asistente en un día.", null);
-                return;
-            }
-            String reply;
-            if (text) {
-                reply = agent.reply(conversation).text();
+            UUID id = stored.get().id();
+            if (properties.background()) {
+                executor.schedule(() -> respond(id, in.waMessageId(), text), DEBOUNCE.toMillis(), TimeUnit.MILLISECONDS);
             } else {
-                reply = ONLY_TEXT;
+                respond(id, in.waMessageId(), text);
             }
-            send(conversation, reply);
         } catch (RuntimeException ex) {
             log.error("No se pudo procesar un mensaje de WhatsApp", ex);
         }
+    }
+
+    /** Responde si el mensaje sigue siendo el último de la persona y la conversación sigue con el agente. */
+    public void respond(UUID conversationId, String waMessageId, boolean text) {
+        try {
+            synchronized (locks.computeIfAbsent(conversationId, k -> new Object())) {
+                if (!still(conversationId, waMessageId)) {
+                    return;
+                }
+                Conversation conversation = conversations.get(conversationId);
+                if (conversation.status() != Status.BOT) {
+                    return;
+                }
+                if (conversations.botRepliesSince(conversationId, Instant.now().minus(Duration.ofDays(1)))
+                        >= DAILY_BOT_REPLIES) {
+                    agent.handoff(conversation, "La conversación pasó el tope de respuestas del asistente en un día.", null);
+                    return;
+                }
+                if (!text) {
+                    send(conversation, ONLY_TEXT);
+                    return;
+                }
+                WhatsAppAgent.Reply reply = agent.reply(conversation);
+                // Si escribió otra vez mientras se pensaba la respuesta, la da el mensaje nuevo (con todo el contexto),
+                // salvo que esta ya pasó la conversación a una persona: eso sí hay que decírselo.
+                if (reply.handedOff() || still(conversationId, waMessageId)) {
+                    send(conversation, reply.text());
+                }
+            }
+        } catch (RuntimeException ex) {
+            log.error("No se pudo responder un mensaje de WhatsApp", ex);
+        }
+    }
+
+    private boolean still(UUID conversationId, String waMessageId) {
+        return waMessageId == null || waMessageId.equals(conversations.latestInbound(conversationId));
     }
 
     private void send(Conversation conversation, String text) {
