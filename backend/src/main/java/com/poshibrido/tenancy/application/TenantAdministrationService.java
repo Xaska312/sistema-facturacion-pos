@@ -51,7 +51,7 @@ public class TenantAdministrationService {
 
     /** Negocio en la consola de plataforma. */
     public record PlatformTenantView(UUID id, String slug, String legalName, String tradeName, String businessType,
-                                     String status, UUID ownerId, String ownerEmail, String ownerName,
+                                     String status, UUID ownerId, String ownerEmail, String ownerName, String ownerPhone,
                                      long activeMembers, Instant createdAt, Instant suspendedAt,
                                      String suspensionReason, boolean closedByOwner, Instant deletedAt,
                                      String deletionReason) {
@@ -118,7 +118,7 @@ public class TenantAdministrationService {
             pageArgs.add((long) safePage * safeSize);
             rows = jdbc.query("""
                     SELECT t.id, t.slug, t.legal_name, t.trade_name, t.business_type, t.status, t.owner_user_id,
-                           u.email AS owner_email, u.full_name AS owner_name,
+                           u.email AS owner_email, u.full_name AS owner_name, u.phone AS owner_phone,
                            (SELECT count(*) FROM platform.memberships m
                              WHERE m.tenant_id = t.id AND m.status = 'ACTIVE') AS active_members,
                            t.created_at, t.suspended_at, t.suspension_reason, t.closed_by_owner,
@@ -135,6 +135,7 @@ public class TenantAdministrationService {
                                 rs.getObject("owner_user_id", UUID.class),
                                 rs.getString("owner_email"),
                                 rs.getString("owner_name"),
+                                rs.getString("owner_phone"),
                                 rs.getLong("active_members"),
                                 instant(rs.getTimestamp("created_at")),
                                 instant(rs.getTimestamp("suspended_at")),

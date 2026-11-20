@@ -1,4 +1,4 @@
-import { waContact, waLead, waName, waPhone, waStateWarning } from './whatsapp-text';
+import { followUpPreview, waContact, waLead, waName, waPhone, waStateWarning } from './whatsapp-text';
 
 describe('Agente de WhatsApp (decisión 362)', () => {
   it('muestra el nombre que se conoce y el número legible', () => {
@@ -17,6 +17,12 @@ describe('Agente de WhatsApp (decisión 362)', () => {
     // Decisión 368: por WhatsApp con nombre de usuario puede no llegar el número.
     expect(waContact({ channel: 'WHATSAPP', phone: null, leadPhone: null })).toContain('sin número');
     expect(waName({ leadName: null, profileName: null, phone: null, channel: 'WHATSAPP' })).toBe('Usuario de WhatsApp');
+  });
+
+  it('muestra la plantilla de seguimiento como la verá el cliente (decisión 371)', () => {
+    const t = 'Hola {{1}}, ¿cómo te va con XASKA POS en {{2}}?';
+    expect(followUpPreview(t, 'Carlos Rojas', 'La Tribuna Bar')).toBe('Hola Carlos, ¿cómo te va con XASKA POS en La Tribuna Bar?');
+    expect(followUpPreview(t, null, null)).toBe('Hola qué tal, ¿cómo te va con XASKA POS en tu negocio?');
   });
 
   it('resume el negocio y avisa lo que falta configurar', () => {

@@ -307,6 +307,8 @@ configuración responde 404. La consola es solo para administradores de platafor
 | POST | `/public/whatsapp/webhook` | 200 a todo aviso firmado (los mensajes se procesan en segundo plano; el mismo `wamid` no se procesa dos veces); 401 sin firma válida |
 | POST | `/public/aska/chat` | Chat de Aska en xaska.co (decisión 364), público con CORS solo para `ASKA_WEB_ORIGINS`. `{session: uuid, text}` → `{status: BOT\|HUMAN\|CLOSED, messages}` con la respuesta de Aska (vacío si la atiende una persona); 422 sin texto, 429 pasado el tope por IP |
 | GET | `/public/aska/chat/{session}?after=` | Toda la conversación o, con `after` (ISO), solo lo nuevo de XASKA (Aska o una persona) |
+| POST | `/platform/whatsapp/follow-up` | `{phone, name?, business?}`: XASKA le escribe primero con la plantilla aprobada (decisión 371); la conversación queda `HUMAN` → `Detail`. 422 si el número no sirve o Meta rechaza la plantilla (con su mensaje) |
+| GET | `/platform/whatsapp/follow-up/template` | `{name, language, text}` de la plantilla, para mostrarla antes de enviar |
 | GET | `/platform/whatsapp/state` | `{receives, sends, ai}`: qué está configurado |
 | GET | `/platform/whatsapp/conversations?status=BOT\|HUMAN\|CLOSED` | Las 200 más recientes `{id, channel: WHATSAPP\|WEB, phone (nulo en la web o con nombre de usuario), waUserId, profileName, status, lastInboundAt, leadName, leadBusiness, leadCity, leadNeed, leadPhone, handoffReason, handoffAt, createdAt, updatedAt, lastMessage}` |
 | GET | `/platform/whatsapp/conversations/{id}` | `{conversation, windowOpen, messages: [{id, author: CUSTOMER\|BOT\|HUMAN, body, createdAt}]}` |

@@ -18,6 +18,9 @@ import { formatDate } from '../../shared/format';
 import { businessTypeInfo } from '../../shared/business-types';
 import { BusinessTypePickerComponent } from '../../shared/business-type-picker.component';
 import { XIconComponent } from '../../shared/icons/xicon.component';
+import { Router } from '@angular/router';
+import { WaDetail, WhatsAppApi } from '../../core/api/whatsapp.api';
+import { followUpPreview } from './whatsapp-text';
 
 /**
  * Negocios de toda la plataforma: buscar, cambiar el tipo (también Farmacia para pilotos, decisiones 267 y 273),
@@ -70,6 +73,11 @@ import { XIconComponent } from '../../shared/icons/xicon.component';
         }
       </ng-template>
       <ng-template #actions let-row>
+        @if (row.ownerPhone && row.status !== 'DELETED') {
+          <!-- Decisión 371: escribirle desde el número de XASKA con la plantilla aprobada. -->
+          <app-button label="WhatsApp" icon="pi pi-whatsapp" size="small" [text]="true"
+                    (clicked)="openWhatsApp(row)" [ariaLabel]="'Escribirle por WhatsApp a ' + row.ownerName" />
+        }
         @if (row.status !== 'DELETED') {
           <app-button label="Tipo" icon="pi pi-pencil" size="small" [text]="true"
                     (clicked)="openType(row)" [ariaLabel]="'Cambiar el tipo de ' + row.tradeName" />
@@ -88,6 +96,16 @@ import { XIconComponent } from '../../shared/icons/xicon.component';
         }
       </ng-template>
     </app-data-table>
+
+    <app-form-dialog [(visible)]="waOpen" [header]="'Escribirle a ' + (target()?.ownerName ?? '')" width="32rem"
+                     submitLabel="Enviar por WhatsApp" submitIcon="pi pi-whatsapp" [dirty]="false"
+                     [invalidMessage]="waTemplate() ? null : 'Cargando la plantilla…'" [save]="waRequest"
+                     [successMessage]="null" (saved)="waSent($event)"
+                     description="Sale del número de XASKA con la plantilla aprobada en Meta. Cuando responda, sigues la conversación en Plataforma → WhatsApp (Aska no contesta en ella).">
+      <p class="text-sm"><span class="text-muted">Para:</span> {{ target()?.ownerName }} · {{ target()?.ownerPhone }}</p>
+      <p class="wa-preview">{{ waPreview() }}</p>
+      <small class="text-muted">WhatsApp cobra cada plantilla que se envía. Si Meta todavía no la aprobó, te lo dice al enviar.</small>
+    </app-form-dialog>
 
     <app-form-dialog [(visible)]="suspendOpen" [header]="'Suspender ' + (target()?.tradeName ?? '')" width="30rem"
                      submitLabel="Suspender negocio" submitIcon="pi pi-ban" [destructive]="true"
@@ -136,6 +154,10 @@ import { XIconComponent } from '../../shared/icons/xicon.component';
       <small class="text-muted">Los datos siguen en los respaldos hasta que estos vencen.</small>
     </app-form-dialog>
   `,
+  styles: `
+    .wa-preview { margin: 0.75rem 0; padding: 0.75rem 0.875rem; border-radius: 1rem 1rem 1rem 0.25rem;
+      background: var(--success-soft); color: var(--success-soft-fg); font-size: 0.9375rem; white-space: pre-line; }
+  `,
 })
 export class PlatformTenantsComponent implements OnInit {
   /** Cancela la petición anterior de la lista (QA UI-10). */
@@ -144,6 +166,10 @@ export class PlatformTenantsComponent implements OnInit {
   private readonly confirm = inject(ConfirmService);
   private readonly messages = inject(ToastService);
 
+  private readonly whatsapp = inject(WhatsAppApi);
+  private readonly router = inject(Router);
+  protected readonly waTemplate = signal<string | null>(null);
+  protected waOpen = false;
   protected readonly page = signal<PageResponse<PlatformTenant> | null>(null);
   protected readonly loading = signal(true);
   protected readonly target = signal<PlatformTenant | null>(null);
@@ -163,6 +189,30 @@ export class PlatformTenantsComponent implements OnInit {
   protected readonly statusOptions = (Object.keys(TENANT_STATUS_LABEL) as TenantStatus[])
     .map((value) => ({ value, label: TENANT_STATUS_LABEL[value] }));
   protected readonly trackById = (row: PlatformTenant): string => row.id;
+
+  protected openWhatsApp(row: PlatformTenant): void {
+    this.target.set(row);
+    this.waOpen = true;
+    if (!this.waTemplate()) {
+      this.whatsapp.followUpTemplate().subscribe({ next: (t) => this.waTemplate.set(t.text), error: () => undefined });
+    }
+  }
+
+  protected waPreview(): string {
+    const t = this.target();
+    return this.waTemplate() ? followUpPreview(this.waTemplate()!, t?.ownerName ?? null, t?.tradeName ?? null) : '';
+  }
+
+  protected readonly waRequest = (): Observable<WaDetail> => {
+    const t = this.target();
+    return this.whatsapp.followUp(t?.ownerPhone ?? '', t?.ownerName ?? '', t?.tradeName ?? '');
+  };
+
+  protected waSent(detail: unknown): void {
+    this.messages.add({ severity: 'success', summary: 'Mensaje enviado por WhatsApp',
+      detail: 'Cuando responda, lo ves en Plataforma → WhatsApp.' });
+    void this.router.navigate(['/plataforma/whatsapp'], { queryParams: { c: (detail as WaDetail).conversation.id } });
+  }
   protected readonly columns: ColumnDef<PlatformTenant>[] = [
     { header: 'Negocio', cell: (t) => t.tradeName, template: 'business' },
     { header: 'Tipo', cell: (t) => businessTypeInfo(t.businessType).label, template: 'type', hideOnMobile: true },

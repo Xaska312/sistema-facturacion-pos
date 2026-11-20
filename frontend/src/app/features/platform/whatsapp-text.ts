@@ -43,6 +43,12 @@ export function waLead(c: Pick<WaConversation, 'leadBusiness' | 'leadCity' | 'le
   return [c.leadBusiness, c.leadCity, c.leadNeed].filter((x): x is string => !!x).join(' · ');
 }
 
+/** La plantilla de seguimiento con el primer nombre y el negocio, como la verá el cliente (decisión 371). */
+export function followUpPreview(template: string, ownerName: string | null, business: string | null): string {
+  const first = (ownerName ?? '').trim().split(/\s+/)[0] || 'qué tal';
+  return template.replace('{{1}}', first).replace('{{2}}', (business ?? '').trim() || 'tu negocio');
+}
+
 /** Aviso cuando falta configurar algo en el servidor; null si todo está listo. */
 export function waStateWarning(s: { receives: boolean; sends: boolean; ai: boolean }): string | null {
   if (!s.receives || !s.sends) {

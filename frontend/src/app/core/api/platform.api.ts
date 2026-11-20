@@ -17,6 +17,8 @@ export interface PlatformTenant {
   ownerId: string;
   ownerEmail: string;
   ownerName: string;
+  /** Celular que dio el dueño al registrarse (para escribirle por WhatsApp, decisión 371). */
+  ownerPhone: string | null;
   activeMembers: number;
   createdAt: string;
   suspendedAt: string | null;

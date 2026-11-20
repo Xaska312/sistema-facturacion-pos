@@ -198,6 +198,36 @@ public class WhatsAppConversations {
         return count == null ? 0 : count;
     }
 
+    /**
+     * La conversación con un número al que XASKA le escribe primero (decisión 371): la crea si no existe y la deja
+     * con una persona, para que Aska no responda cuando el cliente conteste.
+     */
+    @Transactional
+    public Conversation followUp(String phone, String name, String business) {
+        Timestamp now = Timestamp.from(Instant.now());
+        jdbc.update("""
+                INSERT INTO platform.wa_conversations (id, phone, profile_name, lead_name, lead_business, status,
+                                                       handoff_reason, handoff_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, 'HUMAN', 'XASKA le escribió primero', ?, ?)
+                ON CONFLICT (phone) DO UPDATE SET status = 'HUMAN',
+                    lead_name = coalesce(platform.wa_conversations.lead_name, EXCLUDED.lead_name),
+                    lead_business = coalesce(platform.wa_conversations.lead_business, EXCLUDED.lead_business),
+                    updated_at = EXCLUDED.updated_at""",
+                Ids.newId(), phone, blankToNull(name, 120), blankToNull(name, 120), blankToNull(business, 160), now, now);
+        return byPhone(phone);
+    }
+
+    /** Borra las conversaciones sin mensajes desde {@code before} (con sus mensajes); devuelve cuántas (decisión 372). */
+    @Transactional
+    public int purgeOlderThan(Instant before) {
+        return jdbc.update("""
+                DELETE FROM platform.wa_conversations c
+                 WHERE c.updated_at < ?
+                   AND NOT EXISTS (SELECT 1 FROM platform.wa_messages m
+                                    WHERE m.conversation_id = c.id AND m.created_at >= ?)""",
+                Timestamp.from(before), Timestamp.from(before));
+    }
+
     /** Guarda lo que se le envió a la persona (del agente o de alguien de XASKA). */
     @Transactional
     public void outbound(UUID conversationId, String author, String body, String waMessageId) {
