@@ -52,7 +52,7 @@ public class TabController {
     private final TabService service;
     private final SaleQueryService sales;
 
-    public record OpenRequest(UUID branchId, @NotNull @Pattern(regexp = "TABLE|TAKEAWAY|DELIVERY") String kind,
+    public record OpenRequest(UUID branchId, @NotNull @Pattern(regexp = "TABLE|TAKEAWAY|DELIVERY|NAMED") String kind,
                               UUID tableId, @Min(1) @Max(99) Integer guests, @Size(max = 120) String customerName,
                               @Size(max = 30) String phone, @Size(max = 200) String address,
                               @Size(max = 200) String notes) {

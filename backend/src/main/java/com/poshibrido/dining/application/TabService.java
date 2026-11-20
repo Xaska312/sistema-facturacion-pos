@@ -188,13 +188,18 @@ public class TabService {
                 branchId = (UUID) table[1];
                 tableId = c.tableId();
             }
-            case "TAKEAWAY", "DELIVERY" -> branchId = dining.resolveBranch(c.branchId());
-            default -> throw new BusinessRuleException("Elige si la cuenta es de una mesa, para llevar o domicilio.");
+            case "TAKEAWAY", "DELIVERY", "NAMED" -> branchId = dining.resolveBranch(c.branchId());
+            default -> throw new BusinessRuleException("Elige si la cuenta es de una mesa, sin mesa, para llevar o "
+                    + "domicilio.");
         }
         dining.requireBranch(branchId);
         Details details = cleanDetails(new Details(c.guests(), c.customerName(), c.phone(), c.address(), c.notes()));
         if ("DELIVERY".equals(kind) && details.address() == null) {
             throw new BusinessRuleException("Escribe la dirección del domicilio.");
+        }
+        // Decisión 369: la cuenta sin mesa se reconoce por el nombre ("Juan, camisa azul").
+        if ("NAMED".equals(kind) && details.customerName() == null) {
+            throw new BusinessRuleException("Escribe a nombre de quién es la cuenta (por ejemplo, Juan, camisa azul).");
         }
         UUID id = Ids.newId();
         em.createNativeQuery("""

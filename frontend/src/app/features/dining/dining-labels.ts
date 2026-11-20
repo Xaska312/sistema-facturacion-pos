@@ -18,11 +18,11 @@ export function minutesOpen(openedAt: string, now: Date = new Date()): number {
 }
 
 export function kindGlyph(kind: TabKind): XIconName {
-  return kind === 'TABLE' ? 'tables' : kind === 'TAKEAWAY' ? 'takeaway' : 'delivery';
+  return kind === 'TABLE' ? 'tables' : kind === 'TAKEAWAY' ? 'takeaway' : kind === 'NAMED' ? 'customers' : 'delivery';
 }
 
 export function kindLabel(kind: TabKind): string {
-  return kind === 'TABLE' ? 'Mesa' : kind === 'TAKEAWAY' ? 'Para llevar' : 'Domicilio';
+  return kind === 'TABLE' ? 'Mesa' : kind === 'TAKEAWAY' ? 'Para llevar' : kind === 'NAMED' ? 'Cuenta sin mesa' : 'Domicilio';
 }
 
 /** "Grande · Shot extra ×2". */

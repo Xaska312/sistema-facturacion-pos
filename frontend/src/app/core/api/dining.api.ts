@@ -5,7 +5,8 @@ import { Sale, SalePaymentInput } from './api.models';
 import type { TicketStatus } from './kitchen.api';
 
 /** Mesas y cuentas abiertas (Fase 12b-2, decisión 269). */
-export type TabKind = 'TABLE' | 'TAKEAWAY' | 'DELIVERY';
+/** NAMED: cuenta sin mesa, a nombre de alguien (decisión 369). */
+export type TabKind = 'TABLE' | 'TAKEAWAY' | 'DELIVERY' | 'NAMED';
 export type TabStatus = 'OPEN' | 'CHARGED' | 'CANCELLED' | 'MERGED';
 
 export interface BranchOption {
@@ -299,6 +300,11 @@ export class DiningApi {
   updateTable(id: string, input: { zoneId: string; name: string; seats: number | null; position: number; active: boolean }):
     Observable<DiningTable> {
     return this.http.put<DiningTable>(`/api/v1/dining/tables/${id}`, input);
+  }
+
+  /** Quita una mesa: se borra si nunca tuvo cuentas o se esconde si ya tuvo (decisión 370). */
+  removeTable(id: string): Observable<{ removal: 'DELETED' | 'HIDDEN' }> {
+    return this.http.delete<{ removal: 'DELETED' | 'HIDDEN' }>(`/api/v1/dining/tables/${id}`);
   }
 
   /** Plano de una zona (decisión 284). */

@@ -14,6 +14,7 @@ import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -122,5 +124,12 @@ public class DiningController {
     public TableView updateTable(@PathVariable UUID id, @Valid @RequestBody TableUpdate request) {
         return service.updateTable(id, request.zoneId(), request.name(), request.seats(), request.position(),
                 request.active());
+    }
+
+    /** Quita una mesa: la borra si nunca tuvo cuentas o la esconde si ya tuvo (decisión 370). */
+    @DeleteMapping("/tables/{id}")
+    @PreAuthorize("hasAuthority('tables:manage')")
+    public Map<String, String> removeTable(@PathVariable UUID id) {
+        return Map.of("removal", service.removeTable(id).name());
     }
 }

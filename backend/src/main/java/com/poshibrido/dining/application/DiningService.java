@@ -168,7 +168,7 @@ public class DiningService {
         UUID branchId = resolveBranch(requestedBranch);
         Map<UUID, List<TableView>> tables = new LinkedHashMap<>();
         for (Object[] r : rows("SELECT " + TABLE_COLUMNS + " FROM dining_tables WHERE branch_id = :b "
-                + "ORDER BY position, lower(name)", Map.of("b", branchId))) {
+                + "AND removed_at IS NULL ORDER BY position, lower(name)", Map.of("b", branchId))) {
             tables.computeIfAbsent((UUID) r[1], k -> new ArrayList<>()).add(tableView(r));
         }
         List<ZoneView> result = new ArrayList<>();
@@ -286,7 +286,8 @@ public class DiningService {
         requireBranch(zone.branchId());
         String name = clean(rawName, 20, "la mesa");
         requireSeats(seats);
-        if (count("SELECT count(*) FROM dining_tables WHERE branch_id = :b", Map.of("b", zone.branchId())) >= MAX_TABLES) {
+        if (count("SELECT count(*) FROM dining_tables WHERE branch_id = :b AND removed_at IS NULL",
+                Map.of("b", zone.branchId())) >= MAX_TABLES) {
             throw new BusinessRuleException("Máximo " + MAX_TABLES + " mesas por sucursal.");
         }
         requireUniqueTable(zone.branchId(), name, null);
@@ -332,6 +333,38 @@ public class DiningService {
         return after;
     }
 
+    /** Cómo quedó una mesa quitada: borrada del todo o escondida porque ya tuvo cuentas (decisión 370). */
+    public enum Removal { DELETED, HIDDEN }
+
+    /**
+     * Quita una mesa (decisión 370): si nunca tuvo una cuenta se borra; si ya tuvo, se esconde para que las ventas
+     * viejas conserven su nombre. Con una cuenta abierta no se puede.
+     */
+    @Transactional
+    public Removal removeTable(UUID id) {
+        TableView before = table(id);
+        ZoneView zone = zone(before.zoneId());
+        requireBranch(zone.branchId());
+        if (count("SELECT count(*) FROM tabs WHERE table_id = :t AND status = 'OPEN'", Map.of("t", id)) > 0) {
+            throw new ConflictException("La mesa " + before.name() + " tiene una cuenta abierta: cóbrala o muévela antes.");
+        }
+        boolean used = count("SELECT count(*) FROM tabs WHERE table_id = :t", Map.of("t", id)) > 0;
+        if (used) {
+            em.createNativeQuery("""
+                    UPDATE dining_tables SET removed_at = ?2, active = FALSE, updated_at = ?2, updated_by = ?3,
+                           version = version + 1 WHERE id = ?1""")
+                    .setParameter(1, id).setParameter(2, Instant.now()).setParameter(3, CurrentActor.requireUserId())
+                    .executeUpdate();
+        } else {
+            em.createNativeQuery("DELETE FROM dining_tables WHERE id = ?1").setParameter(1, id).executeUpdate();
+        }
+        Removal removal = used ? Removal.HIDDEN : Removal.DELETED;
+        Map<String, Object> data = new LinkedHashMap<>(tableData(before, zone.name()));
+        data.put("removal", removal.name());
+        audit.log("DINING_TABLE_REMOVED", "dining_table", id, data, null);
+        return removal;
+    }
+
     // ------------------------------------------------------------------ apoyo
 
     ZoneView zone(UUID id) {
@@ -346,7 +379,7 @@ public class DiningService {
         Object[] r = found.getFirst();
         List<TableView> tables = new ArrayList<>();
         for (Object[] t : rows("SELECT " + TABLE_COLUMNS + " FROM dining_tables WHERE zone_id = :z "
-                + "ORDER BY position, lower(name)", Map.of("z", id))) {
+                + "AND removed_at IS NULL ORDER BY position, lower(name)", Map.of("z", id))) {
             tables.add(tableView(t));
         }
         return new ZoneView((UUID) r[0], (UUID) r[1], (String) r[2], ((Number) r[3]).intValue(), (Boolean) r[4], tables,
@@ -358,7 +391,8 @@ public class DiningService {
     }
 
     TableView table(UUID id) {
-        List<Object[]> found = rows("SELECT " + TABLE_COLUMNS + " FROM dining_tables WHERE id = :t", Map.of("t", id));
+        List<Object[]> found = rows("SELECT " + TABLE_COLUMNS + " FROM dining_tables WHERE id = :t AND removed_at IS NULL",
+                Map.of("t", id));
         if (found.isEmpty()) {
             throw new NotFoundException("Mesa no encontrada.");
         }
@@ -437,7 +471,7 @@ public class DiningService {
     }
 
     private void requireUniqueTable(UUID branchId, String name, UUID except) {
-        if (count("SELECT count(*) FROM dining_tables WHERE branch_id = :b AND lower(name) = lower(:n)"
+        if (count("SELECT count(*) FROM dining_tables WHERE branch_id = :b AND removed_at IS NULL AND lower(name) = lower(:n)"
                 + (except == null ? "" : " AND id <> :x"), params(branchId, name, except)) > 0) {
             throw new ConflictException("Ya hay una mesa llamada " + name + " en esta sucursal.");
         }

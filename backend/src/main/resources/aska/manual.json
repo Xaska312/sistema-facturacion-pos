@@ -351,12 +351,14 @@
    "Toca \"Nueva zona\" y escribe su nombre.",
    "En la zona toca \"Agregar mesas\": di desde qué número y cuántas (por ejemplo, 1 a 10) y cuántos puestos tiene cada una.",
    "Toca una mesa para cambiarle el nombre (Barra 2), los puestos, la zona o desactivarla.",
+   "¿Agregaste de más o cambiaste el local? En la zona toca \"Quitar mesas\", marca las que sobran y confirma. Las que nunca tuvieron una cuenta se borran; las que ya tuvieron ventas se quitan del salón y sus ventas viejas no cambian.",
    "Toca \"Plano\" en la zona y arrastra cada mesa a donde está en tu local. Tócala para elegir si es cuadrada, redonda o rectangular y su tamaño. Toca \"Guardar plano\".",
    "Si cada piso tiene su caja (y tienes dos cajas o más), edita la zona con el lápiz y elige su \"Caja de esta zona\". Las ventas de esas mesas quedan en esa caja aunque se cobren en otra; al cerrar, las dos cajas cuadran el efectivo juntas."
   ],
   "tips": [
    "El nombre de la mesa no se repite en la sucursal, para que el mesero no se confunda.",
-   "Una mesa o zona con una cuenta abierta no se puede desactivar hasta cobrarla o moverla.",
+   "Una mesa o zona con una cuenta abierta no se puede desactivar ni quitar hasta cobrarla o moverla.",
+   "Si tus mesas cambian de sitio (un bar, una terraza), no importa: la mesa es un número para llevar la cuenta. Usa la vista Lista en Mesas y sáltate el plano.",
    "Si tienes dos pisos, crea una zona por piso: cada una tiene su plano.",
    "Una mesa nueva aparece sola en un hueco del plano; \"Acomodar en filas\" las ordena todas."
   ],
@@ -412,7 +414,8 @@
    "Revisa cantidades y toca \"Agregar a la cuenta\" (con Cocina y comandas el botón dice \"Enviar a cocina\": agrega y sale la comanda de una vez). Puedes volver a pedir más tarde las veces que quieras.",
    "Para quitar algo toca la caneca y escribe el motivo: queda tachado en la cuenta.",
    "Con \"Mover\" la pasas a otra mesa libre y con \"Unir\" traes los productos de otra cuenta (esa mesa queda libre).",
-   "Para llevar y domicilios se abren con los botones de arriba; el domicilio pide la dirección."
+   "Para llevar y domicilios se abren con los botones de arriba; el domicilio pide la dirección.",
+   "Para alguien que no está en una mesa (en la barra, de pie o en una silla suelta viendo el partido) toca \"Cuenta sin mesa\" y escribe algo para reconocerlo: \"Juan, camisa azul\". Pide y cobra igual que una mesa; si después se sienta en una, usa \"Mover\"."
   ],
   "tips": [
    "Todo el equipo de la sucursal ve todas las mesas y quién pidió cada cosa.",

@@ -35,6 +35,8 @@ const REFRESH_MS = 15_000;
     FormDialogComponent, EmptyStateComponent, XIconComponent, TablePlanComponent, CountStepperComponent],
   template: `
     <app-page-header title="Mesas" description="Toca una mesa libre para abrir su cuenta o una ocupada para pedir y cobrar.">
+      <!-- Decisión 369: cuenta a nombre de alguien que no está en una mesa (bares, barra, gente de pie). -->
+      <app-button label="Cuenta sin mesa" icon="pi pi-user-plus" (clicked)="openOther('NAMED')" />
       <app-button label="Para llevar" icon="pi pi-shopping-bag" severity="secondary" [outlined]="true" (clicked)="openOther('TAKEAWAY')" />
       <app-button label="Domicilio" icon="pi pi-send" severity="secondary" [outlined]="true" (clicked)="openOther('DELIVERY')" />
       @if (canManage()) {
@@ -130,7 +132,7 @@ const REFRESH_MS = 15_000;
 
       @if (f.others.length > 0) {
         <section aria-labelledby="others-title">
-          <h2 id="others-title" class="text-base font-bold tracking-tight mb-3">Para llevar y domicilios</h2>
+          <h2 id="others-title" class="text-base font-bold tracking-tight mb-3">Cuentas sin mesa, para llevar y domicilios</h2>
           <ul class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             @for (o of f.others; track o.id) {
               <li>
@@ -165,9 +167,13 @@ const REFRESH_MS = 15_000;
         </div>
       } @else {
         <div class="flex flex-col gap-1">
-          <label for="customer-name" class="text-sm font-semibold">Nombre del cliente
+          <label for="customer-name" class="text-sm font-semibold">{{ openKind() === 'NAMED' ? '¿A nombre de quién?' : 'Nombre del cliente' }}
             @if (openKind() === 'TAKEAWAY') { <span class="font-normal text-muted">(opcional)</span> }</label>
-          <input appInput id="customer-name" maxlength="120" [(ngModel)]="customerName" />
+          <input appInput id="customer-name" maxlength="120" [(ngModel)]="customerName"
+                 [placeholder]="openKind() === 'NAMED' ? 'Ej.: Juan, camisa azul' : ''" />
+          @if (openKind() === 'NAMED') {
+            <small class="text-muted">Algo para reconocerlo: su nombre y dónde está o qué lleva puesto.</small>
+          }
         </div>
         @if (openKind() === 'DELIVERY') {
           <div class="flex flex-col gap-1">
@@ -333,7 +339,9 @@ export class FloorComponent implements OnInit {
 
   protected openTitle(): string {
     const t = this.openTable();
-    return this.openKind() === 'TABLE' ? `Abrir mesa ${t?.name ?? ''}` : this.openKind() === 'TAKEAWAY' ? 'Para llevar' : 'Domicilio';
+    const kind = this.openKind();
+    return kind === 'TABLE' ? `Abrir mesa ${t?.name ?? ''}` : kind === 'TAKEAWAY' ? 'Para llevar'
+      : kind === 'NAMED' ? 'Cuenta sin mesa' : 'Domicilio';
   }
 
   protected askOpen(table: FloorTable): void {
@@ -355,6 +363,9 @@ export class FloorComponent implements OnInit {
   protected openProblem(): string | null {
     if (this.openKind() === 'DELIVERY' && !this.address.trim()) {
       return 'Escribe la dirección del domicilio.';
+    }
+    if (this.openKind() === 'NAMED' && !this.customerName.trim()) {
+      return 'Escribe a nombre de quién es la cuenta.';
     }
     if (this.guests !== null && !(this.guests >= 1 && this.guests <= 99)) {
       return 'Las personas van de 1 a 99.';
