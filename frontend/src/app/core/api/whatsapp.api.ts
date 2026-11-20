@@ -10,8 +10,10 @@ export type WaChannel = 'WHATSAPP' | 'WEB';
 export interface WaConversation {
   id: string;
   channel: WaChannel;
-  /** Nulo en el chat de xaska.co. */
+  /** Nulo en el chat de xaska.co y en WhatsApp para quien usa nombre de usuario (decisión 368). */
   phone: string | null;
+  /** Identificador de usuario de WhatsApp (BSUID), cuando llegó. */
+  waUserId: string | null;
   profileName: string | null;
   status: WaStatus;
   lastInboundAt: string | null;

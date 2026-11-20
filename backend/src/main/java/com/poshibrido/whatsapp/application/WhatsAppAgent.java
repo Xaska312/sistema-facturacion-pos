@@ -117,7 +117,7 @@ public class WhatsAppAgent {
                 : conversation.profileName() != null ? conversation.profileName() : "Alguien";
         String phone = conversation.web()
                 ? conversation.leadPhone() == null ? null : "+" + conversation.leadPhone() + ", chat de xaska.co"
-                : "+" + conversation.phone();
+                : conversation.phone() != null ? "+" + conversation.phone() : "usuario de WhatsApp sin número";
         mailer.send(templates.whatsappHandoff(properties.handoffTo(), who, phone, reason,
                 summary, conversation.id().toString()));
     }

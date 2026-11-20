@@ -164,9 +164,29 @@
    "Si el cliente tiene una lista de precios (por ejemplo, mayorista), al elegirlo la venta usa sus precios.",
    "¿El cliente no está registrado? En \"Cambiar\" (cliente) toca \"Registrar cliente nuevo\": lo creas ahí mismo sin perder la venta.",
    "Solo el efectivo entra al cajón; tarjeta y transferencia quedan registradas para el cuadre.",
-   "Después de registrar, pulsa Enter o toca \"Nueva venta\" para seguir."
+   "Después de registrar, pulsa Enter o toca \"Nueva venta\" para seguir.",
+   "¿Recibes Addi, Sistecrédito, SU+ Pay u otro medio? Actívalo en Ajustes → \"Otros medios de pago\" (mira \"Otros medios de pago\")."
   ],
   "who": null
+ },
+ {
+  "id": "otros-medios-pago",
+  "chapter": "Vender",
+  "title": "Otros medios de pago (Addi, Sistecrédito, SU+ Pay…)",
+  "summary": "Además de efectivo, tarjeta, transferencia y fiado, activa los medios que aceptas o agrega el tuyo. Salen al cobrar y no entran al efectivo de la caja.",
+  "steps": [
+   "Ve a Configuración → Ajustes y busca \"Otros medios de pago\".",
+   "Marca Addi o Sistecrédito si eres aliado: desde ese momento salen al cobrar.",
+   "Para otro medio (SU+ Pay, Bold, Mercado Pago, bonos…), tócalo en las sugerencias o escribe su nombre, elige si pide referencia y toca \"Agregar\".",
+   "Al cobrar, elige ese medio y escribe la referencia o el número de aprobación que te da.",
+   "Si dejas de recibir uno, desmárcalo: deja de salir al cobrar y las ventas anteriores no cambian."
+  ],
+  "tips": [
+   "El crédito del cliente se aprueba en la app de Addi, Sistecrédito o el que sea, como siempre; XASKA registra la venta.",
+   "En el cierre de caja y en los reportes cada medio sale aparte, para cuadrar lo que te consignan (la comisión de cada uno no se descuenta en XASKA).",
+   "Nequi, Daviplata y Bre-B ya van en \"Transferencia\": no hace falta agregarlos."
+  ],
+  "who": "Para activarlos o agregarlos: Propietario y Administrador."
  },
  {
   "id": "sin-internet",

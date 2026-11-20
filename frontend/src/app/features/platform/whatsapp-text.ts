@@ -14,8 +14,10 @@ export const WA_AUTHOR_LABEL: Record<'CUSTOMER' | 'BOT' | 'HUMAN', string> = {
 };
 
 /** Nombre para mostrar: lo que contó la persona, su nombre de WhatsApp, el número o "Visitante de xaska.co". */
-export function waName(c: Pick<WaConversation, 'leadName' | 'profileName' | 'phone'> & { leadPhone?: string | null }): string {
-  return c.leadName || c.profileName || (c.phone ? waPhone(c.phone) : c.leadPhone ? waPhone(c.leadPhone) : 'Visitante de xaska.co');
+export function waName(c: Pick<WaConversation, 'leadName' | 'profileName' | 'phone'>
+  & { leadPhone?: string | null; channel?: WaConversation['channel'] }): string {
+  const fallback = c.channel === 'WHATSAPP' ? 'Usuario de WhatsApp' : 'Visitante de xaska.co';
+  return c.leadName || c.profileName || (c.phone ? waPhone(c.phone) : c.leadPhone ? waPhone(c.leadPhone) : fallback);
 }
 
 /** Cómo se contacta: el número de WhatsApp o, en la web, el chat (con el WhatsApp que dejó, si lo dejó). */
@@ -23,7 +25,8 @@ export function waContact(c: Pick<WaConversation, 'channel' | 'phone' | 'leadPho
   if (c.channel === 'WEB') {
     return c.leadPhone ? `Chat de xaska.co · WhatsApp ${waPhone(c.leadPhone)}` : 'Chat de xaska.co';
   }
-  return c.phone ? waPhone(c.phone) : '';
+  // Decisión 368: quien usa nombre de usuario puede escribir sin mostrar su número; igual se le responde.
+  return c.phone ? waPhone(c.phone) : 'WhatsApp, sin número (usa nombre de usuario)';
 }
 
 /** 573001112233 → +57 300 111 2233 (números de Colombia); los demás con "+" delante. */

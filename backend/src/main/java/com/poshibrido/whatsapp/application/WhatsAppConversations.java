@@ -32,7 +32,7 @@ public class WhatsAppConversations {
     public static final String WHATSAPP = "WHATSAPP";
     public static final String WEB = "WEB";
 
-    public record Conversation(UUID id, String channel, String phone, String profileName, Status status, Instant lastInboundAt,
+    public record Conversation(UUID id, String channel, String phone, String waUserId, String profileName, Status status, Instant lastInboundAt,
                                String leadName, String leadBusiness, String leadCity, String leadNeed, String leadPhone,
                                String handoffReason, Instant handoffAt, Instant createdAt, Instant updatedAt,
                                String lastMessage) {
@@ -44,6 +44,11 @@ public class WhatsAppConversations {
 
         public boolean web() {
             return WEB.equals(channel);
+        }
+
+        /** A quién se le responde por WhatsApp: el número o, si llegó sin número, su identificador (decisión 368). */
+        public String target() {
+            return phone != null ? phone : waUserId;
         }
     }
 
@@ -58,13 +63,14 @@ public class WhatsAppConversations {
     }
 
     private static final String COLUMNS = """
-            c.id, c.channel, c.phone, c.profile_name, c.status, c.last_inbound_at, c.lead_name, c.lead_business, c.lead_city,
+            c.id, c.channel, c.phone, c.wa_user_id, c.profile_name, c.status, c.last_inbound_at, c.lead_name, c.lead_business, c.lead_city,
             c.lead_need, c.lead_phone, c.handoff_reason, c.handoff_at, c.created_at, c.updated_at,
             (SELECT m.body FROM platform.wa_messages m WHERE m.conversation_id = c.id
               ORDER BY m.created_at DESC LIMIT 1) AS last_message""";
 
     private static final RowMapper<Conversation> CONVERSATION = (rs, i) -> new Conversation(
-            rs.getObject("id", UUID.class), rs.getString("channel"), rs.getString("phone"), rs.getString("profile_name"),
+            rs.getObject("id", UUID.class), rs.getString("channel"), rs.getString("phone"),
+            rs.getString("wa_user_id"), rs.getString("profile_name"),
             Status.valueOf(rs.getString("status")), instant(rs.getTimestamp("last_inbound_at")),
             rs.getString("lead_name"), rs.getString("lead_business"), rs.getString("lead_city"),
             rs.getString("lead_need"), rs.getString("lead_phone"), rs.getString("handoff_reason"), instant(rs.getTimestamp("handoff_at")),
@@ -86,22 +92,61 @@ public class WhatsAppConversations {
      */
     @Transactional
     public Optional<Conversation> inbound(String phone, String profileName, String waMessageId, String body) {
+        return inbound(phone, null, profileName, waMessageId, body);
+    }
+
+    /**
+     * Guarda un mensaje entrante y devuelve su conversación; vacío si ese mensaje ya había llegado (Meta reenvía los
+     * avisos que no se confirman a tiempo). Una conversación cerrada vuelve a quedar con el agente. Llega con número,
+     * con su identificador de usuario (BSUID, decisión 368) o con los dos; si primero llegó sin número y después con
+     * él, es la misma conversación.
+     */
+    @Transactional
+    public Optional<Conversation> inbound(String phone, String waUserId, String profileName, String waMessageId,
+                                          String body) {
+        if (phone == null && waUserId == null) {
+            return Optional.empty();
+        }
         Integer seen = waMessageId == null ? 0 : jdbc.queryForObject(
                 "SELECT count(*) FROM platform.wa_messages WHERE wa_message_id = ?", Integer.class, waMessageId);
         if (seen != null && seen > 0) {
             return Optional.empty();
         }
         Timestamp now = Timestamp.from(Instant.now());
-        jdbc.update("""
-                INSERT INTO platform.wa_conversations (id, phone, profile_name, status, last_inbound_at, updated_at)
-                VALUES (?, ?, ?, 'BOT', ?, ?)
-                ON CONFLICT (phone) DO UPDATE SET
-                    profile_name = coalesce(EXCLUDED.profile_name, platform.wa_conversations.profile_name),
-                    status = CASE WHEN platform.wa_conversations.status = 'CLOSED' THEN 'BOT'
-                                  ELSE platform.wa_conversations.status END,
-                    last_inbound_at = EXCLUDED.last_inbound_at, updated_at = EXCLUDED.updated_at""",
-                Ids.newId(), phone, blankToNull(profileName, 120), now, now);
-        Conversation conversation = byPhone(phone);
+        String name = blankToNull(profileName, 120);
+        if (phone != null) {
+            if (waUserId != null) {
+                // Escribió antes sin número: esa conversación gana el número (si no hay otra con él).
+                jdbc.update("""
+                        UPDATE platform.wa_conversations SET phone = ? WHERE wa_user_id = ? AND phone IS NULL
+                           AND NOT EXISTS (SELECT 1 FROM platform.wa_conversations WHERE phone = ?)""",
+                        phone, waUserId, phone);
+            }
+            jdbc.update("""
+                    INSERT INTO platform.wa_conversations (id, phone, wa_user_id, profile_name, status, last_inbound_at,
+                                                           updated_at)
+                    VALUES (?, ?, ?, ?, 'BOT', ?, ?)
+                    ON CONFLICT (phone) DO UPDATE SET
+                        wa_user_id = coalesce(platform.wa_conversations.wa_user_id, EXCLUDED.wa_user_id),
+                        profile_name = coalesce(EXCLUDED.profile_name, platform.wa_conversations.profile_name),
+                        status = CASE WHEN platform.wa_conversations.status = 'CLOSED' THEN 'BOT'
+                                      ELSE platform.wa_conversations.status END,
+                        last_inbound_at = EXCLUDED.last_inbound_at, updated_at = EXCLUDED.updated_at""",
+                    Ids.newId(), phone, waUserId != null && byUserId(waUserId).isEmpty() ? waUserId : null, name,
+                    now, now);
+        } else {
+            jdbc.update("""
+                    INSERT INTO platform.wa_conversations (id, wa_user_id, profile_name, status, last_inbound_at,
+                                                           updated_at)
+                    VALUES (?, ?, ?, 'BOT', ?, ?)
+                    ON CONFLICT (wa_user_id) DO UPDATE SET
+                        profile_name = coalesce(EXCLUDED.profile_name, platform.wa_conversations.profile_name),
+                        status = CASE WHEN platform.wa_conversations.status = 'CLOSED' THEN 'BOT'
+                                      ELSE platform.wa_conversations.status END,
+                        last_inbound_at = EXCLUDED.last_inbound_at, updated_at = EXCLUDED.updated_at""",
+                    Ids.newId(), waUserId, name, now, now);
+        }
+        Conversation conversation = phone != null ? byPhone(phone) : byUserId(waUserId).orElseThrow();
         try {
             jdbc.update("""
                     INSERT INTO platform.wa_messages (id, conversation_id, author, body, wa_message_id, created_at)
@@ -254,6 +299,11 @@ public class WhatsAppConversations {
             throw new BusinessRuleException("Pasaron más de 24 horas desde el último mensaje de esta persona: "
                     + "WhatsApp solo deja escribirle con una plantilla aprobada. Espera a que vuelva a escribir.");
         }
+    }
+
+    private Optional<Conversation> byUserId(String waUserId) {
+        return jdbc.query("SELECT " + COLUMNS + " FROM platform.wa_conversations c WHERE c.wa_user_id = ?",
+                CONVERSATION, waUserId).stream().findFirst();
     }
 
     private Conversation byPhone(String phone) {

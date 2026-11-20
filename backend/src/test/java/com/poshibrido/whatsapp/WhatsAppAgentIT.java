@@ -289,6 +289,31 @@ class WhatsAppAgentIT extends IntegrationTest {
     }
 
     @Test
+    void answersPeopleWhoWriteWithAUsernameAndNoNumber() throws Exception {
+        String user = "CO." + System.nanoTime();
+        doReturn(Map.of("stop_reason", "end_turn", "usage", usage(), "content", List.of(
+                Map.of("type", "text", "text", "¡Hola! Soy Aska."))))
+                .when(ai).send(any());
+        String json = """
+                {"object":"whatsapp_business_account","entry":[{"id":"1","changes":[{"field":"messages","value":{
+                 "messaging_product":"whatsapp","contacts":[{"profile":{"name":"Andrés","username":"andres.bar"},"user_id":"%s"}],
+                 "messages":[{"from_user_id":"%s","id":"wamid.bsuid-%s","timestamp":"1794900000","type":"text","text":{"body":"Hola"}}]}}]}]}
+                """.formatted(user, user, user);
+        signed(json).andExpect(status().isOk());
+        verify(whatsapp).sendText(user, "¡Hola! Soy Aska.");
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM platform.wa_conversations WHERE wa_user_id = ? AND phone IS NULL",
+                Integer.class, user)).isEqualTo(1);
+
+        // Después llega con su número: es la misma conversación.
+        String phone = "57313" + (System.nanoTime() % 10_000_000);
+        conversations.inbound(phone, user, "Andrés", "wamid.bsuid2-" + user, "Otra vez").orElseThrow();
+        assertThat(jdbc.queryForObject("SELECT phone FROM platform.wa_conversations WHERE wa_user_id = ?", String.class, user))
+                .isEqualTo(phone);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM platform.wa_messages m JOIN platform.wa_conversations c "
+                + "ON c.id = m.conversation_id WHERE c.wa_user_id = ?", Integer.class, user)).isEqualTo(3);
+    }
+
+    @Test
     void onlyPlatformAdminsSeeTheConversations() throws Exception {
         Session owner = api.newTenant("wa-ajeno").tenant();
         api.getWith(owner, "/api/v1/platform/whatsapp/conversations").andExpect(status().isForbidden());
