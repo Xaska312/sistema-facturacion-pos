@@ -11,6 +11,14 @@ export interface Release {
 
 export const RELEASES: readonly Release[] = [
   {
+    id: '2026-11-21',
+    title: 'Pedidos en el resumen del mes',
+    items: [
+      'En Reportes → Resumen, "Pedidos del periodo" muestra los pedidos que tomaste y los anticipos que recibiste, aunque los entregues el mes siguiente.',
+      'Al terminar una conversación con Aska o con el equipo de XASKA por WhatsApp, te pedimos calificarla de 1 a 5: nos ayuda a mejorar.',
+    ],
+  },
+  {
     id: '2026-11-20',
     title: 'Para bares: cuentas sin mesa',
     items: [

@@ -1,4 +1,4 @@
-import { followUpPreview, waContact, waLead, waName, waPhone, waStateWarning } from './whatsapp-text';
+import { followUpPreview, waContact, waKind, waLead, waName, waPhone, waRatingLine, waStars, waStateWarning } from './whatsapp-text';
 
 describe('Agente de WhatsApp (decisión 362)', () => {
   it('muestra el nombre que se conoce y el número legible', () => {
@@ -30,5 +30,16 @@ describe('Agente de WhatsApp (decisión 362)', () => {
     expect(waStateWarning({ receives: true, sends: true, ai: true })).toBeNull();
     expect(waStateWarning({ receives: false, sends: true, ai: true })).toContain('WHATSAPP_');
     expect(waStateWarning({ receives: true, sends: true, ai: false })).toContain('ANTHROPIC_API_KEY');
+  });
+
+  it('muestra si es cliente y cómo calificó (decisión 375)', () => {
+    expect(waKind('CLIENT')).toBe('Cliente');
+    expect(waKind('NEW')).toBe('Nuevo');
+    expect(waKind(null)).toBeNull();
+    expect(waStars(4)).toBe('★★★★☆ 4');
+    expect(waRatingLine({ id: 'r', attendedBy: 'HUMAN', closedBy: 'IDLE', requestedAt: '', score: 2, ratedAt: '',
+      comment: 'Tardaron' })).toBe('★★☆☆☆ 2 · atención de XASKA, cerrada por 30 min sin respuesta · “Tardaron”');
+    expect(waRatingLine({ id: 'r', attendedBy: 'BOT', closedBy: 'BOT', requestedAt: '', score: null, ratedAt: null,
+      comment: null })).toBe('Sin calificar todavía (atención de Aska, se despidió)');
   });
 });

@@ -28,6 +28,21 @@ export interface WaConversation {
   createdAt: string;
   updatedAt: string;
   lastMessage: string | null;
+  /** Si ya usa XASKA POS (CLIENT) o lo está conociendo (NEW); nulo si Aska aún no lo sabe (decisión 375). */
+  customerKind: 'CLIENT' | 'NEW' | null;
+  /** La última calificación (1 a 5); nula si no calificó o no se le ha pedido. */
+  lastScore: number | null;
+}
+
+/** Calificación pedida al cerrar la conversación (decisión 375). */
+export interface WaRating {
+  id: string;
+  attendedBy: 'BOT' | 'HUMAN';
+  closedBy: 'IDLE' | 'BOT' | 'XASKA';
+  requestedAt: string;
+  score: number | null;
+  ratedAt: string | null;
+  comment: string | null;
 }
 
 export interface WaMessage {
@@ -41,6 +56,7 @@ export interface WaDetail {
   conversation: WaConversation;
   windowOpen: boolean;
   messages: WaMessage[];
+  ratings: WaRating[];
 }
 
 export interface WaState {

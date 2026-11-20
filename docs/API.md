@@ -274,7 +274,7 @@ Permiso `reports:read` (salvo `my-day`: `sales:read`). Filtros: `from`, `to` (`A
 |---|---|---|
 | GET | `/reports/dashboard?branchId=` | `{date, today: Summary, yesterdayTotal, byHour[24], last7Days[7], topProducts[≤5], byPaymentMethod[]}` |
 | GET | `/reports/my-day` | Ventas propias de hoy `{salesCount, total, averageTicket, byPaymentMethod[]}` |
-| GET | `/reports/sales/summary` | `{salesCount, grossTotal, discountTotal, subtotal, taxTotal, total, averageTicket, cost, profit, marginPercent, voidedCount, voidedTotal}` |
+| GET | `/reports/sales/summary` | `{salesCount, grossTotal, discountTotal, subtotal, taxTotal, total, averageTicket, cost, profit, marginPercent, voidedCount, voidedTotal, ordersCount, ordersTotal, depositsTotal}`. Los pedidos tomados en el periodo y sus anticipos van aparte y no se suman al total (decisión 375) |
 | GET | `/reports/sales/by-day` · `/by-branch` · `/by-seller` | `[{key, label, salesCount, subtotal, taxTotal, total, averageTicket, cost, profit, marginPercent}]` |
 | GET | `/reports/sales/by-payment-method` | `[{paymentMethodId, code, name, count, amount}]` |
 | GET | `/reports/products?orderBy=total\|quantity&limit=50` | `[{productId, sku, name, categoryName, unitCode, quantity, subtotal, total, cost, profit, marginPercent}]` |
@@ -305,15 +305,16 @@ configuración responde 404. La consola es solo para administradores de platafor
 |---|---|---|
 | GET | `/public/whatsapp/webhook?hub.mode=subscribe&hub.verify_token=&hub.challenge=` | El reto si el token coincide; 403 si no |
 | POST | `/public/whatsapp/webhook` | 200 a todo aviso firmado (los mensajes se procesan en segundo plano; el mismo `wamid` no se procesa dos veces); 401 sin firma válida |
-| POST | `/public/aska/chat` | Chat de Aska en xaska.co (decisión 364), público con CORS solo para `ASKA_WEB_ORIGINS`. `{session: uuid, text}` → `{status: BOT\|HUMAN\|CLOSED, messages}` con la respuesta de Aska (vacío si la atiende una persona); 422 sin texto, 429 pasado el tope por IP |
+| POST | `/public/aska/chat` | Chat de Aska en xaska.co (decisión 364), público con CORS solo para `ASKA_WEB_ORIGINS`. `{session: uuid, text}` → `{status: BOT\|HUMAN\|CLOSED, messages, ratingPending}` con la respuesta de Aska (vacío si la atiende una persona); 422 sin texto, 429 pasado el tope por IP |
 | GET | `/public/aska/chat/{session}?after=` | Toda la conversación o, con `after` (ISO), solo lo nuevo de XASKA (Aska o una persona) |
+| POST | `/public/aska/chat/{session}/rating` | `{score: 1..5, comment? (≤500)}`: califica la conversación cerrada (decisión 375) → la vista. 400 fuera de 1 a 5, 422 si no hay calificación pendiente |
 | POST | `/platform/whatsapp/follow-up` | `{phone, name?, business?}`: XASKA le escribe primero con la plantilla aprobada (decisión 371); la conversación queda `HUMAN` → `Detail`. 422 si el número no sirve o Meta rechaza la plantilla (con su mensaje) |
 | GET | `/platform/whatsapp/follow-up/template` | `{name, language, text}` de la plantilla, para mostrarla antes de enviar |
 | GET | `/platform/whatsapp/state` | `{receives, sends, ai}`: qué está configurado |
-| GET | `/platform/whatsapp/conversations?status=BOT\|HUMAN\|CLOSED` | Las 200 más recientes `{id, channel: WHATSAPP\|WEB, phone (nulo en la web o con nombre de usuario), waUserId, profileName, status, lastInboundAt, leadName, leadBusiness, leadCity, leadNeed, leadPhone, handoffReason, handoffAt, createdAt, updatedAt, lastMessage}` |
-| GET | `/platform/whatsapp/conversations/{id}` | `{conversation, windowOpen, messages: [{id, author: CUSTOMER\|BOT\|HUMAN, body, createdAt}]}` |
+| GET | `/platform/whatsapp/conversations?status=BOT\|HUMAN\|CLOSED` | Las 200 más recientes `{id, channel: WHATSAPP\|WEB, phone (nulo en la web o con nombre de usuario), waUserId, profileName, status, lastInboundAt, leadName, leadBusiness, leadCity, leadNeed, leadPhone, handoffReason, handoffAt, createdAt, updatedAt, lastMessage, customerKind: CLIENT\|NEW\|null, lastScore}` |
+| GET | `/platform/whatsapp/conversations/{id}` | `{conversation, windowOpen, messages: [{id, author: CUSTOMER\|BOT\|HUMAN, body, createdAt}], ratings: [{id, attendedBy: BOT\|HUMAN, closedBy: IDLE\|BOT\|XASKA, requestedAt, score, ratedAt, comment}]}` |
 | POST | `/platform/whatsapp/conversations/{id}/reply` | `{text (≤2000)}`: responde alguien de XASKA (la conversación queda `HUMAN`). 422 si pasaron más de 24 horas desde el último mensaje de la persona o WhatsApp lo rechaza |
-| POST | `/platform/whatsapp/conversations/{id}/take` \| `/bot` \| `/close` | La toma una persona, vuelve al asistente o se cierra. Devuelve el detalle |
+| POST | `/platform/whatsapp/conversations/{id}/take` \| `/bot` \| `/close` | La toma una persona, vuelve al asistente o se cierra (al cerrar se le pide calificar si la ventana de 24 horas sigue abierta, decisión 375). Devuelve el detalle |
 
 ## Eventos de seguridad (plataforma, Fase 7-2)
 Solo administradores de plataforma (`platform_admin`; token con `padm`). Tabla `platform.security_events`, solo inserción.

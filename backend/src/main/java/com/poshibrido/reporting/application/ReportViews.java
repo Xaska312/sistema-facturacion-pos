@@ -16,10 +16,16 @@ public final class ReportViews {
     private ReportViews() {
     }
 
+    /**
+     * Resumen de ventas del periodo. Los pedidos no son ventas hasta que se entregan (decisión 375): aparte se cuentan
+     * los pedidos tomados en el periodo (sin anulados) y lo que entró por anticipos, neto de devoluciones, para que el
+     * mes muestre lo vendido aunque se entregue después. No se suman al total: al entregar se vuelven venta.
+     */
     public record Summary(LocalDate from, LocalDate to, long salesCount, BigDecimal grossTotal,
                           BigDecimal discountTotal, BigDecimal subtotal, BigDecimal taxTotal, BigDecimal total,
                           BigDecimal averageTicket, BigDecimal cost, BigDecimal profit, BigDecimal marginPercent,
-                          long voidedCount, BigDecimal voidedTotal) {
+                          long voidedCount, BigDecimal voidedTotal, long ordersCount, BigDecimal ordersTotal,
+                          BigDecimal depositsTotal) {
     }
 
     /** Fila agrupada (por día, sucursal o vendedor) con su utilidad. */

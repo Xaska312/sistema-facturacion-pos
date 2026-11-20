@@ -268,6 +268,7 @@ actualizar (paso 11).
 
 | Desde | Qué hacer además de lo de arriba |
 |---|---|
+| Aska con nombre, calificación y pedidos en el resumen (375) | Plataforma V30. Nada que configurar: el cierre a los 30 minutos y la lista de calificación usan el mismo número de WhatsApp. Desplegar también xaska.co (estrellas y saludo nuevo) |
 | Manual para buscadores (374) | Imagen **web** nueva (Caddyfile con `/manual` y `manual.html`). Después, en Search Console: Inspeccionar URL → `https://app.xaska.co/manual` → Solicitar indexación |
 | Cuenta sin mesa y quitar mesas (369, 370) | Negocio V54. Nada que configurar |
 | Plantilla de WhatsApp y legales 1.3/1.4 (371–373) | Crea y espera la aprobación de la plantilla `xaska_seguimiento` (§14, paso 9). Al entrar, cada usuario acepta de nuevo los términos 1.3 y la política 1.4. Las variables `WHATSAPP_FOLLOWUP_TEMPLATE`, `WHATSAPP_TEMPLATE_LANGUAGE` y `WHATSAPP_RETENTION_MONTHS` son opcionales |

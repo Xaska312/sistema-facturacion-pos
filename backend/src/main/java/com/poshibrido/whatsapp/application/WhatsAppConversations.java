@@ -35,7 +35,7 @@ public class WhatsAppConversations {
     public record Conversation(UUID id, String channel, String phone, String waUserId, String profileName, Status status, Instant lastInboundAt,
                                String leadName, String leadBusiness, String leadCity, String leadNeed, String leadPhone,
                                String handoffReason, Instant handoffAt, Instant createdAt, Instant updatedAt,
-                               String lastMessage) {
+                               String lastMessage, String customerKind, Integer lastScore) {
 
         /** Todavía se le puede escribir con texto libre (en la web, siempre: lee las respuestas al volver). */
         public boolean windowOpen() {
@@ -55,18 +55,33 @@ public class WhatsAppConversations {
     public record Message(UUID id, String author, String body, Instant createdAt) {
     }
 
-    public record Detail(Conversation conversation, boolean windowOpen, List<Message> messages) {
+    public record Detail(Conversation conversation, boolean windowOpen, List<Message> messages, List<Rating> ratings) {
     }
 
-    /** Lo que se sabe de la persona (lo llena el agente). Nulo = no cambia. */
-    public record Lead(String name, String business, String city, String need, String phone) {
+    /** Lo que se sabe de la persona (lo llena el agente). Nulo = no cambia. {@code kind}: CLIENT o NEW. */
+    public record Lead(String name, String business, String city, String need, String phone, String kind) {
+
+        public Lead(String name, String business, String city, String need, String phone) {
+            this(name, business, city, need, phone, null);
+        }
     }
+
+    /** Una calificación pedida al cerrar (decisión 375): {@code score} nulo si todavía no respondió. */
+    public record Rating(UUID id, String attendedBy, String closedBy, Instant requestedAt, Integer score,
+                         Instant ratedAt, String comment) {
+    }
+
+    /** Cuánto tiempo hay para calificar después del cierre, y para dejar un comentario después de calificar. */
+    public static final Duration RATING_WINDOW = Duration.ofHours(24);
+    public static final Duration COMMENT_WINDOW = Duration.ofMinutes(30);
 
     private static final String COLUMNS = """
             c.id, c.channel, c.phone, c.wa_user_id, c.profile_name, c.status, c.last_inbound_at, c.lead_name, c.lead_business, c.lead_city,
             c.lead_need, c.lead_phone, c.handoff_reason, c.handoff_at, c.created_at, c.updated_at,
             (SELECT m.body FROM platform.wa_messages m WHERE m.conversation_id = c.id
-              ORDER BY m.created_at DESC LIMIT 1) AS last_message""";
+              ORDER BY m.created_at DESC LIMIT 1) AS last_message, c.customer_kind,
+            (SELECT r.score FROM platform.wa_ratings r WHERE r.conversation_id = c.id
+              ORDER BY r.requested_at DESC LIMIT 1) AS last_score""";
 
     private static final RowMapper<Conversation> CONVERSATION = (rs, i) -> new Conversation(
             rs.getObject("id", UUID.class), rs.getString("channel"), rs.getString("phone"),
@@ -75,7 +90,11 @@ public class WhatsAppConversations {
             rs.getString("lead_name"), rs.getString("lead_business"), rs.getString("lead_city"),
             rs.getString("lead_need"), rs.getString("lead_phone"), rs.getString("handoff_reason"), instant(rs.getTimestamp("handoff_at")),
             instant(rs.getTimestamp("created_at")), instant(rs.getTimestamp("updated_at")),
-            rs.getString("last_message"));
+            rs.getString("last_message"), rs.getString("customer_kind"), (Integer) rs.getObject("last_score", Integer.class));
+
+    private static final RowMapper<Rating> RATING = (rs, i) -> new Rating(rs.getObject("id", UUID.class),
+            rs.getString("attended_by"), rs.getString("closed_by"), instant(rs.getTimestamp("requested_at")),
+            (Integer) rs.getObject("score", Integer.class), instant(rs.getTimestamp("rated_at")), rs.getString("comment"));
 
     private static final RowMapper<Message> MESSAGE = (rs, i) -> new Message(rs.getObject("id", UUID.class),
             rs.getString("author"), rs.getString("body"), instant(rs.getTimestamp("created_at")));
@@ -104,6 +123,16 @@ public class WhatsAppConversations {
     @Transactional
     public Optional<Conversation> inbound(String phone, String waUserId, String profileName, String waMessageId,
                                           String body) {
+        return inbound(phone, waUserId, profileName, waMessageId, body, true);
+    }
+
+    /**
+     * Igual, pero con {@code reopen} falso una conversación cerrada sigue cerrada: es la calificación o el comentario
+     * que se le pidió al cerrar (decisión 375), no una consulta nueva.
+     */
+    @Transactional
+    public Optional<Conversation> inbound(String phone, String waUserId, String profileName, String waMessageId,
+                                          String body, boolean reopen) {
         if (phone == null && waUserId == null) {
             return Optional.empty();
         }
@@ -129,11 +158,11 @@ public class WhatsAppConversations {
                     ON CONFLICT (phone) DO UPDATE SET
                         wa_user_id = coalesce(platform.wa_conversations.wa_user_id, EXCLUDED.wa_user_id),
                         profile_name = coalesce(EXCLUDED.profile_name, platform.wa_conversations.profile_name),
-                        status = CASE WHEN platform.wa_conversations.status = 'CLOSED' THEN 'BOT'
+                        status = CASE WHEN platform.wa_conversations.status = 'CLOSED' AND ? THEN 'BOT'
                                       ELSE platform.wa_conversations.status END,
                         last_inbound_at = EXCLUDED.last_inbound_at, updated_at = EXCLUDED.updated_at""",
                     Ids.newId(), phone, waUserId != null && byUserId(waUserId).isEmpty() ? waUserId : null, name,
-                    now, now);
+                    now, now, reopen);
         } else {
             jdbc.update("""
                     INSERT INTO platform.wa_conversations (id, wa_user_id, profile_name, status, last_inbound_at,
@@ -141,10 +170,10 @@ public class WhatsAppConversations {
                     VALUES (?, ?, ?, 'BOT', ?, ?)
                     ON CONFLICT (wa_user_id) DO UPDATE SET
                         profile_name = coalesce(EXCLUDED.profile_name, platform.wa_conversations.profile_name),
-                        status = CASE WHEN platform.wa_conversations.status = 'CLOSED' THEN 'BOT'
+                        status = CASE WHEN platform.wa_conversations.status = 'CLOSED' AND ? THEN 'BOT'
                                       ELSE platform.wa_conversations.status END,
                         last_inbound_at = EXCLUDED.last_inbound_at, updated_at = EXCLUDED.updated_at""",
-                    Ids.newId(), waUserId, name, now, now);
+                    Ids.newId(), waUserId, name, now, now, reopen);
         }
         Conversation conversation = phone != null ? byPhone(phone) : byUserId(waUserId).orElseThrow();
         try {
@@ -273,10 +302,10 @@ public class WhatsAppConversations {
                 UPDATE platform.wa_conversations SET
                     lead_name = coalesce(?, lead_name), lead_business = coalesce(?, lead_business),
                     lead_city = coalesce(?, lead_city), lead_need = coalesce(?, lead_need),
-                    lead_phone = coalesce(?, lead_phone), updated_at = now()
+                    lead_phone = coalesce(?, lead_phone), customer_kind = coalesce(?, customer_kind), updated_at = now()
                  WHERE id = ?""",
                 blankToNull(lead.name(), 120), blankToNull(lead.business(), 160), blankToNull(lead.city(), 80),
-                blankToNull(lead.need(), 500), phone(lead.phone()), conversationId);
+                blankToNull(lead.need(), 500), phone(lead.phone()), kind(lead.kind()), conversationId);
     }
 
     /** Pasa la conversación a una persona: el agente deja de responder en ella. */
@@ -310,7 +339,97 @@ public class WhatsAppConversations {
     @Transactional(readOnly = true)
     public Detail detail(UUID conversationId) {
         Conversation conversation = get(conversationId);
-        return new Detail(conversation, conversation.windowOpen(), recent(conversationId, 200));
+        return new Detail(conversation, conversation.windowOpen(), recent(conversationId, 200), ratings(conversationId));
+    }
+
+    // ------------------------------------------------------------------ cierre y calificación (decisión 375)
+
+    /** La conversación de quien escribe por WhatsApp, si ya existe (por número o por su identificador). */
+    @Transactional(readOnly = true)
+    public Optional<Conversation> find(String phone, String waUserId) {
+        if (phone != null) {
+            List<Conversation> found = jdbc.query("SELECT " + COLUMNS + " FROM platform.wa_conversations c WHERE c.phone = ?",
+                    CONVERSATION, phone);
+            if (!found.isEmpty()) {
+                return Optional.of(found.getFirst());
+            }
+        }
+        return waUserId == null ? Optional.empty() : byUserId(waUserId);
+    }
+
+    /**
+     * Conversaciones abiertas en las que la persona lleva {@code idle} sin responder: el último mensaje es de XASKA
+     * (Aska o una persona) y la persona escribió en las últimas 24 horas (si no, ya no se le puede escribir y se
+     * dejan como están). Si el último mensaje es de la persona, falta responderle: no se cierran.
+     */
+    @Transactional(readOnly = true)
+    public List<Conversation> idle(Duration idle) {
+        Instant now = Instant.now();
+        return jdbc.query("SELECT " + COLUMNS + """
+                 FROM platform.wa_conversations c
+                WHERE c.status IN ('BOT', 'HUMAN') AND c.last_inbound_at >= ?
+                  AND (SELECT m.author FROM platform.wa_messages m WHERE m.conversation_id = c.id
+                        ORDER BY m.created_at DESC LIMIT 1) <> 'CUSTOMER'
+                  AND (SELECT max(m.created_at) FROM platform.wa_messages m WHERE m.conversation_id = c.id) < ?
+                ORDER BY c.updated_at LIMIT 100""", CONVERSATION, Timestamp.from(now.minus(SERVICE_WINDOW)),
+                Timestamp.from(now.minus(idle)));
+    }
+
+    /** Deja constancia de que se pidió calificar; devuelve su id. */
+    @Transactional
+    public UUID requestRating(UUID conversationId, String attendedBy, String closedBy) {
+        UUID id = Ids.newId();
+        jdbc.update("""
+                INSERT INTO platform.wa_ratings (id, conversation_id, attended_by, closed_by, requested_at)
+                VALUES (?, ?, ?, ?, ?)""", id, conversationId, attendedBy, closedBy, Timestamp.from(Instant.now()));
+        return id;
+    }
+
+    /** La calificación pedida y todavía sin responder (de las últimas 24 horas), si la hay. */
+    @Transactional(readOnly = true)
+    public Optional<Rating> pendingRating(UUID conversationId) {
+        return jdbc.query("""
+                SELECT * FROM platform.wa_ratings WHERE conversation_id = ? AND score IS NULL AND requested_at >= ?
+                 ORDER BY requested_at DESC LIMIT 1""", RATING, conversationId,
+                Timestamp.from(Instant.now().minus(RATING_WINDOW))).stream().findFirst();
+    }
+
+    /** Una calificación baja (3 o menos) recién dada y sin comentario: lo siguiente que escriba es el comentario. */
+    @Transactional(readOnly = true)
+    public Optional<Rating> pendingComment(UUID conversationId) {
+        return jdbc.query("""
+                SELECT * FROM platform.wa_ratings WHERE conversation_id = ? AND score <= 3 AND comment IS NULL
+                   AND rated_at >= ? ORDER BY rated_at DESC LIMIT 1""", RATING, conversationId,
+                Timestamp.from(Instant.now().minus(COMMENT_WINDOW))).stream().findFirst();
+    }
+
+    @Transactional
+    public void rate(UUID ratingId, int score, String comment) {
+        if (score < 1 || score > 5) {
+            throw new BusinessRuleException("La calificación va de 1 a 5.");
+        }
+        jdbc.update("UPDATE platform.wa_ratings SET score = ?, rated_at = now(), comment = coalesce(?, comment) WHERE id = ?",
+                score, blankToNull(comment, 500), ratingId);
+    }
+
+    @Transactional
+    public void comment(UUID ratingId, String comment) {
+        jdbc.update("UPDATE platform.wa_ratings SET comment = ? WHERE id = ?", blankToNull(comment, 500), ratingId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Rating> ratings(UUID conversationId) {
+        return jdbc.query("SELECT * FROM platform.wa_ratings WHERE conversation_id = ? ORDER BY requested_at",
+                RATING, conversationId);
+    }
+
+    /** "CLIENTE"/"CLIENT" → CLIENT; "NUEVO"/"NEW" → NEW; lo demás, nulo (no cambia). */
+    static String kind(String value) {
+        if (value == null) {
+            return null;
+        }
+        String v = value.strip().toUpperCase(java.util.Locale.ROOT);
+        return v.startsWith("CLIENT") ? "CLIENT" : v.startsWith("NUEV") || v.equals("NEW") ? "NEW" : null;
     }
 
     /** Las más recientes primero; con {@code status}, solo esas. */

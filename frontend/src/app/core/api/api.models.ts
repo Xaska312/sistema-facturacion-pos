@@ -871,6 +871,11 @@ export interface ReportSummary {
   marginPercent: number;
   voidedCount: number;
   voidedTotal: number;
+  /** Pedidos tomados en el periodo (sin anulados): no son ventas hasta entregarse (decisión 375). */
+  ordersCount: number;
+  ordersTotal: number;
+  /** Anticipos de pedidos recibidos en el periodo, neto de devoluciones. */
+  depositsTotal: number;
 }
 
 /** Fila agrupada por día, sucursal o vendedor. */

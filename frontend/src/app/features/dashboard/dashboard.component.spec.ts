@@ -14,7 +14,7 @@ function summary(total: number, salesCount: number): ReportSummary {
   return {
     from: '', to: '', salesCount, grossTotal: total, discountTotal: 0, subtotal: total, taxTotal: 0, total,
     averageTicket: salesCount ? total / salesCount : 0, cost: 0, profit: total / 2, marginPercent: 50, voidedCount: 0,
-    voidedTotal: 0,
+    voidedTotal: 0, ordersCount: 0, ordersTotal: 0, depositsTotal: 0,
   };
 }
 

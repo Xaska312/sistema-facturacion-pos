@@ -34,17 +34,23 @@ public class AskaWebChat {
     private final WhatsAppConversations conversations;
     private final WhatsAppAgent agent;
     private final AskaWebProperties properties;
+    private final WhatsAppClosing closing;
     private final Map<String, Window> windows = new ConcurrentHashMap<>();
     private final Map<UUID, Object> locks = new ConcurrentHashMap<>();
 
-    public AskaWebChat(WhatsAppConversations conversations, WhatsAppAgent agent, AskaWebProperties properties) {
+    public AskaWebChat(WhatsAppConversations conversations, WhatsAppAgent agent, AskaWebProperties properties,
+                       WhatsAppClosing closing) {
+        this.closing = closing;
         this.conversations = conversations;
         this.agent = agent;
         this.properties = properties;
     }
 
-    /** Lo que ve la página: si sigue con Aska o con una persona, y los mensajes de XASKA nuevos. */
-    public record View(String status, List<Message> messages) {
+    /**
+     * Lo que ve la página: si sigue con Aska o con una persona, los mensajes de XASKA nuevos y si se le está pidiendo
+     * calificar la conversación (decisión 375).
+     */
+    public record View(String status, List<Message> messages, boolean ratingPending) {
     }
 
     /** La persona escribe: se guarda y, si la conversación está con Aska, se responde. */
@@ -76,8 +82,17 @@ public class AskaWebChat {
         return conversations.byWebSession(session).map(c -> new View(c.status().name(),
                         conversations.recent(c.id(), 200).stream()
                                 .filter(m -> after == null ? true : m.createdAt().isAfter(after) && !"CUSTOMER".equals(m.author()))
-                                .toList()))
-                .orElseGet(() -> new View(Status.BOT.name(), List.of()));
+                                .toList(),
+                        c.status() == Status.CLOSED && conversations.pendingRating(c.id()).isPresent()))
+                .orElseGet(() -> new View(Status.BOT.name(), List.of(), false));
+    }
+
+    /** La persona califica desde la página (estrellas y, si quiere, un comentario). */
+    public View rate(UUID session, int score, String comment, String ip) {
+        limitIp(ip);
+        Instant before = Instant.now();
+        closing.rateWeb(session, score, comment);
+        return since(session, before);
     }
 
     private void respond(Conversation conversation) {
@@ -89,7 +104,12 @@ public class AskaWebChat {
             agent.handoff(conversation, "La conversación del chat web pasó el tope de respuestas de Aska en un día.", null);
             return;
         } else {
-            reply = agent.reply(conversation).text();
+            WhatsAppAgent.Reply answer = agent.reply(conversation);
+            conversations.outbound(conversation.id(), "BOT", answer.text(), null);
+            if (answer.closed() && !answer.handedOff()) {
+                closing.close(conversations.get(conversation.id()), "BOT");
+            }
+            return;
         }
         conversations.outbound(conversation.id(), "BOT", reply, null);
     }

@@ -35,7 +35,48 @@ class WhatsAppAgentTest {
     void textLooksLikeWhatsApp() {
         assertThat(WhatsAppAgent.whatsappText("## Planes\nEl **Negocio** vale $69.900. [Consultó: Planes]"))
                 .isEqualTo("Planes\nEl *Negocio* vale $69.900.");
-        assertThat(WhatsAppAgent.whatsappText("x".repeat(2000))).hasSize(WhatsAppAgent.MAX_REPLY);
+        assertThat(WhatsAppAgent.whatsappText("x".repeat(4000))).hasSize(WhatsAppAgent.MAX_REPLY);
+    }
+
+    @Test
+    void aCutReplyEndsInItsLastWholeSentence() {
+        // Decisión 375: dos respuestas llegaron cortadas ("Así ves en"); se corta en la última frase completa.
+        assertThat(WhatsAppAgent.wholeSentences("Para tus trabajos va por pedido. El flujo es así: creas el pedido. Así ves en"))
+                .isEqualTo("Para tus trabajos va por pedido. El flujo es así: creas el pedido.");
+        assertThat(WhatsAppAgent.wholeSentences("Uno dos tres\ncuatro")).isEqualTo("Uno dos tres");
+        assertThat(WhatsAppAgent.wholeSentences("sin punto")).isEqualTo("sin punto…");
+    }
+
+    @Test
+    void readsTheRatingFromTheListOrWrittenByHand() {
+        assertThat(WhatsAppClosing.score("rating_4", "⭐⭐⭐⭐ 4")).isEqualTo(4);
+        assertThat(WhatsAppClosing.score(null, " 5 ")).isEqualTo(5);
+        assertThat(WhatsAppClosing.score(null, "3 estrellas")).isEqualTo(3);
+        assertThat(WhatsAppClosing.score(null, "⭐⭐")).isEqualTo(2);
+        assertThat(WhatsAppClosing.score(null, "6")).isNull();
+        assertThat(WhatsAppClosing.score(null, "tengo 2 cajas")).isNull();
+        assertThat(WhatsAppClosing.score("otro", null)).isNull();
+
+        Map<String, Object> notice = Map.of("object", "whatsapp_business_account", "entry", List.of(Map.of(
+                "changes", List.of(Map.of("value", Map.of("messages", List.of(Map.of("from", "573001112233",
+                        "id", "wamid.r", "type", "interactive", "interactive", Map.of("type", "list_reply",
+                                "list_reply", Map.of("id", "rating_5", "title", "⭐⭐⭐⭐⭐ 5"))))))))));
+        assertThat(WhatsAppInbound.parse(notice).getFirst()).isEqualTo(new WhatsAppInbound.Incoming("573001112233",
+                null, "wamid.r", null, "interactive", "⭐⭐⭐⭐⭐ 5", "rating_5"));
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> list = (Map<String, Object>) WhatsAppClient.ratingBody("573001112233").get("interactive");
+        assertThat(list.get("type")).isEqualTo("list");
+        assertThat(String.valueOf(list.get("action"))).contains("rating_1").contains("rating_5").contains("Calificar");
+        WhatsAppClient.RATING_ROWS.forEach(r -> assertThat(r[1].length()).isLessThanOrEqualTo(24));
+    }
+
+    @Test
+    void knowsWhetherThePersonIsAlreadyAClient() {
+        assertThat(WhatsAppConversations.kind("CLIENTE")).isEqualTo("CLIENT");
+        assertThat(WhatsAppConversations.kind("nuevo")).isEqualTo("NEW");
+        assertThat(WhatsAppConversations.kind("quién sabe")).isNull();
+        assertThat(WhatsAppConversations.kind(null)).isNull();
     }
 
     @Test

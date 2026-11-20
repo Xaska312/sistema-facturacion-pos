@@ -20,6 +20,7 @@ public class WhatsAppConsole {
     private final WhatsAppClient client;
     private final WhatsAppProperties properties;
     private final AnthropicMessages ai;
+    private final WhatsAppClosing closing;
 
     /** Si el agente puede recibir, enviar y pensar, para el aviso de la pantalla. */
     public record State(boolean receives, boolean sends, boolean ai) {
@@ -92,6 +93,15 @@ public class WhatsAppConsole {
         }
         String first = name.strip().split("\\s+")[0];
         return first.length() > 40 ? first.substring(0, 40) : first;
+    }
+
+    /** Cierra la conversación y le pide a la persona que califique (decisión 375). */
+    public Detail close(UUID id) {
+        Conversation conversation = conversations.get(id);
+        if (conversation.status() != Status.CLOSED) {
+            closing.close(conversation, "XASKA");
+        }
+        return conversations.detail(id);
     }
 
     public Detail setStatus(UUID id, Status status) {

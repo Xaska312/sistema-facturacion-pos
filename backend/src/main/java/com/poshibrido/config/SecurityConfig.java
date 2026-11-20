@@ -91,7 +91,8 @@ public class SecurityConfig {
                         // Webhook del agente de WhatsApp (decisión 362): lo protege la firma de Meta, no un token.
                         .requestMatchers("/api/v1/public/whatsapp/webhook").permitAll()
                         // Chat de Aska en xaska.co (decisión 364): público, con topes por IP y por día.
-                        .requestMatchers("/api/v1/public/aska/chat", "/api/v1/public/aska/chat/*").permitAll()
+                        .requestMatchers("/api/v1/public/aska/chat", "/api/v1/public/aska/chat/*",
+                                "/api/v1/public/aska/chat/*/rating").permitAll()
                         .requestMatchers("/api/v1/auth/**", "/api/v1/tenants", "/api/v1/tenants/**",
                                 "/api/v1/invitations/**", "/api/v1/locations/**").authenticated()
                         .requestMatchers("/api/v1/platform/**").hasAuthority(PLATFORM_ADMIN)
