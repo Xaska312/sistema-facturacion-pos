@@ -37,4 +37,15 @@ public class PaymentMethod {
 
     @Column(nullable = false)
     private boolean active;
+
+    /** Medios que cada negocio puede prender o apagar (decisión 366); los demás los usa la app y quedan fijos. */
+    public static final java.util.Set<String> OPTIONAL = java.util.Set.of("ADDI", "SISTECREDITO");
+
+    public boolean isOptional() {
+        return OPTIONAL.contains(code);
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
 }

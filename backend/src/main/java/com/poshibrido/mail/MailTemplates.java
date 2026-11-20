@@ -96,18 +96,25 @@ public class MailTemplates {
     }
 
     /** Una conversación del agente de WhatsApp pasó a una persona (decisión 362). */
+    /** Aviso de que una conversación con Aska pasó a una persona; {@code phone} nulo = chat de xaska.co. */
     public MailMessage whatsappHandoff(String to, String who, String phone, String reason, String summary,
                                        String conversationId) {
+        boolean web = phone == null;
         List<String> paragraphs = new java.util.ArrayList<>();
-        paragraphs.add(who + " (" + phone + ") necesita que le responda una persona en WhatsApp.");
+        paragraphs.add(web ? who + " necesita que le responda una persona en el chat de xaska.co."
+                : who + " (" + phone + ") necesita que le responda una persona en WhatsApp.");
         paragraphs.add("Motivo: " + (reason == null || reason.isBlank() ? "no indicado" : reason) + ".");
         if (summary != null && !summary.isBlank()) {
             paragraphs.add("Resumen: " + summary);
         }
-        paragraphs.add("El asistente ya no responde en esta conversación hasta que la devuelvas. Tienes 24 horas desde "
-                + "su último mensaje para escribirle con texto libre.");
-        return message(to, "WhatsApp: " + who + " quiere hablar con una persona", "whatsapp-persona",
-                "Hola:", paragraphs, "Abrir la conversación",
+        paragraphs.add(web
+                ? "Aska ya no responde en esta conversación hasta que la devuelvas. Lo que respondas desde la consola le "
+                        + "aparece en el chat si sigue en la página o cuando vuelva; si dejó su WhatsApp, también puedes "
+                        + "escribirle por ahí."
+                : "El asistente ya no responde en esta conversación hasta que la devuelvas. Tienes 24 horas desde "
+                        + "su último mensaje para escribirle con texto libre.");
+        return message(to, (web ? "Chat de xaska.co: " : "WhatsApp: ") + who + " quiere hablar con una persona",
+                "whatsapp-persona", "Hola:", paragraphs, "Abrir la conversación",
                 properties.link("/plataforma/whatsapp?c=" + conversationId), null);
     }
 

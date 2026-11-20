@@ -23,6 +23,14 @@ export interface CashSessionFilters {
   to: string | null;
 }
 
+/** Un medio de pago que el negocio prende o apaga (decisión 366). */
+export interface OptionalPaymentMethod {
+  id: string;
+  code: string;
+  name: string;
+  active: boolean;
+}
+
 /** Caja: apertura, movimientos, cierre (arqueo ciego) e informes. */
 @Injectable({ providedIn: 'root' })
 export class CashApi {
@@ -36,6 +44,15 @@ export class CashApi {
   /** Todos los medios, también "Retención". */
   allPaymentMethods(): Observable<PaymentMethod[]> {
     return this.http.get<PaymentMethod[]>('/api/v1/payment-methods');
+  }
+
+  /** Addi y Sistecrédito: el negocio los activa en Ajustes (decisión 366). */
+  optionalPaymentMethods(): Observable<OptionalPaymentMethod[]> {
+    return this.http.get<OptionalPaymentMethod[]>('/api/v1/payment-methods/optional');
+  }
+
+  setPaymentMethodActive(id: string, active: boolean): Observable<OptionalPaymentMethod[]> {
+    return this.http.put<OptionalPaymentMethod[]>(`/api/v1/payment-methods/optional/${id}`, { active });
   }
 
   registers(): Observable<RegisterOption[]> {

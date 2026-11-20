@@ -1,3 +1,4 @@
+import { PaymentMethodsSectionComponent } from './payment-methods-section.component';
 import { ConsumptionTaxSectionComponent } from './consumption-tax-section.component';
 import { TechnicalDirectorSectionComponent } from '../pharmacy/technical-director-section.component';
 import { XaskaIaLogoComponent } from '../../shared/brand/xaska-ia-logo.component';
@@ -45,7 +46,7 @@ const TIMEZONE_LABEL: Record<string, string> = {
 
 @Component({
   selector: 'app-settings',
-  imports: [RouterLink, DigestSettingsComponent, XaskaIaLogoComponent, ConsumptionTaxSectionComponent, TechnicalDirectorSectionComponent, ReactiveFormsModule, FormsModule, ButtonComponent, AppInputDirective, PageHeaderComponent, FormDialogComponent,
+  imports: [RouterLink, PaymentMethodsSectionComponent, DigestSettingsComponent, XaskaIaLogoComponent, ConsumptionTaxSectionComponent, TechnicalDirectorSectionComponent, ReactiveFormsModule, FormsModule, ButtonComponent, AppInputDirective, PageHeaderComponent, FormDialogComponent,
     BrandingSectionComponent, PrinterSectionComponent, BusinessProfileSectionComponent],
   template: `
     <app-page-header title="Ajustes del negocio" description="Cómo funciona tu negocio: tipo y módulos, inventario, impuestos, zona horaria, moneda, tiquete y marca." />
@@ -322,6 +323,8 @@ const TIMEZONE_LABEL: Record<string, string> = {
     }
 
     <app-branding-section />
+
+    <app-payment-methods-section [canEdit]="canEdit()" />
 
     @if (canDigest()) {
       <app-digest-settings />

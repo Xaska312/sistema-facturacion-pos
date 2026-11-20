@@ -6,8 +6,8 @@ import { PlatformWhatsAppComponent } from './platform-whatsapp.component';
 
 describe('PlatformWhatsAppComponent (decisión 362)', () => {
   const conversation = {
-    id: 'c1', phone: '573001112233', profileName: 'Marta', status: 'HUMAN' as const, lastInboundAt: new Date().toISOString(),
-    leadName: 'Marta', leadBusiness: 'Tienda Marta', leadCity: 'Ibagué', leadNeed: null,
+    id: 'c1', channel: 'WHATSAPP' as const, phone: '573001112233', profileName: 'Marta', status: 'HUMAN' as const, lastInboundAt: new Date().toISOString(),
+    leadName: 'Marta', leadBusiness: 'Tienda Marta', leadCity: 'Ibagué', leadNeed: null, leadPhone: null,
     handoffReason: 'Quiere cotizar equipos', handoffAt: null, createdAt: '2026-11-17T10:00:00Z',
     updatedAt: '2026-11-17T10:05:00Z', lastMessage: 'Quiero cotizar',
   };

@@ -2,12 +2,16 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
-/** Agente de WhatsApp de XASKA (decisión 362): conversaciones en la consola de plataforma. */
+/** Aska con quien escribe a XASKA, por WhatsApp (decisión 362) o por el chat de xaska.co (364). */
 export type WaStatus = 'BOT' | 'HUMAN' | 'CLOSED';
+
+export type WaChannel = 'WHATSAPP' | 'WEB';
 
 export interface WaConversation {
   id: string;
-  phone: string;
+  channel: WaChannel;
+  /** Nulo en el chat de xaska.co. */
+  phone: string | null;
   profileName: string | null;
   status: WaStatus;
   lastInboundAt: string | null;
@@ -15,6 +19,8 @@ export interface WaConversation {
   leadBusiness: string | null;
   leadCity: string | null;
   leadNeed: string | null;
+  /** El WhatsApp que dejó quien escribió por la web. */
+  leadPhone: string | null;
   handoffReason: string | null;
   handoffAt: string | null;
   createdAt: string;

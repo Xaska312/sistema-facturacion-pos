@@ -83,6 +83,11 @@ app:
     graph-version: ${WHATSAPP_GRAPH_VERSION:v25.0}
     handoff-email: ${WHATSAPP_HANDOFF_EMAIL:soporte@xaska.co}
     async: true
+  aska-web:
+    # Chat de Aska en xaska.co (decisión 364): páginas que pueden usarlo y topes contra el abuso.
+    allowed-origins: ${ASKA_WEB_ORIGINS:https://xaska.co,https://www.xaska.co,http://localhost:4321}
+    daily-replies: ${ASKA_WEB_DAILY_REPLIES:300}
+    per-ip: ${ASKA_WEB_PER_IP:20}
   mail:
     # Remitente. Sin dominio propio, Resend solo permite onboarding@resend.dev y enviar a tu propio correo.
     from: ${MAIL_FROM:XASKA POS <onboarding@resend.dev>}

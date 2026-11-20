@@ -1,3 +1,4 @@
+import { supportWhatsAppLink } from '../../shared/support';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
@@ -52,7 +53,7 @@ import { MenuDraft, emptyMenu, menuContents, menuDraft, menuProblem, toMenuInput
     @if (!allowed()) {
       <div class="card p-5 text-sm" role="status">
         <p class="font-semibold">Las cartas por piso están en el plan Empresa.</p>
-        <p class="text-muted mt-1">Escríbenos para activarlas en tu negocio.</p>
+        <p class="text-muted mt-1"><a [href]="whatsapp" target="_blank" rel="noopener" class="underline">Escríbenos por WhatsApp</a> para activarlas en tu negocio.</p>
       </div>
     } @else if (menus() !== null) {
       @let list = menus() ?? [];
@@ -179,6 +180,7 @@ import { MenuDraft, emptyMenu, menuContents, menuDraft, menuProblem, toMenuInput
   `,
 })
 export class MenusComponent implements OnInit {
+  protected readonly whatsapp = supportWhatsAppLink();
   private readonly api = inject(DiningApi);
   private readonly catalog = inject(CatalogApi);
   private readonly messages = inject(ToastService);

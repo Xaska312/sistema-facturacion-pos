@@ -268,6 +268,7 @@ actualizar (paso 11).
 
 | Desde | Qué hacer además de lo de arriba |
 |---|---|
+| Aska en xaska.co, Addi y Sistecrédito (364–366) | Plataforma V29 (chat web de Aska) y negocio V53 (Addi y Sistecrédito, apagados: cada negocio los prende en Ajustes). Las variables `ASKA_WEB_*` son opcionales. Después de desplegar el POS, publica xaska.co con su burbuja de chat |
 | Correcciones de seguridad (277) | El cambio de `max_connections` recrea el contenedor de Postgres (los datos quedan en el volumen). Revisa `DB_POOL_SIZE` y `SUBSCRIPTION_TRIAL_WITHOUT_CODE` en el `.env` |
 | Farmacia 13-1 (279) | Consola de plataforma → **CUM** → cargar el CSV del catálogo del INVIMA (datos.gov.co). Repetirlo cada mes o cuando el INVIMA lo actualice |
 | Impresión directa (286) | Reconstruir la imagen **web**: compila XASKA Impresora (Go) y la sirve en `/descargas/XASKA-Impresora.exe`; el Caddyfile permite `connect-src http://127.0.0.1:17777` |

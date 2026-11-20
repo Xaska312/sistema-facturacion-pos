@@ -1,5 +1,5 @@
 import { BillingAddon, BillingPlan } from '../../core/api/billing.api';
-import { addonsForSale, annualSaving, checkLines, orderTotal } from './billing-text';
+import { addonsForSale, annualSaving, checkLines, orderTotal, trialBanner } from './billing-text';
 
 const negocio: BillingPlan = { code: 'NEGOCIO', name: 'Negocio', monthlyPrice: 69900, annualPrice: 699000, maxBranches: 1,
   maxUsers: 6, maxRegisters: 3, modules: ['TABLES'], features: ['PURCHASES'], founder: false };
@@ -26,5 +26,14 @@ describe('billing-text (decisión 302)', () => {
     const lines = checkLines({ readable: true, amount: 1, reference: '', date: '', destination: '', successful: true,
       amountOk: false, referenceOk: true, destinationOk: true, note: '' }, 'XK123456');
     expect(lines.filter((l) => !l.ok).map((l) => l.text)).toEqual(['El valor no coincide']);
+  });
+});
+
+describe('Aviso de la prueba gratis (decisión 365)', () => {
+  it('dice que no hay que pagar todavía', () => {
+    expect(trialBanner(9, '27 de nov.')).toContain('Te quedan 9 días de prueba gratis (hasta el 27 de nov.)');
+    expect(trialBanner(9, 'x')).toContain('No tienes que pagar nada todavía');
+    expect(trialBanner(1, 'x')).toContain('Te queda 1 día');
+    expect(trialBanner(0, 'x')).toContain('termina hoy');
   });
 });

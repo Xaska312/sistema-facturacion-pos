@@ -6,7 +6,7 @@ import { PageHeaderComponent } from '../../shared/page-header.component';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { formatDateTime, formatRelative } from '../../shared/format';
-import { WA_AUTHOR_LABEL, WA_STATUS_LABEL, waLead, waName, waPhone, waStateWarning } from './whatsapp-text';
+import { WA_AUTHOR_LABEL, WA_STATUS_LABEL, waContact, waLead, waName, waStateWarning } from './whatsapp-text';
 
 /**
  * Conversaciones del agente de WhatsApp de XASKA (decisión 362): quién escribió, qué respondió el asistente y las que
@@ -17,7 +17,7 @@ import { WA_AUTHOR_LABEL, WA_STATUS_LABEL, waLead, waName, waPhone, waStateWarni
   imports: [FormsModule, PageHeaderComponent, ButtonComponent, AppInputDirective],
   template: `
     <app-page-header title="WhatsApp"
-                     description="Lo que le escriben al número de XASKA: responde el asistente y te avisa cuando alguien necesita a una persona." />
+                     description="Lo que le escriben a XASKA por WhatsApp y por el chat de xaska.co: responde Aska y te avisa cuando alguien necesita a una persona." />
 
     @if (warning(); as w) {
       <p class="mb-4 rounded-2xl px-4 py-3 text-sm bg-warning-soft text-warning-soft-fg" role="status">{{ w }}</p>
@@ -44,6 +44,9 @@ import { WA_AUTHOR_LABEL, WA_STATUS_LABEL, waLead, waName, waPhone, waStateWarni
                   <span class="text-xs text-muted shrink-0">{{ relative(c.updatedAt) }}</span>
                 </span>
                 <span class="flex items-center gap-2 text-xs">
+                  @if (c.channel === 'WEB') {
+                    <span class="wa-chip wa-chip--web">Web</span>
+                  }
                   <span class="wa-chip" [class.wa-chip--human]="c.status === 'HUMAN'" [class.wa-chip--closed]="c.status === 'CLOSED'">
                     {{ statusLabel[c.status] }}
                   </span>
@@ -66,7 +69,7 @@ import { WA_AUTHOR_LABEL, WA_STATUS_LABEL, waLead, waName, waPhone, waStateWarni
             <div class="flex flex-col gap-0.5 min-w-0">
               <button type="button" class="text-sm text-muted self-start lg:hidden" (click)="close()">← Conversaciones</button>
               <h2 class="text-lg font-bold truncate">{{ name(d.conversation) }}</h2>
-              <span class="text-sm text-muted">{{ phone(d.conversation.phone) }} · {{ statusLabel[d.conversation.status] }}</span>
+              <span class="text-sm text-muted">{{ contact(d.conversation) }} · {{ statusLabel[d.conversation.status] }}</span>
               @if (lead(d.conversation); as l) {
                 <span class="text-sm">{{ l }}</span>
               }
@@ -79,7 +82,7 @@ import { WA_AUTHOR_LABEL, WA_STATUS_LABEL, waLead, waName, waPhone, waStateWarni
                 <app-button label="Tomarla yo" severity="secondary" size="small" [loading]="busy()" (clicked)="act('take')" />
               }
               @if (d.conversation.status !== 'BOT') {
-                <app-button label="Devolver al asistente" severity="secondary" size="small" [loading]="busy()" (clicked)="act('bot')" />
+                <app-button label="Devolver a Aska" severity="secondary" size="small" [loading]="busy()" (clicked)="act('bot')" />
               }
               @if (d.conversation.status !== 'CLOSED') {
                 <app-button label="Cerrar" severity="secondary" size="small" [text]="true" [loading]="busy()" (clicked)="act('close')" />
@@ -97,6 +100,9 @@ import { WA_AUTHOR_LABEL, WA_STATUS_LABEL, waLead, waName, waPhone, waStateWarni
           </ol>
 
           <form class="flex flex-col gap-2 border-t border-line pt-3" (ngSubmit)="send()">
+            @if (d.conversation.channel === 'WEB') {
+              <p class="text-sm text-muted">Le aparece en el chat de xaska.co si sigue en la página o cuando vuelva.</p>
+            }
             @if (!d.windowOpen) {
               <p class="text-sm text-muted">Pasaron más de 24 horas desde su último mensaje: WhatsApp no deja escribirle con texto libre hasta que vuelva a escribir.</p>
             }
@@ -104,7 +110,7 @@ import { WA_AUTHOR_LABEL, WA_STATUS_LABEL, waLead, waName, waPhone, waStateWarni
             <textarea appInput id="wa-reply" name="reply" rows="3" maxlength="2000" [(ngModel)]="draft"
                       [disabled]="!d.windowOpen || busy()" placeholder="Escribe tu respuesta…"></textarea>
             <div class="flex items-center justify-between gap-2">
-              <span class="text-xs text-muted">Al responder, el asistente deja de contestar en esta conversación.</span>
+              <span class="text-xs text-muted">Al responder, Aska deja de contestar en esta conversación.</span>
               <app-button type="submit" label="Enviar" [loading]="busy()" [disabled]="!d.windowOpen || !draft.trim()" />
             </div>
           </form>
@@ -123,6 +129,7 @@ import { WA_AUTHOR_LABEL, WA_STATUS_LABEL, waLead, waName, waPhone, waStateWarni
     .wa-item--on { border-color: var(--brand); box-shadow: 0 0 0 1px var(--brand); }
     .wa-chip { padding: 0.125rem 0.5rem; border-radius: 9999px; background: var(--success-soft); color: var(--success-soft-fg); font-weight: 600; }
     .wa-chip--human { background: var(--warning-soft); color: var(--warning-soft-fg); }
+    .wa-chip--web { background: var(--info-soft); color: var(--info-soft-fg); }
     .wa-chip--closed { background: var(--surface-alt); color: var(--muted); }
     .wa-panel { flex-direction: column; min-height: 28rem; max-height: calc(100dvh - 12rem); padding: 1rem; border-radius: 1.25rem;
       border: 1px solid var(--line); background: var(--surface); }
@@ -143,7 +150,7 @@ export class PlatformWhatsAppComponent implements OnInit {
   protected readonly filters: { label: string; value: WaStatus | null }[] = [
     { label: 'Todas', value: null },
     { label: 'Con una persona', value: 'HUMAN' },
-    { label: 'Con el asistente', value: 'BOT' },
+    { label: 'Con Aska', value: 'BOT' },
     { label: 'Cerradas', value: 'CLOSED' },
   ];
   protected readonly statusLabel = WA_STATUS_LABEL;
@@ -229,8 +236,8 @@ export class PlatformWhatsAppComponent implements OnInit {
     return waName(c);
   }
 
-  protected phone(p: string): string {
-    return waPhone(p);
+  protected contact(c: WaConversation): string {
+    return waContact(c);
   }
 
   protected lead(c: WaConversation): string {

@@ -1,3 +1,4 @@
+import { supportWhatsAppLink } from '../../shared/support';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
@@ -17,7 +18,7 @@ import { formatCop } from '../../shared/money';
 import { PageHeaderComponent } from '../../shared/page-header.component';
 import { includedText } from '../platform/plan-features';
 import { ReferralCardComponent } from './referral-card.component';
-import { COUNTABLE, addonsForSale, annualSaving, checkLines, months, orderTotal, planPrice, statusLabel } from './billing-text';
+import { COUNTABLE, addonsForSale, annualSaving, checkLines, months, orderTotal, planPrice, statusLabel, trialBanner } from './billing-text';
 
 /**
  * Planes y pagos (decisión 302): el negocio ve su plan y lo que compró aparte, prueba XASKA IA gratis una vez, arma su
@@ -159,10 +160,18 @@ import { COUNTABLE, addonsForSale, annualSaving, checkLines, months, orderTotal,
           No pudimos confirmar el pago {{ rj.reference }}: {{ rj.rejectReason }} Arma un pedido nuevo o escríbenos.</p>
       }
 
+      @if (s.trial && s.status !== 'EXPIRED') {
+        <!-- Decisión 365: en la prueba no hay que pagar nada; esto es solo para quien quiera pagar ya. -->
+        <p class="trial-banner mt-4 max-w-6xl" role="note">
+          <i class="pi pi-gift" aria-hidden="true"></i>
+          <span>{{ trialBanner(s.daysLeft, date(s.endsAt)) }}</span>
+        </p>
+      }
+
       <section class="card p-4 md:p-5 mt-4 max-w-6xl flex flex-col gap-4" aria-labelledby="build">
         <h2 id="build" class="font-bold tracking-tight">Arma tu pedido</h2>
         @if (!c.breb.ready) {
-          <p class="text-sm text-warning">Los pagos por Bre-B aún no están listos. Escríbenos y te ayudamos a renovar.</p>
+          <p class="text-sm text-warning">Los pagos por Bre-B aún no están listos. <a [href]="whatsapp" target="_blank" rel="noopener" class="underline">Escríbenos por WhatsApp</a> y te ayudamos a renovar.</p>
         }
 
         <div class="flex flex-wrap items-center gap-2">
@@ -273,6 +282,9 @@ import { COUNTABLE, addonsForSale, annualSaving, checkLines, months, orderTotal,
       min-height: 2.75rem; padding: 0 1.125rem; border-radius: 0.75rem; font-weight: 700; font-size: 0.875rem;
       color: var(--xaska-panel-fg); border: 1px solid var(--xaska-panel-line);
     }
+    .trial-banner { display: flex; gap: 0.625rem; align-items: flex-start; padding: 0.75rem 1rem; border-radius: 1rem;
+      background: var(--success-soft); color: var(--success-soft-fg); font-size: 0.875rem; }
+    .trial-banner .pi { margin-top: 0.125rem; }
     .trial-tag {
       font-size: 0.6875rem; font-weight: 700; padding: 0.0625rem 0.4375rem; border-radius: 9999px; margin-left: 0.25rem;
       background: var(--aska-soft); color: var(--aska-soft-fg);
@@ -322,6 +334,8 @@ import { COUNTABLE, addonsForSale, annualSaving, checkLines, months, orderTotal,
   `,
 })
 export class PlansComponent implements OnInit {
+  protected readonly whatsapp = supportWhatsAppLink();
+  protected readonly trialBanner = trialBanner;
   private readonly api = inject(BillingApi);
   private readonly auth = inject(AuthService);
   private readonly messages = inject(ToastService);

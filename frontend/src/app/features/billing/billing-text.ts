@@ -68,3 +68,11 @@ export function checkLines(check: ProofCheck, reference: string): { ok: boolean;
     { ok: check.destinationOk, text: check.destinationOk ? 'Llegó a la llave de XASKA' : 'No se ve la llave de XASKA' },
   ];
 }
+
+/** Aviso de la prueba gratis en "Planes y pagos" (decisión 365): no hay que pagar nada todavía. */
+export function trialBanner(daysLeft: number, endsOn: string): string {
+  const left = daysLeft <= 0 ? 'Tu prueba gratis termina hoy' : daysLeft === 1 ? 'Te queda 1 día de prueba gratis'
+    : `Te quedan ${daysLeft} días de prueba gratis`;
+  return `${left} (hasta el ${endsOn}). No tienes que pagar nada todavía: paga aquí solo si quieres seguir después, `
+    + 'y si no pagas no se cobra nada.';
+}

@@ -78,6 +78,7 @@ const ACTIONS: Readonly<Record<string, string>> = {
   BUSINESS_CLOSED: 'Eliminó (cerró) el negocio',
   BUSINESS_CREATED: 'Creó el negocio',
   KITCHEN_SENT: 'Envió un pedido a cocina',
+  PAYMENT_METHOD_UPDATED: 'Activó o apagó un medio de pago (Addi, Sistecrédito)',
   PRODUCT_MEDICINE_SAVED: 'Guardó la ficha de un medicamento',
   PURCHASE_RECEIVED: 'Recibió mercancía de un proveedor',
   PURCHASE_INVOICE_IMPORTED: 'Cargó la factura de un proveedor',

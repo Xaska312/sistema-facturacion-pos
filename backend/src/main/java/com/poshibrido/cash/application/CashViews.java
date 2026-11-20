@@ -19,6 +19,10 @@ public final class CashViews {
                                     boolean requiresReference) {
     }
 
+    /** Un medio de pago que el negocio puede activar o apagar en Ajustes (decisión 366). */
+    public record OptionalPaymentMethod(UUID id, String code, String name, boolean active) {
+    }
+
     /**
      * Caja que el usuario puede abrir; {@code busy} si ya tiene una sesión abierta (de quien sea). Si además es
      * compartida ({@code shared}), el usuario puede unirse a esa sesión ({@code openSessionId}) para vender en ella.

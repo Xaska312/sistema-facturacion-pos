@@ -1,3 +1,4 @@
+import { supportWhatsAppLink } from '../../shared/support';
 import { Location } from '@angular/common';
 import { Component, afterNextRender, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -34,6 +35,10 @@ import { MANUAL_GLOSSARY, filterManual, normalize } from './manual-content';
           <input type="search" class="search" placeholder="Ej.: cerrar caja, invitar, F4" [value]="query()"
                  (input)="search($event)" />
         </label>
+        <!-- Decisión 364: si no está en el manual, Aska responde por WhatsApp. -->
+        <a [href]="whatsapp" target="_blank" rel="noopener" class="flex items-center gap-2 mb-4 text-sm text-brand hover:underline">
+          <i class="pi pi-whatsapp" aria-hidden="true"></i>¿No lo encuentras? Pregúntanos por WhatsApp
+        </a>
         <ol class="hidden lg:flex flex-col gap-1">
           @for (chapter of chapters(); track chapter.id) {
             <li>
@@ -274,6 +279,7 @@ import { MANUAL_GLOSSARY, filterManual, normalize } from './manual-content';
 })
 export class ManualComponent {
   protected readonly auth = inject(AuthService);
+  protected readonly whatsapp = supportWhatsAppLink('Hola, tengo una pregunta sobre XASKA POS.');
   private readonly location = inject(Location);
   private readonly messages = inject(ToastService);
 
