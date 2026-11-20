@@ -268,6 +268,7 @@ actualizar (paso 11).
 
 | Desde | Qué hacer además de lo de arriba |
 |---|---|
+| Manual para buscadores (374) | Imagen **web** nueva (Caddyfile con `/manual` y `manual.html`). Después, en Search Console: Inspeccionar URL → `https://app.xaska.co/manual` → Solicitar indexación |
 | Cuenta sin mesa y quitar mesas (369, 370) | Negocio V54. Nada que configurar |
 | Plantilla de WhatsApp y legales 1.3/1.4 (371–373) | Crea y espera la aprobación de la plantilla `xaska_seguimiento` (§14, paso 9). Al entrar, cada usuario acepta de nuevo los términos 1.3 y la política 1.4. Las variables `WHATSAPP_FOLLOWUP_TEMPLATE`, `WHATSAPP_TEMPLATE_LANGUAGE` y `WHATSAPP_RETENTION_MONTHS` son opcionales |
 | Aska en xaska.co y medios de pago (364–368) | Plataforma V29 (chat web de Aska y usuarios de WhatsApp sin número) y negocio V53 (Addi y Sistecrédito, apagados: cada negocio los prende o agrega los suyos en Ajustes). Las variables `ASKA_WEB_*` son opcionales. Después de desplegar el POS, publica xaska.co con su burbuja de chat |

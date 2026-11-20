@@ -4,6 +4,7 @@ Allow: /$
 Allow: /login
 Allow: /precios
 Allow: /registro
+Allow: /manual
 Disallow: /app/
 Disallow: /plataforma/
 Disallow: /negocios

@@ -659,7 +659,7 @@ export const routes: Routes = [
   {
     // Manual de uso público (con o sin sesión): se comparte con clientes, p. ej. /manual#cobrar.
     path: 'manual',
-    title: 'Manual de uso',
+    title: 'Manual de uso: vender, cobrar, caja e inventario',
     loadComponent: () => import('./features/manual/manual.component').then((m) => m.ManualComponent),
   },
   {
