@@ -35,14 +35,16 @@ public class WhatsAppClient {
         }
     }
 
-    /** Envía un texto y devuelve el id del mensaje en WhatsApp. */
+    /**
+     * Envía un texto y devuelve el id del mensaje en WhatsApp. {@code to} es el número o, para quien escribió sin
+     * número, su identificador de usuario (BSUID, "CO.123…"), que va en {@code recipient} (decisión 368).
+     */
     @SuppressWarnings("unchecked")
     public String sendText(String to, String text) {
         if (!properties.sends()) {
             throw new SendException("WhatsApp no está configurado en el servidor.");
         }
-        Map<String, Object> body = Map.of("messaging_product", "whatsapp", "recipient_type", "individual",
-                "to", to, "type", "text", "text", Map.of("preview_url", true, "body", text));
+        Map<String, Object> body = body(to, text);
         try {
             HttpRequest request = HttpRequest.newBuilder(URI.create("https://graph.facebook.com/" + properties.version()
                             + "/" + properties.phoneNumberId() + "/messages"))
@@ -66,6 +68,12 @@ public class WhatsAppClient {
             Thread.currentThread().interrupt();
             throw new SendException("Se interrumpió el envío a WhatsApp.");
         }
+    }
+
+    static Map<String, Object> body(String to, String text) {
+        return Map.of("messaging_product", "whatsapp", "recipient_type", "individual",
+                to != null && to.contains(".") ? "recipient" : "to", to == null ? "" : to,
+                "type", "text", "text", Map.of("preview_url", true, "body", text));
     }
 
     static String mask(String phone) {

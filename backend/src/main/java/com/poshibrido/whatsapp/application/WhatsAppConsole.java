@@ -39,7 +39,7 @@ public class WhatsAppConsole {
         String waId = null;
         if (!conversation.web()) {
             try {
-                waId = client.sendText(conversation.phone(), body);
+                waId = client.sendText(conversation.target(), body);
             } catch (WhatsAppClient.SendException ex) {
                 throw new BusinessRuleException(ex.getMessage());
             }

@@ -14,6 +14,9 @@ describe('Agente de WhatsApp (decisión 362)', () => {
     expect(waContact({ channel: 'WEB', phone: null, leadPhone: null })).toBe('Chat de xaska.co');
     expect(waContact({ channel: 'WEB', phone: null, leadPhone: '573001112233' })).toBe('Chat de xaska.co · WhatsApp +57 300 111 2233');
     expect(waContact({ channel: 'WHATSAPP', phone: '573001112233', leadPhone: null })).toBe('+57 300 111 2233');
+    // Decisión 368: por WhatsApp con nombre de usuario puede no llegar el número.
+    expect(waContact({ channel: 'WHATSAPP', phone: null, leadPhone: null })).toContain('sin número');
+    expect(waName({ leadName: null, profileName: null, phone: null, channel: 'WHATSAPP' })).toBe('Usuario de WhatsApp');
   });
 
   it('resume el negocio y avisa lo que falta configurar', () => {

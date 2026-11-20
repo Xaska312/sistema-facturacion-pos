@@ -55,8 +55,12 @@ public class WhatsAppInbound {
         this.properties = properties;
     }
 
-    /** Un mensaje entrante ya leído del aviso de Meta. */
-    public record Incoming(String from, String waMessageId, String profileName, String type, String text) {
+    /**
+     * Un mensaje entrante ya leído del aviso de Meta. {@code from} (el número) puede faltar si la persona usa nombre de
+     * usuario en WhatsApp; {@code userId} (BSUID) llega siempre desde 2026 (decisión 368).
+     */
+    public record Incoming(String from, String userId, String waMessageId, String profileName, String type,
+                           String text) {
     }
 
     /** Recibe el aviso (ya con la firma comprobada). */
@@ -77,7 +81,8 @@ public class WhatsAppInbound {
         try {
             boolean text = "text".equals(in.type()) && in.text() != null && !in.text().isBlank();
             String body = text ? clip(in.text()) : "[" + in.type() + "]";
-            Optional<Conversation> stored = conversations.inbound(in.from(), in.profileName(), in.waMessageId(), body);
+            Optional<Conversation> stored = conversations.inbound(in.from(), in.userId(), in.profileName(),
+                    in.waMessageId(), body);
             if (stored.isEmpty() || stored.get().status() != Status.BOT) {
                 return;
             }
@@ -130,7 +135,7 @@ public class WhatsAppInbound {
 
     private void send(Conversation conversation, String text) {
         try {
-            String id = client.sendText(conversation.phone(), text);
+            String id = client.sendText(conversation.target(), text);
             conversations.outbound(conversation.id(), "BOT", text, id);
         } catch (WhatsAppClient.SendException ex) {
             log.warn("No se pudo responder por WhatsApp: {}", ex.getMessage());
@@ -149,24 +154,40 @@ public class WhatsAppInbound {
                 Map<String, Object> value = map(((Map<String, Object>) change).get("value"));
                 String name = null;
                 for (Object contact : list(value.get("contacts"))) {
-                    Object profile = map(contact).get("profile");
-                    if (profile != null && map(profile).get("name") != null) {
-                        name = String.valueOf(map(profile).get("name"));
+                    Map<String, Object> profile = map(map(contact).get("profile"));
+                    if (profile.get("name") != null) {
+                        name = String.valueOf(profile.get("name"));
+                    } else if (profile.get("username") != null) {
+                        name = "@" + profile.get("username");
                     }
                 }
                 for (Object raw : list(value.get("messages"))) {
                     Map<String, Object> m = map(raw);
                     String from = m.get("from") == null ? null : String.valueOf(m.get("from")).replaceAll("\\D", "");
-                    if (from == null || from.isEmpty() || from.length() > 20) {
+                    if (from != null && (from.isEmpty() || from.length() > 20)) {
+                        from = null;
+                    }
+                    String userId = userId(m.get("from_user_id"));
+                    if (from == null && userId == null) {
+                        log.warn("Mensaje de WhatsApp sin número ni identificador de usuario: se ignora");
                         continue;
                     }
                     String type = m.get("type") == null ? "unknown" : String.valueOf(m.get("type"));
                     String text = "text".equals(type) ? str(map(m.get("text")).get("body")) : null;
-                    out.add(new Incoming(from, str(m.get("id")), name, type, text));
+                    out.add(new Incoming(from, userId, str(m.get("id")), name, type, text));
                 }
             }
         }
         return out;
+    }
+
+    /** El identificador de usuario de WhatsApp (BSUID): "CO." y hasta 128 letras o números. */
+    static String userId(Object value) {
+        if (value == null) {
+            return null;
+        }
+        String v = String.valueOf(value).strip();
+        return v.matches("[A-Z]{2}(\\.[A-Z]{3})?\\.[A-Za-z0-9]{1,128}") ? v : null;
     }
 
     private static String clip(String text) {

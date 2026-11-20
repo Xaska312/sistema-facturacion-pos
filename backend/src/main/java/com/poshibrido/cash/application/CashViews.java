@@ -20,7 +20,8 @@ public final class CashViews {
     }
 
     /** Un medio de pago que el negocio puede activar o apagar en Ajustes (decisión 366). */
-    public record OptionalPaymentMethod(UUID id, String code, String name, boolean active) {
+    public record OptionalPaymentMethod(UUID id, String code, String name, boolean active, boolean requiresReference,
+                                        boolean custom) {
     }
 
     /**

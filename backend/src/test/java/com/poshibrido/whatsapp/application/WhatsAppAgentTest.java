@@ -49,9 +49,30 @@ class WhatsAppAgentTest {
                         "statuses", List.of(Map.of("id", "wamid.0", "status", "read"))))))));
         List<WhatsAppInbound.Incoming> in = WhatsAppInbound.parse(notice);
         assertThat(in).hasSize(2);
-        assertThat(in.getFirst()).isEqualTo(new WhatsAppInbound.Incoming("573001112233", "wamid.1", "Marta", "text", "Hola"));
+        assertThat(in.getFirst()).isEqualTo(new WhatsAppInbound.Incoming("573001112233", null, "wamid.1", "Marta", "text", "Hola"));
         assertThat(in.get(1).type()).isEqualTo("image");
         assertThat(WhatsAppInbound.parse(Map.of("object", "page"))).isEmpty();
+    }
+
+    @Test
+    void readsPeopleWhoWriteWithAUsernameAndNoNumber() {
+        // Decisión 368: con nombre de usuario, Meta puede mandar solo el identificador (BSUID) y no el número.
+        Map<String, Object> notice = Map.of("object", "whatsapp_business_account", "entry", List.of(Map.of(
+                "changes", List.of(Map.of("value", Map.of(
+                        "contacts", List.of(Map.of("profile", Map.of("username", "andres.bar"), "user_id", "CO.1349120865530")),
+                        "messages", List.of(
+                                Map.of("from_user_id", "CO.1349120865530", "id", "wamid.u1", "type", "text",
+                                        "text", Map.of("body", "Hola")),
+                                Map.of("from_user_id", "<script>", "id", "wamid.u2", "type", "text",
+                                        "text", Map.of("body", "x")))))))));
+        List<WhatsAppInbound.Incoming> in = WhatsAppInbound.parse(notice);
+        assertThat(in).containsExactly(
+                new WhatsAppInbound.Incoming(null, "CO.1349120865530", "wamid.u1", "@andres.bar", "text", "Hola"));
+        assertThat(WhatsAppInbound.userId("US.ENT.11815799212886844830")).isEqualTo("US.ENT.11815799212886844830");
+        assertThat(WhatsAppClient.body("CO.1349120865530", "Hola")).containsEntry("recipient", "CO.1349120865530")
+                .doesNotContainKey("to");
+        assertThat(WhatsAppClient.body("573001112233", "Hola")).containsEntry("to", "573001112233")
+                .doesNotContainKey("recipient");
     }
 
     @Test

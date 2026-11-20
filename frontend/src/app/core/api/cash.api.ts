@@ -29,6 +29,9 @@ export interface OptionalPaymentMethod {
   code: string;
   name: string;
   active: boolean;
+  requiresReference: boolean;
+  /** Lo agregó el negocio (decisión 367): se le cambia el nombre y si pide referencia. */
+  custom: boolean;
 }
 
 /** Caja: apertura, movimientos, cierre (arqueo ciego) e informes. */
@@ -46,13 +49,23 @@ export class CashApi {
     return this.http.get<PaymentMethod[]>('/api/v1/payment-methods');
   }
 
-  /** Addi y Sistecrédito: el negocio los activa en Ajustes (decisión 366). */
+  /** Addi, Sistecrédito (decisión 366) y los medios que agregue el negocio (367), para Ajustes. */
   optionalPaymentMethods(): Observable<OptionalPaymentMethod[]> {
     return this.http.get<OptionalPaymentMethod[]>('/api/v1/payment-methods/optional');
   }
 
   setPaymentMethodActive(id: string, active: boolean): Observable<OptionalPaymentMethod[]> {
-    return this.http.put<OptionalPaymentMethod[]>(`/api/v1/payment-methods/optional/${id}`, { active });
+    return this.updatePaymentMethod(id, { active });
+  }
+
+  updatePaymentMethod(id: string, change: { active?: boolean; name?: string; requiresReference?: boolean }):
+    Observable<OptionalPaymentMethod[]> {
+    return this.http.put<OptionalPaymentMethod[]>(`/api/v1/payment-methods/optional/${id}`, change);
+  }
+
+  /** Agrega un medio propio del negocio (SU+ Pay, Bold…), ya prendido (decisión 367). */
+  createPaymentMethod(name: string, requiresReference: boolean): Observable<OptionalPaymentMethod[]> {
+    return this.http.post<OptionalPaymentMethod[]>('/api/v1/payment-methods/optional', { name, requiresReference });
   }
 
   registers(): Observable<RegisterOption[]> {
