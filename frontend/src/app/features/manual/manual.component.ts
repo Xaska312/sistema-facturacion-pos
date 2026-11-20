@@ -1,12 +1,17 @@
 import { supportWhatsAppLink } from '../../shared/support';
 import { Location } from '@angular/common';
-import { Component, afterNextRender, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, afterNextRender, computed, inject, signal } from '@angular/core';
+import { Meta } from '@angular/platform-browser';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ToastService } from '../../shared/ui/toast.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { copyToClipboard } from '../../shared/clipboard';
 import { XaskaLogoComponent } from '../../shared/brand/xaska-logo.component';
 import { MANUAL_GLOSSARY, filterManual, normalize } from './manual-content';
+
+/** La misma descripción que pone scripts/prerender-manual.mjs en el HTML del manual. */
+export const MANUAL_DESCRIPTION = 'Guía paso a paso de XASKA POS, el punto de venta en la web para negocios en Colombia: '
+  + 'vender y cobrar, abrir y cerrar la caja, inventario, fiados, mesas, droguería, reportes y vender sin internet.';
 
 /**
  * Manual de uso público ({@code /manual}): se abre sin iniciar sesión para compartirlo con clientes, y cada sección
@@ -300,6 +305,15 @@ export class ManualComponent {
   });
 
   constructor() {
+    // Decisión 374: la descripción del manual también cuando Google lo pinta con JavaScript (el HTML ya escrito la trae).
+    const meta = inject(Meta);
+    const before = meta.getTag('name="description"')?.content ?? null;
+    meta.updateTag({ name: 'description', content: MANUAL_DESCRIPTION });
+    inject(DestroyRef).onDestroy(() => {
+      if (before) {
+        meta.updateTag({ name: 'description', content: before });
+      }
+    });
     const fragment = inject(ActivatedRoute).snapshot.fragment;
     // Enlace compartido (/manual#cobrar): se baja a la sección cuando ya está pintada.
     afterNextRender(() => {
