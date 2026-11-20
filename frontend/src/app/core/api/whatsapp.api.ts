@@ -71,6 +71,15 @@ export class WhatsAppApi {
     return this.http.post<WaDetail>(`${this.base}/conversations/${id}/reply`, { text });
   }
 
+  /** XASKA le escribe primero con la plantilla de seguimiento aprobada en Meta (decisión 371). */
+  followUp(phone: string, name: string, business: string): Observable<WaDetail> {
+    return this.http.post<WaDetail>(`${this.base}/follow-up`, { phone, name, business });
+  }
+
+  followUpTemplate(): Observable<{ name: string; language: string; text: string }> {
+    return this.http.get<{ name: string; language: string; text: string }>(`${this.base}/follow-up/template`);
+  }
+
   /** take: la toma una persona · bot: vuelve al asistente · close: terminada. */
   action(id: string, action: 'take' | 'bot' | 'close'): Observable<WaDetail> {
     return this.http.post<WaDetail>(`${this.base}/conversations/${id}/${action}`, {});

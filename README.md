@@ -31,7 +31,7 @@
 | 12 — Tipos de negocio y Restaurante | ✅ Tipos y módulos, adiciones, mesas, comandas, cocina en tiempo real, cobro por partes y propinas; Restaurante abierto (267–273). Después: mapa de mesas, dos pisos con caja por zona, impresión directa y cajón (284–286) |
 | Seguridad y carga | ✅ Pruebas de seguridad, carga y uso real y sus correcciones (276–277) |
 | 13 — Farmacia | ✅ 13-1 ficha del medicamento y catálogo CUM, 13-2 compras, 13-3 lotes y vencimientos, 13-4 dispensación, 13-6 temperatura, eventos adversos e informe; Droguería abierta (279–282, 287). ⏳ 13-5 control especial |
-| Planes | ✅ Emprende, Negocio y Empresa con extras desde la consola; Términos 1.2 y Política 1.2 (decisión 288) |
+| Planes | ✅ Emprende, Negocio y Empresa con extras desde la consola; Términos 1.3 y Política 1.4 (decisiones 288 y 373) |
 | XASKA IA (Aska) | ✅ Adicional pagado: facturas con foto, preguntas, qué comprar, resumen del día, cargar catálogo e inventario, avisos y prueba gratis (295–313). Mejoras de noviembre: no se desmiente, hora y día de la semana, caja esperada, margen de todo el catálogo, manual de uso y logo nuevo (355–359) |
 | Planes y pagos | ✅ Bre-B con comprobante revisado por Aska, registro abierto, precios públicos, precio fundador, referidos y aliados (302–305, 312) |
 | Finanzas | ✅ Gastos, gastos fijos, retenciones, estado de resultados, tablero y Aska (320–325) |
@@ -42,7 +42,8 @@
 | Vender sin internet | ✅ Copia del catálogo, cola de ventas con número provisional y la app que abre sin conexión en el equipo de la caja (332–333); abrir el cajón, productos y categorías sin internet (352–353) |
 | Costo con IVA y ajustes | ✅ Costo como lo cobra el proveedor, revisar costos con IVA, prueba gratis visible desde el registro, diálogos que reciben el toque y consola en el celular (346–351) |
 | Novedades | ✅ Tarjeta en Inicio y "Novedades" en el menú del usuario después de cada actualización (354) |
-| Agente de WhatsApp | 🧪 El número de XASKA responde con el manual, los planes y los equipos, y pasa a una persona con aviso por correo; consola Plataforma → WhatsApp (362) |
+| Medios de pago y bares | ✅ Addi, Sistecrédito y medios propios del negocio (366–367); prueba gratis visible al crear el negocio (365); cuenta sin mesa y quitar mesas (369–370) |
+| Aska en WhatsApp y xaska.co | ✅ El +57 324 556 0729 y el chat de xaska.co responden con Aska (manual, planes, equipos, venta consultiva), pasan a una persona con aviso por correo y se atienden en Plataforma → WhatsApp; usuarios sin número; XASKA escribe primero con plantilla aprobada; chats borrados a los 12 meses (362–364, 368, 371, 372) |
 | Facturación electrónica | ⏳ Pendiente (espera al contador) |
 
 ## Requisitos

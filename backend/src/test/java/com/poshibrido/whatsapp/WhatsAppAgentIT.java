@@ -55,6 +55,8 @@ class WhatsAppAgentIT extends IntegrationTest {
     private WhatsAppConversations conversations;
     @Autowired
     private WhatsAppInbound inbound;
+    @Autowired
+    private com.poshibrido.whatsapp.application.WhatsAppRetention retention;
 
 
     @BeforeEach
@@ -311,6 +313,51 @@ class WhatsAppAgentIT extends IntegrationTest {
                 .isEqualTo(phone);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM platform.wa_messages m JOIN platform.wa_conversations c "
                 + "ON c.id = m.conversation_id WHERE c.wa_user_id = ?", Integer.class, user)).isEqualTo(3);
+    }
+
+    @Test
+    void xaskaWritesFirstWithTheApprovedTemplateAndOldChatsAreDeleted() throws Exception {
+        String phone = "3" + (100000000L + System.nanoTime() % 899_999_999L);
+        when(whatsapp.sendTemplate(anyString(), anyString(), anyString(), any())).thenReturn("wamid.plantilla-" + phone);
+        Session admin = platformAdmin();
+        api.getWith(admin, "/api/v1/platform/whatsapp/follow-up/template").andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("xaska_seguimiento"))
+                .andExpect(jsonPath("$.text", containsString("cómo te va con XASKA POS")));
+
+        // Decisión 371: plantilla aprobada con el primer nombre y el negocio; la conversación queda con una persona.
+        api.postWith(admin, "/api/v1/platform/whatsapp/follow-up",
+                        "{\"phone\":\"%s\",\"name\":\"Carlos Rojas\",\"business\":\"La Tribuna Bar\"}".formatted(phone))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.conversation.status").value("HUMAN"))
+                .andExpect(jsonPath("$.conversation.phone").value("57" + phone))
+                .andExpect(jsonPath("$.windowOpen").value(false))
+                .andExpect(jsonPath("$.messages[0].author").value("HUMAN"))
+                .andExpect(jsonPath("$.messages[0].body", containsString("Hola Carlos, soy Daniel de XASKA")))
+                .andExpect(jsonPath("$.messages[0].body", containsString("en La Tribuna Bar")));
+        verify(whatsapp).sendTemplate("57" + phone, "xaska_seguimiento", "es", List.of("Carlos", "La Tribuna Bar"));
+
+        // Si contesta, Aska no se mete: la atiende la persona.
+        clearInvocations(ai);
+        signed(message("57" + phone, "wamid.respuesta-" + phone, "Bien, gracias")).andExpect(status().isOk());
+        verify(ai, never()).send(any());
+
+        when(whatsapp.sendTemplate(anyString(), anyString(), anyString(), any()))
+                .thenThrow(new com.poshibrido.whatsapp.application.WhatsAppClient.SendException(
+                        "WhatsApp no aceptó la plantilla \"xaska_seguimiento\" (404): Template name does not exist"));
+        api.postWith(admin, "/api/v1/platform/whatsapp/follow-up", "{\"phone\":\"3001112233\",\"name\":\"Ana\"}")
+                .andExpect(status().is(422)).andExpect(jsonPath("$.detail", containsString("does not exist")));
+        api.postWith(admin, "/api/v1/platform/whatsapp/follow-up", "{\"phone\":\"12\"}").andExpect(status().is(422));
+
+        // Decisión 372: las conversaciones sin mensajes en 12 meses se borran con sus mensajes.
+        String old = "57319" + (System.nanoTime() % 10_000_000);
+        UUID oldId = conversations.inbound(old, "Viejo", "wamid.viejo-" + old, "Hola").orElseThrow().id();
+        jdbc.update("UPDATE platform.wa_conversations SET updated_at = now() - interval '13 months' WHERE id = ?", oldId);
+        jdbc.update("UPDATE platform.wa_messages SET created_at = now() - interval '13 months' WHERE conversation_id = ?", oldId);
+        assertThat(retention.purge()).isGreaterThanOrEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM platform.wa_conversations WHERE id = ?", Integer.class, oldId))
+                .isZero();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM platform.wa_conversations WHERE phone = ?", Integer.class,
+                "57" + phone)).isEqualTo(1);
     }
 
     @Test

@@ -13,10 +13,26 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @param graphVersion  versión de la API Graph (v25.0)
  * @param handoffEmail  a dónde llega el aviso cuando una conversación pasa a una persona
  * @param async         procesar los mensajes en segundo plano (las pruebas lo apagan)
+ * @param followupTemplate plantilla aprobada en Meta para escribirle primero a un cliente (decisión 371)
+ * @param templateLanguage idioma de esa plantilla en Meta ("es")
+ * @param retentionMonths  meses sin mensajes tras los que se borra una conversación (decisión 372)
  */
 @ConfigurationProperties(prefix = "app.whatsapp")
 public record WhatsAppProperties(String verifyToken, String appSecret, String accessToken, String phoneNumberId,
-                                 String graphVersion, String handoffEmail, Boolean async) {
+                                 String graphVersion, String handoffEmail, Boolean async, String followupTemplate,
+                                 String templateLanguage, Integer retentionMonths) {
+
+    public String followup() {
+        return present(followupTemplate) ? followupTemplate.strip() : "xaska_seguimiento";
+    }
+
+    public String language() {
+        return present(templateLanguage) ? templateLanguage.strip() : "es";
+    }
+
+    public int retention() {
+        return retentionMonths == null || retentionMonths < 1 ? 12 : retentionMonths;
+    }
 
     /** Puede recibir avisos de Meta (token de verificación y clave secreta). */
     public boolean receives() {

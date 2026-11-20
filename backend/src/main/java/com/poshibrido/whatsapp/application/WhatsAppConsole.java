@@ -8,6 +8,7 @@ import com.poshibrido.whatsapp.application.WhatsAppConversations.Status;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.UUID;
 
 /** Lo que hace alguien de XASKA desde la consola de plataforma con las conversaciones de WhatsApp (decisión 362). */
@@ -50,6 +51,47 @@ public class WhatsAppConsole {
             conversations.setStatus(id, Status.HUMAN);
         }
         return conversations.detail(id);
+    }
+
+    /** El texto de la plantilla de seguimiento tal como se aprobó en Meta; {{1}} nombre, {{2}} negocio (decisión 371). */
+    public static final String FOLLOWUP_TEXT = "Hola {{1}}, soy Daniel de XASKA. Te escribo para saber cómo te va con "
+            + "XASKA POS en {{2}}. ¿Tienes alguna duda o hay algo en lo que te podamos ayudar? Responde este mensaje y "
+            + "te atiendo por aquí.";
+
+    /**
+     * Le escribe primero a un cliente desde el número de XASKA con la plantilla aprobada (decisión 371). La
+     * conversación queda con una persona; cuando el cliente responde se sigue escribiendo desde la consola.
+     */
+    public Detail followUp(String rawPhone, String name, String business) {
+        String phone = WhatsAppConversations.phone(rawPhone);
+        if (phone == null) {
+            throw new BusinessRuleException("Ese número no parece un celular válido.");
+        }
+        String who = firstName(name);
+        String where = business == null || business.isBlank() ? "tu negocio" : business.strip();
+        String waId;
+        try {
+            waId = client.sendTemplate(phone, properties.followup(), properties.language(), List.of(who, where));
+        } catch (WhatsAppClient.SendException ex) {
+            throw new BusinessRuleException(ex.getMessage());
+        }
+        Conversation conversation = conversations.followUp(phone, name, business);
+        conversations.outbound(conversation.id(), "HUMAN",
+                FOLLOWUP_TEXT.replace("{{1}}", who).replace("{{2}}", where), waId);
+        return conversations.detail(conversation.id());
+    }
+
+    public java.util.Map<String, String> followUpTemplate() {
+        return java.util.Map.of("name", properties.followup(), "language", properties.language(), "text", FOLLOWUP_TEXT);
+    }
+
+    /** "Carlos Rojas" → "Carlos"; sin nombre, "qué tal" (Meta no acepta variables vacías). */
+    static String firstName(String name) {
+        if (name == null || name.isBlank()) {
+            return "qué tal";
+        }
+        String first = name.strip().split("\\s+")[0];
+        return first.length() > 40 ? first.substring(0, 40) : first;
     }
 
     public Detail setStatus(UUID id, Status status) {

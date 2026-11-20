@@ -32,6 +32,10 @@ public class PlatformWhatsAppController {
     public record ReplyRequest(@NotBlank @Size(max = 2000) String text) {
     }
 
+    public record FollowUpRequest(@NotBlank @Size(max = 30) String phone, @Size(max = 120) String name,
+                                  @Size(max = 160) String business) {
+    }
+
     @GetMapping("/state")
     public WhatsAppConsole.State state() {
         return console.state();
@@ -67,5 +71,17 @@ public class PlatformWhatsAppController {
     @PostMapping("/conversations/{id}/close")
     public Detail close(@PathVariable UUID id) {
         return console.setStatus(id, Status.CLOSED);
+    }
+
+    /** XASKA le escribe primero a un cliente con la plantilla de seguimiento aprobada en Meta (decisión 371). */
+    @PostMapping("/follow-up")
+    public Detail followUp(@Valid @RequestBody FollowUpRequest request) {
+        return console.followUp(request.phone(), request.name(), request.business());
+    }
+
+    /** Lo que dice la plantilla de seguimiento, para mostrarlo antes de enviarla. */
+    @GetMapping("/follow-up/template")
+    public java.util.Map<String, String> followUpTemplate() {
+        return console.followUpTemplate();
     }
 }

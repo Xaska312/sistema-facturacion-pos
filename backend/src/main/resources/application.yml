@@ -82,6 +82,11 @@ app:
     phone-number-id: ${WHATSAPP_PHONE_NUMBER_ID:}
     graph-version: ${WHATSAPP_GRAPH_VERSION:v25.0}
     handoff-email: ${WHATSAPP_HANDOFF_EMAIL:soporte@xaska.co}
+    # Plantilla aprobada en Meta para escribirle primero a un cliente (decisión 371) y su idioma.
+    followup-template: ${WHATSAPP_FOLLOWUP_TEMPLATE:xaska_seguimiento}
+    template-language: ${WHATSAPP_TEMPLATE_LANGUAGE:es}
+    # Meses sin mensajes tras los que se borra una conversación (decisión 372, política de datos 1.4).
+    retention-months: ${WHATSAPP_RETENTION_MONTHS:12}
     async: true
   aska-web:
     # Chat de Aska en xaska.co (decisión 364): páginas que pueden usarlo y topes contra el abuso.

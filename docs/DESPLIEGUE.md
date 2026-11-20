@@ -269,6 +269,7 @@ actualizar (paso 11).
 | Desde | Qué hacer además de lo de arriba |
 |---|---|
 | Cuenta sin mesa y quitar mesas (369, 370) | Negocio V54. Nada que configurar |
+| Plantilla de WhatsApp y legales 1.3/1.4 (371–373) | Crea y espera la aprobación de la plantilla `xaska_seguimiento` (§14, paso 9). Al entrar, cada usuario acepta de nuevo los términos 1.3 y la política 1.4. Las variables `WHATSAPP_FOLLOWUP_TEMPLATE`, `WHATSAPP_TEMPLATE_LANGUAGE` y `WHATSAPP_RETENTION_MONTHS` son opcionales |
 | Aska en xaska.co y medios de pago (364–368) | Plataforma V29 (chat web de Aska y usuarios de WhatsApp sin número) y negocio V53 (Addi y Sistecrédito, apagados: cada negocio los prende o agrega los suyos en Ajustes). Las variables `ASKA_WEB_*` son opcionales. Después de desplegar el POS, publica xaska.co con su burbuja de chat |
 | Correcciones de seguridad (277) | El cambio de `max_connections` recrea el contenedor de Postgres (los datos quedan en el volumen). Revisa `DB_POOL_SIZE` y `SUBSCRIPTION_TRIAL_WITHOUT_CODE` en el `.env` |
 | Farmacia 13-1 (279) | Consola de plataforma → **CUM** → cargar el CSV del catálogo del INVIMA (datos.gov.co). Repetirlo cada mes o cuando el INVIMA lo actualice |
@@ -412,7 +413,20 @@ prueba que escribe hasta a 5 números tuyos.
 8. **Número real (después).** Agregar el 324 (sin WhatsApp instalado en él, o borrando la cuenta antes), aprobar el
    nombre visible "XASKA", agregar un método de pago y, si Meta lo pide, verificar el negocio. Desde el 1 de octubre
    de 2026 Meta cobra también los mensajes de servicio (respuestas dentro de las 24 horas): revisa la tarifa en pesos
-   en la documentación de precios de WhatsApp antes de abrirlo al público.
+   en la documentación de precios de WhatsApp antes de abrirlo al público. Hecho el 20 de noviembre de 2026: WABA
+   "Xaska" 1614437863158122, Phone Number ID 1433921063144555, con "Suscribirse a webhooks" activado y la cuenta
+   asignada al usuario del sistema con "Todo".
+9. **Plantilla de seguimiento (decisión 371).** Para escribirle primero a un cliente desde Plataforma → Negocios →
+   "WhatsApp". En WhatsApp Manager → Plantillas de mensajes → Crear plantilla:
+   - Categoría: **Utilidad** (seguimiento de su cuenta; Meta puede pasarla a Marketing, que cuesta más).
+   - Nombre: `xaska_seguimiento` · Idioma: **Español** (`es`).
+   - Cuerpo, exactamente: `Hola {{1}}, soy Daniel de XASKA. Te escribo para saber cómo te va con XASKA POS en {{2}}.
+     ¿Tienes alguna duda o hay algo en lo que te podamos ayudar? Responde este mensaje y te atiendo por aquí.`
+   - Ejemplos: `{{1}}` = Carlos, `{{2}}` = La Tribuna Bar.
+   Si la aprueban con otro nombre o idioma, cámbialos en `WHATSAPP_FOLLOWUP_TEMPLATE` y `WHATSAPP_TEMPLATE_LANGUAGE`.
+   Si cambias el texto, cambia también `WhatsAppConsole.FOLLOWUP_TEXT` (es lo que queda guardado en la consola).
+10. **Conservación (decisión 372).** Las conversaciones sin mensajes en 12 meses se borran solas cada madrugada
+   (`WHATSAPP_RETENTION_MONTHS`), como dice la política de datos 1.4.
 
 Si el asistente no tiene `ANTHROPIC_API_KEY`, se disculpa y pasa cada conversación a una persona.
 

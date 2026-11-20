@@ -4,28 +4,37 @@
  * texto, sube su versión aquí Y en LegalConsentService.java (backend): la app vuelve a pedir la aceptación a todos.
  * Al constituir la S.A.S., la persona natural y la cédula se cambian por la razón social y el NIT.
  */
-/** 1.2 (decisión 288): planes Emprende, Negocio y Empresa, extras, mejoras y precios. */
-export const TERMS_VERSION = '1.2';
+/**
+ * 1.2 (decisión 288): planes Emprende, Negocio y Empresa, extras, mejoras y precios.
+ * 1.3 (decisión 373): nombre completo del responsable, soporte por el WhatsApp de XASKA (+57 324 556 0729) atendido
+ * primero por Aska, y aviso de que XASKA puede escribir por WhatsApp o correo sobre la cuenta.
+ */
+export const TERMS_VERSION = '1.3';
 /**
  * 1.3 (decisiones 295 a 299): XASKA IA (Anthropic, encargado en Estados Unidos): facturas, preguntas y resúmenes.
  * Decisión 309: se nombran también el cuaderno de inventario y los pedidos revisados; mismo encargado y finalidad, sin
  * nueva versión.
  */
-export const PRIVACY_VERSION = '1.3';
+/**
+ * 1.4 (decisión 373): conversaciones por WhatsApp y en el chat de xaska.co con Aska (Anthropic) y Meta (WhatsApp),
+ * contacto por WhatsApp o correo sobre la cuenta, borrado de las conversaciones a los 12 meses (decisión 372) y nombre
+ * completo del responsable.
+ */
+export const PRIVACY_VERSION = '1.4';
 
 /** Datos del responsable (persona natural con la marca XASKA). */
 export const LEGAL_OWNER = {
-  name: 'Daniel Mejía',
+  name: 'Daniel Felipe Mejía Martínez',
   idNumber: '1.005.820.986',
   city: 'Ibagué (Tolima)',
   address: 'Carrera 10 # 122-33',
-  phone: '+57 316 778 4193 (también WhatsApp)',
+  phone: '+57 324 556 0729 (WhatsApp)',
   email: 'soporte@xaska.co',
   publishedOn: '31 de octubre de 2026',
-  /** La política 1.3 (lectura de facturas con IA). */
-  privacyPublishedOn: '6 de noviembre de 2026',
-  /** Los términos 1.2 (planes nuevos). */
-  termsPublishedOn: '4 de noviembre de 2026',
+  /** La política 1.4 (Aska en WhatsApp y en xaska.co). */
+  privacyPublishedOn: '20 de noviembre de 2026',
+  /** Los términos 1.3 (soporte por WhatsApp con Aska). */
+  termsPublishedOn: '20 de noviembre de 2026',
   hosting: 'Contabo, con servidores en Estados Unidos',
 } as const;
 
@@ -82,6 +91,9 @@ export const PRIVACY_POLICY: LegalDocument = {
             'De seguridad: dirección IP, navegador, fecha y hora de inicios de sesión, intentos fallidos y cambios '
               + 'importantes (registro de auditoría).',
             'Del negocio que contrata: nombre, NIT o cédula, dirección, logo, plan y pagos del servicio.',
+            'De quienes nos escriben por WhatsApp o en el chat de xaska.co: el número de WhatsApp (o el identificador '
+              + 'de usuario que da WhatsApp a quien usa nombre de usuario), el nombre del perfil, los mensajes de la '
+              + 'conversación y lo que cuenten de su negocio (nombre, ciudad y lo que necesita).',
             'Que cada negocio registra de sus propios clientes y proveedores (nombre, documento, teléfono, correo, '
               + 'dirección, compras): de estos datos el responsable es el negocio; XASKA solo los guarda y procesa por '
               + 'su cuenta, como encargado (numeral 8).',
@@ -110,6 +122,12 @@ export const PRIVACY_POLICY: LegalDocument = {
               + 'auditoría.',
             'Cobrar el servicio y cumplir obligaciones legales y contables.',
             'Atender soporte, consultas y reclamos.',
+            'Responder por WhatsApp y en el chat de xaska.co: primero contesta Aska, la asistente virtual de XASKA (una '
+              + 'inteligencia artificial que puede equivocarse), y cuando hace falta una persona del equipo. Aska no ve los '
+              + 'datos de ningún negocio en esas conversaciones.',
+            'Escribirte por WhatsApp o por correo sobre tu cuenta y tu experiencia con XASKA POS, por ejemplo para '
+              + 'saber cómo te va o ayudarte a configurarlo. Si no quieres que te escribamos más, respóndenos "no más '
+              + `mensajes" o escribe a ${O.email}.`,
           ],
         },
         {
@@ -168,6 +186,7 @@ export const PRIVACY_POLICY: LegalDocument = {
           list: [
             `Alojamiento del servidor: ${O.hosting}.`,
             'Envío de correos: Resend.',
+            'Mensajes de WhatsApp: Meta Platforms, con la plataforma de WhatsApp Business.',
             'Copias de seguridad cifradas: Google Drive.',
             'XASKA IA, el adicional de inteligencia artificial: Anthropic (Claude). Solo recibe lo que el negocio decide '
               + 'enviar: las fotos o el PDF de las facturas y listas de precios de proveedores y las fotos del cuaderno '
@@ -176,6 +195,8 @@ export const PRIVACY_POLICY: LegalDocument = {
               + 'revisar o resumir (pueden incluir '
               + 'nombres de clientes, productos y cifras). No los usa para entrenar sus modelos y los borra según sus plazos de '
               + 'retención.',
+            'Aska en WhatsApp y en el chat de xaska.co: Anthropic (Claude) recibe los mensajes de la conversación y lo '
+              + 'que contaste de tu negocio, solo para responder. No los usa para entrenar sus modelos.',
           ],
         },
         {
@@ -199,7 +220,8 @@ export const PRIVACY_POLICY: LegalDocument = {
           p: 'Guardamos los datos mientras la cuenta esté activa. Si el dueño cierra el negocio, los datos quedan '
             + 'desactivados 30 días para recuperarlos o exportarlos. Después se borran de la base activa, y las copias '
             + 'de seguridad cifradas se eliminan solas a medida que vencen (máximo 13 meses). Los registros de pagos y '
-            + 'de seguridad se conservan el tiempo que exijan las normas contables y para atender reclamos.',
+            + 'de seguridad se conservan el tiempo que exijan las normas contables y para atender reclamos. Las '
+            + 'conversaciones de WhatsApp y del chat de xaska.co se borran solas 12 meses después de su último mensaje.',
         },
       ],
     },
@@ -269,6 +291,9 @@ export const TERMS: LegalDocument = {
           'Cuidas tu contraseña; lo hecho con tu cuenta se entiende hecho por ti.',
           'El dueño del negocio decide a quién invita y con qué rol, y responde por lo que hacen sus usuarios.',
           `Avísanos pronto a ${O.email} si crees que alguien entró a tu cuenta sin permiso.`,
+          'Podemos escribirte por WhatsApp o por correo, al celular y al correo de tu cuenta, sobre tu cuenta y tu '
+            + 'experiencia con XASKA POS. Si no quieres más mensajes, respóndenos "no más mensajes" o escribe a '
+            + `${O.email}.`,
         ],
       }],
     },
@@ -360,8 +385,10 @@ export const TERMS: LegalDocument = {
             + 'proveedores o de internet.',
           'Hacemos copias de seguridad cifradas todos los días. Aun así, te recomendamos exportar tus reportes con '
             + 'regularidad.',
-          `Soporte por ${O.email} y por WhatsApp al ${O.phone.split(' (')[0]}, en días hábiles de 8:00 a. m. a 6:00 p. m. `
-            + '(hora de Colombia). Respondemos en máximo un día hábil.',
+          `Soporte por ${O.email} y por WhatsApp al ${O.phone.split(' (')[0]}. En WhatsApp responde primero Aska, la `
+            + 'asistente virtual de XASKA, a cualquier hora; las personas del equipo atienden de lunes a sábado de 8:00 '
+            + 'a. m. a 6:00 p. m. (hora de Colombia) y respondemos en máximo un día hábil. Aska es una inteligencia '
+            + 'artificial y puede equivocarse: lo que diga no cambia estos términos ni lo que incluye tu plan.',
         ],
       }],
     },

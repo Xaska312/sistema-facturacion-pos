@@ -76,6 +76,18 @@ class WhatsAppAgentTest {
     }
 
     @Test
+    void followUpTemplateBits() {
+        assertThat(WhatsAppConsole.firstName("  Carlos Andrés Rojas ")).isEqualTo("Carlos");
+        assertThat(WhatsAppConsole.firstName(null)).isEqualTo("qué tal");
+        assertThat(WhatsAppClient.metaError("{\"error\":{\"message\":\"(#132001) Template name does not exist\"}}"))
+                .isEqualTo("(#132001) Template name does not exist");
+        assertThat(WhatsAppClient.metaError("{\"error\":{\"message\":\"x\",\"error_data\":{\"details\":\"Faltan parámetros\"}}}"))
+                .isEqualTo("Faltan parámetros");
+        assertThat(WhatsAppClient.metaError("<html>")).isEqualTo("sin detalle");
+        assertThat(new WhatsAppProperties(null, null, null, null, null, null, null, null, null, null).retention()).isEqualTo(12);
+    }
+
+    @Test
     void checksMetaSignatures() throws Exception {
         byte[] body = "{\"a\":1}".getBytes(StandardCharsets.UTF_8);
         Mac mac = Mac.getInstance("HmacSHA256");
@@ -89,7 +101,7 @@ class WhatsAppAgentTest {
 
     @Test
     void knowsWhatIsConfigured() {
-        WhatsAppProperties none = new WhatsAppProperties(null, "", null, null, null, null, null);
+        WhatsAppProperties none = new WhatsAppProperties(null, "", null, null, null, null, null, null, null, null);
         assertThat(none.receives()).isFalse();
         assertThat(none.sends()).isFalse();
         assertThat(none.version()).isEqualTo("v25.0");
