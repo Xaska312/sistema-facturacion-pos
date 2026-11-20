@@ -7,7 +7,7 @@ import { ButtonLinkComponent } from '../../shared/ui/button-link.component';
 import { DialogComponent } from '../../shared/ui/dialog.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
-import { Observable, catchError, concatMap, from, last, of } from 'rxjs';
+import { Observable, catchError, concatMap, from, last, of, tap } from 'rxjs';
 import { BranchOption, DiningApi, DiningTable, DiningZone, RegisterOption } from '../../core/api/dining.api';
 import { problemMessage } from '../../core/errors/problem';
 import { AuthService } from '../../core/auth/auth.service';
@@ -75,6 +75,11 @@ export function nextTableNames(existing: readonly string[], fromNumber: number, 
               </div>
               <div class="flex flex-wrap gap-2">
                 <app-button label="Agregar mesas" icon="pi pi-plus" size="small" [outlined]="true" (clicked)="openBulk(z)" />
+                @if (z.tables.length > 0) {
+                  <!-- Decisión 370: si agregaron de más o cambian el local, se quitan. -->
+                  <app-button label="Quitar mesas" icon="pi pi-minus" size="small" [outlined]="true" severity="secondary"
+                              (clicked)="openRemove(z)" />
+                }
                 @if (z.tables.length > 0) {
                   <app-button label="Plano" icon="pi pi-map" size="small" [outlined]="true" (clicked)="layoutZone.set(z)" />
                 }
@@ -161,6 +166,29 @@ export function nextTableNames(existing: readonly string[], fromNumber: number, 
       </div>
     </app-form-dialog>
 
+    <app-form-dialog [(visible)]="removeOpen" [header]="'Quitar mesas de ' + (removeZone()?.name ?? '')" width="28rem"
+                     [dirty]="false" [submitLabel]="removeLabel()" submitIcon="pi pi-minus"
+                     [invalidMessage]="removeChosen().size ? null : 'Marca las mesas que quieres quitar.'"
+                     [save]="removeRequest" [successMessage]="null" (saved)="removed()">
+      <p class="text-sm text-muted">Marca las que sobran. Las que nunca tuvieron una cuenta se borran; las que ya
+        tuvieron ventas se quitan del salón y sus ventas viejas no cambian. Una mesa con la cuenta abierta no se puede
+        quitar hasta cobrarla o moverla.</p>
+      <ul class="flex flex-wrap gap-2 mt-3" aria-label="Mesas para quitar">
+        @for (t of removeZone()?.tables ?? []; track t.id) {
+          <li>
+            <label class="table-chip cursor-pointer" [class.table-chip--on]="removeChosen().has(t.id)">
+              <input type="checkbox" class="sr-only" [checked]="removeChosen().has(t.id)" (change)="toggleRemove(t.id)" />
+              <span class="font-extrabold">{{ t.name }}</span>
+              <span class="text-xs text-muted">{{ removeChosen().has(t.id) ? 'quitar' : (t.seats ? t.seats + ' p.' : '') }}</span>
+            </label>
+          </li>
+        }
+      </ul>
+      <button type="button" class="text-sm text-brand mt-2 self-start" (click)="chooseLast(removeZone())">
+        Marcar una más desde el final
+      </button>
+    </app-form-dialog>
+
     <app-form-dialog [(visible)]="tableOpen" [header]="'Mesa ' + (editingTable()?.name ?? '')" width="26rem" [dirty]="true"
                      [invalidMessage]="tableName.trim() ? null : 'Escribe el nombre de la mesa.'" [save]="tableRequest"
                      successMessage="Mesa guardada" (saved)="load()">
@@ -201,6 +229,7 @@ export function nextTableNames(existing: readonly string[], fromNumber: number, 
       background: var(--surface-alt);
     }
     .table-chip:hover { border-color: var(--brand); }
+    .table-chip--on { border-color: var(--danger); background: var(--danger-soft); }
     .zone-register {
       display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.125rem 0.625rem; border-radius: 9999px;
       background: var(--brand-soft); color: var(--brand-soft-text); font-size: 0.75rem; font-weight: 700;
@@ -236,6 +265,14 @@ export class DiningSetupComponent implements OnInit {
   protected bulkCount = 10;
   protected bulkSeats: number | null = 4;
   protected tableOpen = false;
+  protected removeOpen = false;
+  protected readonly removeZone = signal<DiningZone | null>(null);
+  protected readonly removeChosen = signal<Set<string>>(new Set());
+  protected readonly removeLabel = computed(() => {
+    const n = this.removeChosen().size;
+    return n === 1 ? 'Quitar 1 mesa' : `Quitar ${n} mesas`;
+  });
+  private removalCount = { deleted: 0, hidden: 0 };
   protected tableName = '';
   protected tableSeats: number | null = null;
   protected tableZone = '';
@@ -312,6 +349,54 @@ export class DiningSetupComponent implements OnInit {
     const names = nextTableNames(existing, Number(this.bulkFrom) || 1, Number(this.bulkCount));
     return from(names).pipe(concatMap((name) => this.api.createTable(zone?.id ?? '', name, this.bulkSeats || null)), last());
   };
+
+  protected openRemove(zone: DiningZone): void {
+    this.removeZone.set(zone);
+    this.removeChosen.set(new Set());
+    this.removeOpen = true;
+  }
+
+  protected toggleRemove(id: string): void {
+    const next = new Set(this.removeChosen());
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    this.removeChosen.set(next);
+  }
+
+  /** Atajo: marca la última mesa que falta (las sobrantes suelen ser las últimas que se agregaron). */
+  protected chooseLast(zone: DiningZone | null): void {
+    const tables = zone?.tables ?? [];
+    const next = new Set(this.removeChosen());
+    const last = [...tables].reverse().find((t) => !next.has(t.id));
+    if (last) {
+      next.add(last.id);
+    }
+    this.removeChosen.set(next);
+  }
+
+  /** Una por una; si una falla (cuenta abierta), las anteriores ya quedaron quitadas y se dice cuál. */
+  protected readonly removeRequest = (): Observable<unknown> => {
+    this.removalCount = { deleted: 0, hidden: 0 };
+    const tables = (this.removeZone()?.tables ?? []).filter((t) => this.removeChosen().has(t.id));
+    return from(tables).pipe(concatMap((t) => this.api.removeTable(t.id).pipe(
+      tap((r) => (r.removal === 'HIDDEN' ? this.removalCount.hidden++ : this.removalCount.deleted++)),
+      catchError((e: unknown) => {
+        this.load();
+        throw e;
+      }),
+    )), last());
+  };
+
+  protected removed(): void {
+    const { deleted, hidden } = this.removalCount;
+    const total = deleted + hidden;
+    this.messages.add({ severity: 'success', summary: total === 1 ? 'Mesa quitada' : `${total} mesas quitadas`,
+      detail: hidden > 0 ? 'Las que ya tenían ventas se quitaron del salón; sus ventas no cambian.' : undefined });
+    this.load();
+  }
 
   protected openTable(table: DiningTable): void {
     this.editingTable.set(table);

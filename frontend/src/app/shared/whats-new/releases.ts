@@ -11,6 +11,14 @@ export interface Release {
 
 export const RELEASES: readonly Release[] = [
   {
+    id: '2026-11-20',
+    title: 'Para bares: cuentas sin mesa',
+    items: [
+      'En Mesas, "Cuenta sin mesa" abre una cuenta a nombre de alguien que no está en una mesa ("Juan, camisa azul"): pide y paga al final.',
+      'En Mesas → Configurar, "Quitar mesas" quita las que sobran; las que ya tuvieron ventas no pierden su historia.',
+    ],
+  },
+  {
     id: '2026-11-18',
     title: 'Más medios de pago y ayuda por WhatsApp',
     items: [

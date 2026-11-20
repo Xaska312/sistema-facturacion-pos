@@ -124,6 +124,7 @@ const ACTIONS: Readonly<Record<string, string>> = {
   TAB_ITEM_VOIDED: 'Quitó un producto de una cuenta',
   TAB_MERGED: 'Unió dos cuentas',
   TAB_MOVED: 'Movió una cuenta de mesa',
+  DINING_TABLE_REMOVED: 'Quitó una mesa',
   TAB_OPENED: 'Abrió una cuenta',
   TAB_UPDATED: 'Cambió los datos de una cuenta',
   BUSINESS_PROFILE_CHANGED: 'Cambió el tipo de negocio o sus módulos',
@@ -329,7 +330,7 @@ export function fieldValue(field: string, value: unknown): string {
     return BUSINESS_TYPES.find((t) => t.code === value)?.label ?? value;
   }
   if (field === 'kind' && typeof value === 'string') {
-    return ({ TABLE: 'Mesa', TAKEAWAY: 'Para llevar', DELIVERY: 'Domicilio' } as Record<string, string>)[value] ?? value;
+    return ({ TABLE: 'Mesa', TAKEAWAY: 'Para llevar', DELIVERY: 'Domicilio', NAMED: 'Cuenta sin mesa' } as Record<string, string>)[value] ?? value;
   }
   if (field === 'modules' && typeof value === 'string') {
     const codes = value.split(',').filter((c) => c !== '');

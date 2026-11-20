@@ -268,6 +268,7 @@ actualizar (paso 11).
 
 | Desde | Qué hacer además de lo de arriba |
 |---|---|
+| Cuenta sin mesa y quitar mesas (369, 370) | Negocio V54. Nada que configurar |
 | Aska en xaska.co y medios de pago (364–368) | Plataforma V29 (chat web de Aska y usuarios de WhatsApp sin número) y negocio V53 (Addi y Sistecrédito, apagados: cada negocio los prende o agrega los suyos en Ajustes). Las variables `ASKA_WEB_*` son opcionales. Después de desplegar el POS, publica xaska.co con su burbuja de chat |
 | Correcciones de seguridad (277) | El cambio de `max_connections` recrea el contenedor de Postgres (los datos quedan en el volumen). Revisa `DB_POOL_SIZE` y `SUBSCRIPTION_TRIAL_WITHOUT_CODE` en el `.env` |
 | Farmacia 13-1 (279) | Consola de plataforma → **CUM** → cargar el CSV del catálogo del INVIMA (datos.gov.co). Repetirlo cada mes o cuando el INVIMA lo actualice |

@@ -15,5 +15,6 @@ class TabLabelsTest {
         assertThat(TabLabels.label("TAKEAWAY", 12, null, "  Juan ")).isEqualTo("Para llevar · Juan");
         assertThat(TabLabels.label("TAKEAWAY", 12, null, null)).isEqualTo("Para llevar · #12");
         assertThat(TabLabels.label("DELIVERY", 13, null, "Ana")).isEqualTo("Domicilio · Ana");
+        assertThat(TabLabels.label("NAMED", 14, null, "Juan, camisa azul")).isEqualTo("Cuenta · Juan, camisa azul");
     }
 }

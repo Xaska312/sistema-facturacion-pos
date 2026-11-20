@@ -413,7 +413,7 @@ interface Picking {
         <label for="d-name" class="text-sm font-semibold">Nombre del cliente</label>
         <input appInput id="d-name" maxlength="120" [(ngModel)]="details.customerName" />
       </div>
-      @if (tab()?.kind !== 'TABLE') {
+      @if (tab()?.kind === 'TAKEAWAY' || tab()?.kind === 'DELIVERY') {
         <div class="flex flex-col gap-1">
           <label for="d-phone" class="text-sm font-semibold">Teléfono</label>
           <input appInput id="d-phone" maxlength="30" [(ngModel)]="details.phone" />

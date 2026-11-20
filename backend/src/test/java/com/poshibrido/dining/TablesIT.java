@@ -124,6 +124,60 @@ class TablesIT extends IntegrationTest {
                 .andExpect(jsonPath("$.totalElements").value(11));
     }
 
+    @Test
+    void barAccountsWithoutATableAndRemovingTables() throws Exception {
+        PosTestSupport pos = new PosTestSupport(api);
+        Owned owner = api.newTenant("bar");
+        api.putWith(owner.tenant(), "/api/v1/business-profile", """
+                {"businessType":"RETAIL","modules":["MODIFIERS","TABLES"]}
+                """).andExpect(status().isOk());
+        Session s = TestApi.session(api.refreshRaw(owner.tenant().refreshToken()).andExpect(status().isOk()).andReturn());
+        UUID branch = api.principalBranchId(s);
+        UUID zone = id(api.postWith(s, "/api/v1/dining/zones", "{\"branchId\":\"%s\",\"name\":\"Terraza\"}"
+                .formatted(branch)).andExpect(status().isCreated()), "$.id");
+        UUID mesa1 = id(api.postWith(s, "/api/v1/dining/tables", "{\"zoneId\":\"%s\",\"name\":\"1\"}"
+                .formatted(zone)).andExpect(status().isCreated()), "$.id");
+        UUID mesa2 = id(api.postWith(s, "/api/v1/dining/tables", "{\"zoneId\":\"%s\",\"name\":\"2\"}"
+                .formatted(zone)).andExpect(status().isCreated()), "$.id");
+        UUID mesa3 = id(api.postWith(s, "/api/v1/dining/tables", "{\"zoneId\":\"%s\",\"name\":\"3\"}"
+                .formatted(zone)).andExpect(status().isCreated()), "$.id");
+        UUID beer = pos.service(s, "CERVEZA", "6000");
+
+        // Decisión 369: cuenta sin mesa, a nombre de alguien; sin nombre no se abre.
+        api.postWith(s, "/api/v1/tabs", "{\"kind\":\"NAMED\"}").andExpect(status().is(422));
+        UUID juan = id(api.postWith(s, "/api/v1/tabs", "{\"kind\":\"NAMED\",\"customerName\":\"Juan, camisa azul\"}")
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.label").value("Cuenta · Juan, camisa azul")), "$.id");
+        items(s, juan, "{\"productId\":\"%s\",\"quantity\":3}".formatted(beer)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(18000));
+        api.getWith(s, "/api/v1/dining/floor").andExpect(jsonPath("$.others[0].label").value("Cuenta · Juan, camisa azul"));
+        pos.openCash(s, CAJA_1, "0");
+        String sale = body(charge(s, juan, "18000", key()).andExpect(status().isCreated()));
+        assertThat((String) JsonPath.read(sale, "$.notes")).isEqualTo("Cuenta · Juan, camisa azul");
+
+        // Una cuenta sin mesa que se sienta en una mesa: se mueve y queda como la mesa.
+        UUID ana = id(api.postWith(s, "/api/v1/tabs", "{\"kind\":\"NAMED\",\"customerName\":\"Ana\"}")
+                .andExpect(status().isCreated()), "$.id");
+        api.postWith(s, "/api/v1/tabs/%s/move".formatted(ana), "{\"tableId\":\"%s\"}".formatted(mesa2))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.label").value("Mesa 2"));
+
+        // Decisión 370: quitar mesas. Con cuenta abierta no; sin cuentas nunca, se borra; con cuentas, se esconde.
+        api.deleteWith(s, "/api/v1/dining/tables/" + mesa2).andExpect(status().isConflict());
+        api.deleteWith(s, "/api/v1/dining/tables/" + mesa3).andExpect(status().isOk())
+                .andExpect(jsonPath("$.removal").value("DELETED"));
+        api.postWith(s, "/api/v1/tabs/%s/cancel".formatted(ana), "{\"reason\":\"Se fue\"}").andExpect(status().isOk());
+        api.deleteWith(s, "/api/v1/dining/tables/" + mesa2).andExpect(status().isOk())
+                .andExpect(jsonPath("$.removal").value("HIDDEN"));
+        api.getWith(s, "/api/v1/dining/zones?branchId=" + branch).andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].tables.length()").value(1))
+                .andExpect(jsonPath("$[0].tables[0].name").value("1"));
+        api.deleteWith(s, "/api/v1/dining/tables/" + mesa2).andExpect(status().isNotFound());
+        // El nombre queda libre para una mesa nueva.
+        api.postWith(s, "/api/v1/dining/tables", "{\"zoneId\":\"%s\",\"name\":\"2\"}".formatted(zone))
+                .andExpect(status().isCreated());
+        api.getWith(s, "/api/v1/tabs/" + ana).andExpect(jsonPath("$.label").value("Mesa 2"));
+        assertThat(mesa1).isNotNull();
+    }
+
     private ResultActions items(Session s, UUID tab, String item) throws Exception {
         return api.postWith(s, "/api/v1/tabs/%s/items".formatted(tab), "{\"items\":[" + item + "]}");
     }

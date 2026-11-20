@@ -20,6 +20,9 @@ describe('mesas y cuentas (Fase 12b-2)', () => {
   it('nombra el tipo de cuenta con su ícono', () => {
     expect(kindLabel('TAKEAWAY')).toBe('Para llevar');
     expect(kindGlyph('DELIVERY')).toBe('delivery');
+    // Decisión 369: cuenta sin mesa, a nombre de alguien.
+    expect(kindLabel('NAMED')).toBe('Cuenta sin mesa');
+    expect(kindGlyph('NAMED')).toBe('customers');
     expect(kindGlyph('TABLE')).toBe('tables');
   });
 
