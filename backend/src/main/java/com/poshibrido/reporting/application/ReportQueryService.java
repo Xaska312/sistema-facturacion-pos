@@ -104,6 +104,24 @@ public class ReportQueryService {
                   AND (:anyBranch OR s.branch_id = :branchId)
                   AND (:anySeller OR s.created_by = :sellerId)
                 """, filter).getSingleResult();
+        // Los pedidos no tienen sucursal: se cuentan los de todo el negocio (la pantalla lo aclara).
+        Query ordersQuery = em.createNativeQuery("""
+                SELECT count(*) AS orders_count, coalesce(sum(o.total), 0) AS orders_total FROM orders o
+                WHERE o.status <> 'CANCELLED' AND o.created_at >= :start AND o.created_at < :end
+                  AND (:anySeller OR o.created_by = :sellerId)
+                """);
+        ordersQuery.setParameter("start", filter.period().start());
+        ordersQuery.setParameter("end", filter.period().end());
+        ordersQuery.setParameter("anySeller", filter.sellerId() == null);
+        ordersQuery.setParameter("sellerId", filter.sellerId() == null ? NONE : filter.sellerId());
+        Object[] orders = (Object[]) ordersQuery.getSingleResult();
+        Object deposits = sales("""
+                SELECT coalesce(sum(op.amount), 0) AS deposits FROM order_payments op
+                LEFT JOIN cash_sessions cs ON cs.id = op.cash_session_id
+                WHERE op.type IN ('DEPOSIT', 'REFUND') AND op.created_at >= :start AND op.created_at < :end
+                  AND (:anyBranch OR cs.branch_id = :branchId)
+                  AND (:anySeller OR op.created_by = :sellerId)
+                """, filter).getSingleResult();
         long count = Rows.lng(row[0]);
         BigDecimal subtotal = Rows.decimal(row[3]);
         BigDecimal total = Rows.decimal(row[5]);
@@ -111,7 +129,8 @@ public class ReportQueryService {
         BigDecimal profit = subtotal.subtract(cost);
         return new Summary(filter.period().from(), filter.period().to(), count, Rows.decimal(row[1]),
                 Rows.decimal(row[2]), subtotal, Rows.decimal(row[4]), total, average(total, count), cost, profit,
-                margin(profit, subtotal), Rows.lng(voided[0]), Rows.decimal(voided[1]));
+                margin(profit, subtotal), Rows.lng(voided[0]), Rows.decimal(voided[1]), Rows.lng(orders[0]),
+                Rows.decimal(orders[1]), Rows.decimal(deposits));
     }
 
     /** Ventas por día (fecha local del negocio). */

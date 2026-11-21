@@ -68,9 +68,10 @@ public class PlatformWhatsAppController {
         return console.setStatus(id, Status.HUMAN);
     }
 
+    /** La cierra y, si todavía se le puede escribir, le pide calificar la atención (decisión 375). */
     @PostMapping("/conversations/{id}/close")
     public Detail close(@PathVariable UUID id) {
-        return console.setStatus(id, Status.CLOSED);
+        return console.close(id);
     }
 
     /** XASKA le escribe primero a un cliente con la plantilla de seguimiento aprobada en Meta (decisión 371). */

@@ -39,6 +39,7 @@ public class WhatsAppInbound {
     private final WhatsAppAgent agent;
     private final WhatsAppClient client;
     private final WhatsAppProperties properties;
+    private final WhatsAppClosing closing;
     private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2, runnable -> {
         Thread thread = new Thread(runnable, "whatsapp-agent");
         thread.setDaemon(true);
@@ -48,7 +49,8 @@ public class WhatsAppInbound {
     private final Map<UUID, Object> locks = new ConcurrentHashMap<>();
 
     public WhatsAppInbound(WhatsAppConversations conversations, WhatsAppAgent agent, WhatsAppClient client,
-                           WhatsAppProperties properties) {
+                           WhatsAppProperties properties, WhatsAppClosing closing) {
+        this.closing = closing;
         this.conversations = conversations;
         this.agent = agent;
         this.client = client;
@@ -57,10 +59,15 @@ public class WhatsAppInbound {
 
     /**
      * Un mensaje entrante ya leído del aviso de Meta. {@code from} (el número) puede faltar si la persona usa nombre de
-     * usuario en WhatsApp; {@code userId} (BSUID) llega siempre desde 2026 (decisión 368).
+     * usuario en WhatsApp; {@code userId} (BSUID) llega siempre desde 2026 (decisión 368). Si tocó una opción de
+     * una lista (la calificación, decisión 375), {@code replyId} es su id y {@code text} su título.
      */
     public record Incoming(String from, String userId, String waMessageId, String profileName, String type,
-                           String text) {
+                           String text, String replyId) {
+
+        public Incoming(String from, String userId, String waMessageId, String profileName, String type, String text) {
+            this(from, userId, waMessageId, profileName, type, text, null);
+        }
     }
 
     /** Recibe el aviso (ya con la firma comprobada). */
@@ -79,8 +86,12 @@ public class WhatsAppInbound {
 
     void handle(Incoming in) {
         try {
-            boolean text = "text".equals(in.type()) && in.text() != null && !in.text().isBlank();
+            boolean text = ("text".equals(in.type()) || "interactive".equals(in.type()))
+                    && in.text() != null && !in.text().isBlank();
             String body = text ? clip(in.text()) : "[" + in.type() + "]";
+            if (closing.answer(in, body)) {
+                return;
+            }
             Optional<Conversation> stored = conversations.inbound(in.from(), in.userId(), in.profileName(),
                     in.waMessageId(), body);
             if (stored.isEmpty() || stored.get().status() != Status.BOT) {
@@ -122,6 +133,9 @@ public class WhatsAppInbound {
                 // salvo que esta ya pasó la conversación a una persona: eso sí hay que decírselo.
                 if (reply.handedOff() || still(conversationId, waMessageId)) {
                     send(conversation, reply.text());
+                    if (reply.closed() && !reply.handedOff()) {
+                        closing.close(conversation, "BOT");
+                    }
                 }
             }
         } catch (RuntimeException ex) {
@@ -174,7 +188,17 @@ public class WhatsAppInbound {
                     }
                     String type = m.get("type") == null ? "unknown" : String.valueOf(m.get("type"));
                     String text = "text".equals(type) ? str(map(m.get("text")).get("body")) : null;
-                    out.add(new Incoming(from, userId, str(m.get("id")), name, type, text));
+                    String replyId = null;
+                    if ("interactive".equals(type)) {
+                        Map<String, Object> interactive = map(m.get("interactive"));
+                        Map<String, Object> reply = map(interactive.get("list_reply"));
+                        if (reply.isEmpty()) {
+                            reply = map(interactive.get("button_reply"));
+                        }
+                        replyId = str(reply.get("id"));
+                        text = str(reply.get("title"));
+                    }
+                    out.add(new Incoming(from, userId, str(m.get("id")), name, type, text, replyId));
                 }
             }
         }

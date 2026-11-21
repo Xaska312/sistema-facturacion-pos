@@ -9,7 +9,7 @@ describe('PlatformWhatsAppComponent (decisión 362)', () => {
     id: 'c1', channel: 'WHATSAPP' as const, phone: '573001112233', waUserId: null, profileName: 'Marta', status: 'HUMAN' as const, lastInboundAt: new Date().toISOString(),
     leadName: 'Marta', leadBusiness: 'Tienda Marta', leadCity: 'Ibagué', leadNeed: null, leadPhone: null,
     handoffReason: 'Quiere cotizar equipos', handoffAt: null, createdAt: '2026-11-17T10:00:00Z',
-    updatedAt: '2026-11-17T10:05:00Z', lastMessage: 'Quiero cotizar',
+    updatedAt: '2026-11-17T10:05:00Z', lastMessage: 'Quiero cotizar', customerKind: 'CLIENT' as const, lastScore: 2,
   };
   const detail: WaDetail = {
     conversation, windowOpen: true,
@@ -17,6 +17,8 @@ describe('PlatformWhatsAppComponent (decisión 362)', () => {
       { id: 'm1', author: 'CUSTOMER', body: 'Quiero cotizar', createdAt: '2026-11-17T10:00:00Z' },
       { id: 'm2', author: 'BOT', body: 'Te paso con una persona', createdAt: '2026-11-17T10:01:00Z' },
     ],
+    ratings: [{ id: 'r1', attendedBy: 'HUMAN', closedBy: 'IDLE', requestedAt: '2026-11-17T10:40:00Z', score: 2,
+      ratedAt: '2026-11-17T10:41:00Z', comment: 'Tardaron' }],
   };
   let api: jasmine.SpyObj<WhatsAppApi>;
 
@@ -38,6 +40,9 @@ describe('PlatformWhatsAppComponent (decisión 362)', () => {
     const el = fixture.nativeElement as HTMLElement;
     expect(el.textContent).toContain('Con una persona');
     expect(el.textContent).toContain('Tienda Marta · Ibagué');
+    // Decisión 375: si ya es cliente y cómo calificó la última atención.
+    expect(el.textContent).toContain('Cliente');
+    expect(el.textContent).toContain('★ 2');
     (el.querySelector('.wa-item') as HTMLButtonElement).click();
     fixture.detectChanges();
     expect(el.querySelectorAll('.wa-msg').length).toBe(2);

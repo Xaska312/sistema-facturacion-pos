@@ -1,12 +1,12 @@
 import { Component, DestroyRef, NgZone, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { WaConversation, WaDetail, WaState, WaStatus, WhatsAppApi } from '../../core/api/whatsapp.api';
+import { WaConversation, WaDetail, WaRating, WaState, WaStatus, WhatsAppApi } from '../../core/api/whatsapp.api';
 import { PageHeaderComponent } from '../../shared/page-header.component';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { formatDateTime, formatRelative } from '../../shared/format';
-import { WA_AUTHOR_LABEL, WA_STATUS_LABEL, waContact, waLead, waName, waStateWarning } from './whatsapp-text';
+import { WA_AUTHOR_LABEL, WA_STATUS_LABEL, waContact, waKind, waLead, waName, waRatingLine, waStateWarning } from './whatsapp-text';
 
 /**
  * Conversaciones del agente de WhatsApp de XASKA (decisión 362): quién escribió, qué respondió el asistente y las que
@@ -50,6 +50,13 @@ import { WA_AUTHOR_LABEL, WA_STATUS_LABEL, waContact, waLead, waName, waStateWar
                   <span class="wa-chip" [class.wa-chip--human]="c.status === 'HUMAN'" [class.wa-chip--closed]="c.status === 'CLOSED'">
                     {{ statusLabel[c.status] }}
                   </span>
+                  @if (kind(c.customerKind); as k) {
+                    <span class="wa-chip wa-chip--kind">{{ k }}</span>
+                  }
+                  @if (c.lastScore !== null) {
+                    <span class="wa-score" [class.wa-score--low]="c.lastScore <= 3"
+                          [attr.aria-label]="'Calificación ' + c.lastScore + ' de 5'">★ {{ c.lastScore }}</span>
+                  }
                   @if (lead(c); as l) {
                     <span class="truncate text-muted">{{ l }}</span>
                   }
@@ -69,12 +76,18 @@ import { WA_AUTHOR_LABEL, WA_STATUS_LABEL, waContact, waLead, waName, waStateWar
             <div class="flex flex-col gap-0.5 min-w-0">
               <button type="button" class="text-sm text-muted self-start lg:hidden" (click)="close()">← Conversaciones</button>
               <h2 class="text-lg font-bold truncate">{{ name(d.conversation) }}</h2>
-              <span class="text-sm text-muted">{{ contact(d.conversation) }} · {{ statusLabel[d.conversation.status] }}</span>
+              <span class="text-sm text-muted">
+                {{ contact(d.conversation) }} · {{ statusLabel[d.conversation.status] }}
+                @if (kind(d.conversation.customerKind); as k) { · {{ k }} }
+              </span>
               @if (lead(d.conversation); as l) {
                 <span class="text-sm">{{ l }}</span>
               }
               @if (d.conversation.status === 'HUMAN' && d.conversation.handoffReason) {
                 <span class="text-sm text-warning">Pasó a una persona: {{ d.conversation.handoffReason }}</span>
+              }
+              @for (r of d.ratings; track r.id) {
+                <span class="text-sm" [class.text-warning]="r.score !== null && r.score <= 3">{{ ratingLine(r) }}</span>
               }
             </div>
             <div class="flex flex-wrap gap-2">
@@ -85,7 +98,8 @@ import { WA_AUTHOR_LABEL, WA_STATUS_LABEL, waContact, waLead, waName, waStateWar
                 <app-button label="Devolver a Aska" severity="secondary" size="small" [loading]="busy()" (clicked)="act('bot')" />
               }
               @if (d.conversation.status !== 'CLOSED') {
-                <app-button label="Cerrar" severity="secondary" size="small" [text]="true" [loading]="busy()" (clicked)="act('close')" />
+                <app-button label="Cerrar y pedir calificación" severity="secondary" size="small" [text]="true" [loading]="busy()"
+                            (clicked)="act('close')" />
               }
             </div>
           </header>
@@ -131,6 +145,9 @@ import { WA_AUTHOR_LABEL, WA_STATUS_LABEL, waContact, waLead, waName, waStateWar
     .wa-chip--human { background: var(--warning-soft); color: var(--warning-soft-fg); }
     .wa-chip--web { background: var(--info-soft); color: var(--info-soft-fg); }
     .wa-chip--closed { background: var(--surface-alt); color: var(--muted); }
+    .wa-chip--kind { background: var(--surface-alt); color: var(--text); }
+    .wa-score { font-weight: 700; color: var(--success-soft-fg); }
+    .wa-score--low { color: var(--warning-soft-fg); }
     .wa-panel { flex-direction: column; min-height: 28rem; max-height: calc(100dvh - 12rem); padding: 1rem; border-radius: 1.25rem;
       border: 1px solid var(--line); background: var(--surface); }
     .wa-panel:not(.hidden) { display: flex; }
@@ -242,6 +259,14 @@ export class PlatformWhatsAppComponent implements OnInit {
 
   protected lead(c: WaConversation): string {
     return waLead(c);
+  }
+
+  protected kind(k: WaConversation['customerKind']): string | null {
+    return waKind(k);
+  }
+
+  protected ratingLine(r: WaRating): string {
+    return waRatingLine(r);
   }
 
   protected when(value: string): string {

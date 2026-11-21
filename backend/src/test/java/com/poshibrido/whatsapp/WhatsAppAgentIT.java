@@ -57,6 +57,8 @@ class WhatsAppAgentIT extends IntegrationTest {
     private WhatsAppInbound inbound;
     @Autowired
     private com.poshibrido.whatsapp.application.WhatsAppRetention retention;
+    @Autowired
+    private com.poshibrido.whatsapp.application.WhatsAppClosing closing;
 
 
     @BeforeEach
@@ -358,6 +360,169 @@ class WhatsAppAgentIT extends IntegrationTest {
                 .isZero();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM platform.wa_conversations WHERE phone = ?", Integer.class,
                 "57" + phone)).isEqualTo(1);
+    }
+
+    private static String listReply(String from, String id, String option) {
+        return """
+                {"object":"whatsapp_business_account","entry":[{"id":"1","changes":[{"field":"messages","value":{
+                 "messaging_product":"whatsapp","contacts":[{"profile":{"name":"Marta"},"wa_id":"%s"}],
+                 "messages":[{"from":"%s","id":"%s","timestamp":"1794900000","type":"interactive",
+                  "interactive":{"type":"list_reply","list_reply":{"id":"%s","title":"⭐"}}}]}}]}]}
+                """.formatted(from, from, id, option);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void aCutReplyIsAskedAgainWithMoreRoom() throws Exception {
+        // Decisión 375: si la respuesta se acaba por el tope, se pide otra vez con el doble antes de enviarla.
+        String phone = "57314" + (System.nanoTime() % 10_000_000);
+        doReturn(Map.of("stop_reason", "max_tokens", "usage", usage(), "content", List.of(
+                        Map.of("type", "text", "text", "Va por pedido. Así ves en"))),
+                Map.of("stop_reason", "end_turn", "usage", usage(), "content", List.of(
+                        Map.of("type", "text", "text", "Va por pedido. Así ves en Inicio los atrasados."))))
+                .when(ai).send(any());
+        signed(message(phone, "wamid.corte-" + phone, "¿Cómo registro un trabajo por encargo?")).andExpect(status().isOk());
+        verify(whatsapp).sendText(phone, "Va por pedido. Así ves en Inicio los atrasados.");
+        ArgumentCaptor<Map<String, Object>> request = ArgumentCaptor.forClass(Map.class);
+        verify(ai, times(2)).send(request.capture());
+        assertThat(request.getAllValues()).extracting(r -> r.get("max_tokens")).containsExactly(1024, 2048);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void askaAsksTheNameAndWhetherItIsAClientAndClosesWithARating() throws Exception {
+        String phone = "57315" + (System.nanoTime() % 10_000_000);
+        // Ya dijo su nombre y que es cliente: Aska lo guarda.
+        doReturn(Map.of("stop_reason", "tool_use", "usage", usage(), "content", List.of(
+                        Map.of("type", "tool_use", "id", "k1", "name", "registrar_datos",
+                                "input", Map.of("nombre", "Helena", "tipo_cliente", "CLIENTE")))),
+                Map.of("stop_reason", "end_turn", "usage", usage(), "content", List.of(
+                        Map.of("type", "text", "text", "¡Hola, Helena! ¿En qué te ayudo con XASKA POS?"))))
+                .when(ai).send(any());
+        signed(message(phone, "wamid.n1-" + phone, "Soy Helena y ya uso XASKA POS")).andExpect(status().isOk());
+        UUID id = conversations.find(phone, null).orElseThrow().id();
+        assertThat(jdbc.queryForObject("SELECT customer_kind FROM platform.wa_conversations WHERE id = ?", String.class, id))
+                .isEqualTo("CLIENT");
+        ArgumentCaptor<Map<String, Object>> request = ArgumentCaptor.forClass(Map.class);
+        verify(ai, times(2)).send(request.capture());
+        assertThat(String.valueOf(request.getAllValues().getFirst().get("system")))
+                .contains("¿con quién tengo el gusto?").contains("no sabes si ya usa XASKA POS");
+        assertThat(String.valueOf(request.getAllValues().getFirst().get("tools"))).contains("cerrar_conversacion")
+                .contains("tipo_cliente");
+
+        // Se despide: Aska se despide, cierra y le pide calificar con la lista de WhatsApp.
+        reset(ai);
+        when(ai.available()).thenReturn(true);
+        when(ai.model()).thenReturn("claude-haiku-5-5");
+        doReturn(Map.of("stop_reason", "tool_use", "usage", usage(), "content", List.of(
+                        Map.of("type", "tool_use", "id", "c1", "name", "cerrar_conversacion", "input", Map.of()))),
+                Map.of("stop_reason", "end_turn", "usage", usage(), "content", List.of(
+                        Map.of("type", "text", "text", "¡Con gusto, Helena! Que te vaya bien."))))
+                .when(ai).send(any());
+        signed(message(phone, "wamid.n2-" + phone, "Eso sería todo, gracias")).andExpect(status().isOk());
+        verify(ai, times(2)).send(request.capture());
+        assertThat(String.valueOf(request.getValue().get("system"))).contains("ya es cliente de XASKA POS");
+        verify(whatsapp).sendText(phone, "¡Con gusto, Helena! Que te vaya bien.");
+        verify(whatsapp).sendRatingList(phone);
+        assertThat(conversations.get(id).status().name()).isEqualTo("CLOSED");
+
+        // Califica 2 tocando la lista: se guarda, sigue cerrada y se le pregunta qué mejorar (sin IA).
+        clearInvocations(ai, whatsapp);
+        signed(listReply(phone, "wamid.n3-" + phone, "rating_2")).andExpect(status().isOk());
+        verify(ai, never()).send(any());
+        verify(whatsapp).sendText(eq(phone), org.mockito.ArgumentMatchers.contains("¿Qué podemos mejorar?"));
+        assertThat(conversations.get(id).status().name()).isEqualTo("CLOSED");
+        // Lo siguiente que escribe es el comentario.
+        signed(message(phone, "wamid.n4-" + phone, "Que respondan más rápido")).andExpect(status().isOk());
+        verify(ai, never()).send(any());
+        verify(whatsapp).sendText(eq(phone), org.mockito.ArgumentMatchers.contains("se lo pasamos al equipo"));
+        Map<String, Object> rating = jdbc.queryForMap("SELECT * FROM platform.wa_ratings WHERE conversation_id = ?", id);
+        assertThat(rating).containsEntry("score", 2).containsEntry("comment", "Que respondan más rápido")
+                .containsEntry("attended_by", "BOT").containsEntry("closed_by", "BOT");
+
+        // En la consola se ve la calificación.
+        Session admin = platformAdmin();
+        api.getWith(admin, "/api/v1/platform/whatsapp/conversations/" + id)
+                .andExpect(jsonPath("$.conversation.lastScore").value(2))
+                .andExpect(jsonPath("$.conversation.customerKind").value("CLIENT"))
+                .andExpect(jsonPath("$.ratings[0].comment").value("Que respondan más rápido"));
+
+        // Escribir otra cosa sí reabre la conversación con Aska.
+        doReturn(Map.of("stop_reason", "end_turn", "usage", usage(), "content", List.of(
+                Map.of("type", "text", "text", "¡Hola otra vez, Helena!"))))
+                .when(ai).send(any());
+        signed(message(phone, "wamid.n5-" + phone, "Hola, otra pregunta")).andExpect(status().isOk());
+        assertThat(conversations.get(id).status().name()).isEqualTo("BOT");
+        verify(whatsapp).sendText(phone, "¡Hola otra vez, Helena!");
+    }
+
+    @Test
+    void after30MinutesWithoutAnswerTheConversationClosesAndAsksForARating() throws Exception {
+        String quiet = "57316" + (System.nanoTime() % 10_000_000);
+        String waiting = "57317" + (System.nanoTime() % 10_000_000);
+        String old = "57318" + (System.nanoTime() % 10_000_000);
+        UUID quietId = conversations.inbound(quiet, "Ana", "wamid.q1-" + quiet, "Hola").orElseThrow().id();
+        conversations.handoff(quietId, "La pidió");
+        conversations.outbound(quietId, "HUMAN", "Hola Ana, soy Daniel", null);
+        UUID waitingId = conversations.inbound(waiting, "Beto", "wamid.w1-" + waiting, "¿Me ayudan?").orElseThrow().id();
+        conversations.handoff(waitingId, "La pidió");
+        UUID oldId = conversations.inbound(old, "Caro", "wamid.o1-" + old, "Hola").orElseThrow().id();
+        conversations.outbound(oldId, "BOT", "¡Hola!", null);
+        jdbc.update("UPDATE platform.wa_messages SET created_at = now() - interval '31 minutes' WHERE conversation_id IN (?, ?)",
+                quietId, waitingId);
+        jdbc.update("UPDATE platform.wa_messages SET created_at = now() - interval '26 hours' WHERE conversation_id = ?", oldId);
+        jdbc.update("UPDATE platform.wa_conversations SET last_inbound_at = now() - interval '26 hours' WHERE id = ?", oldId);
+
+        closing.closeIdle();
+
+        // La que esperaba a la persona se cierra con aviso y calificación de la atención de XASKA.
+        verify(whatsapp).sendText(eq(quiet), org.mockito.ArgumentMatchers.contains("no volvimos a saber de ti"));
+        verify(whatsapp).sendRatingList(quiet);
+        assertThat(conversations.get(quietId).status().name()).isEqualTo("CLOSED");
+        assertThat(jdbc.queryForObject("SELECT attended_by FROM platform.wa_ratings WHERE conversation_id = ?",
+                String.class, quietId)).isEqualTo("HUMAN");
+        // La que espera respuesta de XASKA no se cierra; la de hace más de 24 horas tampoco (ya no se le puede escribir).
+        assertThat(conversations.get(waitingId).status().name()).isEqualTo("HUMAN");
+        assertThat(conversations.get(oldId).status().name()).isEqualTo("BOT");
+        verify(whatsapp, never()).sendRatingList(waiting);
+        verify(whatsapp, never()).sendRatingList(old);
+
+        // Escribe la calificación a mano: también vale.
+        signed(message(quiet, "wamid.q2-" + quiet, "5")).andExpect(status().isOk());
+        verify(whatsapp).sendText(eq(quiet), org.mockito.ArgumentMatchers.contains("Gracias por calificarnos"));
+        assertThat(jdbc.queryForObject("SELECT score FROM platform.wa_ratings WHERE conversation_id = ?",
+                Integer.class, quietId)).isEqualTo(5);
+        assertThat(conversations.get(quietId).status().name()).isEqualTo("CLOSED");
+    }
+
+    @Test
+    void onTheWebTheRatingIsWithStars() throws Exception {
+        String session = UUID.randomUUID().toString();
+        doReturn(Map.of("stop_reason", "tool_use", "usage", usage(), "content", List.of(
+                        Map.of("type", "tool_use", "id", "c1", "name", "cerrar_conversacion", "input", Map.of()))),
+                Map.of("stop_reason", "end_turn", "usage", usage(), "content", List.of(
+                        Map.of("type", "text", "text", "¡Que te vaya bien!"))))
+                .when(ai).send(any());
+        mvc.perform(post("/api/v1/public/aska/chat").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"session\":\"" + session + "\",\"text\":\"Listo, gracias\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CLOSED"))
+                .andExpect(jsonPath("$.ratingPending").value(true))
+                .andExpect(jsonPath("$.messages[0].body").value("¡Que te vaya bien!"));
+        verify(whatsapp, never()).sendRatingList(anyString());
+
+        mvc.perform(post("/api/v1/public/aska/chat/" + session + "/rating").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"score\":6}")).andExpect(status().isBadRequest());
+        mvc.perform(post("/api/v1/public/aska/chat/" + session + "/rating").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"score\":4,\"comment\":\"Muy clara\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.ratingPending").value(false))
+                .andExpect(jsonPath("$.messages[0].body", containsString("se lo pasamos al equipo")));
+        mvc.perform(post("/api/v1/public/aska/chat/" + session + "/rating").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"score\":4}")).andExpect(status().is(422));
+        assertThat(jdbc.queryForObject("""
+                SELECT r.score FROM platform.wa_ratings r JOIN platform.wa_conversations c ON c.id = r.conversation_id
+                 WHERE c.web_session = CAST(? AS uuid)""", Integer.class, session)).isEqualTo(4);
     }
 
     @Test

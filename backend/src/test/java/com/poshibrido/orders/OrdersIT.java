@@ -84,6 +84,13 @@ class OrdersIT extends IntegrationTest {
         pay(s, order, "500000", CASH, key()).andExpect(status().is(422));
         pay(s, order, "1000", DEPOSIT, key()).andExpect(status().is(422));
 
+        // El resumen de ventas del mes muestra el pedido tomado y el anticipo, aunque todavía no es venta (decisión 375).
+        String summary = body(api.getWith(s, "/api/v1/reports/sales/summary").andExpect(status().isOk()));
+        assertThat(((Number) JsonPath.read(summary, "$.salesCount")).intValue()).isZero();
+        assertThat(((Number) JsonPath.read(summary, "$.ordersCount")).intValue()).isEqualTo(1);
+        assertThat(number(summary, "$.ordersTotal")).isEqualByComparingTo("762000");
+        assertThat(number(summary, "$.depositsTotal")).isEqualByComparingTo("300000");
+
         // "Anticipo" no se usa en el POS
         pos.sell(s, """
                 {"items":[{"productId":"%s","quantity":1}],"payments":[{"paymentMethodId":"%s","amount":150000}]}

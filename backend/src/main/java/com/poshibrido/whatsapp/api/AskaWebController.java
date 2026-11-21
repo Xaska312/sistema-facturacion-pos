@@ -39,6 +39,17 @@ public class AskaWebController {
     }
 
     /** La conversación (al volver a la página) o, con {@code after}, lo nuevo de XASKA (respuestas de una persona). */
+    public record RateRequest(@jakarta.validation.constraints.Min(1) @jakarta.validation.constraints.Max(5) int score,
+                              @Size(max = 500) String comment) {
+    }
+
+    /** La calificación de la conversación cerrada (decisión 375). */
+    @PostMapping("/{session}/rating")
+    public AskaWebChat.View rate(@PathVariable UUID session, @Valid @RequestBody RateRequest request,
+                                 HttpServletRequest http) {
+        return chat.rate(session, request.score(), request.comment(), http.getRemoteAddr());
+    }
+
     @GetMapping("/{session}")
     public AskaWebChat.View read(@PathVariable UUID session, @RequestParam(required = false) Instant after) {
         return chat.since(session, after);

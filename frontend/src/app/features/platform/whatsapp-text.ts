@@ -1,4 +1,4 @@
-import { WaConversation, WaStatus } from '../../core/api/whatsapp.api';
+import { WaConversation, WaRating, WaStatus } from '../../core/api/whatsapp.api';
 
 /** Textos de la pantalla del agente de WhatsApp (decisión 362). */
 export const WA_STATUS_LABEL: Record<WaStatus, string> = {
@@ -58,4 +58,24 @@ export function waStateWarning(s: { receives: boolean; sends: boolean; ai: boole
     return 'Falta la clave de la IA (ANTHROPIC_API_KEY): Aska no puede responder y pasará cada conversación a una persona.';
   }
   return null;
+}
+
+/** "Cliente" o "Nuevo" (decisión 375); null si Aska aún no lo sabe. */
+export function waKind(kind: WaConversation['customerKind']): string | null {
+  return kind === 'CLIENT' ? 'Cliente' : kind === 'NEW' ? 'Nuevo' : null;
+}
+
+/** 4 → "★★★★☆ 4". */
+export function waStars(score: number): string {
+  const n = Math.max(0, Math.min(5, Math.round(score)));
+  return `${'★'.repeat(n)}${'☆'.repeat(5 - n)} ${n}`;
+}
+
+/** Una calificación en una línea: estrellas, a quién califica, cómo se cerró y el comentario. */
+export function waRatingLine(r: WaRating): string {
+  const who = r.attendedBy === 'HUMAN' ? 'atención de XASKA' : 'atención de Aska';
+  const how = r.closedBy === 'IDLE' ? 'cerrada por 30 min sin respuesta'
+    : r.closedBy === 'BOT' ? 'se despidió' : 'la cerraste tú';
+  const head = r.score === null ? `Sin calificar todavía (${who}, ${how})` : `${waStars(r.score)} · ${who}, ${how}`;
+  return r.comment ? `${head} · “${r.comment}”` : head;
 }

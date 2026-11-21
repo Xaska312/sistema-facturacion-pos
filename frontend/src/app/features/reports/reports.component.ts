@@ -144,6 +144,23 @@ function overCostPercent(row: { cost: number; profit: number }): string {
               </dl>
               <p class="text-xs text-muted mt-3">"Exportar" descarga las ventas del periodo una por una.</p>
             </section>
+            @if (s.ordersCount > 0 || s.depositsTotal !== 0) {
+              <section class="card p-4 text-sm max-w-xl mt-4" aria-labelledby="summary-orders">
+                <h2 id="summary-orders" class="font-bold tracking-tight mb-2">Pedidos del periodo</h2>
+                <dl class="flex flex-col gap-1">
+                  <div class="flex justify-between">
+                    <dt>Pedidos tomados ({{ s.ordersCount.toLocaleString('es-CO') }})</dt>
+                    <dd class="tabular-nums">{{ cop(s.ordersTotal) }}</dd>
+                  </div>
+                  <div class="flex justify-between"><dt>Anticipos recibidos</dt><dd class="tabular-nums">{{ cop(s.depositsTotal) }}</dd></div>
+                </dl>
+                <p class="text-xs text-muted mt-3">
+                  Un pedido se vuelve venta el día que lo entregas: por eso no se suma al total vendido de arriba.
+                  Aquí ves lo que vendiste por encargo en estas fechas y la plata que ya te entró por anticipos.
+                  @if (selection().branchId) { Los pedidos son de todo el negocio. }
+                </p>
+              </section>
+            }
           } @else {
             <div class="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
               @for (i of [0, 1, 2, 3]; track i) {
