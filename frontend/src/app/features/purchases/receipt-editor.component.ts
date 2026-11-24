@@ -280,7 +280,7 @@ import {
         <app-aska-nudge moment="purchase" [available]="canScan() && !scanLimitReached()"
                         [title]="'Vas en la línea ' + lines().length + ' a mano'"
                         withAi="Tómale una foto a la factura (o súbeme el PDF) y yo lleno el resto en segundos; tú solo revisas."
-                        withoutAi="Con XASKA IA, Aska lee la factura con una foto: proveedor, productos, cantidades y costos en segundos."
+                        withoutAi="Con el adicional Aska, lee la factura con una foto: proveedor, productos, cantidades y costos en segundos."
                         action="Leer la factura" (act)="nudgeScan()" (closed)="nudgeClosed.set(true)"
                         (trialStarted)="refreshScanUsage()" />
       }
@@ -444,7 +444,7 @@ import {
     </div>
   `,
   styles: `
-    /* Con XASKA IA, la carga de la factura lleva el sello de Aska (decisión 298). */
+    /* Con Aska, la carga de la factura lleva el sello de Aska (decisión 298). */
     .aska-section {
       border-left: 4px solid var(--aska);
       background: linear-gradient(90deg, var(--aska-soft), var(--color-surface) 45%);

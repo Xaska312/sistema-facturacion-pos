@@ -3,7 +3,7 @@ import { AiApi, AskaRecap } from '../../core/api/ai.api';
 import { recapLines } from './aska-recap';
 
 /**
- * "Lo que hiciste con Aska" en Inicio (decisión 309): al dueño, los primeros 7 días del mes, lo que XASKA IA hizo el
+ * "Lo que hiciste con Aska" en Inicio (decisión 309): al dueño, los primeros 7 días del mes, lo que Aska hizo el
  * mes pasado y el tiempo que le ahorró (estimado, con los supuestos a la vista). No ocupa espacio si no hay.
  */
 @Component({

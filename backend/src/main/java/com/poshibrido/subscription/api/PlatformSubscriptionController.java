@@ -95,7 +95,7 @@ public class PlatformSubscriptionController {
                 request.modules(), request.features());
     }
 
-    /** Tope al mes de una función de XASKA IA (decisión 295). */
+    /** Tope al mes de una función de Aska (decisión 295). */
     public record AiAllowanceRequest(@Min(0) @Max(100000) int monthlyLimit) {
     }
 

@@ -42,7 +42,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Ingresar la mercancía con la foto o el PDF de la factura (decisión 295): la IA (aquí simulada) la lee y sale el mismo
  * borrador que con el XML; las fotos se reducen antes de leerlas; la lectura cuenta en el tope del mes solo si se pudo
- * leer; solo con el adicional XASKA IA; con el tope lleno se avisa, y los extras de la consola dan más.
+ * leer; solo con el adicional Aska; con el tope lleno se avisa, y los extras de la consola dan más.
  */
 class InvoiceScanIT extends IntegrationTest {
 
@@ -59,7 +59,7 @@ class InvoiceScanIT extends IntegrationTest {
         api.postWith(s, "/api/v1/products", CatalogFixturesAccess.simpleProduct("ACE500", "Acetaminofén 500 mg caja",
                 "5000", "7702001001001")).andExpect(status().isCreated());
 
-        // Ningún plan trae XASKA IA: sin el adicional no hay botón ni lectura (el XML sigue para todos).
+        // Ningún plan trae Aska: sin el adicional no hay botón ni lectura (el XML sigue para todos).
         api.getWith(s, "/api/v1/purchases/documents/scan-usage").andExpect(status().isForbidden());
         scan(s, photo(600, 600)).andExpect(status().isForbidden());
         Session admin = platformAdmin();

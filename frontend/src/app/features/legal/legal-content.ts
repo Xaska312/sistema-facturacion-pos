@@ -11,7 +11,7 @@
  */
 export const TERMS_VERSION = '1.3';
 /**
- * 1.3 (decisiones 295 a 299): XASKA IA (Anthropic, encargado en Estados Unidos): facturas, preguntas y resúmenes.
+ * 1.3 (decisiones 295 a 299): Aska (Anthropic, encargado en Estados Unidos): facturas, preguntas y resúmenes.
  * Decisión 309: se nombran también el cuaderno de inventario y los pedidos revisados; mismo encargado y finalidad, sin
  * nueva versión.
  */
@@ -27,7 +27,7 @@ export const LEGAL_OWNER = {
   name: 'Daniel Felipe Mejía Martínez',
   idNumber: '1.005.820.986',
   city: 'Ibagué (Tolima)',
-  address: 'Carrera 10 # 122-33',
+  address: 'Carrera 10 # 122-39',
   phone: '+57 324 556 0729 (WhatsApp)',
   email: 'soporte@xaska.co',
   publishedOn: '31 de octubre de 2026',
@@ -188,7 +188,7 @@ export const PRIVACY_POLICY: LegalDocument = {
             'Envío de correos: Resend.',
             'Mensajes de WhatsApp: Meta Platforms, con la plataforma de WhatsApp Business.',
             'Copias de seguridad cifradas: Google Drive.',
-            'XASKA IA, el adicional de inteligencia artificial: Anthropic (Claude). Solo recibe lo que el negocio decide '
+            'Aska, el adicional de inteligencia artificial: Anthropic (Claude). Solo recibe lo que el negocio decide '
               + 'enviar: las fotos o el PDF de las facturas y listas de precios de proveedores y las fotos del cuaderno '
               + 'de inventario que se leen, los comprobantes de pago a XASKA, las preguntas a Aska, los pedidos '
               + 'sugeridos que se revisan y el Resumen del día, con los datos de los reportes necesarios para responder, '

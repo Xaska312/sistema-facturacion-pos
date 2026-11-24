@@ -26,7 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Resumen del día de Aska (decisión 299): solo con XASKA IA; ajustes de hora y destinatarios; la IA (simulada) recibe
+ * Resumen del día de Aska (decisión 299): solo con Aska; ajustes de hora y destinatarios; la IA (simulada) recibe
  * los datos del día y su resumen se guarda para Inicio y llega por correo; si la IA no responde, no queda nada.
  */
 class DailyDigestIT extends IntegrationTest {

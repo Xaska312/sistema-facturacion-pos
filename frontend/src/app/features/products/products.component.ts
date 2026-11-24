@@ -54,7 +54,7 @@ import { MANUAL_PRODUCTS_TRIGGER } from '../ai/aska-nudge';
       <app-aska-nudge class="mb-4" moment="products" [available]="canAsk()"
                       [title]="'Ya creaste ' + manualProducts() + ' productos a mano'"
                       withAi="Pásame una foto de la lista del proveedor o de tu cuaderno y los creo todos de una vez, con sus precios."
-                      withoutAi="Con XASKA IA, Aska crea tus productos desde una foto de la lista del proveedor o de tu cuaderno."
+                      withoutAi="Con el adicional Aska, crea tus productos desde una foto de la lista del proveedor o de tu cuaderno."
                       action="Cargar con Aska" (act)="nudgeLoad()" (closed)="nudgeClosed.set(true)" />
     }
 

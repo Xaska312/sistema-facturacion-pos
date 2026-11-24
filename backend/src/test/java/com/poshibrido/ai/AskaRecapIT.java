@@ -78,7 +78,7 @@ class AskaRecapIT extends IntegrationTest {
         assertThat(mail.senderName()).isEqualTo("Aska de XASKA");
         assertThat(mail.subject()).isEqualTo("Aska · Te ahorré cerca de 22 minutos en tu prueba");
         assertThat(mail.html()).contains("Respondí 2 preguntas").contains("Pasé 12 productos")
-                .contains("Quedarme con XASKA IA").contains("/app/planes");
+                .contains("Quedarme con Aska").contains("/app/planes");
         assertThat(mail.text()).contains("Tu prueba gratis termina el");
     }
 }

@@ -17,7 +17,7 @@ import java.io.IOException;
 
 /**
  * "Leer con Aska" en el gasto (decisión 325): la foto o el PDF del recibo llena el formulario. Lo usa quien registra
- * gastos (fuera de la caja con {@code expenses:manage} o de su caja con {@code cash:operate}) y tiene XASKA IA.
+ * gastos (fuera de la caja con {@code expenses:manage} o de su caja con {@code cash:operate}) y tiene Aska.
  */
 @RestController
 @RequiredArgsConstructor

@@ -17,7 +17,7 @@ import java.time.Duration;
 import java.util.Map;
 
 /**
- * La API de Mensajes de Anthropic para las funciones de XASKA IA (decisión 296): una petición, su respuesta como mapa.
+ * La API de Mensajes de Anthropic para las funciones de Aska (decisión 296): una petición, su respuesta como mapa.
  * La clave y el modelo salen de {@link AiProperties} ({@code ANTHROPIC_API_KEY}); sin clave, {@link #available()} es
  * falso. Un error de red o un estado que no es 2xx es {@link AiUnavailableException}: la función no cuenta en el tope.
  */

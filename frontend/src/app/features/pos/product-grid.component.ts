@@ -27,7 +27,7 @@ const EMPTY_MODELS: PageResponse<ProductModelRow> = { content: [], page: 0, size
   selector: 'app-product-grid',
   imports: [SkeletonComponent],
   template: `
-    <nav class="flex gap-2 overflow-x-auto pb-2 shrink-0" aria-label="Categorías de productos">
+    <nav class="chips flex gap-2 overflow-x-auto pb-2 shrink-0" aria-label="Categorías de productos">
       <button type="button" class="chip" [attr.aria-pressed]="tab() === 'favorites'" (click)="select('favorites')">
         <i class="pi pi-star-fill text-xs" aria-hidden="true"></i>Favoritos
       </button>
@@ -39,9 +39,9 @@ const EMPTY_MODELS: PageResponse<ProductModelRow> = { content: [], page: 0, size
       }
     </nav>
 
-    <div class="flex-1 min-h-0 overflow-y-auto" [attr.aria-busy]="loading()">
+    <div class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden" [attr.aria-busy]="loading()">
       @if (loading() && cards().length === 0) {
-        <div class="grid gap-2 grid-cols-2 sm:grid-cols-3 xl:grid-cols-4" aria-hidden="true">
+        <div class="cards gap-2" aria-hidden="true">
           @for (i of placeholders; track i) {
             <app-skeleton height="7.5rem" borderRadius="1.25rem" />
           }
@@ -58,7 +58,7 @@ const EMPTY_MODELS: PageResponse<ProductModelRow> = { content: [], page: 0, size
           }
         </div>
       } @else {
-        <ul class="grid gap-3 grid-cols-2 sm:grid-cols-3 xl:grid-cols-4" aria-label="Lista de productos">
+        <ul class="cards gap-3" aria-label="Lista de productos">
           @for (card of cards(); track card.kind + card.id) {
             @if (card.kind === 'model') {
               @let m = card.model;
@@ -68,9 +68,9 @@ const EMPTY_MODELS: PageResponse<ProductModelRow> = { content: [], page: 0, size
                         (click)="pickModel.emit(m)">
                   <span class="mono" aria-hidden="true">{{ initial(m.name) }}</span>
                   <span class="font-semibold leading-snug line-clamp-2">{{ m.name }}</span>
-                  <span class="mt-auto flex items-end justify-between gap-1 w-full">
+                  <span class="mt-auto flex flex-wrap items-end justify-between gap-1 w-full">
                     <span class="price">{{ cop(m.salePrice) }}</span>
-                    <span class="text-xs font-semibold rounded-full px-2 py-0.5 bg-brand-soft text-brand-soft-fg inline-flex items-center gap-1">
+                    <span class="whitespace-nowrap text-xs font-semibold rounded-full px-2 py-0.5 bg-brand-soft text-brand-soft-fg inline-flex items-center gap-1">
                       <i class="pi pi-th-large text-xs" aria-hidden="true"></i>Elegir talla
                     </span>
                   </span>
@@ -85,10 +85,10 @@ const EMPTY_MODELS: PageResponse<ProductModelRow> = { content: [], page: 0, size
                         (click)="pick.emit(p)">
                   <span class="mono" aria-hidden="true">{{ initial(p.name) }}</span>
                   <span class="font-semibold leading-snug line-clamp-2">{{ p.name }}</span>
-                  <span class="mt-auto flex items-end justify-between gap-1 w-full">
+                  <span class="mt-auto flex flex-wrap items-end justify-between gap-1 w-full">
                     <span class="price">{{ priceText(p) }}</span>
                     @if (badge) {
-                      <span class="text-xs font-semibold rounded-full px-2 py-0.5"
+                      <span class="whitespace-nowrap text-xs font-semibold rounded-full px-2 py-0.5"
                             [class.bg-danger-soft]="badge === 'Agotado'" [class.text-danger-soft-fg]="badge === 'Agotado'"
                             [class.bg-surface-alt]="badge !== 'Agotado'" [class.text-muted]="badge !== 'Agotado'">
                         {{ badge }}
@@ -119,6 +119,19 @@ const EMPTY_MODELS: PageResponse<ProductModelRow> = { content: [], page: 0, size
       display: flex;
       flex-direction: column;
       min-height: 0;
+    }
+    /*
+     * Columnas según el espacio que de verdad tiene la cuadrícula, no el ancho de la pantalla (decisión 376): en una
+     * tablet de 800 px el carrito ocupa 22 rem y con tres columnas el precio se partía ("$" arriba y "11.000" abajo).
+     * Cada tarjeta mide al menos 10 rem, y siempre caben dos.
+     */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(min(10rem, calc(50% - 0.375rem)), 1fr));
+    }
+    /* Las categorías se deslizan de lado; en Windows la barra gruesa tapaba la fila: queda delgada. */
+    .chips {
+      scrollbar-width: thin;
     }
     .chip {
       display: inline-flex;
@@ -183,6 +196,7 @@ const EMPTY_MODELS: PageResponse<ProductModelRow> = { content: [], page: 0, size
       font-size: 0.9375rem;
     }
     .price {
+      white-space: nowrap;
       font-size: 1.125rem;
       font-weight: 800;
       letter-spacing: -0.01em;

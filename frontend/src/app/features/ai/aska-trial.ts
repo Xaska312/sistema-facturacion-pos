@@ -1,6 +1,6 @@
 import { AiTrial } from '../../core/api/ai.api';
 
-/** Prueba gratis de XASKA IA (decisión 311): la bienvenida sale una vez por negocio en cada equipo. */
+/** Prueba gratis de Aska (decisión 311): la bienvenida sale una vez por negocio en cada equipo. */
 const KEY = 'xaska.aska-welcome.';
 
 export function welcomeSeen(tenantId: string): boolean {

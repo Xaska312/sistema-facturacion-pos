@@ -103,7 +103,7 @@ public class SubscriptionService implements SubscriptionApi {
             return addons.stream().filter(a -> a.endsAt().isAfter(now)).toList();
         }
 
-        /** XASKA IA solo por la prueba gratis (sin plan, extra ni compra que la incluya): topes de prueba. */
+        /** Aska solo por la prueba gratis (sin plan, extra ni compra que la incluya): topes de prueba. */
         boolean aiTrialOnly(Instant now) {
             boolean paid = plan.features().contains(PlanFeature.AI.name())
                     || (extrasActive(now) && extras.features().contains(PlanFeature.AI.name()))
@@ -383,7 +383,7 @@ public class SubscriptionService implements SubscriptionApi {
 
     // ------------------------------------------------------------------ administración (consola de plataforma)
 
-    /** Topes al mes de las funciones de XASKA IA (decisión 295). */
+    /** Topes al mes de las funciones de Aska (decisión 295). */
     @Transactional(readOnly = true)
     public List<SubscriptionViews.AiAllowance> aiAllowances() {
         return jdbc.query("SELECT code, name, monthly_limit FROM platform.ai_allowances ORDER BY code",
@@ -399,7 +399,7 @@ public class SubscriptionService implements SubscriptionApi {
         int updated = jdbc.update("UPDATE platform.ai_allowances SET monthly_limit = ?, updated_at = now() WHERE code = ?",
                 monthlyLimit, code);
         if (updated == 0) {
-            throw new NotFoundException("Función de XASKA IA no encontrada.");
+            throw new NotFoundException("Función de Aska no encontrada.");
         }
         afterCommit(cache::clear);
         return aiAllowances().stream().filter(a -> a.code().equals(code)).findFirst().orElseThrow();
@@ -410,7 +410,7 @@ public class SubscriptionService implements SubscriptionApi {
                                BigDecimal monthlyPrice, BigDecimal annualPrice, boolean active,
                                List<String> modules, List<String> features) {
         if (features != null && features.contains(PlanFeature.AI.name())) {
-            throw new BusinessRuleException("XASKA IA es un adicional: dalo desde los extras de cada negocio.");
+            throw new BusinessRuleException("Aska es un adicional: dalo desde los extras de cada negocio.");
         }
         int updated = jdbc.update("""
                 UPDATE platform.plans SET name = ?, max_branches = ?, max_users = ?, max_registers = ?,
@@ -593,22 +593,22 @@ public class SubscriptionService implements SubscriptionApi {
         evict(tenantId);
     }
 
-    /** Prueba gratis de XASKA IA: una sola vez por negocio, {@value #AI_TRIAL_DAYS} días, con topes de prueba. */
+    /** Prueba gratis de Aska: una sola vez por negocio, {@value #AI_TRIAL_DAYS} días, con topes de prueba. */
     @Transactional
     public SubscriptionView startAiTrial(UUID tenantId) {
         Current c = load(tenantId).orElseThrow(() -> new NotFoundException("El negocio no tiene suscripción."));
         Instant now = Instant.now();
         if (c.aiTrialUsedAt() != null) {
-            throw new BusinessRuleException("Este negocio ya usó su prueba gratis de XASKA IA.");
+            throw new BusinessRuleException("Este negocio ya usó su prueba gratis de Aska.");
         }
         if (c.entitled(now).features().contains(PlanFeature.AI.name())) {
-            throw new BusinessRuleException("Este negocio ya tiene XASKA IA.");
+            throw new BusinessRuleException("Este negocio ya tiene Aska.");
         }
         int marked = jdbc.update("""
                 UPDATE platform.subscriptions SET ai_trial_used_at = ?, updated_at = now()
                 WHERE tenant_id = ? AND ai_trial_used_at IS NULL""", Timestamp.from(now), tenantId);
         if (marked == 0) {
-            throw new BusinessRuleException("Este negocio ya usó su prueba gratis de XASKA IA.");
+            throw new BusinessRuleException("Este negocio ya usó su prueba gratis de Aska.");
         }
         jdbc.update("""
                 INSERT INTO platform.subscription_addons (tenant_id, addon_code, quantity, ends_at, trial, updated_at)

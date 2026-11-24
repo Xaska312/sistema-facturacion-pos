@@ -1,7 +1,7 @@
 import { AiTrial } from '../../core/api/ai.api';
 import { challengesDone, daysLeftText, markWelcomeSeen, welcomeSeen } from './aska-trial';
 
-describe('Prueba gratis de XASKA IA (decisión 311)', () => {
+describe('Prueba gratis de Aska (decisión 311)', () => {
   it('cuenta los días y los retos', () => {
     expect(daysLeftText(14)).toBe('Te quedan 14 días');
     expect(daysLeftText(1)).toBe('Te queda 1 día');

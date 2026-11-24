@@ -21,7 +21,7 @@ describe('AskaNudgeComponent (decisión 308)', () => {
     fixture.componentRef.setInput('available', available);
     fixture.componentRef.setInput('title', 'Vas en la línea 4 a mano');
     fixture.componentRef.setInput('withAi', 'Tómale una foto.');
-    fixture.componentRef.setInput('withoutAi', 'Con XASKA IA, Aska lee la factura.');
+    fixture.componentRef.setInput('withoutAi', 'Con el adicional Aska, lee la factura.');
     fixture.componentRef.setInput('action', 'Leer la factura');
     fixture.detectChanges();
     TestBed.inject(HttpTestingController).expectOne('/api/v1/ai/moments').flush(
@@ -30,14 +30,14 @@ describe('AskaNudgeComponent (decisión 308)', () => {
     return fixture;
   }
 
-  it('con XASKA IA ofrece hacerlo; sin el permiso o el cupo, no sale', () => {
+  it('con Aska ofrece hacerlo; sin el permiso o el cupo, no sale', () => {
     const el = render({ hasAi: true }).nativeElement as HTMLElement;
     expect(el.textContent).toContain('Leer la factura');
     expect(el.textContent).toContain('Tómale una foto.');
     expect((render({ hasAi: true }, false).nativeElement as HTMLElement).textContent?.trim()).toBe('');
   });
 
-  it('sin XASKA IA: la prueba gratis al dueño y "pídeselo al dueño" al resto', () => {
+  it('sin Aska: la prueba gratis al dueño y "pídeselo al dueño" al resto', () => {
     expect((render({ canBuy: true, trialAvailable: true }).nativeElement as HTMLElement).textContent)
       .toContain('Probar gratis 14 días');
     const other = render({}).nativeElement as HTMLElement;

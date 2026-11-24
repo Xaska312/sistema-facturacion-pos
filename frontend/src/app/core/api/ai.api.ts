@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { SILENT_CLIENT_ERRORS } from '../errors/error.interceptor';
 import { ImportReport } from './api.models';
 
-/** Un mensaje de la conversación con XASKA IA (decisión 296). */
+/** Un mensaje de la conversación con Aska (decisión 296). */
 export interface AskTurn {
   role: 'user' | 'assistant';
   text: string;
@@ -12,7 +12,7 @@ export interface AskTurn {
   consulted?: string[];
 }
 
-/** Preguntas del mes: {@code limit} 0 = el negocio no tiene XASKA IA. */
+/** Preguntas del mes: {@code limit} 0 = el negocio no tiene Aska. */
 export interface AskUsage {
   available: boolean;
   limit: number;
@@ -53,7 +53,7 @@ export type DigestWeatherCode = 'SUNNY' | 'PARTLY' | 'CLOUDY' | 'RAIN' | 'STORM'
 
 /** Aska en el momento del dolor (decisión 308). */
 export interface AskaMoments {
-  /** El negocio tiene XASKA IA (pagada o en prueba). */
+  /** El negocio tiene Aska (pagada o en prueba). */
   hasAi: boolean;
   /** Quien mira puede activarla (el dueño). */
   canBuy: boolean;
@@ -98,7 +98,7 @@ export interface ExpenseReceiptRead {
   usage: AskUsage;
 }
 
-/** La prueba gratis de XASKA IA (decisión 311): días que quedan y los tres retos de la bienvenida. */
+/** La prueba gratis de Aska (decisión 311): días que quedan y los tres retos de la bienvenida. */
 export interface AiTrial {
   endsAt: string;
   daysLeft: number;
@@ -214,7 +214,7 @@ export class AiApi {
   }
 
   /** El último Resumen del día (hoy o ayer) con lo que esta persona puede ver; null si no hay. */
-  /** Decisión 308: si el negocio tiene XASKA IA y si el inventario está vacío (no usa la IA). */
+  /** Decisión 308: si el negocio tiene Aska y si el inventario está vacío (no usa la IA). */
   moments(): Observable<AskaMoments> {
     return this.http.get<AskaMoments>('/api/v1/ai/moments', { context: new HttpContext().set(SILENT_CLIENT_ERRORS, true) });
   }
@@ -224,7 +224,7 @@ export class AiApi {
     return this.http.get<AskaRecap | null>('/api/v1/ai/recap', { context: new HttpContext().set(SILENT_CLIENT_ERRORS, true) });
   }
 
-  /** Decisión 311: la prueba de XASKA IA en curso; null si el negocio no está en prueba (204). */
+  /** Decisión 311: la prueba de Aska en curso; null si el negocio no está en prueba (204). */
   trial(): Observable<AiTrial | null> {
     return this.http.get<AiTrial | null>('/api/v1/ai/trial', { context: new HttpContext().set(SILENT_CLIENT_ERRORS, true) });
   }
@@ -286,7 +286,7 @@ export class AiApi {
       { context: new HttpContext().set(SILENT_CLIENT_ERRORS, true) });
   }
 
-  /** Recibos leídos este mes; los errores no se muestran (sin XASKA IA el botón no aparece). */
+  /** Recibos leídos este mes; los errores no se muestran (sin Aska el botón no aparece). */
   expenseReceiptUsage(): Observable<AskUsage> {
     return this.http.get<AskUsage>('/api/v1/ai/expenses/usage',
       { context: new HttpContext().set(SILENT_CLIENT_ERRORS, true) });

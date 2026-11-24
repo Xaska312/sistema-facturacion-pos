@@ -79,3 +79,13 @@ export function waRatingLine(r: WaRating): string {
   const head = r.score === null ? `Sin calificar todavía (${who}, ${how})` : `${waStars(r.score)} · ${who}, ${how}`;
   return r.comment ? `${head} · “${r.comment}”` : head;
 }
+
+/**
+ * Por qué no se le puede escribir con texto libre (decisión 376): si nunca ha escrito (XASKA le escribió primero con
+ * la plantilla), todavía no responde; si escribió, pasaron más de 24 horas.
+ */
+export function waWindowNote(c: Pick<WaConversation, 'lastInboundAt'>): string {
+  return c.lastInboundAt
+    ? 'Pasaron más de 24 horas desde su último mensaje: WhatsApp no deja escribirle con texto libre hasta que vuelva a escribir.'
+    : 'Todavía no ha respondido: WhatsApp solo deja escribirle con texto libre cuando conteste. Cuando lo haga, le respondes aquí.';
+}

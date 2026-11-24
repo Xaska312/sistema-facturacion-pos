@@ -14,7 +14,7 @@ import java.util.Set;
 /**
  * Aska en el momento del dolor (decisión 308): las pantallas donde alguien hace a mano lo que Aska hace con una foto
  * (digitar una compra larga, crear productos uno por uno, un inventario vacío) preguntan aquí si el negocio tiene
- * XASKA IA y, si no, si quien mira puede activar la prueba gratis. No usa la IA ni gasta nada.
+ * Aska y, si no, si quien mira puede activar la prueba gratis. No usa la IA ni gasta nada.
  */
 @Service
 @RequiredArgsConstructor
@@ -29,7 +29,7 @@ public class AskaMomentService {
     private EntityManager em;
 
     /**
-     * {@code hasAi}: el negocio tiene XASKA IA (pagada o en prueba). {@code canBuy}: quien mira puede activarla (dueño).
+     * {@code hasAi}: el negocio tiene Aska (pagada o en prueba). {@code canBuy}: quien mira puede activarla (dueño).
      * {@code trialAvailable}: puede empezar la prueba gratis. {@code emptyStock}: hay al menos 5 productos que llevan
      * inventario y como mucho 1 de cada 5 tiene existencias en alguna sede.
      */
@@ -62,7 +62,7 @@ public class AskaMomentService {
     }
 
     /**
-     * La prueba gratis de XASKA IA (decisión 311): cuándo termina, cuántos días quedan y los tres retos de la bienvenida
+     * La prueba gratis de Aska (decisión 311): cuándo termina, cuántos días quedan y los tres retos de la bienvenida
      * (leer una factura, preguntarle a Aska, cargar con Aska). Nulo si el negocio no la tiene solo por la prueba.
      */
     public record Trial(java.time.Instant endsAt, long daysLeft, boolean scanned, boolean asked, boolean loaded) {

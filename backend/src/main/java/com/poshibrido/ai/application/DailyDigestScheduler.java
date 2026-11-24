@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Cada 5 minutos revisa los negocios activos con XASKA IA y arma el Resumen del día de los que ya llegaron a su hora
+ * Cada 5 minutos revisa los negocios activos con Aska y arma el Resumen del día de los que ya llegaron a su hora
  * (decisión 299). Cada negocio va con su propio contexto; un error en uno no detiene a los demás. Un segundo servidor
  * no lo repite: el resumen se reserva por fecha antes de pedírselo a la IA. Se apaga con
  * {@code app.ai.digest-schedule=false} (las pruebas llaman al servicio directamente).

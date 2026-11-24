@@ -337,6 +337,10 @@ class WhatsAppAgentIT extends IntegrationTest {
                 .andExpect(jsonPath("$.messages[0].body", containsString("Hola Carlos, soy Daniel de XASKA")))
                 .andExpect(jsonPath("$.messages[0].body", containsString("en La Tribuna Bar")));
         verify(whatsapp).sendTemplate("57" + phone, "xaska_seguimiento", "es", List.of("Carlos", "La Tribuna Bar"));
+        // Mientras no conteste, no se le puede escribir con texto libre, y el aviso lo dice así (decisión 376).
+        UUID followed = conversations.find("57" + phone, null).orElseThrow().id();
+        api.postWith(admin, "/api/v1/platform/whatsapp/conversations/" + followed + "/reply", "{\"text\":\"¿Hola?\"}")
+                .andExpect(status().is(422)).andExpect(jsonPath("$.detail", containsString("todavía no ha respondido")));
 
         // Si contesta, Aska no se mete: la atiende la persona.
         clearInvocations(ai);

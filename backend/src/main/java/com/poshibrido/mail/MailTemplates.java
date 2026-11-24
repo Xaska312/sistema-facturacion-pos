@@ -202,14 +202,14 @@ public class MailTemplates {
                 "Gracias por confiar en XASKA POS.");
     }
 
-    /** Referidos (decisión 312): el negocio que invitó pagó y quien invita ganó un mes de XASKA IA. */
+    /** Referidos (decisión 312): el negocio que invitó pagó y quien invita ganó un mes de Aska. */
     public MailMessage referralReward(String to, String ownerName, String businessName, String referredName,
                                       String untilLabel) {
-        return message(to, "Ganaste un mes de XASKA IA gracias a " + referredName, "referido-premio",
+        return message(to, "Ganaste un mes de Aska gracias a " + referredName, "referido-premio",
                 "Hola, " + ownerName + ":",
                 List.of(referredName + " entró a XASKA con tu invitación y ya pagó su primer mes. Gracias por "
                                 + "recomendarnos.",
-                        "Te regalamos un mes de XASKA IA para " + businessName + ": la tienes hasta el " + untilLabel
+                        "Te regalamos un mes de Aska para " + businessName + ": la tienes hasta el " + untilLabel
                                 + ". Si estabas dentro de XASKA, sal y vuelve a entrar para verla.",
                         "Cada negocio que invites y pague te da otro mes. Tu código está en Ajustes → Planes y pagos."),
                 "Invitar a otro negocio", properties.link("/app/planes"),
@@ -424,7 +424,7 @@ public class MailTemplates {
     }
 
     /**
-     * "Lo que hiciste con Aska" (decisión 309): al dueño, lo que XASKA IA hizo por el negocio en el mes o en la prueba
+     * "Lo que hiciste con Aska" (decisión 309): al dueño, lo que Aska hizo por el negocio en el mes o en la prueba
      * gratis, con el tiempo ahorrado estimado ({@code saved}, nulo si no hubo nada) y lo hecho ({@code lines}: emoji y
      * frase en primera persona). Con {@code trialEnds} es el de la prueba: cuándo termina y el botón para quedarse.
      */
@@ -526,7 +526,7 @@ public class MailTemplates {
         html.append("<p style=\"margin:20px 0 6px;\"><a href=\"").append(escape(link))
                 .append("\" style=\"display:inline-block;background:#4338ca;color:#ffffff;text-decoration:none;")
                 .append("padding:12px 22px;border-radius:12px;font-weight:bold;\">")
-                .append(trial ? "Quedarme con XASKA IA" : "Pregúntale a Aska").append("</a></p>")
+                .append(trial ? "Quedarme con Aska" : "Pregúntale a Aska").append("</a></p>")
                 .append("<p style=\"margin:20px 0 22px;\">Gracias por dejarme ayudarte,<br>")
                 .append("<strong style=\"color:#3730a3;\">Aska</strong> <span style=\"color:#f59e0b;\">&#10022;</span></p>")
                 .append("</td></tr>")
@@ -558,7 +558,7 @@ public class MailTemplates {
                     .append("\n");
         }
         if (trial) {
-            text.append("\nTu prueba gratis termina el ").append(trialEnds).append(". Quédate con XASKA IA: ")
+            text.append("\nTu prueba gratis termina el ").append(trialEnds).append(". Quédate con Aska: ")
                     .append(link).append("\n");
         } else {
             text.append("\nPregúntale a Aska: ").append(link).append("\n");

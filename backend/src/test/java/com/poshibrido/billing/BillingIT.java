@@ -28,7 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * Planes y pagos con Bre-B (decisión 302): el pedido se calcula en el servidor, el comprobante lo revisa Aska (simulada)
- * y al aprobar se renueva el plan y se suman los adicionales; la prueba gratis de XASKA IA es una sola vez.
+ * y al aprobar se renueva el plan y se suman los adicionales; la prueba gratis de Aska es una sola vez.
  */
 class BillingIT extends IntegrationTest {
 

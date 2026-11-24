@@ -5,7 +5,7 @@ import { AiApi, AskaMoments } from '../../core/api/ai.api';
 const NONE: AskaMoments = { hasAi: false, canBuy: false, trialAvailable: false, emptyStock: false };
 
 /**
- * Aska en el momento del dolor (decisión 308): lo que el servidor dice del negocio (si tiene XASKA IA, si se puede
+ * Aska en el momento del dolor (decisión 308): lo que el servidor dice del negocio (si tiene Aska, si se puede
  * probar, si el inventario está vacío), pedido una vez por sesión, y los productos creados a mano seguidos.
  */
 @Injectable({ providedIn: 'root' })

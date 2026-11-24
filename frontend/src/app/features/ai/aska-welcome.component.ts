@@ -7,7 +7,7 @@ import { AskaTrialState } from './aska-trial-state';
 import { challengesDone, daysLeftText } from './aska-trial';
 
 /**
- * Bienvenida de la prueba gratis de XASKA IA (decisión 311): qué hace Aska, los días que quedan y tres retos que se
+ * Bienvenida de la prueba gratis de Aska (decisión 311): qué hace Aska, los días que quedan y tres retos que se
  * marcan solos al hacerlos (leer una factura, preguntarle qué se agota, cargar el cuaderno).
  */
 @Component({
@@ -21,7 +21,7 @@ import { challengesDone, daysLeftText } from './aska-trial';
         <div class="welcome-head">
           <app-xaska-ia-logo size="lg" />
           <div>
-            <p class="welcome-kicker">{{ days() }} de XASKA IA</p>
+            <p class="welcome-kicker">{{ days() }} de Aska</p>
             <h2 class="welcome-title">Hola, soy Aska. Ponme a trabajar.</h2>
           </div>
         </div>

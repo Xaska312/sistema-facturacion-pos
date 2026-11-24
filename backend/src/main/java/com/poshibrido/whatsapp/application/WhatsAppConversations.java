@@ -445,8 +445,11 @@ public class WhatsAppConversations {
     /** Antes de que alguien de XASKA responda: la ventana de 24 horas tiene que seguir abierta. */
     public void requireWindow(Conversation conversation) {
         if (!conversation.windowOpen()) {
-            throw new BusinessRuleException("Pasaron más de 24 horas desde el último mensaje de esta persona: "
-                    + "WhatsApp solo deja escribirle con una plantilla aprobada. Espera a que vuelva a escribir.");
+            throw new BusinessRuleException(conversation.lastInboundAt() == null
+                    ? "Esta persona todavía no ha respondido: WhatsApp solo deja escribirle con una plantilla aprobada "
+                    + "hasta que conteste. Cuando lo haga, le respondes aquí."
+                    : "Pasaron más de 24 horas desde el último mensaje de esta persona: WhatsApp solo deja escribirle "
+                    + "con una plantilla aprobada. Espera a que vuelva a escribir.");
         }
     }
 

@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/** XASKA IA: "Pregúntale a tu negocio" (decisión 296). Permiso {@code ai:ask} (del adicional XASKA IA). */
+/** Aska: "Pregúntale a tu negocio" (decisión 296). Permiso {@code ai:ask} (del adicional Aska). */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/ai")
@@ -43,7 +43,7 @@ public class AskController {
         return asks.usage();
     }
 
-    /** "Aska encontró…" en Inicio para quien no tiene XASKA IA (decisión 302); no usa la IA. */
+    /** "Aska encontró…" en Inicio para quien no tiene Aska (decisión 302); no usa la IA. */
     @GetMapping("/teaser")
     @PreAuthorize("hasAuthority('inventory:read') or hasAuthority('reports:read')")
     public com.poshibrido.ai.application.AiTeaserService.Teaser teaser() {
@@ -51,7 +51,7 @@ public class AskController {
     }
 
     /**
-     * Aska en el momento del dolor (decisión 308): si el negocio tiene XASKA IA, si quien mira puede probarla y si el
+     * Aska en el momento del dolor (decisión 308): si el negocio tiene Aska, si quien mira puede probarla y si el
      * inventario está vacío. Para quien ingresa compras, crea productos o ve existencias; no usa la IA.
      */
     @GetMapping("/moments")
@@ -69,7 +69,7 @@ public class AskController {
                 : org.springframework.http.ResponseEntity.ok(r);
     }
 
-    /** La prueba gratis de XASKA IA: días que quedan y retos de la bienvenida (decisión 311); 204 si no está en prueba. */
+    /** La prueba gratis de Aska: días que quedan y retos de la bienvenida (decisión 311); 204 si no está en prueba. */
     @GetMapping("/trial")
     @PreAuthorize("hasAuthority('ai:ask')")
     public org.springframework.http.ResponseEntity<com.poshibrido.ai.application.AskaMomentService.Trial> trial() {

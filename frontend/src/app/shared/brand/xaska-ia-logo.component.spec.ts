@@ -19,11 +19,11 @@ describe('XaskaIaLogoComponent (decisiones 295 y 358)', () => {
   });
 
   it('con el nombre, la etiqueta IA y nombre accesible', () => {
-    const el = render({ wordmark: true, label: 'XASKA IA', size: 'sm' });
+    const el = render({ wordmark: true, label: 'Aska', size: 'sm' });
     expect(el.querySelector('.xia-name')?.textContent).toBe('XASKA');
     expect(el.querySelector('.xia-tag')?.textContent).toBe('IA');
     expect(el.querySelector('.xia')?.getAttribute('role')).toBe('img');
-    expect(el.querySelector('.xia')?.getAttribute('aria-label')).toBe('XASKA IA');
+    expect(el.querySelector('.xia')?.getAttribute('aria-label')).toBe('Aska');
     expect(el.querySelector('.xia-sm')).not.toBeNull();
   });
 

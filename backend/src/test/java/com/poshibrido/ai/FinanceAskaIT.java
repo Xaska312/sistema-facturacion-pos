@@ -84,7 +84,7 @@ class FinanceAskaIT extends IntegrationTest {
                 com.poshibrido.parties.domain.Nit.verificationDigit(nit))).andExpect(status().isCreated()), "$.id");
         byte[] photo = photo();
 
-        // --- Leer el recibo: solo con XASKA IA.
+        // --- Leer el recibo: solo con Aska.
         api.uploadNamed(s, "/api/v1/ai/expenses/read", "file", "recibo.jpg", photo).andExpect(status().isForbidden());
         Session admin = platformAdmin();
         api.putWith(admin, "/api/v1/platform/tenants/%s/subscription/extras".formatted(owner.tenantId()),
@@ -137,7 +137,7 @@ class FinanceAskaIT extends IntegrationTest {
         api.uploadNamed(s, "/api/v1/ai/expenses/read", "file", "nota.txt", "hola".getBytes())
                 .andExpect(status().is(422));
         api.getWith(s, "/api/v1/ai/expenses/usage").andExpect(jsonPath("$.used").value(2));
-        // El cajero no lee recibos si no puede registrar gastos (sin XASKA IA en su sesión tampoco).
+        // El cajero no lee recibos si no puede registrar gastos (sin Aska en su sesión tampoco).
         Session cashier = api.joinAs(s, owner.tenantId(), "CASHIER").session();
         api.getWith(cashier, "/api/v1/ai/expenses/usage").andExpect(status().isOk());
 

@@ -117,7 +117,7 @@ const TIMEZONE_LABEL: Record<string, string> = {
                 <span class="plans-cta-icon" aria-hidden="true"><i class="pi pi-credit-card"></i></span>
                 <span class="flex-1 min-w-0">
                   <span class="block font-bold">Planes y pagos</span>
-                  <span class="block text-xs plans-cta-sub">Renueva, cambia de plan, agrega XASKA IA, módulos o cupos y paga por Bre-B.</span>
+                  <span class="block text-xs plans-cta-sub">Renueva, cambia de plan, agrega Aska, módulos o cupos y paga por Bre-B.</span>
                 </span>
                 <i class="pi pi-arrow-right" aria-hidden="true"></i>
               </a>
@@ -398,7 +398,7 @@ export class SettingsComponent implements OnInit {
   protected readonly cop = formatCop;
 
   protected readonly canEdit = computed(() => this.auth.hasPermission('settings:manage'));
-  /** Resumen del día de Aska (decisión 299): con XASKA IA. */
+  /** Resumen del día de Aska (decisión 299): con Aska. */
   protected readonly canDigest = computed(() => this.canEdit() && this.auth.hasPermission('ai:ask'));
   protected readonly hasQuotes = computed(() => this.auth.hasPermission('module:quotes'));
   protected readonly hasCredit = computed(() => this.auth.hasPermission('module:credit'));

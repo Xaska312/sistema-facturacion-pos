@@ -9,8 +9,8 @@ describe('planes por nivel (decisión 288)', () => {
     expect(includedText([], [])).toBe('Lo esencial');
   });
 
-  it('XASKA IA es un adicional: no se ofrece al editar un plan (decisión 295)', () => {
-    expect(featureLabel('AI')).toBe('XASKA IA');
+  it('Aska es un adicional: no se ofrece al editar un plan (decisión 295)', () => {
+    expect(featureLabel('AI')).toBe('Aska');
     expect(PLAN_ONLY_FEATURES.map((f) => f.code)).not.toContain('AI');
     expect(PLAN_ONLY_FEATURES.map((f) => f.code)).toContain('PURCHASES');
   });

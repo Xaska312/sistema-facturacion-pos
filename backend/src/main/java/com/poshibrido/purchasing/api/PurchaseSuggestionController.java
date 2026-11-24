@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/** "Qué comprar" (decisión 297): pedido sugerido por proveedor y su revisión con XASKA IA. */
+/** "Qué comprar" (decisión 297): pedido sugerido por proveedor y su revisión con Aska. */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/purchases/suggestions")

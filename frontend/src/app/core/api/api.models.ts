@@ -1015,7 +1015,7 @@ export interface Plan {
   legacy: boolean;
 }
 
-/** Tope al mes de una función del adicional XASKA IA (decisión 295), igual para todos los que lo tienen. */
+/** Tope al mes de una función del adicional Aska (decisión 295), igual para todos los que lo tienen. */
 export interface AiAllowance {
   code: string;
   name: string;
@@ -1043,7 +1043,7 @@ export interface Entitled {
   maxRegisters: number | null;
   modules: string[];
   features: PlanFeature[];
-  /** Facturas con IA al mes: 0 sin el adicional XASKA IA (decisión 295). */
+  /** Facturas con IA al mes: 0 sin el adicional Aska (decisión 295). */
   maxInvoiceScans: number;
 }
 
@@ -1084,7 +1084,7 @@ export interface Subscription {
   priceLockedUntil: string | null;
   /** Lo comprado aparte del plan, con su vencimiento (decisión 302). */
   addons: SubscriptionAddon[];
-  /** Puede empezar la prueba gratis de XASKA IA (una sola vez). */
+  /** Puede empezar la prueba gratis de Aska (una sola vez). */
   aiTrialAvailable: boolean;
 }
 

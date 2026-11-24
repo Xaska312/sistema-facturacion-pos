@@ -35,7 +35,7 @@ type Mode = 'new' | 'cash' | 'edit' | 'classify' | 'recurring';
  *   <li>{@code openRecurring}: paga una fecha de un gasto fijo (decisión 321) con lo sugerido, que se puede cambiar.</li>
  * </ul>
  * La clave de idempotencia se crea al abrir: reintentar no registra dos gastos.
- * Con XASKA IA, "Leer con Aska" (decisión 325) llena el formulario con la foto o el PDF del recibo, que queda como
+ * Con Aska, "Leer con Aska" (decisión 325) llena el formulario con la foto o el PDF del recibo, que queda como
  * soporte; la persona revisa y guarda.
  */
 @Component({
@@ -206,7 +206,7 @@ export class ExpenseDialogComponent {
   protected readonly suppliers = signal<Party[]>([]);
   protected readonly file = signal<File | null>(null);
   protected readonly fileError = signal<string | null>(null);
-  /** Leer con Aska (decisión 325): tope del mes (null mientras no se sabe o sin XASKA IA), estado y avisos. */
+  /** Leer con Aska (decisión 325): tope del mes (null mientras no se sabe o sin Aska), estado y avisos. */
   protected readonly readUsage = signal<AskUsage | null>(null);
   protected readonly reading = signal(false);
   protected readonly readError = signal<string | null>(null);
@@ -330,7 +330,7 @@ export class ExpenseDialogComponent {
     return (wanted ?? list[0])?.id ?? '';
   }
 
-  /** El botón sale en un gasto nuevo (o de la caja) si el negocio tiene XASKA IA con recibos en su plan. */
+  /** El botón sale en un gasto nuevo (o de la caja) si el negocio tiene Aska con recibos en su plan. */
   protected canRead(): boolean {
     const u = this.readUsage();
     return (this.mode() === 'new' || this.mode() === 'cash') && !!u && u.available && u.limit > 0;

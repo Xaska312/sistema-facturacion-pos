@@ -117,7 +117,7 @@ export class PlatformApi {
     return this.http.put<Plan>(`${this.base}/plans/${encodeURIComponent(code)}`, input);
   }
 
-  /** Topes al mes de XASKA IA (decisión 295). */
+  /** Topes al mes de Aska (decisión 295). */
   aiAllowances(): Observable<AiAllowance[]> {
     return this.http.get<AiAllowance[]>(`${this.base}/ai-allowances`);
   }

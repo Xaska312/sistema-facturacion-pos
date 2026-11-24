@@ -53,7 +53,7 @@ class CatalogImportIT extends IntegrationTest {
         byte[] csv = "Codigo;Producto;Precio\n7702511000014;Arroz Diana 1 kg;2400\nFR-500;Frijol bola roja 500 g;4000\n"
                 .getBytes(StandardCharsets.UTF_8);
 
-        // Solo con XASKA IA.
+        // Solo con Aska.
         api.uploadNamed(s, "/api/v1/ai/catalog/read", "files", "lista.csv", csv).andExpect(status().isForbidden());
         Session admin = platformAdmin();
         api.putWith(admin, "/api/v1/platform/tenants/%s/subscription/extras".formatted(owner.tenantId()),

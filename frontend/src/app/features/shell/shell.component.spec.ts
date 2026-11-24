@@ -45,7 +45,7 @@ describe('ShellComponent', () => {
           },
         ]),
         { provide: AuthService, useValue: auth },
-        // Decisión 311: sin prueba de XASKA IA en curso.
+        // Decisión 311: sin prueba de Aska en curso.
         { provide: AskaTrialState, useValue: { trial: signal(null), welcomeOpen: signal(false), load: () => undefined,
           openWelcome: () => undefined } },
         // Por defecto la suscripción no responde: sin aviso (fase 8b).
