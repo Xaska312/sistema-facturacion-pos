@@ -1105,8 +1105,16 @@
   "chapter": "Equipo y permisos",
   "title": "Sucursales y cajas",
   "summary": "Una sucursal es cada local donde vendes o guardas mercancía; cada una tiene sus existencias y sus cajas.",
-  "steps": [],
+  "steps": [
+   "En Configuración › Sucursales toca \"Nueva sucursal\" y escribe el código y el nombre.",
+   "Elige qué tendrá: \"Vende lo mismo\" (otro local con los mismos productos), \"Un restaurante\" (mesas, cocina y su carta) o \"Vende otras cosas\" (solo las categorías que elijas).",
+   "Deja marcado \"Crear su caja\" para que la plata de esa sede no se mezcle con la de las otras.",
+   "Si es un restaurante, di cuántas mesas tiene y qué categorías se ofrecen en las mesas (por ejemplo Platos y Jugos). Queda el salón con las mesas numeradas, la carta y, si hacía falta, Mesas y Cocina encendidos."
+  ],
   "tips": [
+   "Qué vende cada sede se cambia en Sucursales › Editar: \"Todo el catálogo\" o \"Solo algunas categorías\". En Vender de esa sede solo salen esas categorías (y sus subcategorías); el lector avisa si pasan un producto que no se vende allí.",
+   "Los productos y los precios son los mismos para todo el negocio; cada sede tiene su propio inventario.",
+   "Una categoría nueva no se agrega sola a las sedes que venden solo algunas: agrégala en Sucursales › Editar.",
    "Crea una caja por cada punto donde se cobra al mismo tiempo.",
    "Desactivar una sucursal o una caja no borra sus ventas."
   ],

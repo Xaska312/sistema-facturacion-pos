@@ -44,6 +44,7 @@ public class ProductModelController {
     private static final Set<String> SORTABLE = Set.of("name", "skuPrefix", "createdAt");
 
     private final ProductModelService models;
+    private final com.poshibrido.catalog.application.BranchSaleCategories branchSales;
     private final SizeScaleService scales;
 
     // ---------------------------------------------------------------- DTOs
@@ -128,10 +129,12 @@ public class ProductModelController {
     public PageResponse<ModelRow> search(@RequestParam(required = false) String search,
                                          @RequestParam(required = false) UUID categoryId,
                                          @RequestParam(defaultValue = "false") boolean includeInactive,
+                                         @RequestParam(required = false) UUID branchId,
                                          @RequestParam(defaultValue = "0") int page,
                                          @RequestParam(defaultValue = "20") int size,
                                          @RequestParam(required = false) String sort) {
-        return PageResponse.of(models.search(search, categoryId, includeInactive,
+        return PageResponse.of(models.search(search, categoryId, branchSales.allowed(branchId).orElse(null),
+                includeInactive,
                 PageRequests.of(page, size, sort, SORTABLE, Sort.by("name"))), r -> r);
     }
 

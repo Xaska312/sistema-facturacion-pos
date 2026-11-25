@@ -4,6 +4,9 @@ import { Observable } from 'rxjs';
 import {
   Branch,
   BranchInput,
+  BranchSaleCategories,
+  BranchSetupInput,
+  BranchSetupResult,
   BusinessSettings,
   CashRegister,
   City,
@@ -41,6 +44,20 @@ export class OrganizationApi {
 
   createBranch(code: string, input: BranchInput): Observable<Branch> {
     return this.http.post<Branch>('/api/v1/branches', { code, ...input });
+  }
+
+  /** Asistente de nueva sucursal (decisión 378): todo en un paso, o nada. */
+  setupBranch(input: BranchSetupInput): Observable<BranchSetupResult> {
+    return this.http.post<BranchSetupResult>('/api/v1/branches/setup', input);
+  }
+
+  /** Qué vende la sucursal (decisión 378). */
+  saleCategories(branchId: string): Observable<BranchSaleCategories> {
+    return this.http.get<BranchSaleCategories>(`/api/v1/branches/${branchId}/sale-categories`);
+  }
+
+  setSaleCategories(branchId: string, sellsAll: boolean, categoryIds: readonly string[]): Observable<BranchSaleCategories> {
+    return this.http.put<BranchSaleCategories>(`/api/v1/branches/${branchId}/sale-categories`, { sellsAll, categoryIds });
   }
 
   updateBranch(id: string, input: BranchInput): Observable<Branch> {

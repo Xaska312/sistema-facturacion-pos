@@ -89,4 +89,9 @@ export class OfflineCatalogService {
   search(text: string): OfflineCatalogItem[] {
     return searchItems(this.items(), text);
   }
+
+  /** La categoría de un producto de la copia (para saber si la sucursal lo vende, decisión 378). */
+  categoryOf(productId: string): string | null {
+    return this.items().find((i) => i.productId === productId)?.categoryId ?? null;
+  }
 }

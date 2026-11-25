@@ -241,6 +241,11 @@ export class ProductGridComponent implements OnInit {
    * abre en su primera categoría.
    */
   readonly onlyCategories = input<readonly string[] | null>(null);
+  /**
+   * Vender de una sucursal que no vende todo (decisión 378): los favoritos de otras categorías tampoco salen. En
+   * Mesas la carta no esconde favoritos.
+   */
+  readonly restrictFavorites = input(false);
   readonly pick = output<Product>();
   /** Un modelo con tallas: el POS pregunta cuál. */
   readonly pickModel = output<ProductModelRow>();
@@ -277,7 +282,9 @@ export class ProductGridComponent implements OnInit {
         firstName([this.moreProductsAfter(), this.moreModelsAfter()]));
     }
     const byId = new Map(this.favoriteProducts().map((p) => [p.id, p]));
+    const only = this.restrictFavorites() ? this.onlyCategories() : null;
     return this.favoriteIds().map((id) => byId.get(id)).filter((p): p is Product => p !== undefined)
+      .filter((p) => only === null || (p.categoryId !== null && only.includes(p.categoryId)))
       .map((p) => ({ kind: 'product' as const, id: p.id, name: p.name, product: p }));
   });
 

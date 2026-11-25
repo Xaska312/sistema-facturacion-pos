@@ -31,13 +31,15 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
                    or p.id in (select b.product.id from ProductBarcode b where b.barcode = :exact)
                    or p.id in (select m.productId from ProductMedicine m where lower(m.activeIngredients) like :pattern escape '\\'))
               and (:anyCategory = true or p.categoryId = :categoryId)
+              and (:anyAllowed = true or p.categoryId in :allowed)
               and (:includeInactive = true or p.active = true)
               and (:includeVariants = true or p.modelId is null)
               and p.deletedAt is null
             """)
     Page<Product> search(@Param("pattern") String pattern, @Param("patternUpper") String patternUpper,
                          @Param("exact") String exact, @Param("anyCategory") boolean anyCategory,
-                         @Param("categoryId") UUID categoryId, @Param("includeInactive") boolean includeInactive,
+                         @Param("categoryId") UUID categoryId, @Param("anyAllowed") boolean anyAllowed,
+                         @Param("allowed") Collection<UUID> allowed, @Param("includeInactive") boolean includeInactive,
                          @Param("includeVariants") boolean includeVariants, Pageable pageable);
 
     /** Variantes de un modelo (fase 8d). */

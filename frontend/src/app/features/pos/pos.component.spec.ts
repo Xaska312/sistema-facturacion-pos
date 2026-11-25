@@ -7,6 +7,7 @@ import { of, throwError } from 'rxjs';
 import { CashSession, CreditAccount, PageResponse, Party, PaymentMethod, PosConfig, ProductLookup } from '../../core/api/api.models';
 import { CashApi } from '../../core/api/cash.api';
 import { CatalogApi } from '../../core/api/catalog.api';
+import { OrganizationApi } from '../../core/api/organization.api';
 import { CreditApi } from '../../core/api/credit.api';
 import { DiningApi } from '../../core/api/dining.api';
 import { InventoryApi } from '../../core/api/inventory.api';
@@ -92,6 +93,10 @@ describe('PosComponent: celular, pausar venta y cliente nuevo', () => {
         // Decisión 322: la caja de retenciones pregunta las retenciones habituales del cliente.
         { provide: WithholdingsApi, useValue: { usual: () => of([]) } },
         { provide: CatalogApi, useValue: catalog },
+        {
+          provide: OrganizationApi,
+          useValue: { saleCategories: () => of({ branchId: 'b1', sellsAll: true, categoryIds: [], allowedIds: null }) },
+        },
         { provide: InventoryApi, useValue: inventory },
         { provide: PartiesApi, useValue: parties },
         { provide: CreditApi, useValue: credit },

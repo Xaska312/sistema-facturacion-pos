@@ -35,10 +35,14 @@ export class SalesApi {
   }
 
   /** Código de barras o SKU con el precio de la lista del cliente; un código inexistente no muestra toast. */
-  lookup(code: string, priceListId: string | null): Observable<ProductLookup> {
+  lookup(code: string, priceListId: string | null, branchId: string | null = null): Observable<ProductLookup> {
     const params: Record<string, string> = { code };
     if (priceListId) {
       params['priceListId'] = priceListId;
+    }
+    // Lo que no vende la sucursal de la caja no se agrega (decisión 378).
+    if (branchId) {
+      params['branchId'] = branchId;
     }
     return this.http.get<ProductLookup>('/api/v1/products/lookup', {
       params,

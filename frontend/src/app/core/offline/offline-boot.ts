@@ -16,6 +16,8 @@ export interface OfflineBoot {
   config: PosConfig;
   methods: PaymentMethod[];
   decimalUnitIds: string[];
+  /** Lo que vende la sucursal de la caja (decisión 378); null o ausente = todo. */
+  saleCategoryIds?: string[] | null;
 }
 
 const KEY = 'xaska.offline-boot';

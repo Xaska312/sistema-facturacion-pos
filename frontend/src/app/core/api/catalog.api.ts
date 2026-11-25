@@ -27,6 +27,8 @@ export interface ProductQuery extends PageQuery {
   includeInactive?: boolean;
   /** Falso en la lista de productos: las tallas se ven en su modelo (fase 8d). */
   includeVariants?: boolean;
+  /** Solo lo que vende esa sucursal (Vender, decisión 378). */
+  branchId?: string | null;
 }
 
 export interface ProductModelQuery extends PageQuery {
@@ -34,6 +36,8 @@ export interface ProductModelQuery extends PageQuery {
   /** Solo los de esa categoría (pestañas del POS). */
   categoryId?: string | null;
   includeInactive?: boolean;
+  /** Solo lo que vende esa sucursal (Vender, decisión 378). */
+  branchId?: string | null;
 }
 
 /** Catálogo: productos, categorías, unidades, impuestos, listas de precios e importación. */
@@ -88,6 +92,7 @@ export class CatalogApi {
         categoryId: query.categoryId,
         includeInactive: query.includeInactive ? 'true' : null,
         includeVariants: query.includeVariants === false ? 'false' : null,
+        branchId: query.branchId,
       }),
     });
   }
@@ -109,6 +114,7 @@ export class CatalogApi {
         search: query.search,
         categoryId: query.categoryId,
         includeInactive: query.includeInactive ? 'true' : null,
+        branchId: query.branchId,
       }),
     });
   }

@@ -103,7 +103,8 @@ public class CatalogConfigService implements PriceListApi {
             throw new ConflictException("La categoría tiene subcategorías. Muévelas o elimínalas primero.");
         }
         products.detachDeleted(id);
-        for (String table : List.of("category_modifier_groups", "kitchen_station_categories", "dining_menu_categories")) {
+        for (String table : List.of("category_modifier_groups", "kitchen_station_categories", "dining_menu_categories",
+                "branch_categories")) {
             em.createNativeQuery("DELETE FROM " + table + " WHERE category_id = ?1").setParameter(1, id).executeUpdate();
         }
         em.createNativeQuery("UPDATE product_models SET category_id = NULL WHERE category_id = ?1 AND NOT active")

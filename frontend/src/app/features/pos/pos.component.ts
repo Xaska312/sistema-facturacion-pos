@@ -32,6 +32,7 @@ import { CashApi } from '../../core/api/cash.api';
 import { ChargePart, DiningApi, Tab } from '../../core/api/dining.api';
 import { ModifiersApi, PosModifierCatalog, PosModifierGroup } from '../../core/api/modifiers.api';
 import { CatalogApi } from '../../core/api/catalog.api';
+import { OrganizationApi } from '../../core/api/organization.api';
 import { CreditApi } from '../../core/api/credit.api';
 import { InventoryApi } from '../../core/api/inventory.api';
 import { PartiesApi } from '../../core/api/parties.api';
@@ -221,6 +222,7 @@ const STOCK_PAGES = 5;
               }
             </div>
             <app-product-grid class="flex-1" data-tour="products" [favoriteIds]="favorites()" [stock]="stock()"
+                              [onlyCategories]="saleCategories()" [restrictFavorites]="true"
                               (pick)="pickProduct($event)" (pickModel)="openModel($event.id)"
                               (favoriteToggle)="toggleFavorite($event)" />
           </section>
@@ -852,6 +854,7 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   private readonly cash = inject(CashApi);
   private readonly sales = inject(SalesApi);
   private readonly catalog = inject(CatalogApi);
+  private readonly organization = inject(OrganizationApi);
   private readonly modifiersApi = inject(ModifiersApi);
   private readonly dining = inject(DiningApi);
   private readonly route = inject(ActivatedRoute);
@@ -972,6 +975,12 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   protected readonly config = signal<PosConfig | null>(null);
   /** {@code undefined} mientras carga; {@code null} sin caja abierta. */
   protected readonly session = signal<CashSession | null | undefined>(undefined);
+  /** Categorías que vende la sucursal de la caja, con sus subcategorías; null = todo el catálogo (decisión 378). */
+  protected readonly saleCategories = signal<string[] | null>(null);
+  private readonly saleCategorySet = computed(() => {
+    const ids = this.saleCategories();
+    return ids === null ? null : new Set(ids);
+  });
   protected readonly sessionError = signal(false);
   /** Búsquedas de códigos en curso: F4 espera a que terminen (si no, el último producto llega con el cobro abierto). */
   private pendingLookups = 0;
@@ -1023,7 +1032,7 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
     }
     saveOfflineBoot({
       savedAt: Date.now(), user: identity.user, claims: identity.claims, tenant, session, config, methods,
-      decimalUnitIds: [...this.decimalUnits()],
+      decimalUnitIds: [...this.decimalUnits()], saleCategoryIds: this.saleCategories(),
     });
   });
 
@@ -1115,6 +1124,7 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
         this.session.set(session);
         if (session) {
           this.loadStock(session.branchId);
+          this.loadSaleCategories(session.branchId);
           this.loadTabFromUrl();
           this.focusScanner();
           this.offerTour();
@@ -1129,6 +1139,7 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
         if (boot) {
           this.offlineSales.noteNetworkError();
           this.session.set(boot.session);
+          this.saleCategories.set(boot.saleCategoryIds ?? null);
           this.focusScanner();
           return;
         }
@@ -1228,6 +1239,20 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
    * Existencias de la sucursal para avisar en la cuadrícula y el carrito. El backend las da paginadas (máx. 100):
    * se cargan hasta {@link STOCK_PAGES} páginas. Sin inventory:read no se muestran.
    */
+  /** Qué vende la sucursal de la caja (decisión 378). Sin respuesta se queda con lo que recordaba este equipo. */
+  private loadSaleCategories(branchId: string): void {
+    this.organization.saleCategories(branchId).subscribe({
+      next: (sale) => this.saleCategories.set(sale.allowedIds),
+      error: () => this.saleCategories.set(this.myBoot()?.saleCategoryIds ?? null),
+    });
+  }
+
+  /** La sucursal de la caja vende ese producto (sin restricción, cualquiera). */
+  private sellsHere(categoryId: string | null | undefined): boolean {
+    const allowed = this.saleCategorySet();
+    return allowed === null || (!!categoryId && allowed.has(categoryId));
+  }
+
   private loadStock(branchId: string): void {
     if (!this.auth.hasPermission('inventory:read')) {
       return;
@@ -1257,7 +1282,7 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
       return;
     }
     this.pendingLookups++;
-    this.sales.lookup(parsed.code, this.customer().priceListId)
+    this.sales.lookup(parsed.code, this.customer().priceListId, this.session()?.branchId ?? null)
       .pipe(finalize(() => this.lookupDone()))
       .subscribe({
         // Etiqueta de báscula (fase 8e): la cantidad viene en el código (peso, o precio ÷ precio del producto).
@@ -1284,6 +1309,15 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   /** Sin conexión (decisión 332): el código se busca en la copia del catálogo de este equipo. */
   private scanOffline(code: string, quantity: number): void {
     const found = this.offlineCatalog.lookup(code);
+    if (found && !this.sellsHere(this.offlineCatalog.categoryOf(found.productId))) {
+      this.payWhenReady = false;
+      this.messages.add({
+        severity: 'warn', summary: 'No se vende aquí',
+        detail: `${found.name} no se vende en ${this.session()?.branchName ?? 'esta sucursal'}.`,
+      });
+      this.focusScanner();
+      return;
+    }
     if (!found) {
       this.payWhenReady = false;
       this.messages.add({
@@ -1545,7 +1579,7 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
     }
     if (this.offline()) {
       // Sin conexión (decisión 332): en la copia del catálogo; cada talla sale como un producto.
-      this.searchRows.set(this.offlineCatalog.search(text).map((i): SearchRow => ({
+      this.searchRows.set(this.offlineCatalog.search(text).filter((i) => this.sellsHere(i.categoryId)).map((i): SearchRow => ({
         kind: 'product', id: i.productId,
         product: { id: i.productId, sku: i.sku, name: i.name, salePrice: i.price, openPrice: i.openPrice } as Product,
       })));
@@ -1554,14 +1588,15 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
     }
     // Productos sin tallas y modelos por nombre (una fila por modelo, aunque tenga muchas tallas). Si no hay nada, se
     // busca entre las tallas (p. ej. el SKU o el código de una talla) y se juntan por modelo.
+    const branchId = this.saleCategories() === null ? null : (this.session()?.branchId ?? null);
     forkJoin({
-      products: this.catalog.products({ page: 0, size: 20, search: text, includeVariants: false }),
-      models: this.catalog.productModels({ page: 0, size: 10, search: text }),
+      products: this.catalog.products({ page: 0, size: 20, search: text, includeVariants: false, branchId }),
+      models: this.catalog.productModels({ page: 0, size: 10, search: text, branchId }),
     }).pipe(
       switchMap(({ products, models }) => {
         const rows = searchRows(products.content.filter((p) => p.active), models.content.filter((m) => m.active));
         return rows.length > 0 ? of(rows)
-          : this.catalog.products({ page: 0, size: 20, search: text })
+          : this.catalog.products({ page: 0, size: 20, search: text, branchId })
             .pipe(map((page) => groupSearchResults(page.content.filter((p) => p.active))));
       }),
     ).subscribe((rows) => {
