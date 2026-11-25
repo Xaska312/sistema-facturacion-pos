@@ -28,8 +28,8 @@ import java.util.UUID;
 
 /**
  * Referidos y aliados (decisión 312). Cada negocio tiene un código para invitar; los contadores y distribuidores
- * (aliados) tienen el suyo, que crea el administrador. El negocio que se registra con un código tiene XASKA IA durante
- * toda su prueba gratis; el referido cuenta cuando paga su primer mes: el negocio que invitó gana un mes de XASKA IA y
+ * (aliados) tienen el suyo, que crea el administrador. El negocio que se registra con un código tiene Aska durante
+ * toda su prueba gratis; el referido cuenta cuando paga su primer mes: el negocio que invitó gana un mes de Aska y
  * el aliado el 20 % de ese primer pago, que el administrador le paga por Bre-B y marca en la Consola.
  */
 @Service
@@ -148,8 +148,8 @@ public class ReferralService {
     // ------------------------------------------------------------------ registro
 
     /**
-     * Al crear el negocio con un código: queda como referido (pendiente) y, si arranca en prueba gratis, tiene XASKA IA
-     * todos esos días (cuenta como su prueba de XASKA IA). Un código que no existe, de un aliado inactivo o de un
+     * Al crear el negocio con un código: queda como referido (pendiente) y, si arranca en prueba gratis, tiene Aska
+     * todos esos días (cuenta como su prueba de Aska). Un código que no existe, de un aliado inactivo o de un
      * negocio del mismo dueño se rechaza y el negocio no se crea.
      */
     @Transactional(propagation = Propagation.MANDATORY)
@@ -176,7 +176,7 @@ public class ReferralService {
         jdbc.update("""
                 INSERT INTO platform.referrals (referred_tenant_id, code, referrer_tenant_id, partner_id, status, created_at)
                 VALUES (?, ?, ?, ?, 'PENDING', ?)""", tenantId, code, f[0], f[1], Timestamp.from(now));
-        // Llega invitado: XASKA IA durante toda su prueba gratis (y esa es su prueba de XASKA IA).
+        // Llega invitado: Aska durante toda su prueba gratis (y esa es su prueba de Aska).
         List<Timestamp> trialEnds = jdbc.queryForList("""
                 SELECT ends_at FROM platform.subscriptions WHERE tenant_id = ? AND trial AND ends_at > now()""",
                 Timestamp.class, tenantId);
@@ -228,7 +228,7 @@ public class ReferralService {
         return amount.multiply(COMMISSION).setScale(0, RoundingMode.HALF_UP);
     }
 
-    /** Un mes más de XASKA IA desde lo que ya tenga (también si estaba en prueba); queda como pagada. */
+    /** Un mes más de Aska desde lo que ya tenga (también si estaba en prueba); queda como pagada. */
     private Instant giveAiMonth(UUID tenantId) {
         Instant now = Instant.now();
         Instant current = jdbc.query("""

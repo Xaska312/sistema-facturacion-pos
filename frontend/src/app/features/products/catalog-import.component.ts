@@ -22,7 +22,7 @@ import { CatalogEdit, asNew, marginOf, matchLabel, rowProblem, toConfirmed, toEd
 type Filter = 'ALL' | 'CREATE' | 'UPDATE' | 'CHECK' | 'SKIP';
 
 /**
- * Cargar con Aska (decisión 300, XASKA IA): la lista de precios del proveedor (Excel, PDF o fotos) se convierte en
+ * Cargar con Aska (decisión 300, Aska): la lista de precios del proveedor (Excel, PDF o fotos) se convierte en
  * productos nuevos y en costos y precios al día. La persona revisa y corrige cada fila; nada se guarda sin confirmar.
  */
 @Component({
@@ -38,7 +38,7 @@ type Filter = 'ALL' | 'CREATE' | 'UPDATE' | 'CHECK' | 'SKIP';
     @if (!canAsk()) {
       <section class="card p-4 max-w-3xl flex gap-3 items-start">
         <app-xaska-ia-logo size="md" />
-        <p class="text-sm">Cargar con Aska es parte de <strong>XASKA IA</strong>. Pídele al dueño del negocio que lo active,
+        <p class="text-sm">Cargar con Aska es parte del adicional <strong>Aska</strong>. Pídele al dueño del negocio que lo active,
           o usa <a routerLink="/app/productos/importar" class="underline">Importar desde Excel</a>.</p>
       </section>
     } @else if (draft() === null) {

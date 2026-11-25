@@ -38,7 +38,7 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Planes y pagos con Bre-B (decisión 302). El negocio arma su pedido (plan y periodo, XASKA IA, módulos, funciones y
+ * Planes y pagos con Bre-B (decisión 302). El negocio arma su pedido (plan y periodo, Aska, módulos, funciones y
  * cupos), XASKA calcula el valor y le da una referencia; paga a la llave Bre-B de XASKA con esa referencia y sube el
  * comprobante; Aska lo revisa (valor, referencia, destino y que la transferencia salió) y el administrador lo aprueba
  * en la consola. Al aprobar se renueva el plan y se suman los meses de cada adicional.

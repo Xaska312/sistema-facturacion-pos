@@ -6,7 +6,7 @@ import { PageHeaderComponent } from '../../shared/page-header.component';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { formatDateTime, formatRelative } from '../../shared/format';
-import { WA_AUTHOR_LABEL, WA_STATUS_LABEL, waContact, waKind, waLead, waName, waRatingLine, waStateWarning } from './whatsapp-text';
+import { WA_AUTHOR_LABEL, WA_STATUS_LABEL, waContact, waKind, waLead, waName, waRatingLine, waStateWarning, waWindowNote } from './whatsapp-text';
 
 /**
  * Conversaciones del agente de WhatsApp de XASKA (decisión 362): quién escribió, qué respondió el asistente y las que
@@ -118,7 +118,7 @@ import { WA_AUTHOR_LABEL, WA_STATUS_LABEL, waContact, waKind, waLead, waName, wa
               <p class="text-sm text-muted">Le aparece en el chat de xaska.co si sigue en la página o cuando vuelva.</p>
             }
             @if (!d.windowOpen) {
-              <p class="text-sm text-muted">Pasaron más de 24 horas desde su último mensaje: WhatsApp no deja escribirle con texto libre hasta que vuelva a escribir.</p>
+              <p class="text-sm text-muted">{{ windowNote(d.conversation) }}</p>
             }
             <label class="sr-only" for="wa-reply">Tu respuesta</label>
             <textarea appInput id="wa-reply" name="reply" rows="3" maxlength="2000" [(ngModel)]="draft"
@@ -263,6 +263,10 @@ export class PlatformWhatsAppComponent implements OnInit {
 
   protected kind(k: WaConversation['customerKind']): string | null {
     return waKind(k);
+  }
+
+  protected windowNote(c: WaConversation): string {
+    return waWindowNote(c);
   }
 
   protected ratingLine(r: WaRating): string {

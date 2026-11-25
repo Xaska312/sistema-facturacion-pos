@@ -45,7 +45,7 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * "Cargar con Aska" (decisión 300, XASKA IA): Aska lee la lista de precios de un proveedor (Excel, CSV, PDF o fotos),
+ * "Cargar con Aska" (decisión 300, Aska): Aska lee la lista de precios de un proveedor (Excel, CSV, PDF o fotos),
  * XASKA empareja cada fila con los productos (lo aprendido del proveedor, código de barras, SKU, nombre parecido) y
  * propone crear los nuevos o actualizar el costo y el precio de los que ya existen, cuidando el margen. Nada se
  * guarda hasta que la persona revisa y confirma; al confirmar se usa el importador de productos (todo o nada).
@@ -182,7 +182,7 @@ public class CatalogImportService {
             throw new BusinessRuleException("Elige la sede donde está ese inventario.");
         }
         if (!ai.available()) {
-            throw new BusinessRuleException("XASKA IA aún no está activa en este servidor.");
+            throw new BusinessRuleException("Aska aún no está activa en este servidor.");
         }
         BigDecimal m = margin == null ? new BigDecimal("30") : margin;
         if (m.signum() < 0 || m.compareTo(new BigDecimal("90")) > 0) {
@@ -194,7 +194,7 @@ public class CatalogImportService {
         long used = tx.execute(s -> used());
         if (used >= limit) {
             throw new BusinessRuleException(limit == 0
-                    ? "Cargar con Aska es parte de XASKA IA, que este negocio no tiene activo."
+                    ? "Cargar con Aska es parte del adicional Aska, que este negocio no tiene activo."
                     : "Llegaste a las " + limit + " listas leídas de este mes.");
         }
         UUID actor = CurrentActor.requireUserId();
@@ -220,7 +220,7 @@ public class CatalogImportService {
             response = ai.send(body);
         } catch (AiUnavailableException ex) {
             record("UNAVAILABLE", 0, 0, actor);
-            throw new BusinessRuleException("XASKA IA no respondió. Intenta de nuevo en un momento. No se descontó.");
+            throw new BusinessRuleException("Aska no respondió. Intenta de nuevo en un momento. No se descontó.");
         }
         Map<String, Object> usage = map(response.get("usage"));
         int input = number(usage.get("input_tokens"));

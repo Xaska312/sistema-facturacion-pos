@@ -100,7 +100,7 @@ export function glyphFor(route: string): XIconName {
     @if (auth.hasPermission('ai:ask')) {
       <app-digest-card class="block mb-5 empty:hidden" />
     } @else if (auth.hasPermission('inventory:read') || auth.hasPermission('reports:read')) {
-      <!-- "Aska encontró…" para quien no tiene XASKA IA (decisión 302). -->
+      <!-- "Aska encontró…" para quien no tiene Aska (decisión 302). -->
       <app-aska-teaser class="block mb-5 empty:hidden" />
     }
 

@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 /**
- * Logo del adicional XASKA IA y de Aska, su asistente (decisión 358, antes 295 y 298): una burbuja de chat con la A
+ * Logo del adicional Aska y de Aska, su asistente (decisión 358, antes 295 y 298): una burbuja de chat con la A
  * sin barra del nombre XASKA y el rombo ámbar del logo en el lugar de la barra. Plano como el logo de XASKA, con un
  * degradado ligero de índigo (sin brillo, aro ni halo). Colores de los tokens --xaska-ia-* (src/styles.css); no cambia
  * con el color de cada negocio. Con {@code wordmark}: "XASKA" y la etiqueta "IA" al lado.

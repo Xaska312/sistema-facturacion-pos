@@ -52,7 +52,7 @@ const STOCK_STATUS: Record<StockStatus, StatusKey> = { LOW: 'stock-low', OK: 'st
       <!-- Decisión 308: Aska en el momento del dolor. -->
       <app-aska-nudge class="mb-4" moment="stock" [available]="canAsk()" title="Casi todo tu inventario está en cero"
                       withAi="Si lo llevas en un cuaderno o en una lista, tómale fotos y yo cargo las cantidades por ti."
-                      withoutAi="Con XASKA IA, Aska carga tu inventario desde fotos del cuaderno: productos, cantidades y precios."
+                      withoutAi="Con el adicional Aska, carga tu inventario desde fotos del cuaderno: productos, cantidades y precios."
                       action="Cargar inventario con Aska" (act)="nudgeLoad()" />
     }
 

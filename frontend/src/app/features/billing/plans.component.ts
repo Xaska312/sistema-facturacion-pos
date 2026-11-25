@@ -21,8 +21,8 @@ import { ReferralCardComponent } from './referral-card.component';
 import { COUNTABLE, addonsForSale, annualSaving, checkLines, months, orderTotal, planPrice, statusLabel, trialBanner } from './billing-text';
 
 /**
- * Planes y pagos (decisión 302): el negocio ve su plan y lo que compró aparte, prueba XASKA IA gratis una vez, arma su
- * pedido (plan, XASKA IA, módulos y cupos) y lo paga por Bre-B con una referencia; sube el comprobante, Aska lo revisa
+ * Planes y pagos (decisión 302): el negocio ve su plan y lo que compró aparte, prueba Aska gratis una vez, arma su
+ * pedido (plan, Aska, módulos y cupos) y lo paga por Bre-B con una referencia; sube el comprobante, Aska lo revisa
  * y XASKA lo aprueba.
  */
 @Component({
@@ -30,7 +30,7 @@ import { COUNTABLE, addonsForSale, annualSaving, checkLines, months, orderTotal,
   imports: [FormsModule, ButtonComponent, PageHeaderComponent, XaskaIaLogoComponent, AskaLoaderComponent, ReferralCardComponent],
   template: `
     <app-page-header title="Planes y pagos"
-                     description="Renueva tu plan, agrega XASKA IA, módulos o más cupos y paga por Bre-B desde la app de tu banco." />
+                     description="Renueva tu plan, agrega Aska, módulos o más cupos y paga por Bre-B desde la app de tu banco." />
 
     @if (catalog() === null) {
       <p class="text-muted" role="status">Cargando…</p>
@@ -64,7 +64,7 @@ import { COUNTABLE, addonsForSale, annualSaving, checkLines, months, orderTotal,
           <section class="aska-offer lg:col-span-2" aria-labelledby="ai-offer">
             <app-xaska-ia-logo size="xl" />
             <div class="flex-1 min-w-56">
-              <h2 id="ai-offer" class="text-lg font-bold tracking-tight">XASKA IA <span class="aska-price">{{ cop(ai.monthlyPrice) }}/mes</span></h2>
+              <h2 id="ai-offer" class="text-lg font-bold tracking-tight">Aska <span class="aska-price">{{ cop(ai.monthlyPrice) }}/mes</span></h2>
               <p class="text-sm aska-offer-text">{{ ai.description }}</p>
               <ul class="aska-offer-list">
                 <li>Facturas y listas de precios en foto: sin digitar.</li>
@@ -492,10 +492,10 @@ export class PlansComponent implements OnInit {
     this.startingTrial.set(true);
     this.api.startAiTrial().subscribe({
       next: () => {
-        // Los permisos de XASKA IA llegan con una sesión nueva.
+        // Los permisos de Aska llegan con una sesión nueva.
         this.auth.renew().subscribe(() => {
           this.startingTrial.set(false);
-          this.messages.add({ severity: 'success', summary: 'XASKA IA activa por 14 días',
+          this.messages.add({ severity: 'success', summary: 'Aska activa por 14 días',
             detail: 'Toca el botón de Aska abajo a la derecha para empezar.', life: 6000 });
           this.load();
         });

@@ -7,7 +7,7 @@ import { XaskaIaLogoComponent } from '../../shared/brand/xaska-ia-logo.component
 import { formatCop } from '../../shared/money';
 
 /**
- * "Aska encontró…" (decisión 302): a quien no tiene XASKA IA, lo que Aska vería en su negocio, con las cifras reales y
+ * "Aska encontró…" (decisión 302): a quien no tiene Aska, lo que Aska vería en su negocio, con las cifras reales y
  * los detalles ocultos, y el botón para probarla gratis (una vez) o comprarla. No ocupa espacio si no hay nada.
  */
 @Component({
@@ -28,7 +28,7 @@ import { formatCop } from '../../shared/money';
             <li><span class="blur">Producto de ejemplo con nombre largo</span><span class="blur">Pedir 24</span></li>
             <li><span class="blur">Otro producto que se mueve poco</span><span class="blur">$ 380.000</span></li>
           </ul>
-          <p class="text-xs teaser-muted">Con XASKA IA, Aska te dice cuáles son, cuánto pedir y qué hacer con lo quieto.</p>
+          <p class="text-xs teaser-muted">Con el adicional Aska, te dice cuáles son, cuánto pedir y qué hacer con lo quieto.</p>
         </div>
         @if (t.canBuy) {
           <div class="flex flex-col gap-2">
@@ -36,10 +36,10 @@ import { formatCop } from '../../shared/money';
               <button type="button" class="teaser-cta" [disabled]="starting()" (click)="startTrial()">
                 {{ starting() ? 'Activando…' : 'Probar gratis 14 días' }}</button>
             }
-            <a routerLink="/app/planes" class="teaser-link">Ver XASKA IA</a>
+            <a routerLink="/app/planes" class="teaser-link">Ver Aska</a>
           </div>
         } @else {
-          <p class="text-xs teaser-muted max-w-40">Pídele al dueño del negocio que active XASKA IA.</p>
+          <p class="text-xs teaser-muted max-w-40">Pídele al dueño del negocio que active Aska.</p>
         }
       </section>
     }
@@ -94,7 +94,7 @@ export class AskaTeaserComponent implements OnInit {
       next: () => this.auth.renew().subscribe(() => {
         this.starting.set(false);
         this.teaser.set(null);
-        this.messages.add({ severity: 'success', summary: 'XASKA IA activa por 14 días',
+        this.messages.add({ severity: 'success', summary: 'Aska activa por 14 días',
           detail: 'Toca el botón de Aska abajo a la derecha y pregúntale qué productos se van a agotar.', life: 7000 });
         void this.router.navigateByUrl('/app');
       }),

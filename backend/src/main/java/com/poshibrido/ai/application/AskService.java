@@ -88,13 +88,13 @@ public class AskService {
             throw new BusinessRuleException("La pregunta admite hasta " + MAX_QUESTION + " caracteres.");
         }
         if (!ai.available()) {
-            throw new BusinessRuleException("XASKA IA aún no está activa en este servidor.");
+            throw new BusinessRuleException("Aska aún no está activa en este servidor.");
         }
         int limit = limit();
         long used = tx.execute(s -> usedThisMonth());
         if (used >= limit) {
             throw new BusinessRuleException(limit == 0
-                    ? "Las preguntas a tu negocio son parte de XASKA IA, que este negocio no tiene activo."
+                    ? "Las preguntas a tu negocio son parte de Aska, que este negocio no tiene activo."
                     : "Llegaste a las " + limit + " preguntas de este mes. Puedes ver lo mismo en Reportes.");
         }
         UUID actor = CurrentActor.requireUserId();
@@ -160,7 +160,7 @@ public class AskService {
         } catch (AiUnavailableException ex) {
             log.warn("Pregunta a la IA sin respuesta: {}", ex.getMessage());
             record("UNAVAILABLE", input, output, calls, actor);
-            throw new BusinessRuleException("XASKA IA no respondió. Intenta de nuevo en un momento. "
+            throw new BusinessRuleException("Aska no respondió. Intenta de nuevo en un momento. "
                     + "No se descontó de tus preguntas.");
         }
         record("FAILED", input, output, calls, actor);

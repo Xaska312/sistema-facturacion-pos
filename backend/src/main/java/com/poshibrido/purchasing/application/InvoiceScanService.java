@@ -97,7 +97,7 @@ public class InvoiceScanService {
         long used = tx.execute(s -> usedThisMonth());
         if (limit != null && used >= limit) {
             throw new BusinessRuleException(limit == 0
-                    ? "La lectura de facturas con foto o PDF es parte de XASKA IA, que este negocio no tiene activo. Carga el "
+                    ? "La lectura de facturas con foto o PDF es parte del adicional Aska, que este negocio no tiene activo. Carga el "
                       + "XML o ingresa la factura a mano."
                     : "Llegaste a las " + limit + " lecturas con IA de este mes. Carga el XML o ingresa la factura a "
                       + "mano; si necesitas más, escríbenos.");

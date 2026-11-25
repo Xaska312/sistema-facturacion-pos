@@ -43,7 +43,7 @@ public class AskaRecapScheduler {
             try {
                 TenantContext.set(tenant);
                 if (recaps.sendTrialIfDue()) {
-                    log.info("Correo del final de la prueba de XASKA IA enviado a {}", tenant.slug());
+                    log.info("Correo del final de la prueba de Aska enviado a {}", tenant.slug());
                 }
                 if (recaps.sendMonthlyIfDue()) {
                     log.info("Correo del mes de Aska enviado a {}", tenant.slug());

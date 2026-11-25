@@ -45,7 +45,7 @@ interface Message {
             <app-xaska-ia-logo size="lg" />
             <div class="flex flex-col min-w-0">
               <h2 id="aska-title" class="aska-name">Aska</h2>
-              <span class="aska-sub">Tu negocio responde · XASKA IA</span>
+              <span class="aska-sub">Responde con los datos de tu negocio</span>
             </div>
             <button type="button" class="aska-close" aria-label="Cerrar Aska" (click)="close()">
               <i class="pi pi-times" aria-hidden="true"></i>

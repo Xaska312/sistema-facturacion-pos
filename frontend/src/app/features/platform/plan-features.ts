@@ -3,7 +3,7 @@ import { BUSINESS_MODULES } from '../../shared/business-types';
 
 /**
  * Funciones que dependen del plan (decisión 288), con sus nombres para la consola y Ajustes. {@code addOn}: adicional
- * pagado que ningún plan trae y se da como extra a cada negocio (XASKA IA, decisión 295).
+ * pagado que ningún plan trae y se da como extra a cada negocio (Aska, decisión 295).
  */
 export const PLAN_FEATURES: readonly { code: PlanFeature; label: string; description: string; addOn?: boolean }[] = [
   { code: 'PURCHASES', label: 'Compras', description: 'Recepción de mercancía y cuentas por pagar' },
@@ -11,7 +11,7 @@ export const PLAN_FEATURES: readonly { code: PlanFeature; label: string; descrip
   { code: 'AUDIT', label: 'Auditoría', description: 'Quién hizo qué y cuándo' },
   { code: 'TRANSFERS', label: 'Traslados', description: 'Mover mercancía entre sedes' },
   { code: 'ZONE_REGISTERS', label: 'Caja por zona', description: 'Cada piso o zona con su caja' },
-  { code: 'AI', label: 'XASKA IA', description: 'Adicional pagado: leer facturas de compra con foto o PDF', addOn: true },
+  { code: 'AI', label: 'Aska', description: 'Adicional pagado: leer facturas de compra con foto o PDF', addOn: true },
 ];
 
 /** Las que puede incluir un plan (sin los adicionales). */

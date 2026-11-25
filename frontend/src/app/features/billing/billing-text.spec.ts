@@ -13,7 +13,7 @@ describe('billing-text (decisión 302)', () => {
     expect(addonsForSale(addons, [...negocio.modules, ...negocio.features]).map((a) => a.code)).toEqual(['AI', 'EXTRA_USER']);
   });
 
-  it('suma plan, XASKA IA y usuarios igual que el servidor', () => {
+  it('suma plan, Aska y usuarios igual que el servidor', () => {
     expect(orderTotal(negocio, 'MONTHLY', 2, addons, { AI: 1, EXTRA_USER: 2 })).toBe(239200);
     expect(orderTotal(null, 'ANNUAL', 1, addons, { AI: 1 })).toBe(478800);
   });

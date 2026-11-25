@@ -53,7 +53,7 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Resumen del día de Aska (decisión 299, XASKA IA): a la hora que elige el negocio, XASKA junta los datos del día
+ * Resumen del día de Aska (decisión 299, Aska): a la hora que elige el negocio, XASKA junta los datos del día
  * (ventas y utilidad frente a ayer y a la semana pasada, caja, inventario, fiados y proveedores) y Aska escribe un
  * titular, los puntos que piden atención y las cifras clave. Se guarda (uno por fecha) para la tarjeta de Inicio y se
  * envía por correo al propietario y a quien él elija; cada persona ve solo las secciones que su rol le deja ver.
@@ -218,12 +218,12 @@ public class DailyDigestService {
      */
     public Digest generate(LocalDate date, boolean replace) {
         if (!ai.available()) {
-            throw new BusinessRuleException("XASKA IA aún no está activa en este servidor.");
+            throw new BusinessRuleException("Aska aún no está activa en este servidor.");
         }
         int limit = limit();
         if (tx.execute(s -> used()) >= limit) {
             throw new BusinessRuleException(limit == 0
-                    ? "El Resumen del día es parte de XASKA IA, que este negocio no tiene activo."
+                    ? "El Resumen del día es parte del adicional Aska, que este negocio no tiene activo."
                     : "Llegaste a los " + limit + " resúmenes de este mes.");
         }
         UUID id = Ids.newId();
@@ -248,7 +248,7 @@ public class DailyDigestService {
             // Se borra para volver a intentarlo en la próxima pasada; no cuenta.
             tx.executeWithoutResult(s -> em.createNativeQuery("DELETE FROM daily_digests WHERE id = ?1")
                     .setParameter(1, id).executeUpdate());
-            throw new BusinessRuleException("XASKA IA no respondió. Intenta de nuevo en un momento. No se descontó.");
+            throw new BusinessRuleException("Aska no respondió. Intenta de nuevo en un momento. No se descontó.");
         }
         Map<String, Object> usage = map(response.get("usage"));
         int input = number(usage.get("input_tokens"));

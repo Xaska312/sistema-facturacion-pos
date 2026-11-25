@@ -32,7 +32,7 @@
 | Seguridad y carga | ✅ Pruebas de seguridad, carga y uso real y sus correcciones (276–277) |
 | 13 — Farmacia | ✅ 13-1 ficha del medicamento y catálogo CUM, 13-2 compras, 13-3 lotes y vencimientos, 13-4 dispensación, 13-6 temperatura, eventos adversos e informe; Droguería abierta (279–282, 287). ⏳ 13-5 control especial |
 | Planes | ✅ Emprende, Negocio y Empresa con extras desde la consola; Términos 1.3 y Política 1.4 (decisiones 288 y 373) |
-| XASKA IA (Aska) | ✅ Adicional pagado: facturas con foto, preguntas, qué comprar, resumen del día, cargar catálogo e inventario, avisos y prueba gratis (295–313). Mejoras de noviembre: no se desmiente, hora y día de la semana, caja esperada, margen de todo el catálogo, manual de uso y logo nuevo (355–359) |
+| Aska | ✅ Adicional pagado: facturas con foto, preguntas, qué comprar, resumen del día, cargar catálogo e inventario, avisos y prueba gratis (295–313). Mejoras de noviembre: no se desmiente, hora y día de la semana, caja esperada, margen de todo el catálogo, manual de uso y logo nuevo (355–359) |
 | Planes y pagos | ✅ Bre-B con comprobante revisado por Aska, registro abierto, precios públicos, precio fundador, referidos y aliados (302–305, 312) |
 | Finanzas | ✅ Gastos, gastos fijos, retenciones, estado de resultados, tablero y Aska (320–325) |
 | Celular y documentos | ✅ Modo teléfono, recibo como imagen y botón Enviar, encabezado libre de los documentos, todos los municipios (314–315, 326–328, 331) |
@@ -413,14 +413,14 @@ Pendiente: 13-5 control especial (necesita una muestra del Anexo 13).
 traslados, caja por zona) y límites de sedes, cajas y usuarios; el administrador le da extras a un negocio desde la
 consola. Básico y Pro quedan como planes anteriores para los clientes de antes.
 
-**XASKA IA (295–313).** Aska es la IA de XASKA, un adicional pagado con topes al mes: ingresar la mercancía con la
+**Aska (295–313).** Aska es la IA de XASKA, un adicional pagado con topes al mes: ingresar la mercancía con la
 foto o el PDF de la factura (295, 301), "Pregúntale a tu negocio" (296), qué comprar con revisión (297), el Resumen del
 día con clima, pronóstico y preguntas (299, 307, 310), cargar el catálogo de la lista del proveedor o del cuaderno, con
 o sin precios y desde un Word con fotos (300, 306, 313), avisos en el momento justo (308), "Lo que hiciste con Aska"
 (309) y la bienvenida de la prueba gratis (311).
 
 **Planes y pagos (302–305, 312).** Pago por Bre-B con comprobante que revisa Aska y aprueba el administrador, registro
-abierto con prueba o pago, precios públicos en `/precios`, QR de Bre-B, precio fundador y referidos: 1 mes de XASKA IA
+abierto con prueba o pago, precios públicos en `/precios`, QR de Bre-B, precio fundador y referidos: 1 mes de Aska
 por cada negocio invitado que pague y 20 % del primer pago para contadores y distribuidores.
 
 **Finanzas (320–325).** Gastos con categorías desde la caja o fuera de ella, gastos fijos, retenciones que hace el
@@ -473,7 +473,7 @@ revisa que esté al día). Logo nuevo: burbuja de chat con la A de XASKA y el ro
 | Droguería | `MedicinesIT`, `PurchasesIT`, `LotsIT`, `DispensationIT`, `QualityIT` |
 | Planes y extras | `PlansIT`, `SubscriptionIT` |
 | XASKA Impresora | `frontend/print-agent` (`go test ./...`) y `escpos.spec` |
-| XASKA IA | `InvoiceScanIT`, `AskIT`, `PurchaseSuggestionIT`, `DailyDigestIT`, `CatalogImportIT`, `AskaRecapIT`, `BillingIT` |
+| Aska | `InvoiceScanIT`, `AskIT`, `PurchaseSuggestionIT`, `DailyDigestIT`, `CatalogImportIT`, `AskaRecapIT`, `BillingIT` |
 | Planes, pagos y referidos | `BillingIT`, `ReferralIT`, `BillingServiceTest`, `ReferralServiceTest` |
 | Documentos y municipios | `DocumentHeaderIT`, `OrganizationIT`, `ticket-image.spec`, `doc-header.spec` |
 | Sin internet | `OfflineSalesIT`, `offline-catalog.spec`, `offline-sale.spec`, `offline-boot.spec` |

@@ -222,7 +222,7 @@ export const PAYMENT_METHODS: readonly string[] = ['Transferencia', 'Nequi', 'Da
             <input appInput id="ex-users" type="number" min="0" max="500" [(ngModel)]="extras.users" />
           </div>
           <div class="flex flex-col gap-1">
-            <label for="ex-scans" class="text-sm font-medium" title="Solo cuentan si tiene XASKA IA">Facturas IA/mes de más</label>
+            <label for="ex-scans" class="text-sm font-medium" title="Solo cuentan si tiene Aska">Facturas IA/mes de más</label>
             <input appInput id="ex-scans" type="number" min="0" max="10000" [(ngModel)]="extras.invoiceScans" />
           </div>
         </div>

@@ -285,7 +285,7 @@ public class WhatsAppAgent {
                     Map.of("buscar", Map.of("type", "string", "description", "Lo que quiere hacer, en pocas palabras.")),
                     List.of("buscar")),
             tool("planes_y_precios", "Planes de XASKA POS con su precio mensual y anual, sus límites, los adicionales "
-                            + "(como XASKA IA) y los días de prueba gratis.", Map.of(), List.of()),
+                            + "(como Aska) y los días de prueba gratis.", Map.of(), List.of()),
             tool("registrar_datos", "Guarda lo que la persona contó de sí misma para que el equipo de XASKA le haga "
                             + "seguimiento. Manda solo lo que sepas.",
                     Map.of("nombre", Map.of("type", "string"), "negocio", Map.of("type", "string",

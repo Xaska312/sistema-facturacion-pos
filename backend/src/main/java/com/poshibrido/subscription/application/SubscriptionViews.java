@@ -30,21 +30,21 @@ public final class SubscriptionViews {
 
     /**
      * Lo que el negocio puede usar hoy: su plan más los extras vigentes. Límites {@code null} = sin límite.
-     * {@code maxInvoiceScans}: facturas con IA al mes (0 sin el adicional XASKA IA).
+     * {@code maxInvoiceScans}: facturas con IA al mes (0 sin el adicional Aska).
      */
     public record Entitled(Integer maxBranches, Integer maxUsers, Integer maxRegisters, List<String> modules,
                            List<String> features, int maxInvoiceScans) {
     }
 
     /**
-     * Algo comprado aparte del plan (decisión 302): XASKA IA, un módulo, una función o cupos de sedes, cajas o usuarios,
-     * con su vencimiento. {@code trial}: la prueba gratis de XASKA IA.
+     * Algo comprado aparte del plan (decisión 302): Aska, un módulo, una función o cupos de sedes, cajas o usuarios,
+     * con su vencimiento. {@code trial}: la prueba gratis de Aska.
      */
     public record AddonView(String code, String kind, String ref, String name, int quantity, Instant endsAt,
                             boolean trial, boolean active) {
     }
 
-    /** Tope al mes de una función del adicional XASKA IA (decisión 295), igual para todos los negocios que lo tienen. */
+    /** Tope al mes de una función del adicional Aska (decisión 295), igual para todos los negocios que lo tienen. */
     public record AiAllowance(String code, String name, int monthlyLimit) {
     }
 

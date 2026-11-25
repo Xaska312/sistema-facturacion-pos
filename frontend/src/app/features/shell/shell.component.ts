@@ -91,9 +91,9 @@ interface ThemeOption extends PrimeMenuItem {
           </a>
         }
         @if (canAsk() && askaTrial(); as t) {
-          <!-- Decisión 311: los días de la prueba de XASKA IA; abre la bienvenida con los retos. -->
+          <!-- Decisión 311: los días de la prueba de Aska; abre la bienvenida con los retos. -->
           <button type="button" class="trial-pill" (click)="trialState.openWelcome()"
-                  [attr.aria-label]="'Prueba de XASKA IA: ' + trialDays()">
+                  [attr.aria-label]="'Prueba de Aska: ' + trialDays()">
             <span class="plan-pill-ai" aria-hidden="true">IA</span>
             <span class="hidden sm:inline">{{ trialDays() }}</span>
             <span class="sm:hidden" aria-hidden="true">{{ t.daysLeft }} d</span>

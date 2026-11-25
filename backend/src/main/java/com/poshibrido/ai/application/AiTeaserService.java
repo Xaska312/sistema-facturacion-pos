@@ -12,7 +12,7 @@ import java.math.BigDecimal;
 import java.util.Set;
 
 /**
- * "Aska encontró…" (decisión 302): a quien no tiene XASKA IA, Inicio le muestra lo que Aska vería en su negocio
+ * "Aska encontró…" (decisión 302): a quien no tiene Aska, Inicio le muestra lo que Aska vería en su negocio
  * (productos bajo el mínimo y plata quieta en productos sin rotación), con las cifras pero sin los detalles. Se calcula
  * con los reportes de siempre: no usa la IA ni gasta nada.
  */

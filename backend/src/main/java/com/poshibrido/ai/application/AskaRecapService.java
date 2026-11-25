@@ -30,7 +30,7 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * "Lo que hiciste con Aska" (decisión 309): lo que XASKA IA hizo por el negocio en un periodo (facturas leídas y sus
+ * "Lo que hiciste con Aska" (decisión 309): lo que Aska hizo por el negocio en un periodo (facturas leídas y sus
  * líneas, productos de listas y cuadernos, preguntas, pedidos revisados, resúmenes del día) y el tiempo que eso le
  * ahorró, estimado con supuestos a la vista. Va por correo al dueño el día 1 de cada mes (el mes anterior) y 2 días
  * antes de que termine la prueba gratis (lo de la prueba), una sola vez cada uno; y en Inicio los primeros 7 días del
@@ -113,7 +113,7 @@ public class AskaRecapService {
     /** Lo de los últimos 30 días (la prueba dura 14: todo lo que hizo en ella). */
     Recap trial() {
         LocalDate today = LocalDate.now(reports.zone());
-        return compute("Tu prueba de XASKA IA", today.minusDays(30), today);
+        return compute("Tu prueba de Aska", today.minusDays(30), today);
     }
 
     Recap compute(String title, LocalDate from, LocalDate to) {

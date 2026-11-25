@@ -25,8 +25,8 @@ com.poshibrido
   dining/        restaurante: mesas, cuentas, comandas, cocina en tiempo real (Fase 12b)
   purchasing/    compras, recepción de facturas (XML de la DIAN o leídas con IA), cuentas por pagar, qué comprar
   pharmacy/      droguería: dispensación, calidad e informe de la visita (Fase 13)
-  ai/            XASKA IA (Aska): preguntas, resumen del día, cargar catálogo e inventario, lectura de recibos
-  subscription/  planes, suscripciones, extras y topes de XASKA IA                 -> platform.*
+  ai/            Aska: preguntas, resumen del día, cargar catálogo e inventario, lectura de recibos
+  subscription/  planes, suscripciones, extras y topes de Aska                 -> platform.*
   billing/       planes y pagos con Bre-B, precios públicos, referidos y aliados   -> platform.*
   mail/          correos (plantillas, envío)
   location/      catálogo DIVIPOLA: los 33 departamentos y los 1.122 municipios (decisión 328) -> platform.*

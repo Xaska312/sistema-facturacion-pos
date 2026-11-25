@@ -10,7 +10,7 @@ import { AskaMomentsState } from './aska-moments-state';
 
 /**
  * Aska en el momento del dolor (decisión 308): un aviso suave cuando alguien hace a mano lo que Aska hace con una
- * foto. Con XASKA IA ofrece hacerlo ({@code act}); sin ella, la prueba gratis al dueño o "pídeselo al dueño" al resto.
+ * foto. Con Aska ofrece hacerlo ({@code act}); sin ella, la prueba gratis al dueño o "pídeselo al dueño" al resto.
  * Se cierra con "Ahora no" (la pantalla decide no volver a mostrarlo en ese trabajo) o "No volver a mostrar".
  */
 @Component({
@@ -24,7 +24,7 @@ import { AskaMomentsState } from './aska-moments-state';
           <p class="nudge-title">{{ title() }}</p>
           <p class="nudge-text">{{ m.hasAi ? withAi() : withoutAi() }}</p>
           @if (!m.hasAi && !m.canBuy) {
-            <p class="nudge-muted">Pídele al dueño del negocio que active XASKA IA.</p>
+            <p class="nudge-muted">Pídele al dueño del negocio que active Aska.</p>
           }
         </div>
         <div class="nudge-actions">
@@ -35,7 +35,7 @@ import { AskaMomentsState } from './aska-moments-state';
               <button type="button" class="nudge-cta" [disabled]="starting()" (click)="startTrial()">
                 {{ starting() ? 'Activando…' : 'Probar gratis 14 días' }}</button>
             } @else {
-              <a routerLink="/app/planes" class="nudge-cta">Ver XASKA IA</a>
+              <a routerLink="/app/planes" class="nudge-cta">Ver Aska</a>
             }
           }
           <div class="flex gap-3">
@@ -79,7 +79,7 @@ export class AskaNudgeComponent implements OnInit {
   private readonly messages = inject(ToastService);
 
   readonly moment = input.required<AskaMoment>();
-  /** Con XASKA IA, si quien mira puede usar aquí lo que Aska ofrece (permiso y cupo del mes). */
+  /** Con Aska, si quien mira puede usar aquí lo que Aska ofrece (permiso y cupo del mes). */
   readonly available = input(true);
   readonly title = input.required<string>();
   readonly withAi = input.required<string>();
@@ -88,7 +88,7 @@ export class AskaNudgeComponent implements OnInit {
   readonly act = output<void>();
   /** Se cerró: la pantalla no lo vuelve a mostrar en este trabajo. */
   readonly closed = output<void>();
-  /** Activó la prueba gratis: la pantalla puede recargar lo que depende de XASKA IA. */
+  /** Activó la prueba gratis: la pantalla puede recargar lo que depende de Aska. */
   readonly trialStarted = output<void>();
 
   private readonly moments = signal<AskaMoments | null>(null);
@@ -123,7 +123,7 @@ export class AskaNudgeComponent implements OnInit {
         this.starting.set(false);
         this.state.refresh();
         this.load();
-        this.messages.add({ severity: 'success', summary: 'XASKA IA activa por 14 días',
+        this.messages.add({ severity: 'success', summary: 'Aska activa por 14 días',
           detail: 'Listo: ya puedo ayudarte con esto.', life: 6000 });
         this.trialStarted.emit();
       }),

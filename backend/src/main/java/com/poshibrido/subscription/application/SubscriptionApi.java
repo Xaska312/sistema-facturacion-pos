@@ -37,26 +37,26 @@ public interface SubscriptionApi {
     void requireCanAddRegister(TenantRef tenant);
 
     /**
-     * Facturas de compra que puede leer con IA este mes (decisión 295): 0 sin el adicional XASKA IA; con él, el tope de
+     * Facturas de compra que puede leer con IA este mes (decisión 295): 0 sin el adicional Aska; con él, el tope de
      * la consola más sus extras.
      */
     Integer invoiceScansPerMonth(UUID tenantId);
 
     /**
-     * Tope al mes de una función de XASKA IA ({@code platform.ai_allowances.code}, decisión 296): 0 sin el adicional;
+     * Tope al mes de una función de Aska ({@code platform.ai_allowances.code}, decisión 296): 0 sin el adicional;
      * con él, el tope de la consola (las facturas suman además sus extras).
      */
     int aiMonthlyLimit(UUID tenantId, String allowanceCode);
 
-    /** El negocio puede empezar la prueba gratis de XASKA IA (una sola vez, si no la tiene) (decisiones 302 y 308). */
+    /** El negocio puede empezar la prueba gratis de Aska (una sola vez, si no la tiene) (decisiones 302 y 308). */
     boolean aiTrialAvailable(UUID tenantId);
 
-    /** Cuándo termina XASKA IA si el negocio la tiene solo por la prueba gratis; nulo si no (decisión 309). */
+    /** Cuándo termina Aska si el negocio la tiene solo por la prueba gratis; nulo si no (decisión 309). */
     java.time.Instant aiTrialEndsAt(UUID tenantId);
 
     /**
      * Módulos y funciones que el plan del negocio (más sus extras vigentes) incluye (decisión 288). Sin suscripción,
-     * todo (no se le quita nada a un negocio por un dato que falta) menos el adicional pagado XASKA IA.
+     * todo (no se le quita nada a un negocio por un dato que falta) menos el adicional pagado Aska.
      */
     Entitlements entitlements(UUID tenantId);
 

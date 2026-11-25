@@ -33,7 +33,7 @@ import java.util.UUID;
 
 /**
  * Planes y pagos del negocio (decisión 302): ver qué comprar, armar el pedido, subir el comprobante del pago por
- * Bre-B y empezar la prueba gratis de XASKA IA. Abierto aunque el plan esté vencido (SubscriptionGuardFilter).
+ * Bre-B y empezar la prueba gratis de Aska. Abierto aunque el plan esté vencido (SubscriptionGuardFilter).
  */
 @RestController
 @RequiredArgsConstructor

@@ -21,8 +21,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Referidos y aliados (decisión 312): el invitado entra con XASKA IA en su prueba; cuenta cuando paga; quien invitó
- * gana un mes de XASKA IA (correo); el aliado gana el 20 % del primer pago y el administrador lo marca pagado.
+ * Referidos y aliados (decisión 312): el invitado entra con Aska en su prueba; cuenta cuando paga; quien invitó
+ * gana un mes de Aska (correo); el aliado gana el 20 % del primer pago y el administrador lo marca pagado.
  */
 class ReferralIT extends IntegrationTest {
 
@@ -64,7 +64,7 @@ class ReferralIT extends IntegrationTest {
         String created = body(createWithCode(guest, slug, " " + code.toLowerCase() + " ").andExpect(status().isCreated()));
         UUID guestTenant = UUID.fromString(JsonPath.read(created, "$.id"));
         Session guestSession = api.selectTenant(api.login(email), guestTenant);
-        // XASKA IA desde el primer día de su prueba (y ya no puede pedir otra prueba de IA).
+        // Aska desde el primer día de su prueba (y ya no puede pedir otra prueba de IA).
         api.getWith(guestSession, "/api/v1/ai/usage").andExpect(status().isOk());
         api.getWith(guestSession, "/api/v1/subscription").andExpect(jsonPath("$.aiTrialAvailable").value(false));
         api.getWith(host.tenant(), "/api/v1/billing/referrals").andExpect(jsonPath("$.invited").value(1))

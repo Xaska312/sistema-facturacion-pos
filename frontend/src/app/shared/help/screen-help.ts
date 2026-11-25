@@ -153,7 +153,7 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
       'Lo que pagas en efectivo va en Mi caja con "Egreso"; lo que pagas por banco, Nequi o tarjeta, aquí con "Registrar gasto". La mercancía va en Compras.',
       'Toca una categoría en "En qué se fue la plata" para ver solo sus gastos; los egresos de caja de antes salen "Sin clasificar".',
       'Arriendo, nómina, internet: créalos en "Gastos fijos" y aparecen en "Por pagar" cuando toca.',
-      'Con XASKA IA, en "Registrar gasto" toca "Leer con Aska": le tomas foto al recibo y se llena solo.',
+      'Con el adicional Aska, en "Registrar gasto" toca "Leer con Aska": le tomas foto al recibo y se llena solo.',
     ],
   },
   '/app/cuentas-por-pagar': {
@@ -285,7 +285,7 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     manual: 'planes-y-pagos',
     title: 'Planes y pagos',
     tips: [
-      'Arma tu pedido (plan, XASKA IA, módulos o cupos) y toca "Pagar con Bre-B" para ver el valor y la referencia.',
+      'Arma tu pedido (plan, Aska, módulos o cupos) y toca "Pagar con Bre-B" para ver el valor y la referencia.',
       'Paga desde la app de tu banco a la llave de XASKA y escribe la referencia en la descripción.',
       'Sube el comprobante: Aska lo revisa y XASKA lo aprueba; te avisamos por correo.',
     ],

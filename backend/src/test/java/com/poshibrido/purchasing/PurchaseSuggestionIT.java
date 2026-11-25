@@ -32,7 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * "Qué comprar" (decisión 297): el pedido sugerido sale de lo vendido, la existencia, el mínimo y el máximo, agrupado
- * por el proveedor de la última compra y con sus días; la revisión con IA (simulada) solo con XASKA IA y solo con
+ * por el proveedor de la última compra y con sus días; la revisión con IA (simulada) solo con Aska y solo con
  * ajustes de productos del pedido.
  */
 class PurchaseSuggestionIT extends IntegrationTest {
@@ -84,7 +84,7 @@ class PurchaseSuggestionIT extends IntegrationTest {
         json = body(api.getWith(s, "/api/v1/purchases/suggestions?branchId=" + branch));
         assertThat(JsonPath.read(json, "$.groups[0].lines[0].suggested").toString()).isEqualTo("9");
 
-        // Revisión con IA: solo con XASKA IA.
+        // Revisión con IA: solo con Aska.
         String review = """
                 {"branchId":"%s","supplierId":"%s","lines":[{"productId":"%s","quantity":9}]}"""
                 .formatted(branch, supplier, cafe);

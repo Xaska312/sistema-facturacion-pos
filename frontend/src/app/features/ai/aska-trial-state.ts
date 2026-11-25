@@ -4,7 +4,7 @@ import { AuthService } from '../../core/auth/auth.service';
 import { markWelcomeSeen, welcomeSeen } from './aska-trial';
 
 /**
- * Prueba gratis de XASKA IA (decisión 311): los días que quedan (píldora del encabezado) y la bienvenida con los tres
+ * Prueba gratis de Aska (decisión 311): los días que quedan (píldora del encabezado) y la bienvenida con los tres
  * retos. La bienvenida se abre sola la primera vez que el negocio tiene la prueba en ese equipo, también si llegó
  * invitado con la IA desde el primer día.
  */

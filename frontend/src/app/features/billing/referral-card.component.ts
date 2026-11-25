@@ -8,7 +8,7 @@ import { referralMessage } from './referral-code';
 
 /**
  * "Invita y gana" en Planes y pagos (decisión 312): el código del negocio, su enlace, compartir por WhatsApp y a quién
- * invitó. Por cada negocio que entre con el código y pague su primer mes, un mes de XASKA IA gratis.
+ * invitó. Por cada negocio que entre con el código y pague su primer mes, un mes de Aska gratis.
  */
 @Component({
   selector: 'app-referral-card',
@@ -18,10 +18,10 @@ import { referralMessage } from './referral-code';
         <div class="flex flex-wrap items-start gap-4">
           <div class="flex-1 min-w-60">
             <p class="invite-kicker">Invita y gana</p>
-            <h2 id="invite-title" class="text-lg font-bold tracking-tight">Un mes de XASKA IA gratis por cada negocio
+            <h2 id="invite-title" class="text-lg font-bold tracking-tight">Un mes de Aska gratis por cada negocio
               que traigas</h2>
             <p class="text-sm text-muted mt-1">Cuando entre con tu enlace y pague su primer mes, te regalamos un mes de
-              XASKA IA. Tu invitado prueba 14 días gratis con la IA incluida.</p>
+              Aska. Tu invitado prueba 14 días gratis con la IA incluida.</p>
           </div>
           <div class="invite-stats" aria-label="Tus invitaciones">
             <div><span class="invite-num">{{ d.invited }}</span><span class="invite-lbl">invitados</span></div>

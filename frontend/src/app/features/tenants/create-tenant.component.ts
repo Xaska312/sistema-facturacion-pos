@@ -121,7 +121,7 @@ export function isActivationCodeRequired(error: unknown): boolean {
                     <option [value]="p.code">{{ p.name }} · {{ cop(p.monthlyPrice) }}/mes · {{ cop(p.annualPrice) }}/año</option>
                   }
                 </select>
-                <small class="text-muted">Al crear el negocio te llevamos a pagar; ahí eliges mensual o anual y si agregas XASKA IA.
+                <small class="text-muted">Al crear el negocio te llevamos a pagar; ahí eliges mensual o anual y si agregas Aska.
                   <a routerLink="/precios" class="underline">Ver qué incluye cada plan</a></small>
               </label>
             }
@@ -145,7 +145,7 @@ export function isActivationCodeRequired(error: unknown): boolean {
               @if (referralError()) {
                 <small class="text-danger font-medium">{{ referralError() }}</small>
               } @else if (form.controls.referralCode.value.trim()) {
-                <small class="text-muted">Te invitaron: en la prueba gratis tienes XASKA IA incluida.</small>
+                <small class="text-muted">Te invitaron: en la prueba gratis tienes Aska incluida.</small>
               }
             </label>
             <div class="flex flex-col gap-2">

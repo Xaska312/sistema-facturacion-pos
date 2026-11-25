@@ -54,9 +54,9 @@ interface PlanDraft {
     <section class="card p-4 mt-4 flex flex-col gap-3" aria-labelledby="ai-title">
       <div>
         <h2 id="ai-title" class="font-bold tracking-tight flex items-center gap-2">
-          <app-xaska-ia-logo size="sm" />XASKA IA (adicional)</h2>
+          <app-xaska-ia-logo size="sm" />Aska (adicional de IA)</h2>
         <p class="text-xs text-muted">Ningún plan lo trae: se le da a cada negocio en Suscripciones → Dar extras →
-          "XASKA IA". Estos son los topes al mes de cada función, iguales para todos los que lo tienen.</p>
+          "Aska". Estos son los topes al mes de cada función, iguales para todos los que lo tienen.</p>
       </div>
       @for (a of allowances(); track a.code) {
         <form class="flex flex-wrap items-end gap-3" (ngSubmit)="saveAllowance(a.code)">
@@ -181,7 +181,7 @@ export class PlatformPlansComponent implements OnInit {
   saveAllowance(code: string): void {
     const value = Number(this.allowanceDrafts[code]);
     if (!Number.isInteger(value) || value < 0 || value > 100000) {
-      this.messages.add({ severity: 'warn', summary: 'XASKA IA', detail: 'El tope al mes va de 0 a 100.000.' });
+      this.messages.add({ severity: 'warn', summary: 'Aska', detail: 'El tope al mes va de 0 a 100.000.' });
       return;
     }
     this.savingAllowance.set(code);

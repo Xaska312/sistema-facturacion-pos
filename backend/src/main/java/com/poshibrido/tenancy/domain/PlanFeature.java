@@ -24,7 +24,7 @@ public enum PlanFeature {
     /** Caja por zona de mesas (decisión 285). */
     ZONE_REGISTERS,
     /**
-     * XASKA IA (decisión 295): adicional pagado que no trae ningún plan; lo da el administrador como extra. Cada
+     * Aska (decisión 295): adicional pagado que no trae ningún plan; lo da el administrador como extra. Cada
      * función tiene su tope al mes ({@code platform.ai_allowances}): leer facturas de compra en foto o PDF y
      * "Pregúntale a tu negocio" (decisión 296).
      */
@@ -55,7 +55,7 @@ public enum PlanFeature {
         return EnumSet.allOf(PlanFeature.class);
     }
 
-    /** Lo que se le deja a un negocio sin datos de suscripción: todo menos los adicionales pagados (XASKA IA). */
+    /** Lo que se le deja a un negocio sin datos de suscripción: todo menos los adicionales pagados (Aska). */
     public static Set<PlanFeature> allButAddOns() {
         return EnumSet.complementOf(EnumSet.of(AI));
     }

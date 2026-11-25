@@ -814,7 +814,7 @@ export const MANUAL: readonly ManualChapter[] = [
           'Entra a Compras → "Qué comprar" (o desde el menú, en Inventario). Si tienes varias sucursales, elige una.',
           'Revisa cada proveedor: lo que hay, lo vendido en 7 y 30 días, el sugerido y el valor estimado.',
           'Cambia la cantidad a pedir donde quieras (0 = no pedir) y los días de cada proveedor.',
-          'Si tienes XASKA IA, toca "Revisar con Aska": te dice qué ajustar y por qué, y aplicas lo que te parezca.',
+          'Si tienes el adicional Aska, toca "Revisar con Aska": te dice qué ajustar y por qué, y aplicas lo que te parezca.',
           'Toca "WhatsApp" (si el proveedor tiene celular), "Copiar mensaje" o "Imprimir o PDF".',
         ],
         tips: [
@@ -824,7 +824,7 @@ export const MANUAL: readonly ManualChapter[] = [
           'El proveedor de cada producto es el de su última compra registrada; sin compras sale en "Sin proveedor".',
           'Cuando llegue la mercancía, regístrala como siempre en "Recibir mercancía".',
         ],
-        who: 'Quien consulta compras. Cambiar los días necesita recibir mercancía; revisar con Aska necesita XASKA IA.',
+        who: 'Quien consulta compras. Cambiar los días necesita recibir mercancía; revisar con Aska necesita el adicional Aska.',
       },
       {
         id: 'cargar-factura',
@@ -861,11 +861,11 @@ export const MANUAL: readonly ManualChapter[] = [
           'Si la factura trae lote y vencimiento (en su campo o en la descripción), se llenan solos.',
           'La foto o el PDF los lee una inteligencia artificial: casi siempre acierta, pero revisa cada cantidad y '
             + 'costo contra el papel. Si una foto sale borrosa, te avisa y no se descuenta.',
-          'La foto y el PDF son parte de XASKA IA, un adicional que se activa aparte del plan. Cada factura leída '
+          'La foto y el PDF son parte de Aska, un adicional que se activa aparte del plan. Cada factura leída '
             + 'cuenta una vez en el tope del mes, aunque tenga varias fotos; lo ves en la misma pantalla.',
         ],
         who: 'Quien recibe mercancía, con los permisos "Cargar la factura del proveedor" (el XML) y "Leer con IA la '
-          + 'foto o el PDF de la factura". Requiere el plan Negocio o superior y, para la foto o el PDF, XASKA IA.',
+          + 'foto o el PDF de la factura". Requiere el plan Negocio o superior y, para la foto o el PDF, Aska.',
       },
       {
         id: 'cuentas-por-pagar',
@@ -1415,7 +1415,7 @@ export const MANUAL: readonly ManualChapter[] = [
           'La conversación se borra al cerrar el panel: XASKA no guarda lo que preguntas, solo cuenta cuántas preguntas '
             + 'van en el mes.',
         ],
-        who: 'Todos los roles menos el Mesero, en negocios con el adicional XASKA IA.',
+        who: 'Todos los roles menos el Mesero, en negocios con el adicional Aska.',
       },
       {
         id: 'resumen-del-dia',
@@ -1440,12 +1440,12 @@ export const MANUAL: readonly ManualChapter[] = [
             + 'vencidos o que vencen mañana. El correo del día 1 trae además cuánto ganaste el mes pasado y tus gastos '
             + 'más grandes, con el enlace al Estado de resultados.',
         ],
-        who: 'El propietario y quien él elija, en negocios con el adicional XASKA IA.',
+        who: 'El propietario y quien él elija, en negocios con el adicional Aska.',
       },
       {
         id: 'aska-finanzas',
         title: 'Aska y tus finanzas: leer recibos y preguntar cuánto ganaste',
-        summary: 'Con XASKA IA, Aska llena el gasto con la foto del recibo y responde preguntas de plata: cuánto '
+        summary: 'Con el adicional Aska, llena el gasto con la foto del recibo y responde preguntas de plata: cuánto '
           + 'gastaste, cuánto ganaste, cuánto necesitas vender y qué retenciones te hicieron.',
         steps: [
           'Al registrar un gasto (en Gastos o con "Egreso" en Mi caja) toca "Leer con Aska" y tómale foto al recibo o '
@@ -1463,18 +1463,18 @@ export const MANUAL: readonly ManualChapter[] = [
           'Aska solo responde lo que tu rol deja ver: los gastos con permiso de ver gastos; el estado de resultados, el '
             + 'tablero y las retenciones con permiso de ver finanzas.',
         ],
-        who: 'Quien registra gastos (Propietario, Administrador, Contador y el cajero en su caja), con XASKA IA.',
+        who: 'Quien registra gastos (Propietario, Administrador, Contador y el cajero en su caja), con Aska.',
       },
       {
         id: 'invita-y-gana',
-        title: 'Invita y gana: un mes de XASKA IA por cada negocio',
+        title: 'Invita y gana: un mes de Aska por cada negocio',
         summary: 'Comparte tu código con otros negocios. Cuando uno entre con él y pague su primer mes, te regalamos un '
-          + 'mes de XASKA IA. Tu invitado prueba 14 días gratis con la IA incluida.',
+          + 'mes de Aska. Tu invitado prueba 14 días gratis con la IA incluida.',
         steps: [
           'Entra a Ajustes → Planes y pagos y busca "Invita y gana": ahí está tu código.',
           'Toca "Compartir por WhatsApp" (el mensaje ya va con tu enlace) o "Copiar enlace".',
           'Tu invitado se registra con el enlace; si lo escribe a mano, va en "Código de invitación" al crear su negocio.',
-          'Cuando pague su primer mes, te llega un correo y tu mes de XASKA IA queda activo.',
+          'Cuando pague su primer mes, te llega un correo y tu mes de Aska queda activo.',
         ],
         tips: [
           'No hay límite: cada negocio que pague te da otro mes, que se suma al que ya tengas.',
@@ -1486,7 +1486,7 @@ export const MANUAL: readonly ManualChapter[] = [
       {
         id: 'planes-y-pagos',
         title: 'Planes y pagos con Bre-B',
-        summary: 'Renueva tu plan, cámbialo, agrega XASKA IA, módulos o más sedes, cajas y usuarios, y paga por Bre-B '
+        summary: 'Renueva tu plan, cámbialo, agrega Aska, módulos o más sedes, cajas y usuarios, y paga por Bre-B '
           + 'desde la app de tu banco o billetera. Sin datáfono ni tarjeta.',
         steps: [
           'Toca la píldora de tu plan arriba, junto al nombre del negocio (o Ajustes → Planes y pagos).',
@@ -1496,7 +1496,7 @@ export const MANUAL: readonly ManualChapter[] = [
             + 'por correo. Si tenías la app abierta, sal y vuelve a entrar para ver lo nuevo.',
         ],
         tips: [
-          'XASKA IA se puede probar gratis 14 días, una sola vez por negocio, con topes más bajos.',
+          'Aska se puede probar gratis 14 días, una sola vez por negocio, con topes más bajos.',
           'Lo que compras aparte vence por su cuenta; al renovar se suma desde el vencimiento.',
           'Si pagas desde otro celular, escanea el QR de la pantalla de pago y escribe el valor y la referencia.',
         ],
@@ -1523,7 +1523,7 @@ export const MANUAL: readonly ManualChapter[] = [
           'Si el producto ya tiene movimientos, su costo lo pone el inventario con la próxima compra; aquí se ajusta el precio.',
           'Con el proveedor elegido, Aska recuerda sus códigos para la próxima lista y la próxima factura.',
         ],
-        who: 'Quien administra productos, en negocios con el adicional XASKA IA.',
+        who: 'Quien administra productos, en negocios con el adicional Aska.',
       },
       {
         id: 'tablero',

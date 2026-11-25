@@ -11,6 +11,14 @@ export interface Release {
 
 export const RELEASES: readonly Release[] = [
   {
+    id: '2026-11-25',
+    title: 'Vender se ve mejor en la tablet',
+    items: [
+      'En Vender, los productos se acomodan al espacio que hay: en la tablet el precio y lo disponible ya no se parten.',
+      'La IA de XASKA ahora se llama solo Aska, en la app, en los planes y en xaska.co.',
+    ],
+  },
+  {
     id: '2026-11-21',
     title: 'Pedidos en el resumen del mes',
     items: [

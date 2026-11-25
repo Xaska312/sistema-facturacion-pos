@@ -79,14 +79,14 @@ public class ExpenseReadService {
 
     public Read read(byte[] file) {
         if (!ai.available()) {
-            throw new BusinessRuleException("XASKA IA aún no está activa en este servidor.");
+            throw new BusinessRuleException("Aska aún no está activa en este servidor.");
         }
         Map<String, Object> part = part(file);
         int limit = limit();
         long used = tx.execute(s -> used());
         if (used >= limit) {
             throw new BusinessRuleException(limit == 0
-                    ? "Leer recibos con Aska es parte de XASKA IA, que este negocio no tiene activo."
+                    ? "Leer recibos con Aska es parte del adicional Aska, que este negocio no tiene activo."
                     : "Llegaste a los " + limit + " recibos leídos de este mes. Escribe el gasto a mano.");
         }
         UUID actor = CurrentActor.requireUserId();
@@ -98,7 +98,7 @@ public class ExpenseReadService {
             response = ai.send(request(part, active, today));
         } catch (AiUnavailableException ex) {
             record("UNAVAILABLE", 0, 0, actor);
-            throw new BusinessRuleException("XASKA IA no respondió. Intenta de nuevo en un momento. No se descontó.");
+            throw new BusinessRuleException("Aska no respondió. Intenta de nuevo en un momento. No se descontó.");
         }
         Map<String, Object> usage = map(response.get("usage"));
         int input = number(usage.get("input_tokens"));

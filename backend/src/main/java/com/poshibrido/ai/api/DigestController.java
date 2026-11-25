@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.UUID;
 
-/** Resumen del día de Aska (decisión 299, XASKA IA). */
+/** Resumen del día de Aska (decisión 299, Aska). */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/ai/digest")

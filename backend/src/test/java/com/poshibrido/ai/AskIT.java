@@ -28,7 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * "Pregúntale a tu negocio" (decisión 296): solo con XASKA IA; la IA (aquí simulada) pide una consulta de solo lectura,
+ * "Pregúntale a tu negocio" (decisión 296): solo con Aska; la IA (aquí simulada) pide una consulta de solo lectura,
  * XASKA la hace con los permisos de quien pregunta y le devuelve el resultado; solo cuentan las preguntas respondidas
  * y el tope del mes sale de la consola.
  */
@@ -52,7 +52,7 @@ class AskIT extends IntegrationTest {
                 {"question":"¿Cuánto vendí hoy?","history":[{"role":"user","text":"Hola"},
                  {"role":"assistant","text":"Hola, ¿qué quieres saber?"}]}""";
 
-        // Sin XASKA IA no hay permiso.
+        // Sin Aska no hay permiso.
         api.postWith(s, "/api/v1/ai/ask", ask).andExpect(status().isForbidden());
         Session admin = platformAdmin();
         String extras = "/api/v1/platform/tenants/%s/subscription/extras".formatted(owner.tenantId());

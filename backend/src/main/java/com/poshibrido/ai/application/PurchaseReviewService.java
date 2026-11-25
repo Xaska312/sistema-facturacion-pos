@@ -32,7 +32,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Revisión con IA del pedido sugerido a un proveedor (decisión 297, XASKA IA). XASKA vuelve a calcular el pedido con
+ * Revisión con IA del pedido sugerido a un proveedor (decisión 297, Aska). XASKA vuelve a calcular el pedido con
  * sus datos (no confía en lo que manda la pantalla, salvo las cantidades que la persona ya cambió) y la IA lo revisa:
  * un resumen corto y ajustes con su razón. La persona decide si los aplica; nada se guarda.
  */
@@ -68,13 +68,13 @@ public class PurchaseReviewService {
 
     public Review review(UUID branchId, UUID supplierId, Map<UUID, BigDecimal> ordered) {
         if (!ai.available()) {
-            throw new BusinessRuleException("XASKA IA aún no está activa en este servidor.");
+            throw new BusinessRuleException("Aska aún no está activa en este servidor.");
         }
         int limit = limit();
         long used = tx.execute(s -> used());
         if (used >= limit) {
             throw new BusinessRuleException(limit == 0
-                    ? "La revisión con IA es parte de XASKA IA, que este negocio no tiene activo."
+                    ? "La revisión con IA es parte del adicional Aska, que este negocio no tiene activo."
                     : "Llegaste a las " + limit + " revisiones de pedidos de este mes.");
         }
         Group group = suggestions.suggestions(branchId).groups().stream()
@@ -93,7 +93,7 @@ public class PurchaseReviewService {
         } catch (AiUnavailableException ex) {
             log.warn("Revisión de pedido sin respuesta: {}", ex.getMessage());
             record("UNAVAILABLE", 0, 0, actor);
-            throw new BusinessRuleException("XASKA IA no respondió. Intenta de nuevo en un momento. No se descontó.");
+            throw new BusinessRuleException("Aska no respondió. Intenta de nuevo en un momento. No se descontó.");
         }
         Map<String, Object> usage = map(response.get("usage"));
         int input = number(usage.get("input_tokens"));
@@ -110,7 +110,7 @@ public class PurchaseReviewService {
     String system() {
         LocalDate today = LocalDate.now(ZoneId.of(settings.current().timezone()));
         return """
-                Eres XASKA IA y revisas el pedido sugerido de un negocio colombiano a un proveedor. Hoy es %s.
+                Eres Aska y revisas el pedido sugerido de un negocio colombiano a un proveedor. Hoy es %s.
                 XASKA ya calculó "sugerido" = venta diaria × días del proveedor + mínimo − existencia útil (sin pasar \
                 del máximo). "pedido" es lo que la persona tiene hoy en la lista. La venta diaria pesa 60 %% la última \
                 semana y 40 %% el último mes.

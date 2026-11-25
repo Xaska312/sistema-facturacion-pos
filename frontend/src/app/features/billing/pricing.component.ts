@@ -69,7 +69,7 @@ import { annualSaving, planPrice } from './billing-text';
           <section class="aska-offer max-w-5xl mx-auto mt-6">
             <app-xaska-ia-logo size="xl" />
             <div class="flex-1 min-w-56">
-              <h2 class="text-lg font-bold">XASKA IA <span class="aska-price">{{ cop(a.monthlyPrice) }}/mes</span></h2>
+              <h2 class="text-lg font-bold">Aska <span class="aska-price">{{ cop(a.monthlyPrice) }}/mes</span></h2>
               <p class="text-sm aska-muted">{{ a.description }}</p>
             </div>
             <span class="text-sm aska-muted">Adicional a cualquier plan · pruébala 14 días gratis</span>
