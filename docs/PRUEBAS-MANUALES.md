@@ -225,6 +225,9 @@ _Dueño y un cajero, con XASKA Impresora y cajón; XASKA IA activo_
 | ☐ | 97 | Después de desplegar, entrar a Inicio. | Sale la tarjeta "Nuevo" con la última novedad; "Entendido" la esconde; en el menú del usuario, "Novedades" las muestra todas. |
 | ☐ | 98 | Abrir Aska y hacer 4 preguntas seguidas: "¿cómo me fue este mes?", "¿a qué hora y qué día vendo más?", "¿cuánto debería haber en la caja?" y "¿qué productos me dejan poca ganancia?". | Responde las cuatro con el periodo, no dice que se equivocó en las anteriores ni escribe "[Consultó: …]"; la caja da el esperado con el desglose. Con un cajero de cierre ciego no da el esperado. |
 | ☐ | 99 | Preguntarle a Aska "¿cómo anulo una venta?" y "¿cómo cambio el precio de un producto?". | Da los pasos numerados y "Ver en el manual" abre la sección correcta. El botón de Aska es la burbuja índigo con la A. |
+| ☐ | 100 | Sucursales → "Nueva sucursal" → "Un restaurante", 6 mesas, categorías Platos y Jugos, "Crear su caja" marcado. | Queda la sucursal con su caja, Mesas abre en ella con el Salón de 6 mesas y en Cartas por piso está "Carta de …" cobrándose en su caja. Si el negocio no tenía Mesas, quedan encendidas Mesas y Cocina. |
+| ☐ | 101 | Abrir la caja de ese restaurante y entrar a Vender; buscar y escanear un producto del súper. | Solo salen las pestañas Platos y Jugos (sin "Todos"); la búsqueda no lo muestra y el lector dice "… no se vende en …". En la sede principal sí se vende. |
+| ☐ | 102 | Sucursales → Editar la principal → "Solo algunas categorías" → Abarrotes. Luego volver a "Todo el catálogo". | En Vender de la principal solo sale Abarrotes; al volver, sale todo otra vez. |
 
 ## Hallazgos
 

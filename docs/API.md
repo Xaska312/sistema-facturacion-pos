@@ -54,6 +54,9 @@ El token viaja en el cuerpo, nunca en la URL de la API.
 | GET | `/branches?page=0&size=20&sort=code,asc` | `branches:read` | Sucursales paginadas |
 | GET | `/branches/{id}` | `branches:read` | Detalle |
 | POST | `/branches` | `branches:manage` | `{code, name, address?, cityCode?, phone?}` → 201. `cityCode` debe existir en DIVIPOLA (422) |
+| POST | `/branches/setup` | `branches:manage` | Decisión 378, asistente: `{code, name, address?, cityCode?, phone?, registerName?, zoneName?, tables (0–60), menuCategoryIds[], sellsAll, saleCategoryIds[]}` → 201 `{branch, cashRegisterId, zoneId, tables, menuId, notes[]}`. Crea la sucursal, su caja (`CAJA-1`, compartida) si viene `registerName`, la zona (por defecto "Salón") con mesas 1..N si `tables` > 0 (422 sin `module:tables`), la carta con `menuCategoryIds` (solo con `plan:zone-registers` y caja; si no, una nota) y lo que vende. Todo o nada; 409 código repetido |
+| GET | `/branches/{id}/sale-categories` | `products:read` | Decisión 378: `{branchId, sellsAll, categoryIds, allowedIds}`. `allowedIds` = elegidas con sus subcategorías, o null si vende todo (también si se borraron todas sus categorías) |
+| PUT | `/branches/{id}/sale-categories` | `branches:manage` | `{sellsAll, categoryIds[]}`. 422 si `sellsAll` es falso sin categorías o alguna no existe |
 | PUT | `/branches/{id}` | `branches:manage` | `{name, address?, cityCode?, phone?}` (el código no cambia) |
 | POST | `/branches/{id}/deactivate` · `/activate` | `branches:manage` | 422 si es la última sucursal activa |
 | GET | `/cash-registers?branchId=&page=&size=` | `branches:read` | Cajas (filtro opcional por sucursal) |
@@ -167,13 +170,13 @@ Roles: OWNER y ADMIN (todos), CASHIER, SELLER, WAREHOUSE, ACCOUNTANT (ver `db/te
 Leer: `products:read`. Modificar: `products:manage`.
 | Método | Ruta | Descripción |
 |---|---|---|
-| GET | `/products?search=&categoryId=&includeInactive=&page=&size=&sort=name,asc` | Busca por nombre, SKU o código exacto |
+| GET | `/products?search=&categoryId=&includeInactive=&branchId=&page=&size=&sort=name,asc` | Busca por nombre, SKU o código exacto. Con `branchId` (Vender, decisión 378), solo lo que vende esa sucursal |
 | GET | `/products/{id}` | Producto con presentaciones, códigos y precios por lista |
 | POST | `/products` · PUT `/products/{id}` | Cuerpo completo (abajo). 409 SKU o código repetido; 422 referencias inválidas. Decisión 334: el costo se puede cambiar aunque el producto ya tenga movimientos (`costLocked`); el promedio sigue desde el nuevo y queda un movimiento `COST_CHANGE` en el kardex de cada sede con saldo. Con movimientos, la unidad base no cambia (422) |
 | POST | `/products/{id}/activate` · `/deactivate` | |
 | DELETE | `/products/{id}` | Decisión 314: el producto queda oculto para siempre (fuera de listas, búsquedas, ventas y lecturas); su SKU pasa a `SKU~xxxxxxxx` y sus códigos de barras quedan libres. Las ventas, compras y reportes lo conservan. 204. Las tallas se eliminan desde su modelo |
 | DELETE | `/categories/{id}` | Decisión 314: solo si no tiene productos (los eliminados la sueltan), subcategorías ni modelos activos (422); quita sus asignaciones a cartas, estaciones de cocina y adiciones. 204 |
-| GET | `/products/lookup?code=&priceListId=` | Código de barras o SKU → `{productId, sku, name, unitId, unitCode, factor, price, fromList, taxType, taxRate, trackInventory}`. 404 si no existe, 422 si está inactivo |
+| GET | `/products/lookup?code=&priceListId=&branchId=` | Código de barras o SKU → `{productId, sku, name, unitId, unitCode, factor, price, fromList, taxType, taxRate, trackInventory}`. 404 si no existe, 422 si está inactivo o si la sucursal `branchId` no lo vende (decisión 378) |
 | POST | `/barcodes/internal` | `{barcode}` EAN-13 interno libre (prefijo 29) |
 | POST | `/products/import?dryRun=true` (multipart `file`: plantilla de Excel `.xlsx` o CSV) | Reporte `{totalRows, toCreate, toUpdate, newCategories, errors[{row, message}], applied}`. Con `dryRun=false` importa solo si no hay errores. Con la columna `costo`, también cambia el costo de los productos con movimientos (decisión 334, `COST_CHANGE` "por importación"); sin ella, se conserva. El Excel se reconoce por el contenido (zip) y se lee su primera hoja |
 | POST | `/products/from-invoice` | Decisión 301 (`products:manage` y `purchases:receive`): crea de una vez lo que falta de la factura. `{items: [{lineNo, sku (o prefijo del modelo), name, category?, unitCode (simples), taxCode, cost, price, barcode?, sizeScaleId?, color?, sizes?: [{size, quantity}]}] (1–200)}`; con `sizes` crea (o completa, si ya existe el prefijo) un modelo con tallas (requiere `module:variants`). Todo o nada; la categoría se crea si no existe → `{lines: [{lineNo, products: [{productId, sku, name, unitId, size, quantity}]}]}`. 422 con el nombre de la línea que falló |
@@ -406,7 +409,7 @@ Un **modelo** (p. ej. "Tenis Runner") agrupa sus **variantes** (talla × color).
 | GET | `/size-scales` | Escalas `{id, code, name, active, sizes: [{label, equivalent}]}` en orden. Sembradas: Calzado Colombia (34–45), Calzado EU (35–46), Calzado US (5–12, con medias), Calzado niño (18–33), Ropa (letras), Ropa niño, Jean / pantalón |
 | POST | `/size-scales` | `{name, sizes: [{label (≤10), equivalent?}]}` → 201 (máximo 40 tallas) |
 | PUT | `/size-scales/{id}` | `{name, active?, sizes}`: reemplaza las tallas en ese orden. 422 si quita una talla que usa algún producto. `equivalent` = texto libre (p. ej. "EU 39"), lo edita cada negocio |
-| GET | `/product-models?search=&categoryId=&includeInactive=&page=&size=&sort=` | `{id, skuPrefix, name, categoryName, salePrice, sizeScaleName, variants (cantidad), active}` |
+| GET | `/product-models?search=&categoryId=&includeInactive=&branchId=&page=&size=&sort=` | `{id, skuPrefix, name, categoryName, salePrice, sizeScaleName, variants (cantidad), active}` |
 | GET | `/product-models/{id}` | `{id, skuPrefix, name, description, categoryId, categoryName, taxId, taxCode, cost, salePrice, sizeScaleId, sizeScaleName, active, sizes[] (orden de la escala), colors[] (orden de creación), variants: [{productId, sku, name, size, color, barcode, baseUnitId, baseUnitCode, active}]}` |
 | POST | `/product-models` | `{skuPrefix (1–20), name (≤140), description?, categoryId?, taxId, cost?, salePrice (> 0), sizeScaleId, sizes[], colors[]}` → 201. Crea talla × color (colores opcionales; sin repetir, sin distinguir mayúsculas; máximo 20 colores y 400 variantes). 409 prefijo repetido; 422 talla fuera de la escala |
 | PUT | `/product-models/{id}` | `{name, description?, categoryId?, taxId, cost?, salePrice}`: se copia a todas las variantes (el costo, solo a las que el inventario aún no maneja). Prefijo y escala no cambian |
