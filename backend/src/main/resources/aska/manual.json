@@ -422,7 +422,8 @@
   "tips": [
    "Todo el equipo de la sucursal ve todas las mesas y quién pidió cada cosa.",
    "Cancelar una cuenta con productos, o quitar lo que ya salió a cocina, lo hace caja o el administrador, con motivo.",
-   "La pantalla se actualiza sola cada pocos segundos."
+   "La pantalla se actualiza sola cada pocos segundos.",
+   "¿Tienes una sede que es restaurante y otra que no (por ejemplo, un supermercado)? Crea las zonas y mesas solo en la sede del restaurante, con su propia caja: Mesas abre directamente ahí. A los meseros asígnales solo esa sede en Usuarios, y con una carta (Mesas → Configurar → Cartas por piso) al pedir ven solo los platos y bebidas del restaurante."
   ],
   "who": "Quien tenga el permiso \"Atender mesas\" (Propietario, Administrador, Cajero, Vendedor y Mesero)."
  },

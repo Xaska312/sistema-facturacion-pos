@@ -55,13 +55,18 @@ public class DiningService {
 
     // ------------------------------------------------------------------ sucursales
 
-    /** Sucursales activas que el usuario puede atender, la principal primero. */
+    /** Sucursales activas que el usuario puede atender: primero las que tienen mesas, luego la principal y las demás. */
     @Transactional(readOnly = true)
     public List<BranchOption> branches() {
         Set<UUID> allowed = CurrentActor.permissions().contains(ALL_BRANCHES) ? null
                 : members.branchIdsOf(CurrentActor.requireUserId());
         List<BranchOption> result = new ArrayList<>();
-        for (Object[] r : rows("SELECT id, name FROM branches WHERE active ORDER BY (code = 'PRINCIPAL') DESC, name", Map.of())) {
+        // Primero las sedes que tienen salón (decisión 377): con una sede restaurante y otra que no, Mesas abre en la
+        // que tiene mesas y no en una vacía.
+        for (Object[] r : rows("""
+                SELECT b.id, b.name FROM branches b WHERE b.active
+                 ORDER BY EXISTS (SELECT 1 FROM dining_zones z WHERE z.branch_id = b.id AND z.active) DESC,
+                          (b.code = 'PRINCIPAL') DESC, b.name""", Map.of())) {
             if (allowed == null || allowed.contains((UUID) r[0])) {
                 result.add(new BranchOption((UUID) r[0], (String) r[1]));
             }
