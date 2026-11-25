@@ -449,10 +449,9 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
     manual: 'sucursales-cajas',
     title: 'Sucursales',
     tips: [
-      'Crea una sucursal por cada local donde vendes o guardas mercancía.',
+      'Crea una sucursal por cada local donde vendes; cada una tiene sus existencias y sus cajas.',
       'Al crearla eliges qué tendrá: lo mismo que la principal, un restaurante (caja, mesas y carta) u otras cosas.',
-      'En Editar eliges qué vende cada sede: en su Vender solo salen esas categorías.',
-      'Cada sucursal tiene sus propias existencias y cajas; los productos y precios son de todo el negocio.',
+      'En Editar eliges qué vende cada sede; los productos y los precios son los mismos para todo el negocio.',
       'Desactivar una sucursal no borra sus ventas.',
     ],
   },
