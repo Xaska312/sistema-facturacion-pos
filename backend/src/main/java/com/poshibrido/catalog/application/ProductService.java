@@ -70,10 +70,18 @@ public class ProductService {
     @Transactional(readOnly = true)
     public Page<ProductView> search(String search, UUID categoryId, boolean includeInactive, boolean includeVariants,
                                     Pageable pageable) {
+        return search(search, categoryId, null, includeInactive, includeVariants, pageable);
+    }
+
+    /** {@code allowed}: solo esas categorías (lo que vende una sucursal, decisión 378); nulo = todas. */
+    @Transactional(readOnly = true)
+    public Page<ProductView> search(String search, UUID categoryId, Set<UUID> allowed, boolean includeInactive,
+                                    boolean includeVariants, Pageable pageable) {
         String term = search == null ? "" : search.trim();
         String pattern = "%" + escapeLike(term.toLowerCase(Locale.ROOT)) + "%";
         Page<Product> page = products.search(pattern, pattern.toUpperCase(Locale.ROOT), term,
-                categoryId == null, categoryId == null ? NO_CATEGORY : categoryId, includeInactive, includeVariants,
+                categoryId == null, categoryId == null ? NO_CATEGORY : categoryId, allowed == null,
+                allowed == null || allowed.isEmpty() ? List.of(NO_CATEGORY) : allowed, includeInactive, includeVariants,
                 pageable);
         References refs = references();
         Map<UUID, ProductView.MedicineBadge> badges = medicineService.badges(page.map(Product::getId).getContent());

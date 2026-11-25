@@ -106,6 +106,39 @@ export interface BranchInput {
   phone: string | null;
 }
 
+/**
+ * Qué vende una sucursal (decisión 378). {@code categoryIds}: las elegidas; {@code allowedIds}: esas con sus
+ * subcategorías, o null si vende todo el catálogo.
+ */
+export interface BranchSaleCategories {
+  branchId: string;
+  sellsAll: boolean;
+  categoryIds: string[];
+  allowedIds: string[] | null;
+}
+
+/** Asistente de nueva sucursal (decisión 378): la sucursal con su caja y, si es restaurante, mesas y carta. */
+export interface BranchSetupInput extends BranchInput {
+  code: string;
+  /** null o vacío: sin caja propia. */
+  registerName: string | null;
+  zoneName: string | null;
+  tables: number;
+  menuCategoryIds: string[];
+  sellsAll: boolean;
+  saleCategoryIds: string[];
+}
+
+export interface BranchSetupResult {
+  branch: Branch;
+  cashRegisterId: string | null;
+  zoneId: string | null;
+  tables: number;
+  menuId: string | null;
+  /** Lo que no se pudo hacer (p. ej. la carta sin plan Empresa). */
+  notes: string[];
+}
+
 export interface Permission {
   code: string;
   module: string;

@@ -19,10 +19,12 @@ public interface ProductModelRepository extends JpaRepository<ProductModel, UUID
             select m from ProductModel m
             where (lower(m.name) like :pattern escape '\\' or upper(m.skuPrefix) like :patternUpper escape '\\')
               and (:anyCategory = true or m.categoryId = :categoryId)
+              and (:anyAllowed = true or m.categoryId in :allowed)
               and (:includeInactive = true or m.active = true)
             """)
     Page<ProductModel> search(@Param("pattern") String pattern, @Param("patternUpper") String patternUpper,
                               @Param("anyCategory") boolean anyCategory, @Param("categoryId") UUID categoryId,
+                              @Param("anyAllowed") boolean anyAllowed, @Param("allowed") java.util.Collection<UUID> allowed,
                               @Param("includeInactive") boolean includeInactive, Pageable pageable);
 
     long countBySizeScaleId(UUID sizeScaleId);

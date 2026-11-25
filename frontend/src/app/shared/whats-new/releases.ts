@@ -11,6 +11,15 @@ export interface Release {
 
 export const RELEASES: readonly Release[] = [
   {
+    id: '2026-11-26',
+    title: 'Una sede nueva lista en un paso',
+    items: [
+      'Al crear una sucursal eliges qué tendrá: lo mismo que la principal, un restaurante o solo algunas categorías.',
+      'Si es un restaurante, queda con su caja, el salón con sus mesas y su carta.',
+      'En Sucursales › Editar eliges qué vende cada sede: en su Vender solo salen esos productos.',
+    ],
+  },
+  {
     id: '2026-11-25',
     title: 'Vender se ve mejor en la tablet',
     items: [

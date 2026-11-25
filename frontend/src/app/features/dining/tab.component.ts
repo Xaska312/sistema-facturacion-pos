@@ -9,6 +9,7 @@ import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { Observable, finalize } from 'rxjs';
 import { Product, ProductLookup, ProductModel, ProductModelRow, ProductVariant } from '../../core/api/api.models';
 import { CatalogApi } from '../../core/api/catalog.api';
+import { OrganizationApi } from '../../core/api/organization.api';
 import { DiningApi, DiningMenu, Floor, Tab, TabItem, TabSummary } from '../../core/api/dining.api';
 import { loadMenuChoice, menuCategoryFilter, saveMenuChoice } from './menu-form';
 import { ModifiersApi, PosModifierCatalog, PosModifierGroup } from '../../core/api/modifiers.api';
@@ -513,6 +514,7 @@ export class TabComponent implements OnInit, HasUnsavedChanges {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly api = inject(DiningApi);
+  private readonly organization = inject(OrganizationApi);
   private readonly sales = inject(SalesApi);
   private readonly catalog = inject(CatalogApi);
   private readonly modifiersApi = inject(ModifiersApi);
@@ -606,9 +608,16 @@ export class TabComponent implements OnInit, HasUnsavedChanges {
   /** Cartas activas de la sucursal de la cuenta (decisión 294) y la elegida (se recuerda en el equipo). */
   protected readonly menus = signal<DiningMenu[]>([]);
   protected readonly menuId = signal<string | null>(loadMenuChoice());
-  protected readonly menuCategories = computed(() => menuCategoryFilter(this.menus(), this.menuId()));
+  /** Lo que vende la sucursal (decisión 378): "Todas las cartas" no muestra lo del súper en el restaurante. */
+  private readonly branchCategories = signal<string[] | null>(null);
+  protected readonly menuCategories = computed(() =>
+    menuCategoryFilter(this.menus(), this.menuId()) ?? this.branchCategories());
 
   private loadMenus(branchId: string): void {
+    this.organization.saleCategories(branchId).subscribe({
+      next: (sale) => this.branchCategories.set(sale.allowedIds),
+      error: () => this.branchCategories.set(null),
+    });
     this.api.menus(branchId).subscribe({
       next: (list) => {
         const active = list.filter((m) => m.active);

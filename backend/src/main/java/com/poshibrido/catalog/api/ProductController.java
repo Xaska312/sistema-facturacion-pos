@@ -55,6 +55,7 @@ public class ProductController {
 
     private final ProductService products;
     private final ProductLookupService lookup;
+    private final com.poshibrido.catalog.application.BranchSaleCategories branchSales;
     private final ProductImportService importer;
     private final CostReviewService costReview;
 
@@ -107,18 +108,23 @@ public class ProductController {
                                             @RequestParam(required = false) UUID categoryId,
                                             @RequestParam(defaultValue = "false") boolean includeInactive,
                                             @RequestParam(defaultValue = "true") boolean includeVariants,
+                                            @RequestParam(required = false) UUID branchId,
                                             @RequestParam(defaultValue = "0") int page,
                                             @RequestParam(defaultValue = "20") int size,
                                             @RequestParam(required = false) String sort) {
-        return PageResponse.of(products.search(search, categoryId, includeInactive, includeVariants,
+        // branchId: Vender pide solo lo que vende su sucursal (decisión 378).
+        return PageResponse.of(products.search(search, categoryId, branchSales.allowed(branchId).orElse(null),
+                includeInactive, includeVariants,
                 PageRequests.of(page, size, sort, SORTABLE, Sort.by("name"))), v -> v);
     }
 
     /** Busca por código de barras o SKU y devuelve unidad y precio vigente (lector de la pantalla de venta). */
     @GetMapping("/api/v1/products/lookup")
     @PreAuthorize("hasAuthority('products:read')")
-    public LookupView lookup(@RequestParam String code, @RequestParam(required = false) UUID priceListId) {
+    public LookupView lookup(@RequestParam String code, @RequestParam(required = false) UUID priceListId,
+                             @RequestParam(required = false) UUID branchId) {
         ProductLookupService.Scanned scanned = lookup.scan(code, priceListId);
+        branchSales.requireSells(branchId, scanned.price().productId());
         return LookupView.of(scanned.price(), scanned.scaleQuantity(), scanned.scaleAmount());
     }
 

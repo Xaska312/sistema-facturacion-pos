@@ -89,11 +89,19 @@ public class ProductModelService {
     /** Modelos por nombre o prefijo; {@code categoryId} nulo = todas las categorías (el POS filtra por categoría). */
     @Transactional(readOnly = true)
     public Page<ModelRow> search(String search, UUID categoryId, boolean includeInactive, Pageable pageable) {
+        return search(search, categoryId, null, includeInactive, pageable);
+    }
+
+    /** {@code allowed}: solo esas categorías (lo que vende una sucursal, decisión 378); nulo = todas. */
+    @Transactional(readOnly = true)
+    public Page<ModelRow> search(String search, UUID categoryId, Set<UUID> allowed, boolean includeInactive,
+                                 Pageable pageable) {
         String term = search == null ? "" : search.trim();
         String pattern = "%" + ProductService.escapeLike(term.toLowerCase(Locale.ROOT)) + "%";
         // PostgreSQL no infiere el tipo de un parámetro nulo: bandera + valor ficticio.
         Page<ProductModel> page = models.search(pattern, pattern.toUpperCase(Locale.ROOT), categoryId == null,
-                categoryId == null ? NO_CATEGORY : categoryId, includeInactive, pageable);
+                categoryId == null ? NO_CATEGORY : categoryId, allowed == null,
+                allowed == null || allowed.isEmpty() ? List.of(NO_CATEGORY) : allowed, includeInactive, pageable);
         Map<UUID, Long> counts = new HashMap<>();
         if (!page.isEmpty()) {
             for (Object[] row : products.countVariants(page.map(ProductModel::getId).getContent())) {
