@@ -1,6 +1,7 @@
 package com.poshibrido.dining.api;
 
 import com.poshibrido.dining.application.DiningViews.TabView;
+import com.poshibrido.dining.application.PrecheckService;
 import com.poshibrido.dining.application.TabService;
 import com.poshibrido.dining.application.TabService.Details;
 import com.poshibrido.dining.application.TabService.ItemInput;
@@ -51,6 +52,7 @@ public class TabController {
 
     private final TabService service;
     private final SaleQueryService sales;
+    private final PrecheckService prechecks;
 
     public record OpenRequest(UUID branchId, @NotNull @Pattern(regexp = "TABLE|TAKEAWAY|DELIVERY|NAMED") String kind,
                               UUID tableId, @Min(1) @Max(99) Integer guests, @Size(max = 120) String customerName,
@@ -121,6 +123,12 @@ public class TabController {
     @GetMapping("/{id}")
     public TabView get(@PathVariable UUID id) {
         return service.get(id);
+    }
+
+    /** Precuenta (decisión 380): lo que falta por cobrar, para imprimirlo antes de pagar. No cambia nada. */
+    @GetMapping("/{id}/precheck")
+    public PrecheckService.Precheck precheck(@PathVariable UUID id) {
+        return prechecks.precheck(id);
     }
 
     @PutMapping("/{id}")

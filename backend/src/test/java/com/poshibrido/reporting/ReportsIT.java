@@ -116,6 +116,33 @@ class ReportsIT extends IntegrationTest {
         assertThat(number(myDay, "$.total")).isEqualByComparingTo("2000");
     }
 
+    /** Decisión 380: un bar que cierra a las 3 a. m. hace que su día empiece a las 6 (aquí, a las 11 para probarlo). */
+    @Test
+    void theBusinessDayCanStartAfterMidnight() throws Exception {
+        Scenario sc = scenario("corte");
+        Session s = sc.owner().tenant();
+        String settings = body(api.getWith(s, "/api/v1/settings").andExpect(status().isOk()));
+        api.putWith(s, "/api/v1/settings", settings.replaceFirst("\"dayStartHour\":0", "\"dayStartHour\":12"))
+                .andExpect(status().isBadRequest());
+        api.putWith(s, "/api/v1/settings", settings.replaceFirst("\"dayStartHour\":0", "\"dayStartHour\":11"))
+                .andExpect(status().isOk());
+        String saved = body(api.getWith(s, "/api/v1/settings"));
+        assertThat(((Number) JsonPath.read(saved, "$.dayStartHour")).intValue()).isEqualTo(11);
+
+        // Las ventas de ahora cuentan en el día del negocio en curso (antes de las 11 a. m., el de ayer).
+        LocalDate businessDay = com.poshibrido.reporting.application.ReportPeriod.businessDay(
+                java.time.LocalDateTime.now(ZoneId.of("America/Bogota")), 11);
+        String summary = body(api.getWith(s, "/api/v1/reports/sales/summary").andExpect(status().isOk()));
+        assertThat((String) JsonPath.read(summary, "$.from")).isEqualTo(businessDay.toString());
+        assertThat(number(summary, "$.total")).isEqualByComparingTo("31500");
+        String range = "?from=" + businessDay.minusDays(1) + "&to=" + businessDay.plusDays(1);
+        String byDay = body(api.getWith(s, "/api/v1/reports/sales/by-day" + range).andExpect(status().isOk()));
+        assertThat((String) JsonPath.read(byDay, "$[0].key")).isEqualTo(businessDay.toString());
+        assertThat(number(byDay, "$[0].total")).isEqualByComparingTo("31500");
+        String dashboard = body(api.getWith(s, "/api/v1/reports/dashboard").andExpect(status().isOk()));
+        assertThat(number(dashboard, "$.today.total")).isEqualByComparingTo("31500");
+    }
+
     @Test
     void csvExportsAreReadyForExcelInSpanish() throws Exception {
         Scenario sc = scenario("repcsv");

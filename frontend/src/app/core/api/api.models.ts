@@ -242,6 +242,8 @@ export interface BusinessSettings {
   creditReminder?: string;
   /** Los costos se escriben con el IVA incluido; se guardan sin IVA (decisión 348). */
   costsIncludeTax?: boolean;
+  /** Hora en que empieza el día del negocio, 0 (medianoche) a 11 (decisión 380). */
+  dayStartHour?: number;
 }
 
 export interface Department {

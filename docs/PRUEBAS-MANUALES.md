@@ -231,6 +231,8 @@ _Dueño y un cajero, con XASKA Impresora y cajón; XASKA IA activo_
 | ☐ | 103 | Con una caja abierta desde ayer (o antes), entrar a Vender y a Mi caja. | En Vender la píldora sale amarilla ("Caja abierta hace N días") y lleva a Mi caja; en Mi caja sale "Lleva N días abierta…". Con una caja de hoy, todo sigue en verde. |
 | ☐ | 104 | En el equipo donde vendes, salir de Vender y volver a entrar (o recargar /pos). | Vender aparece de una vez, sin el recuadro gris; si la caja se cerró en otro equipo, a los segundos muestra "Abrir caja". |
 | ☐ | 105 | Abrir /precios y Planes y pagos; en el celular, abrir xaska.co. | Dice "Precios finales: no se cobra IVA". En xaska.co el botón de Aska es solo la burbuja y no tapa la demostración. |
+| ☐ | 106 | En Ajustes poner "El día del negocio empieza a las" en 6:00 a. m.; vender algo de madrugada (o antes de las 6) y abrir Reportes e Inicio. | La venta cuenta en el día anterior; "Hoy" en Inicio y el reporte de Hoy siguen mostrando el día que empezó a las 6. Volver a medianoche deja todo como antes. |
+| ☐ | 107 | En una mesa con pedidos, tocar "Imprimir precuenta" (con y sin XASKA Impresora). | Sale "PRECUENTA" con los productos, el total, la propina sugerida y "no es un tiquete de venta"; la mesa queda en rojo ("Pidió la cuenta"). No se crea ninguna venta. |
 
 ## Hallazgos
 

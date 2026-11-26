@@ -45,13 +45,16 @@ public class BusinessSettingsService implements BusinessSettingsApi {
     static final int MAX_CREDIT_REMINDER = 500;
     /** Los costos se escriben con el IVA incluido (decisión 348). */
     static final String COSTS_INCLUDE_TAX = "costs_include_tax";
+    /** Hora en que empieza el día del negocio (decisión 380): 0 = medianoche. */
+    static final String DAY_START_HOUR = "day_start_hour";
+    static final int MAX_DAY_START_HOUR = 11;
 
     /** Monedas soportadas. En el MVP solo pesos colombianos. */
     private static final Set<String> CURRENCIES = Set.of("COP");
 
     private static final BusinessSettings DEFAULTS = new BusinessSettings(false, true, "America/Bogota", "COP",
             "Gracias por su compra", BigDecimal.ZERO.setScale(2), true, 15,
-            "Precios sujetos a cambio después de la fecha de validez.", 10, 3, "", "", true);
+            "Precios sujetos a cambio después de la fecha de validez.", 10, 3, "", "", true, 0);
 
     private final BusinessSettingRepository repository;
     private final AuditLogger audit;
@@ -75,7 +78,8 @@ public class BusinessSettingsService implements BusinessSettingsApi {
                 integer(values, EXPIRY_ALERT_MONTHS, DEFAULTS.expiryAlertMonths()),
                 values.getOrDefault(RECEIPT_HEADER, DEFAULTS.receiptHeader()),
                 values.getOrDefault(CREDIT_REMINDER, DEFAULTS.creditReminder()),
-                bool(values, COSTS_INCLUDE_TAX, DEFAULTS.costsIncludeTax()));
+                bool(values, COSTS_INCLUDE_TAX, DEFAULTS.costsIncludeTax()),
+                integer(values, DAY_START_HOUR, DEFAULTS.dayStartHour()));
     }
 
     @Transactional
@@ -102,6 +106,7 @@ public class BusinessSettingsService implements BusinessSettingsApi {
         put(rows, EXPIRY_ALERT_MONTHS, ValueType.INTEGER, Integer.toString(requested.expiryAlertMonths()), actor);
         put(rows, CREDIT_REMINDER, ValueType.STRING, cleanReminder(requested.creditReminder()), actor);
         put(rows, COSTS_INCLUDE_TAX, ValueType.BOOLEAN, Boolean.toString(requested.costsIncludeTax()), actor);
+        put(rows, DAY_START_HOUR, ValueType.INTEGER, Integer.toString(requested.dayStartHour()), actor);
 
         BusinessSettings after = current();
         audit.log("SETTINGS_UPDATED", "business_settings", null, asMap(before), asMap(after));
@@ -140,6 +145,9 @@ public class BusinessSettingsService implements BusinessSettingsApi {
         }
         if (s.tipPercent() < 0 || s.tipPercent() > MAX_TIP_PERCENT) {
             throw new BusinessRuleException("La propina sugerida va de 0 a " + MAX_TIP_PERCENT + " %.");
+        }
+        if (s.dayStartHour() < 0 || s.dayStartHour() > MAX_DAY_START_HOUR) {
+            throw new BusinessRuleException("El día del negocio puede empezar entre la medianoche y las 11:00 a. m.");
         }
         if (s.expiryAlertMonths() < 1 || s.expiryAlertMonths() > 12) {
             throw new BusinessRuleException("El aviso de vencimiento va de 1 a 12 meses.");
@@ -212,6 +220,7 @@ public class BusinessSettingsService implements BusinessSettingsApi {
         map.put(EXPIRY_ALERT_MONTHS, s.expiryAlertMonths());
         map.put(CREDIT_REMINDER, s.creditReminder());
         map.put(COSTS_INCLUDE_TAX, s.costsIncludeTax());
+        map.put(DAY_START_HOUR, s.dayStartHour());
         return map;
     }
 }

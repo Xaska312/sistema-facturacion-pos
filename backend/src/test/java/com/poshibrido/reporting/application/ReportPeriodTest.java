@@ -50,4 +50,19 @@ class ReportPeriodTest {
                 .isEqualByComparingTo("67.45");
         assertThat(ReportQueryService.margin(BigDecimal.ONE, BigDecimal.ZERO)).isEqualByComparingTo("0");
     }
+
+    /** Decisión 380: con el día empezando a las 6, el viernes llega hasta el sábado a las 6:00 a. m. */
+    @Test
+    void businessDaysCanStartAfterMidnight() {
+        ReportPeriod p = ReportPeriod.of(LocalDate.of(2026, 11, 27), LocalDate.of(2026, 11, 27), BOGOTA, TODAY, 6);
+        assertThat(p.start()).isEqualTo(Instant.parse("2026-11-27T11:00:00Z"));
+        assertThat(p.end()).isEqualTo(Instant.parse("2026-11-28T11:00:00Z"));
+        assertThat(p.businessTime("f.created_at")).isEqualTo("(f.created_at AT TIME ZONE :tz - interval '6 hours')");
+        assertThat(new ReportPeriod(TODAY, TODAY, BOGOTA).businessTime("x")).isEqualTo("(x AT TIME ZONE :tz)");
+        assertThat(ReportPeriod.businessDay(java.time.LocalDateTime.of(2026, 11, 28, 2, 30), 6))
+                .isEqualTo(LocalDate.of(2026, 11, 27));
+        assertThat(ReportPeriod.businessDay(java.time.LocalDateTime.of(2026, 11, 28, 6, 0), 6))
+                .isEqualTo(LocalDate.of(2026, 11, 28));
+        assertThatThrownBy(() -> new ReportPeriod(TODAY, TODAY, BOGOTA, 24)).isInstanceOf(IllegalArgumentException.class);
+    }
 }

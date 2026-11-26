@@ -11,6 +11,16 @@ export interface Release {
 
 export const RELEASES: readonly Release[] = [
   {
+    id: '2026-11-28',
+    title: 'Para bares: precuenta y la noche en un solo día',
+    items: [
+      'En la cuenta de una mesa, "Imprimir precuenta" saca lo que falta por cobrar y la propina sugerida para que el '
+        + 'cliente lo revise antes de pagar.',
+      'En Ajustes eliges a qué hora empieza el día del negocio: con 6:00 a. m., lo vendido en la madrugada cuenta en el '
+        + 'día anterior en Reportes, Inicio y Aska.',
+    ],
+  },
+  {
     id: '2026-11-27',
     title: 'Vender abre más rápido',
     items: [

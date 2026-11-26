@@ -49,7 +49,9 @@ public class SettingsController {
             /** Recordatorio de fiado por WhatsApp (decisión 344); "" = el de siempre. Sin dato se conserva. */
             @Size(max = 600) String creditReminder,
             /** Los costos se escriben con IVA incluido (decisión 348). Sin dato se conserva. */
-            Boolean costsIncludeTax) {
+            Boolean costsIncludeTax,
+            /** Hora en que empieza el día del negocio (decisión 380), 0 a 11. Sin dato se conserva. */
+            @Min(0) @Max(11) Integer dayStartHour) {
     }
 
     @GetMapping
@@ -77,6 +79,7 @@ public class SettingsController {
         return service.update(new BusinessSettings(request.allowNegativeStock(), request.pricesIncludeTax(),
                 request.timezone().trim(), request.currency().trim(), request.receiptFooter(),
                 request.maxDiscountPercent(), cashCloseEmail, quoteValidityDays, quoteTerms, tipPercent,
-                expiryAlertMonths, receiptHeader, creditReminder, costsIncludeTax));
+                expiryAlertMonths, receiptHeader, creditReminder, costsIncludeTax,
+                request.dayStartHour() == null ? current.dayStartHour() : request.dayStartHour()));
     }
 }

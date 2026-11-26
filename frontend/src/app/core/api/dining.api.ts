@@ -186,6 +186,35 @@ export interface Tab {
   chargeRegister: RegisterOption | null;
 }
 
+/** Precuenta (decisión 380): lo que falta por cobrar, con la base sin impuestos y la propina sugerida. */
+export interface PrecheckLine {
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+  /** Adiciones y nota de la línea. */
+  details: string | null;
+}
+
+export interface Precheck {
+  tabId: string;
+  label: string;
+  tableName: string | null;
+  zoneName: string | null;
+  guests: number | null;
+  openedByName: string | null;
+  openedAt: string;
+  printedAt: string;
+  lines: PrecheckLine[];
+  subtotal: number;
+  tax: number;
+  total: number;
+  /** Lo ya cobrado por partes. */
+  chargedTotal: number;
+  tipPercent: number;
+  suggestedTip: number;
+}
+
 /** Comanda vista desde la cuenta. */
 export interface TicketSummary {
   id: string;
@@ -323,6 +352,11 @@ export class DiningApi {
 
   tab(id: string): Observable<Tab> {
     return this.http.get<Tab>(`/api/v1/tabs/${id}`);
+  }
+
+  /** Precuenta para imprimir antes de cobrar (decisión 380). No cambia nada. */
+  precheck(id: string): Observable<Precheck> {
+    return this.http.get<Precheck>(`/api/v1/tabs/${id}/precheck`);
   }
 
   updateTab(id: string, input: TabDetailsInput): Observable<Tab> {
