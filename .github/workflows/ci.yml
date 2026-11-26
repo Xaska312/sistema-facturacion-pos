@@ -26,6 +26,15 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: maven
+      # Maven Central responde 429 cuando muchas máquinas de GitHub descargan a la vez. Primero se bajan las
+      # dependencias con reintentos (además de los de .mvn/maven.config), y luego corren las pruebas una sola vez.
+      - name: Bajar dependencias (con reintentos)
+        run: |
+          for i in 1 2 3 4; do
+            if mvn -B -q dependency:go-offline test-compile -DskipTests; then exit 0; fi
+            [ "$i" -lt 4 ] && echo "Maven Central no respondió (intento $i); reintentando…" && sleep $((i * 30))
+          done
+          exit 1
       - name: Build y tests (unitarios + integración)
         run: mvn -B clean verify
 

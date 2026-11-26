@@ -6,6 +6,8 @@ FROM --platform=$BUILDPLATFORM maven:3-eclipse-temurin-21-alpine AS builder
 WORKDIR /app
 # Primero solo el pom: las dependencias quedan en una capa que se reutiliza mientras el pom no cambie.
 COPY pom.xml ./
+# .mvn/maven.config: Maven reintenta hasta 8 veces una descarga que responde 429 o 503, esperando entre intentos.
+COPY .mvn/maven.config ./.mvn/maven.config
 # go-offline no baja los procesadores de anotaciones (mapstruct-processor): compilar una clase vacía los trae a esta
 # misma capa. Si no, se bajaban de Maven Central en cada versión y un 429 (límite de descargas) tumbaba la imagen.
 # Maven Central responde 429 cuando muchas máquinas de GitHub descargan a la vez (la prueba de Playwright arma la
