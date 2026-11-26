@@ -18,7 +18,7 @@ public final class XlsxWriter {
 
     /**
      * @param textColumns columnas (desde 0) con formato de texto
-     * @param dropdowns   columna → opciones de la lista desplegable (filas 2 a 2000)
+     * @param dropdowns   columna → opciones de la lista desplegable (filas 2 a 2000, o más si la hoja trae más filas)
      */
     public record Sheet(String name, List<List<String>> rows, List<Integer> widths, Set<Integer> textColumns,
                         Map<Integer, List<String>> dropdowns, boolean header) {
@@ -162,6 +162,7 @@ public final class XlsxWriter {
         if (!sheet.dropdowns().isEmpty()) {
             StringBuilder validations = new StringBuilder();
             int count = 0;
+            int lastRow = Math.max(2000, sheet.rows().size() + 500);
             for (Map.Entry<Integer, List<String>> entry : sheet.dropdowns().entrySet()) {
                 String list = String.join(",", entry.getValue());
                 if (list.isEmpty() || list.length() > 250 || list.contains("\"")) {
@@ -170,7 +171,7 @@ public final class XlsxWriter {
                 String col = column(entry.getKey());
                 validations.append("<dataValidation type=\"list\" allowBlank=\"1\" showErrorMessage=\"1\" ")
                         .append("errorTitle=\"Valor no válido\" error=\"Elige un valor de la lista.\" sqref=\"")
-                        .append(col).append("2:").append(col).append("2000\"><formula1>\"")
+                        .append(col).append("2:").append(col).append(lastRow).append("\"><formula1>\"")
                         .append(escape(list)).append("\"</formula1></dataValidation>");
                 count++;
             }

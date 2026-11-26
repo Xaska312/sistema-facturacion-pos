@@ -234,6 +234,7 @@ _Dueño y un cajero, con XASKA Impresora y cajón; XASKA IA activo_
 | ☐ | 106 | En Ajustes poner "El día del negocio empieza a las" en 6:00 a. m.; vender algo de madrugada (o antes de las 6) y abrir Reportes e Inicio. | La venta cuenta en el día anterior; "Hoy" en Inicio y el reporte de Hoy siguen mostrando el día que empezó a las 6. Volver a medianoche deja todo como antes. |
 | ☐ | 107 | En una mesa con pedidos, tocar "Imprimir precuenta" (con y sin XASKA Impresora). | Sale "PRECUENTA" con los productos, el total, la propina sugerida y "no es un tiquete de venta"; la mesa queda en rojo ("Pidió la cuenta"). No se crea ninguna venta. |
 | ☐ | 108 | En Productos → Importar, subir un Excel con la columna "precio_mayorista" (algunas celdas vacías); luego vender a un cliente con la lista Mayorista. | El reporte dice "listas de precios nuevas: MAYORISTA" (si no existía); al venderle al cliente mayorista se cobra ese precio, y donde la celda estaba vacía, el normal. |
+| ☐ | 109 | En Productos → Importar, tocar "Descargar mis productos", abrir el Excel, cambiar el precio mayorista de un producto y subir el mismo archivo. | El Excel trae todos los productos con su precio, precio_mayorista y existencia; al revisarlo no hay errores; solo cambia ese precio y la existencia sigue igual. |
 
 ## Hallazgos
 

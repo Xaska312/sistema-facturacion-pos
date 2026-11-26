@@ -12,9 +12,10 @@ export interface Release {
 export const RELEASES: readonly Release[] = [
   {
     id: '2026-11-29',
-    title: 'Precio mayorista desde Excel',
+    title: 'Tus productos en Excel',
     items: [
-      'En el Excel de productos agrega la columna "precio_mayorista" y cargas el precio de mayorista de todos tus productos.',
+      'En Productos → Importar, "Descargar mis productos" te da un Excel con todos tus productos, precios y existencias.',
+      'Corrígelo y súbelo igual. Con la columna "precio_mayorista" cargas el precio de mayorista de todos.',
       'Si la lista de precios no existe, se crea sola.',
     ],
   },

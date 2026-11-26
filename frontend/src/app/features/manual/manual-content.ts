@@ -749,7 +749,10 @@ export const MANUAL: readonly ManualChapter[] = [
           'Súbela con "Elegir archivo" y toca "Revisar": el sistema te muestra qué filas tienen errores antes de guardar nada.',
           'Corrige lo que falte y confirma la importación.',
         ],
-        tips: ['Si un SKU ya existe, ese producto se actualiza con los datos del archivo.'],
+        tips: [
+          'Si un SKU ya existe, ese producto se actualiza con los datos del archivo.',
+          'Para corregir los que ya tienes (precios, costos, precio mayorista), toca "Descargar mis productos": sale un Excel con todos y la existencia de cada sede. Corrígelo y súbelo igual. La existencia es solo para consultar: no cambia el inventario.',
+        ],
       },
       {
         id: 'ficha-medicamento',

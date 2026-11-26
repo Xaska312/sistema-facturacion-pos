@@ -207,4 +207,68 @@ class ProductImportIT extends IntegrationTest {
                 .andExpect(jsonPath("$.errors.length()").value(0))
                 .andExpect(jsonPath("$.newPriceLists.length()").value(0));
     }
+
+    /**
+     * Decisión 382: "Descargar mis productos" sale en el formato de la plantilla, con el precio mayorista y la
+     * existencia, y subir el mismo archivo no cambia nada (ni le quita el IVA al costo dos veces).
+     */
+    @Test
+    void exportedProductsComeBackUnchanged() throws Exception {
+        Owned owner = api.newTenant("exporta");
+        var s = owner.tenant();
+        api.upload(s, "/api/v1/products/import", bytes("""
+                sku,nombre,codigo_barras,categoria,impuesto,costo,precio,controla_inventario,precio_mayorista
+                ARR-1K,Arroz 1 kg,0770444444444,Granos,IVA5,3000,4200,si,3900
+                BOLSA,Bolsa,,,EXCLUIDO,50,100,no,
+                """), "dryRun", "false").andExpect(jsonPath("$.applied").value(true));
+        String arroz = productId(s, "ARR-1K");
+        api.postWith(s, "/api/v1/inventory/initial-balances", """
+                {"branchId":"%s","lines":[{"productId":"%s","quantity":12,"unitCost":3000}]}
+                """.formatted(api.principalBranchId(s), arroz)).andExpect(status().isCreated());
+        java.math.BigDecimal cost = productCost(s, "ARR-1K");
+        String settings = api.getWith(s, "/api/v1/settings").andReturn().getResponse().getContentAsString();
+        api.putWith(s, "/api/v1/settings", settings.replaceFirst("\"costsIncludeTax\":(true|false)",
+                "\"costsIncludeTax\":true")).andExpect(status().isOk());
+
+        byte[] file = api.getWith(s, "/api/v1/products/export").andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsByteArray();
+        List<com.poshibrido.shared.xlsx.XlsxReader.Row> rows = com.poshibrido.shared.xlsx.XlsxReader.firstSheet(file);
+        List<String> header = rows.getFirst().cells();
+        assertThat(header).containsSequence("sku", "nombre", "codigo_barras", "categoria", "unidad", "impuesto",
+                "costo", "precio", "controla_inventario", "descripcion").contains("precio_mayorista", "existencia");
+        List<String> rice = rows.stream().map(com.poshibrido.shared.xlsx.XlsxReader.Row::cells)
+                .filter(c -> c.getFirst().equals("ARR-1K")).findFirst().orElseThrow();
+        assertThat(rice.get(2)).isEqualTo("0770444444444");
+        assertThat(rice.get(3)).isEqualTo("Granos");
+        // El costo sale con IVA (como se escribe con el ajuste encendido).
+        assertThat(new java.math.BigDecimal(rice.get(6))).isEqualByComparingTo(
+                cost.multiply(new java.math.BigDecimal("1.05")).setScale(2, java.math.RoundingMode.HALF_UP));
+        assertThat(rice.get(header.indexOf("precio_mayorista"))).isEqualTo("3900");
+        assertThat(rice.get(header.indexOf("existencia"))).isEqualTo("12");
+        List<String> bag = rows.stream().map(com.poshibrido.shared.xlsx.XlsxReader.Row::cells)
+                .filter(c -> c.getFirst().equals("BOLSA")).findFirst().orElseThrow();
+        assertThat(bag.size() > header.indexOf("existencia") ? bag.get(header.indexOf("existencia")) : "").isEmpty();
+
+        // Se sube tal cual: se actualizan todos (también el de ejemplo del negocio nuevo) y el costo queda igual.
+        api.upload(s, "/api/v1/products/import", file, "dryRun", "false")
+                .andExpect(jsonPath("$.errors.length()").value(0))
+                .andExpect(jsonPath("$.toUpdate").value(rows.size() - 1))
+                .andExpect(jsonPath("$.toCreate").value(0));
+        assertThat(productCost(s, "ARR-1K")).isEqualByComparingTo(cost);
+
+        // El cajero no lo descarga (trae costos).
+        Joined cashier = api.joinAs(s, owner.tenantId(), "CASHIER");
+        api.getWith(cashier.session(), "/api/v1/products/export").andExpect(status().isForbidden());
+    }
+
+    private String productId(com.poshibrido.support.TestApi.Session s, String sku) throws Exception {
+        String page = api.getWith(s, "/api/v1/products?search=" + sku).andReturn().getResponse().getContentAsString();
+        return ((List<String>) JsonPath.read(page, "$.content[?(@.sku == '" + sku + "')].id")).getFirst();
+    }
+
+    private java.math.BigDecimal productCost(com.poshibrido.support.TestApi.Session s, String sku) throws Exception {
+        String product = api.getWith(s, "/api/v1/products/" + productId(s, sku)).andReturn().getResponse()
+                .getContentAsString();
+        return new java.math.BigDecimal(JsonPath.read(product, "$.cost").toString());
+    }
 }
