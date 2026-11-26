@@ -37,8 +37,12 @@ import { AuthLayoutComponent } from '../../shared/layout/auth-layout.component';
           <input appInput type="email" formControlName="email" autocomplete="email" />
         </label>
         <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium">Celular (opcional)</span>
-          <input appInput formControlName="phone" autocomplete="tel" />
+          <span class="text-sm font-medium">Celular con WhatsApp <span class="text-muted font-normal">(opcional)</span></span>
+          <input appInput formControlName="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="300 123 4567"
+                 aria-describedby="register-phone-help" />
+          <!-- Revisión del 23 nov: sin celular, XASKA no puede escribirle por WhatsApp para ayudarle a empezar. -->
+          <small id="register-phone-help" class="text-xs text-muted">Te recomendamos dejarlo: así te ayudamos a
+            empezar y te damos soporte por WhatsApp. No lo usamos para publicidad.</small>
         </label>
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Contraseña</span>

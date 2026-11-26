@@ -1,4 +1,4 @@
-import { methodIcon, methodLabel, openedSince, stockLabel } from './pos-labels';
+import { methodIcon, methodLabel, openedSince, staleCash, stockLabel } from './pos-labels';
 
 describe('pos-labels', () => {
   it('da icono y nombre corto a los medios de pago conocidos', () => {
@@ -20,5 +20,14 @@ describe('pos-labels', () => {
     expect(stockLabel(0)).toBe('Agotado');
     expect(stockLabel(-2)).toBe('Agotado');
     expect(stockLabel(1500)).toBe('1.500 disp.');
+  });
+
+  it('avisa cuando la caja lleva más de 24 horas abierta (revisión del 23 nov)', () => {
+    const now = new Date(2026, 10, 26, 9, 0);
+    expect(staleCash(new Date(2026, 10, 26, 7, 0).toISOString(), now)).toBeNull();
+    expect(staleCash(new Date(2026, 10, 25, 10, 0).toISOString(), now)).toBeNull();
+    expect(staleCash(new Date(2026, 10, 25, 8, 0).toISOString(), now)).toBe('Lleva más de un día abierta');
+    expect(staleCash(new Date(2026, 9, 16, 8, 0).toISOString(), now)).toBe('Lleva 41 días abierta');
+    expect(staleCash('no es fecha', now)).toBeNull();
   });
 });

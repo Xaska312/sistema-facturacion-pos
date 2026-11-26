@@ -30,6 +30,12 @@ import { DEFAULT_REMINDER, MAX_REMINDER, REMINDER_VARIABLES, isDefaultReminder, 
 /** Zonas horarias de Colombia y vecinas más usadas; el backend acepta cualquier zona IANA válida. */
 export const TIMEZONES = ['America/Bogota', 'America/Panama', 'America/Lima', 'America/Guayaquil', 'America/Caracas'];
 
+/** Hora en que empieza el día del negocio (decisión 380): de medianoche a las 11:00 a. m. */
+export const DAY_START_HOURS: readonly { value: number; label: string }[] = Array.from({ length: 12 }, (_, h) => ({
+  value: h,
+  label: h === 0 ? 'Medianoche (12:00 a. m.)' : `${h}:00 a. m.`,
+}));
+
 /** El nombre escrito para confirmar coincide con el del negocio (sin distinguir mayúsculas ni espacios extremos). */
 export function confirmsName(typed: string, tradeName: string | null | undefined): boolean {
   return !!tradeName && typed.trim().toLocaleLowerCase('es-CO') === tradeName.trim().toLocaleLowerCase('es-CO');
@@ -191,6 +197,19 @@ const TIMEZONE_LABEL: Record<string, string> = {
                 <option [value]="zone">{{ timezoneLabel(zone) }}</option>
               }
             </select>
+          </label>
+          <!-- Decisión 380: la noche de un bar no se parte en dos días en los reportes. -->
+          <label class="flex flex-col gap-1">
+            <span class="text-sm font-medium">El día del negocio empieza a las</span>
+            <select formControlName="dayStartHour" class="border rounded px-2 py-2" aria-describedby="day-start-help">
+              @for (h of dayStartHours; track h.value) {
+                <option [ngValue]="h.value">{{ h.label }}</option>
+              }
+            </select>
+            <span id="day-start-help" class="text-xs text-muted">
+              Si atiendes después de medianoche (un bar que cierra a las 3 a. m.), elige una hora después del cierre, por
+              ejemplo 6:00 a. m.: lo vendido en la madrugada cuenta en el día anterior en Reportes, Inicio y Aska.
+            </span>
           </label>
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium">Moneda</span>
@@ -417,6 +436,7 @@ export class SettingsComponent implements OnInit {
   protected closePassword = '';
   protected closeReason = '';
   protected readonly timezones = TIMEZONES;
+  protected readonly dayStartHours = DAY_START_HOURS;
   protected timezoneLabel(zone: string): string {
     return TIMEZONE_LABEL[zone] ?? zone;
   }
@@ -437,6 +457,7 @@ export class SettingsComponent implements OnInit {
     quoteTerms: ['', Validators.maxLength(1000)],
     tipPercent: [10, [Validators.required, Validators.min(0), Validators.max(20)]],
     expiryAlertMonths: [3, [Validators.required, Validators.min(1), Validators.max(12)]],
+    dayStartHour: [0, [Validators.required, Validators.min(0), Validators.max(11)]],
     creditReminder: [DEFAULT_REMINDER, Validators.maxLength(MAX_REMINDER)],
   });
   private readonly reminderText = toSignal(this.form.controls.creditReminder.valueChanges,
@@ -486,9 +507,10 @@ export class SettingsComponent implements OnInit {
   }
 
   /** Vacío en el servidor = el mensaje de siempre, que se muestra escrito para poder editarlo. */
-  private toForm(settings: BusinessSettings): BusinessSettings & { creditReminder: string; costsIncludeTax: boolean } {
+  private toForm(settings: BusinessSettings):
+    BusinessSettings & { creditReminder: string; costsIncludeTax: boolean; dayStartHour: number } {
     return { ...settings, creditReminder: settings.creditReminder?.trim() || DEFAULT_REMINDER,
-      costsIncludeTax: settings.costsIncludeTax !== false };
+      costsIncludeTax: settings.costsIncludeTax !== false, dayStartHour: settings.dayStartHour ?? 0 };
   }
 
   protected insertVariable(box: HTMLTextAreaElement, key: string): void {

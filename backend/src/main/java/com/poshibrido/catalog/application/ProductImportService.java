@@ -9,6 +9,11 @@ import com.poshibrido.catalog.domain.Unit;
 import com.poshibrido.catalog.infrastructure.CategoryRepository;
 import com.poshibrido.catalog.infrastructure.ProductBarcodeRepository;
 import com.poshibrido.catalog.infrastructure.ProductRepository;
+import com.poshibrido.catalog.infrastructure.PriceListItemRepository;
+import com.poshibrido.catalog.infrastructure.PriceListRepository;
+import com.poshibrido.catalog.domain.PriceList;
+import com.poshibrido.catalog.domain.PriceListItem;
+import com.poshibrido.catalog.domain.PriceListItemId;
 import com.poshibrido.catalog.infrastructure.TaxRepository;
 import com.poshibrido.catalog.infrastructure.UnitRepository;
 import com.poshibrido.organization.application.BusinessSettingsApi;
@@ -70,16 +75,24 @@ public class ProductImportService {
     private final AuditLogger audit;
     private final StockPresence stock;
     private final BusinessSettingsApi settings;
+    private final PriceListRepository priceLists;
+    private final PriceListItemRepository listItems;
+
+    /** Columna "precio_mayorista" → lista MAYORISTA (decisión 381). */
+    static final String LIST_PRICE_PREFIX = "precio_";
 
     public record RowError(int row, String message) {
     }
 
+    /** {@code newPriceLists}: listas de precios que se crean por tener su columna en el archivo (decisión 381). */
     public record ImportReport(int totalRows, int toCreate, int toUpdate, List<String> newCategories,
-                               List<RowError> errors, boolean applied) {
+                               List<RowError> errors, boolean applied, List<String> newPriceLists) {
     }
 
+    /** {@code listPrices}: precio por código de lista; una celda vacía no cambia el precio de esa lista. */
     private record Row(int number, String sku, String name, String description, String barcode, String category,
-                       Unit unit, Tax tax, BigDecimal cost, BigDecimal price, boolean trackInventory) {
+                       Unit unit, Tax tax, BigDecimal cost, BigDecimal price, boolean trackInventory,
+                       Map<String, BigDecimal> listPrices) {
     }
 
     @Transactional
@@ -121,13 +134,24 @@ public class ProductImportService {
     public byte[] templateXlsx() {
         List<String> unitCodes = units.findAll().stream().filter(Unit::isActive).map(Unit::getCode).sorted().toList();
         List<String> taxCodes = taxes.findAll().stream().filter(Tax::isActive).map(Tax::getCode).sorted().toList();
-        List<List<String>> productRows = List.of(
-                templateHeaders(),
-                List.of("GAS-400", "Gaseosa cola 400 ml", "7701234567890", "Bebidas", "UND", "IVA19", "1200", "2500",
-                        "si", ""),
-                List.of("ARR-1K", "Arroz 1 kg", "", "Granos", "UND", "IVA5", "3100", "4200", "si", "Bolsa de 1 kg"));
+        // Decisión 381: una columna por cada lista de precios del negocio (precio mayorista, etc.).
+        List<String> listColumns = priceLists.findAll().stream().filter(l -> l.isActive() && !l.isDefaultList())
+                .map(l -> LIST_PRICE_PREFIX + l.getCode().toLowerCase(Locale.ROOT)).sorted().toList();
+        List<String> headers = new ArrayList<>(templateHeaders());
+        headers.addAll(listColumns);
+        List<String> first = new ArrayList<>(List.of("GAS-400", "Gaseosa cola 400 ml", "7701234567890", "Bebidas",
+                "UND", "IVA19", "1200", "2500", "si", ""));
+        List<String> second = new ArrayList<>(List.of("ARR-1K", "Arroz 1 kg", "", "Granos", "UND", "IVA5", "3100",
+                "4200", "si", "Bolsa de 1 kg"));
+        listColumns.forEach(c -> {
+            first.add("");
+            second.add("");
+        });
+        List<List<String>> productRows = List.of(headers, first, second);
+        List<Integer> widths = new ArrayList<>(List.of(14, 32, 18, 16, 10, 12, 12, 12, 20, 32));
+        listColumns.forEach(c -> widths.add(Math.max(16, c.length() + 2)));
         XlsxWriter.Sheet products = new XlsxWriter.Sheet("Productos", productRows,
-                List.of(14, 32, 18, 16, 10, 12, 12, 12, 20, 32), Set.of(0, 2),
+                widths, Set.of(0, 2),
                 Map.of(4, unitCodes, 5, taxCodes, 8, List.of("si", "no")), true);
         List<List<String>> help = List.of(
                 List.of("Cómo llenar la plantilla"),
@@ -141,6 +165,8 @@ public class ProductImportService {
                 List.of("5. controla_inventario: si (lo que tienes en bodega) o no (servicios, bolsas)."),
                 List.of("6. Guarda el archivo tal cual (Excel .xlsx) y súbelo en Productos → Importar."),
                 List.of("7. Si un sku ya existe, ese producto se actualiza. Las categorías nuevas se crean solas."),
+                List.of("8. Precio mayorista u otra lista de precios: una columna precio_ y el código de la lista (por "
+                        + "ejemplo precio_mayorista). Si la lista no existe, se crea. Una celda vacía no cambia ese precio."),
                 List.of(""),
                 List.of("Unidades de tu negocio: " + String.join(", ", unitCodes)),
                 List.of("Impuestos de tu negocio: " + String.join(", ", taxCodes)));
@@ -163,6 +189,23 @@ public class ProductImportService {
                 throw new BusinessRuleException("Falta la columna obligatoria '" + required + "'.");
             }
         }
+        // Decisión 381: columnas "precio_<lista>" (precio_mayorista → lista MAYORISTA).
+        Map<String, Integer> listColumns = listColumns(table.getFirst().cells());
+        Map<String, PriceList> listsByCode = priceLists.findAll().stream()
+                .collect(Collectors.toMap(PriceList::getCode, Function.identity()));
+        Set<String> newPriceLists = new TreeSet<>();
+        for (String code : listColumns.keySet()) {
+            PriceList list = listsByCode.get(code);
+            if (list == null) {
+                newPriceLists.add(code);
+            } else if (list.isDefaultList()) {
+                throw new BusinessRuleException("La columna precio_" + code.toLowerCase(Locale.ROOT)
+                        + " es la lista General: ese precio va en la columna 'precio'.");
+            } else if (!list.isActive()) {
+                throw new BusinessRuleException("La lista de precios " + code + " está inactiva. Actívala o quita su "
+                        + "columna del archivo.");
+            }
+        }
 
         Map<String, Unit> unitByCode = units.findAll().stream().filter(Unit::isActive)
                 .collect(Collectors.toMap(Unit::getCode, Function.identity()));
@@ -178,7 +221,7 @@ public class ProductImportService {
         for (int i = 1; i < table.size(); i++) {
             int rowNumber = table.get(i).line();
             List<String> cells = table.get(i).cells();
-            Row row = parseRow(rowNumber, cells, columns, unitByCode, taxByCode, errors);
+            Row row = parseRow(rowNumber, cells, columns, listColumns, unitByCode, taxByCode, errors);
             if (row == null) {
                 continue;
             }
@@ -251,6 +294,12 @@ public class ProductImportService {
                 Category category = categories.save(Category.create(name, null));
                 createdCategories.put(name.toLowerCase(Locale.ROOT), category);
             }
+            for (String code : newPriceLists) {
+                PriceList list = priceLists.save(PriceList.create(code, listName(code)));
+                listsByCode.put(code, list);
+                audit.log("PRICE_LIST_CREATED", "price_list", list.getId(), null,
+                        Map.of("code", code, "name", list.getName(), "by", "importación"));
+            }
             for (Row row : rows) {
                 Category category = row.category() == null ? null
                         : createdCategories.getOrDefault(row.category().toLowerCase(Locale.ROOT),
@@ -291,17 +340,67 @@ public class ProductImportService {
                         product.addBarcodeIfMissing(row.barcode());
                     }
                 }
+                setListPrices(product, row.listPrices(), listsByCode);
             }
             Map<String, Object> summary = new LinkedHashMap<>();
             summary.put("created", toCreate);
             summary.put("updated", toUpdate);
             summary.put("newCategories", newCategories);
+            summary.put("priceLists", listColumns.keySet());
             audit.log("PRODUCTS_IMPORTED", "product", null, null, summary);
         }
-        return new ImportReport(table.size() - 1, toCreate, toUpdate, List.copyOf(newCategories), errors, apply);
+        return new ImportReport(table.size() - 1, toCreate, toUpdate, List.copyOf(newCategories), errors, apply,
+                List.copyOf(newPriceLists));
     }
 
-    private Row parseRow(int number, List<String> cells, Map<String, Integer> columns, Map<String, Unit> unitByCode,
+    /** El precio de cada lista para la unidad base del producto (decisión 381); las listas sin dato no se tocan. */
+    private void setListPrices(Product product, Map<String, BigDecimal> prices, Map<String, PriceList> listsByCode) {
+        if (prices.isEmpty()) {
+            return;
+        }
+        Map<PriceListItemId, PriceListItem> current = listItems.findByProduct(product.getId()).stream()
+                .collect(Collectors.toMap(PriceListItem::getId, Function.identity()));
+        prices.forEach((code, price) -> {
+            PriceListItemId id = new PriceListItemId(listsByCode.get(code).getId(), product.getId(),
+                    product.getBaseUnitId());
+            BigDecimal value = price.setScale(2, RoundingMode.HALF_UP);
+            PriceListItem item = current.get(id);
+            if (item == null) {
+                listItems.save(new PriceListItem(id, value));
+            } else {
+                item.changePrice(value);
+            }
+        });
+    }
+
+    /** "MAYORISTA" → "Mayorista", "CLIENTE_VIP" → "Cliente vip". */
+    static String listName(String code) {
+        String spaced = code.replace('_', ' ').toLowerCase(Locale.ROOT);
+        return Character.toUpperCase(spaced.charAt(0)) + spaced.substring(1);
+    }
+
+    /** Columnas de precio por lista: "precio_mayorista" → MAYORISTA (no "precio" ni "precio_venta"). */
+    static Map<String, Integer> listColumns(List<String> header) {
+        Map<String, Integer> result = new LinkedHashMap<>();
+        for (int i = 0; i < header.size(); i++) {
+            String name = normalizeHeader(header.get(i));
+            if (!name.startsWith(LIST_PRICE_PREFIX) || HEADER_ALIASES.containsKey(name)) {
+                continue;
+            }
+            String code = name.substring(LIST_PRICE_PREFIX.length()).toUpperCase(Locale.ROOT);
+            if (!code.matches("^[A-Z0-9_]{2,20}$")) {
+                throw new BusinessRuleException("La columna '" + header.get(i).trim() + "' no es válida: después de "
+                        + "precio_ va el código de la lista (de 2 a 20 letras, números o _), por ejemplo precio_mayorista.");
+            }
+            if (result.putIfAbsent(code, i) != null) {
+                throw new BusinessRuleException("La columna de la lista " + code + " está repetida.");
+            }
+        }
+        return result;
+    }
+
+    private Row parseRow(int number, List<String> cells, Map<String, Integer> columns,
+                         Map<String, Integer> listColumns, Map<String, Unit> unitByCode,
                          Map<String, Tax> taxByCode, List<RowError> errors) {
         List<String> rowErrors = new ArrayList<>();
         String sku = null;
@@ -357,12 +456,25 @@ public class ProductImportService {
         if (category.length() > 120) {
             rowErrors.add("La categoría supera 120 caracteres.");
         }
+        Map<String, BigDecimal> listPrices = new LinkedHashMap<>();
+        listColumns.forEach((code, index) -> {
+            String raw = index >= cells.size() ? "" : cells.get(index).trim();
+            if (raw.isEmpty()) {
+                return;
+            }
+            BigDecimal value = Numbers.parseFlexible(raw);
+            if (value == null || value.signum() < 0) {
+                rowErrors.add("El precio de la lista " + code + " no es un número válido.");
+            } else {
+                listPrices.put(code, value);
+            }
+        });
         if (!rowErrors.isEmpty()) {
             errors.add(new RowError(number, String.join(" ", rowErrors)));
             return null;
         }
         return new Row(number, sku, name, description.isEmpty() ? null : description, barcode,
-                category.isEmpty() ? null : category, unit, tax, cost, price, track);
+                category.isEmpty() ? null : category, unit, tax, cost, price, track, listPrices);
     }
 
     private static Map<String, Integer> columns(List<String> header) {

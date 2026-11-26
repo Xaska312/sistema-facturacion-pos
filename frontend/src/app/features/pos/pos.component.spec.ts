@@ -3,7 +3,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
 import { ToastService } from '../../shared/ui/toast.service';
-import { of, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
+import { OfflineBoot, clearOfflineBoot, saveOfflineBoot } from '../../core/offline/offline-boot';
 import { CashSession, CreditAccount, PageResponse, Party, PaymentMethod, PosConfig, ProductLookup } from '../../core/api/api.models';
 import { CashApi } from '../../core/api/cash.api';
 import { CatalogApi } from '../../core/api/catalog.api';
@@ -146,6 +147,28 @@ describe('PosComponent: celular, pausar venta y cliente nuevo', () => {
 
   const element = (): HTMLElement => fixture.nativeElement as HTMLElement;
   const lines = () => component['lines']();
+
+  it('en el equipo donde tiene la caja abierta, Vender se muestra ya con la caja que recuerda (revisión del 23 nov)', () => {
+    const cash = TestBed.inject(CashApi) as jasmine.SpyObj<CashApi>;
+    const reply = new Subject<CashSession | null>();
+    cash.current.and.returnValue(reply);
+    // Si el servidor dice que no hay caja, sale "Abrir caja", que pide las cajas.
+    Object.assign(cash, { registers: () => of([]) });
+    saveOfflineBoot({
+      savedAt: Date.now(), user: { id: 'u1' }, claims: { tid: 't1' }, tenant: {}, session, config, methods: [],
+      decimalUnitIds: [], saleCategoryIds: ['platos'],
+    } as unknown as OfflineBoot);
+    try {
+      component.loadSession();
+      expect(component['session']()?.id).toBe('s1');
+      expect(component['saleCategories']()).toEqual(['platos']);
+      // La cerraron en otro equipo: el servidor manda.
+      reply.next(null);
+      expect(component['session']()).toBeNull();
+    } finally {
+      clearOfflineBoot();
+    }
+  });
 
   it('un producto con adiciones las pide antes de entrar al carrito y cada combinación va en su línea (Fase 12b-1)', () => {
     component.addLine(lookup('g', 12000), 1);

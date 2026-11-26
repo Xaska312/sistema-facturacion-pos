@@ -297,6 +297,7 @@ export const SCREEN_HELP: Readonly<Record<string, HelpTopic>> = {
       'Descarga la plantilla de Excel, llénala (una fila por producto) y guárdala.',
       'Primero revisa: el sistema te dice qué filas tienen errores antes de guardar nada.',
       'Si un SKU ya existe, ese producto se actualiza.',
+      '"Descargar mis productos" te da tus productos en el mismo Excel: corrígelos y vuelve a subirlos.',
     ],
   },
   '/app/catalogo': {

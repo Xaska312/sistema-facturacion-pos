@@ -3,6 +3,7 @@ package com.poshibrido.catalog.api;
 import com.poshibrido.catalog.application.PricingApi.ResolvedPrice;
 import com.poshibrido.catalog.application.ProductCommand;
 import com.poshibrido.catalog.application.CostReviewService;
+import com.poshibrido.catalog.application.ProductExportService;
 import com.poshibrido.catalog.application.ProductImportService;
 import com.poshibrido.catalog.application.ProductLookupService;
 import com.poshibrido.catalog.application.ProductService;
@@ -11,6 +12,7 @@ import com.poshibrido.catalog.domain.TaxType;
 import com.poshibrido.shared.api.PageRequests;
 import com.poshibrido.shared.api.PageResponse;
 import com.poshibrido.shared.error.BusinessRuleException;
+import com.poshibrido.shared.csv.ExportGate;
 import com.poshibrido.shared.xlsx.XlsxReader;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
@@ -57,6 +59,8 @@ public class ProductController {
     private final ProductLookupService lookup;
     private final com.poshibrido.catalog.application.BranchSaleCategories branchSales;
     private final ProductImportService importer;
+    private final ProductExportService exporter;
+    private final ExportGate exportGate;
     private final CostReviewService costReview;
 
     public record CostFixRequest(@NotNull @Size(min = 1, max = 500) Set<UUID> productIds) {
@@ -214,6 +218,21 @@ public class ProductController {
                 .contentType(MediaType.parseMediaType(
                         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
                 .body(importer.templateXlsx());
+    }
+
+    /**
+     * Todos los productos en el formato de la plantilla, con el precio de cada lista y la existencia por sede
+     * (decisión 382): se corrige en Excel y se vuelve a subir en Importar.
+     */
+    @GetMapping("/api/v1/products/export")
+    @PreAuthorize("hasAuthority('products:manage')")
+    public ResponseEntity<byte[]> exportProducts() {
+        ProductExportService.Export export = exportGate.run(exporter::exportXlsx);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"productos.xlsx\"")
+                .contentType(MediaType.parseMediaType(
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(export.content());
     }
 
     private static String decodeUtf8(byte[] bytes) {

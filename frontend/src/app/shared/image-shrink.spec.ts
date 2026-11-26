@@ -23,6 +23,7 @@ describe('image-shrink (fase 8c)', () => {
     expect(invoiceFilesProblem(Array(6).fill(photo))).toContain('máximo 5');
   });
 
+  // Codificar y decodificar una imagen de 3200 px tarda varios segundos en las máquinas de GitHub: 20 s de margen.
   it('reduce la foto a JPEG de máximo 1600 px y deja el PDF igual', async () => {
     const pdf = new File(['%PDF-1.4'], 'f.pdf', { type: 'application/pdf' });
     expect(await shrinkPhoto(pdf)).toBe(pdf);
@@ -42,5 +43,5 @@ describe('image-shrink (fase 8c)', () => {
     expect(bitmap.width).toBe(1600);
     expect(bitmap.height).toBe(800);
     bitmap.close();
-  });
+  }, 20000);
 });

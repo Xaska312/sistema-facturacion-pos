@@ -12,10 +12,12 @@ import java.math.BigDecimal;
  * {dias}; vacío = el mensaje de siempre (decisión 344).
  * {@code costsIncludeTax}: los costos que se escriben a mano (producto, cargas, inventario, compras) traen el IVA
  * incluido y la app se lo quita al guardarlos; el costo guardado siempre es sin IVA (decisión 348).
+ * {@code dayStartHour}: hora en que empieza el día del negocio, de 0 (medianoche) a 11 (decisión 380). Un bar que
+ * cierra a las 3 a. m. pone 6: lo vendido hasta las 6 a. m. del sábado cuenta en el viernes en reportes e Inicio.
  */
 public record BusinessSettings(boolean allowNegativeStock, boolean pricesIncludeTax, String timezone,
                                String currency, String receiptFooter, BigDecimal maxDiscountPercent,
                                boolean cashCloseEmail, int quoteValidityDays, String quoteTerms,
                                int tipPercent, int expiryAlertMonths, String receiptHeader,
-                               String creditReminder, boolean costsIncludeTax) {
+                               String creditReminder, boolean costsIncludeTax, int dayStartHour) {
 }

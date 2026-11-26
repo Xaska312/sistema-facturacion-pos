@@ -28,6 +28,26 @@ export function openedSince(openedAt: string, now: Date = new Date()): string {
     : `desde ${formatDateTime(opened)}`;
 }
 
+/** Horas para avisar que la caja sigue abierta de otro día (revisión del 23 nov). */
+export const STALE_CASH_HOURS = 24;
+
+/**
+ * La caja lleva abierta más de 24 horas: "Lleva 3 días abierta" (o "Lleva más de un día abierta"). Null si no.
+ * El arqueo cuadra por turno: una caja que nadie cierra mezcla las ventas de varios días.
+ */
+export function staleCash(openedAt: string, now: Date = new Date()): string | null {
+  const opened = new Date(openedAt).getTime();
+  if (Number.isNaN(opened)) {
+    return null;
+  }
+  const hours = (now.getTime() - opened) / 3_600_000;
+  if (hours < STALE_CASH_HOURS) {
+    return null;
+  }
+  const days = Math.floor(hours / 24);
+  return days >= 2 ? `Lleva ${days} días abierta` : 'Lleva más de un día abierta';
+}
+
 /** Existencia para la tarjeta del producto: "Agotado", "12 disp." o nada si no se controla. */
 export function stockLabel(quantity: number | undefined): string | null {
   if (quantity === undefined) {

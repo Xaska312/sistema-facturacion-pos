@@ -29,6 +29,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -80,12 +81,18 @@ public class ReportQueryService {
         return ZoneId.of(settings.current().timezone());
     }
 
+    /** El día del negocio en curso: con hora de inicio a las 6, a las 2 a. m. del sábado todavía es viernes (380). */
     public LocalDate today() {
-        return LocalDate.now(zone());
+        return ReportPeriod.businessDay(LocalDateTime.now(zone()), dayStartHour());
+    }
+
+    /** Hora en que empieza cada día del negocio (decisión 380); 0 = medianoche. */
+    public int dayStartHour() {
+        return settings.current().dayStartHour();
     }
 
     public ReportPeriod period(LocalDate from, LocalDate to) {
-        return ReportPeriod.of(from, to, zone(), today());
+        return ReportPeriod.of(from, to, zone(), today(), dayStartHour());
     }
 
     // ---------------------------------------------------------------- ventas
@@ -135,7 +142,7 @@ public class ReportQueryService {
 
     /** Ventas por día (fecha local del negocio). */
     public List<SalesRow> byDay(ReportFilter filter) {
-        String day = "to_char(f.created_at AT TIME ZONE :tz, 'YYYY-MM-DD')";
+        String day = "to_char(" + filter.period().businessTime("f.created_at") + ", 'YYYY-MM-DD')";
         return grouped(filter, day, day, "", "1", true);
     }
 
@@ -402,11 +409,9 @@ public class ReportQueryService {
 
     public Dashboard dashboard(UUID branchId) {
         LocalDate today = today();
-        ZoneId zone = zone();
-        ReportFilter day = new ReportFilter(ReportPeriod.of(today, today, zone, today), branchId, null);
-        ReportFilter yesterday = new ReportFilter(ReportPeriod.of(today.minusDays(1), today.minusDays(1), zone, today),
-                branchId, null);
-        ReportFilter week = new ReportFilter(ReportPeriod.of(today.minusDays(6), today, zone, today), branchId, null);
+        ReportFilter day = new ReportFilter(period(today, today), branchId, null);
+        ReportFilter yesterday = new ReportFilter(period(today.minusDays(1), today.minusDays(1)), branchId, null);
+        ReportFilter week = new ReportFilter(period(today.minusDays(6), today), branchId, null);
         return new Dashboard(today, summary(day), summary(yesterday).total(), byHour(day), last7Days(week),
                 topProducts(day, 5, false), byPaymentMethod(day));
     }
@@ -414,7 +419,7 @@ public class ReportQueryService {
     /** Ventas del día del usuario actual. */
     public MyDay myDay(UUID userId) {
         LocalDate today = today();
-        ReportFilter filter = new ReportFilter(ReportPeriod.of(today, today, zone(), today), null, userId);
+        ReportFilter filter = new ReportFilter(period(today, today), null, userId);
         Summary summary = summary(filter);
         return new MyDay(today, summary.salesCount(), summary.total(), summary.averageTicket(),
                 byPaymentMethod(filter));
@@ -444,12 +449,14 @@ public class ReportQueryService {
     /** Ventas por día de la semana, con el promedio por día que tuvo ventas (decisión 356). */
     public List<WeekdayRow> byWeekday(ReportFilter filter) {
         String[] names = {"lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"};
+        // El día de la semana del día del negocio (decisión 380): la madrugada del sábado cuenta en el viernes.
+        String local = filter.period().businessTime("f.created_at");
         Query query = sales("WITH " + FILTERED + """
-                SELECT CAST(extract(isodow FROM f.created_at AT TIME ZONE :tz) AS integer) AS weekday,
-                       count(DISTINCT CAST(f.created_at AT TIME ZONE :tz AS date)) AS days, count(*) AS sales_count,
+                SELECT CAST(extract(isodow FROM %s) AS integer) AS weekday,
+                       count(DISTINCT CAST(%s AS date)) AS days, count(*) AS sales_count,
                        sum(f.total) AS total
                 FROM filtered f GROUP BY 1 ORDER BY 1
-                """, filter);
+                """.formatted(local, local), filter);
         query.setParameter("tz", filter.period().zone().getId());
         List<WeekdayRow> result = new ArrayList<>();
         for (Object row : query.getResultList()) {

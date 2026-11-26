@@ -242,6 +242,8 @@ export interface BusinessSettings {
   creditReminder?: string;
   /** Los costos se escriben con el IVA incluido; se guardan sin IVA (decisión 348). */
   costsIncludeTax?: boolean;
+  /** Hora en que empieza el día del negocio, 0 (medianoche) a 11 (decisión 380). */
+  dayStartHour?: number;
 }
 
 export interface Department {
@@ -390,6 +392,8 @@ export interface ImportReport {
   newCategories: string[];
   errors: ImportRowError[];
   applied: boolean;
+  /** Listas de precios que se crean por su columna precio_<lista> (decisión 381). */
+  newPriceLists?: string[];
 }
 
 // ---------------------------------------------------------------- Fase 3: terceros

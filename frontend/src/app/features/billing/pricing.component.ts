@@ -6,7 +6,7 @@ import { AuthService } from '../../core/auth/auth.service';
 import { XaskaIaLogoComponent } from '../../shared/brand/xaska-ia-logo.component';
 import { formatCop } from '../../shared/money';
 import { includedText } from '../platform/plan-features';
-import { annualSaving, planPrice } from './billing-text';
+import { TAX_NOTE, annualSaving, planPrice } from './billing-text';
 
 /**
  * Planes y precios sin iniciar sesión (decisión 303): lo que cuesta cada plan y cada adicional, con los precios de la
@@ -32,7 +32,7 @@ import { annualSaving, planPrice } from './billing-text';
         <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight">Planes de XASKA POS</h1>
         <p class="text-muted mt-2">
           @if (data(); as d) { Empieza con {{ d.trialDays }} días gratis con todo incluido, o paga ya con Bre-B desde la app de tu banco. }
-          Sin datáfono ni permanencia.
+          Sin datáfono ni permanencia. {{ taxNote }}
         </p>
         <!-- Decisión 346: probar sin elegir plan (el negocio empieza con la prueba gratis). -->
         @if (data(); as d) {
@@ -116,6 +116,7 @@ import { annualSaving, planPrice } from './billing-text';
   `,
 })
 export class PricingComponent implements OnInit {
+  protected readonly taxNote = TAX_NOTE;
   private readonly api = inject(BillingApi);
   private readonly auth = inject(AuthService);
 

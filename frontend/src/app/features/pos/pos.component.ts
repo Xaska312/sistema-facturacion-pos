@@ -1118,7 +1118,14 @@ export class PosComponent implements OnInit, OnDestroy, HasUnsavedChanges {
    */
   loadSession(): void {
     this.sessionError.set(false);
-    this.session.set(undefined);
+    // Revisión del 23 nov: Vender quedaba en blanco mientras respondía el servidor. En el equipo donde este usuario
+    // tiene la caja abierta (decisión 333) se muestra ya con la caja que recuerda; la respuesta del servidor la
+    // confirma o la cambia (por ejemplo, si la cerraron en otro equipo).
+    const remembered = this.myBoot();
+    this.session.set(remembered?.session ?? undefined);
+    if (remembered) {
+      this.saleCategories.set(remembered.saleCategoryIds ?? null);
+    }
     this.cash.current().subscribe({
       next: (session) => {
         this.session.set(session);

@@ -18,7 +18,7 @@ import { formatCop } from '../../shared/money';
 import { PageHeaderComponent } from '../../shared/page-header.component';
 import { includedText } from '../platform/plan-features';
 import { ReferralCardComponent } from './referral-card.component';
-import { COUNTABLE, addonsForSale, annualSaving, checkLines, months, orderTotal, planPrice, statusLabel, trialBanner } from './billing-text';
+import { COUNTABLE, TAX_NOTE, addonsForSale, annualSaving, checkLines, months, orderTotal, planPrice, statusLabel, trialBanner } from './billing-text';
 
 /**
  * Planes y pagos (decisión 302): el negocio ve su plan y lo que compró aparte, prueba Aska gratis una vez, arma su
@@ -187,6 +187,7 @@ import { COUNTABLE, addonsForSale, annualSaving, checkLines, months, orderTotal,
               }
             </select>
           </label>
+          <span class="text-xs text-muted">{{ taxNote }}</span>
         </div>
 
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" role="radiogroup" aria-label="Plan">
@@ -334,6 +335,7 @@ import { COUNTABLE, addonsForSale, annualSaving, checkLines, months, orderTotal,
   `,
 })
 export class PlansComponent implements OnInit {
+  protected readonly taxNote = TAX_NOTE;
   protected readonly whatsapp = supportWhatsAppLink();
   protected readonly trialBanner = trialBanner;
   private readonly api = inject(BillingApi);

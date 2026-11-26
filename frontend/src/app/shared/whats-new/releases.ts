@@ -11,6 +11,32 @@ export interface Release {
 
 export const RELEASES: readonly Release[] = [
   {
+    id: '2026-11-29',
+    title: 'Tus productos en Excel',
+    items: [
+      'En Productos → Importar, "Descargar mis productos" te da un Excel con todos tus productos, precios y existencias.',
+      'Corrígelo y súbelo igual. Con la columna "precio_mayorista" cargas el precio de mayorista de todos.',
+      'Si la lista de precios no existe, se crea sola.',
+    ],
+  },
+  {
+    id: '2026-11-28',
+    title: 'Para bares: precuenta y la noche en un solo día',
+    items: [
+      'En la cuenta de una mesa, "Imprimir precuenta" saca lo que falta por cobrar y la propina sugerida.',
+      'En Ajustes eliges a qué hora empieza el día: con 6:00 a. m., la madrugada cuenta en el día anterior.',
+    ],
+  },
+  {
+    id: '2026-11-27',
+    title: 'Vender abre más rápido',
+    items: [
+      'Vender abre enseguida en el equipo donde tienes la caja abierta.',
+      'Si una caja lleva más de 24 horas abierta, Vender y Mi caja te avisan para que la cierres y el arqueo cuadre por día.',
+      'En Planes y pagos dice claro que los precios son finales: no se cobra IVA.',
+    ],
+  },
+  {
     id: '2026-11-26',
     title: 'Una sede nueva lista en un paso',
     items: [

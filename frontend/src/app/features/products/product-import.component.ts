@@ -24,9 +24,19 @@ import { ColumnDef } from '../../shared/table/table';
         <li>Toca <strong>Revisar</strong>: te mostramos qué filas tienen errores antes de guardar nada.</li>
         <li>Si todo está bien, toca <strong>Importar</strong>. Si un SKU ya existe, ese producto se actualiza.</li>
       </ol>
+      <!-- Decisión 381: precio mayorista (u otra lista) desde el mismo archivo. -->
+      <p class="text-sm text-muted"><strong>Precio mayorista:</strong> agrega una columna <code>precio_mayorista</code>
+        (o <code>precio_</code> y el código de otra lista de precios). Si la lista no existe, se crea. Una celda vacía no
+        cambia ese precio. La plantilla ya trae una columna por cada lista que tengas.</p>
+      <!-- Decisión 382: los productos que ya tienes, en el mismo formato, para corregirlos y volver a subirlos. -->
+      <p class="text-sm text-muted"><strong>¿Ya tienes productos?</strong> "Descargar mis productos" te da un Excel con
+        todos, sus precios (también el mayorista) y la existencia de cada sede. Corrige lo que necesites y súbelo aquí.
+        La existencia es solo para consultar: subir el archivo no cambia el inventario.</p>
       <div class="flex flex-wrap gap-2 items-center">
         <app-button label="Descargar plantilla de Excel" icon="pi pi-file-excel" severity="secondary" [outlined]="true"
                   [loading]="downloading()" (clicked)="downloadTemplate()" />
+        <app-button label="Descargar mis productos" icon="pi pi-download" severity="secondary" [outlined]="true"
+                  [loading]="exporting()" (clicked)="downloadProducts()" />
         <label class="inline-flex items-center gap-2 border rounded px-3 py-2 text-sm cursor-pointer hover:bg-surface-alt
                       focus-within:ring-2 focus-within:ring-brand">
           <i class="pi pi-upload text-xs" aria-hidden="true"></i>
@@ -57,6 +67,9 @@ import { ColumnDef } from '../../shared/table/table';
           @if (r.newCategories.length > 0) {
             · categorías nuevas: {{ r.newCategories.join(', ') }}
           }
+          @if (r.newPriceLists?.length) {
+            · listas de precios nuevas: {{ r.newPriceLists!.join(', ') }}
+          }
         </p>
         @if (r.errors.length > 0) {
           <div class="mt-3">
@@ -77,6 +90,7 @@ export class ProductImportComponent {
   protected readonly report = signal<ImportReport | null>(null);
   protected readonly busy = signal(false);
   protected readonly downloading = signal(false);
+  protected readonly exporting = signal(false);
   protected readonly errorKey = (e: ImportRowError): string => `${e.row}:${e.message}`;
   protected readonly errorColumns: ColumnDef<ImportRowError>[] = [
     { header: 'Fila', cell: (e) => e.row, kind: 'mono', cellClass: 'w-20' },
@@ -123,6 +137,17 @@ export class ProductImportComponent {
         saveDownload(response, 'plantilla-productos.xlsx');
       },
       error: () => this.downloading.set(false),
+    });
+  }
+
+  downloadProducts(): void {
+    this.exporting.set(true);
+    this.api.exportProducts().subscribe({
+      next: (response) => {
+        this.exporting.set(false);
+        saveDownload(response, 'productos.xlsx');
+      },
+      error: () => this.exporting.set(false),
     });
   }
 }

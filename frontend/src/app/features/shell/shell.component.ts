@@ -450,6 +450,19 @@ export class ShellComponent {
       next: (s) => this.sub.set(s),
       error: () => { /* No mostrar nada en caso de fallo */ }
     });
+
+    // Revisión del 23 nov: Vender tardaba en abrir porque su código se bajaba al tocarlo. Quien vende lo baja ya,
+    // cuando el navegador está libre, y al entrar a Vender queda solo esperar la caja.
+    if (this.auth.hasPermission('sales:create')) {
+      const preload = (): void => { void import('../pos/pos.component').catch(() => undefined); };
+      const idle = (globalThis as { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number })
+        .requestIdleCallback;
+      if (idle) {
+        idle(preload, { timeout: 4000 });
+      } else {
+        setTimeout(preload, 2000);
+      }
+    }
   }
 
   /** Ctrl + K (o Cmd + K) abre "Todo" desde cualquier pantalla. */

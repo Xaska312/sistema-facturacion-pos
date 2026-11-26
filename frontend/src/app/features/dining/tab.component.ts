@@ -6,11 +6,11 @@ import { ButtonComponent } from '../../shared/ui/button.component';
 import { DialogComponent } from '../../shared/ui/dialog.component';
 import { AppInputDirective } from '../../shared/ui/input.directive';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
-import { Observable, finalize } from 'rxjs';
+import { Observable, finalize, forkJoin } from 'rxjs';
 import { Product, ProductLookup, ProductModel, ProductModelRow, ProductVariant } from '../../core/api/api.models';
 import { CatalogApi } from '../../core/api/catalog.api';
 import { OrganizationApi } from '../../core/api/organization.api';
-import { DiningApi, DiningMenu, Floor, Tab, TabItem, TabSummary } from '../../core/api/dining.api';
+import { DiningApi, DiningMenu, Floor, Precheck, Tab, TabItem, TabSummary } from '../../core/api/dining.api';
 import { loadMenuChoice, menuCategoryFilter, saveMenuChoice } from './menu-form';
 import { ModifiersApi, PosModifierCatalog, PosModifierGroup } from '../../core/api/modifiers.api';
 import { SalesApi } from '../../core/api/sales.api';
@@ -34,6 +34,10 @@ import { encodeParts } from '../pos/tab-lines';
 import { liveRefresh } from '../../core/realtime/live-refresh';
 import { LiveReplacedComponent } from '../../core/realtime/live-replaced.component';
 import { KitchenPrinterService } from '../kitchen/kitchen-printer';
+import { PrintAgentService } from '../../core/printing/print-agent.service';
+import { loadReceiptWidth, printReceipt } from '../../shared/receipt/receipt-prefs';
+import { PrecheckComponent } from './precheck.component';
+import { PrecheckBusiness, precheckBytes } from './precheck';
 import { ticketStatusLabel } from '../kitchen/ticket-labels';
 import { PendingItem, addPending, pendingPrice, pendingTotal, stepPending, toItemInputs } from './pending-items';
 
@@ -56,7 +60,7 @@ interface Picking {
   selector: 'app-tab',
   imports: [FormsModule, RouterLink, ButtonComponent, DialogComponent, AppInputDirective, SkeletonComponent, FormDialogComponent,
     LiveReplacedComponent, CountStepperComponent,
-    XIconComponent, ProductGridComponent, ModifierPickerComponent, VariantPickerComponent],
+    XIconComponent, ProductGridComponent, ModifierPickerComponent, VariantPickerComponent, PrecheckComponent],
   template: `
     <app-live-replaced />
     @if (tab(); as t) {
@@ -252,6 +256,11 @@ interface Picking {
                 <p class="text-xs mt-1 bill-note">Pidió la cuenta a las {{ time(t.billRequestedAt) }}: en el mapa sale en rojo.</p>
               }
             }
+            @if (isOpen() && toCharge().length > 0) {
+              <!-- Precuenta (decisión 380): el cliente revisa la cuenta antes de pagar; no cobra nada. -->
+              <app-button styleClass="w-full min-h-12 mt-3 font-semibold" icon="pi pi-print" label="Imprimir precuenta"
+                        severity="secondary" [outlined]="true" [loading]="precheckLoading()" (clicked)="printPrecheck(t)" />
+            }
             @if (isOpen() && canCharge()) {
               <app-button styleClass="w-full min-h-14 mt-3 text-lg font-bold" icon="pi pi-wallet" label="Cobrar"
                         [disabled]="toCharge().length === 0 || pending().length > 0" (clicked)="openCharge()" />
@@ -441,6 +450,13 @@ interface Picking {
         <input appInput id="cancel-reason" maxlength="200" placeholder="Se fueron sin pedir" [(ngModel)]="reason" />
       </div>
     </app-form-dialog>
+
+    <!-- Área de impresión de la precuenta (decisión 380); no se ve en la pantalla. -->
+    @if (precheck(); as p) {
+      <div class="receipt-print-root precheck-print-root">
+        <app-precheck [precheck]="p" [business]="precheckBusiness()" [width]="receiptWidth" />
+      </div>
+    }
   `,
   styles: `
     .back, .qty {
@@ -522,7 +538,13 @@ export class TabComponent implements OnInit, HasUnsavedChanges {
   private readonly auth = inject(AuthService);
   private readonly printer = inject(KitchenPrinterService);
   private readonly kitchen = inject(KitchenApi);
+  private readonly agent = inject(PrintAgentService);
   protected readonly statusLabel = ticketStatusLabel;
+  // Precuenta (decisión 380).
+  protected readonly precheck = signal<Precheck | null>(null);
+  protected readonly precheckBusiness = signal<PrecheckBusiness>({ name: '', header: null });
+  protected readonly precheckLoading = signal(false);
+  protected readonly receiptWidth = loadReceiptWidth();
 
   protected readonly canCharge = permissionFlag('sales:create');
   private readonly kitchenOn = permissionFlag('module:kitchen');
@@ -775,6 +797,41 @@ export class TabComponent implements OnInit, HasUnsavedChanges {
       },
       error: (e: unknown) => this.messages.add({ severity: 'error', summary: 'No se envió', detail: problemMessage(e) }),
     });
+  }
+
+  /**
+   * Precuenta (decisión 380): con XASKA Impresora sale directo en la térmica; si no, por la ventana del navegador. Si
+   * es una mesa, queda marcada como "Pidió la cuenta" (en rojo en el mapa).
+   */
+  protected printPrecheck(t: Tab): void {
+    this.precheckLoading.set(true);
+    forkJoin({ precheck: this.api.precheck(t.id), config: this.sales.config() })
+      .pipe(finalize(() => this.precheckLoading.set(false)))
+      .subscribe({
+        next: ({ precheck, config }) => {
+          const business = { name: config.businessName, header: config.receiptHeader ?? null };
+          this.precheck.set(precheck);
+          this.precheckBusiness.set(business);
+          void this.sendPrecheck(precheck, business);
+          if (t.tableId && !t.billRequestedAt) {
+            this.api.requestBill(t.id, true).subscribe({ next: (updated) => this.tab.set(updated), error: () => undefined });
+          }
+        },
+        error: (e: unknown) => this.messages.add({ severity: 'error', summary: 'No se imprimió la precuenta', detail: problemMessage(e) }),
+      });
+  }
+
+  private async sendPrecheck(p: Precheck, business: PrecheckBusiness): Promise<void> {
+    if (this.auth.hasPermission('plan:direct-print') && (await this.agent.ensure())) {
+      try {
+        await this.agent.print(precheckBytes(p, business, this.receiptWidth, this.agent.prefs().plain), 'Precuenta ' + p.label);
+        this.messages.add({ severity: 'success', summary: 'Precuenta impresa', life: 2500 });
+        return;
+      } catch {
+        // Si la térmica no respondió, se imprime por el navegador.
+      }
+    }
+    printReceipt('.precheck-print-root');
   }
 
   /** Pidió la cuenta, o se desmarca (decisión 284). */

@@ -173,6 +173,11 @@ export class CatalogApi {
     return this.http.get('/api/v1/products/import/template', { observe: 'response', responseType: 'blob' });
   }
 
+  /** Todos los productos en el formato de la plantilla, con precios por lista y existencias (decisión 382). */
+  exportProducts(): Observable<HttpResponse<Blob>> {
+    return this.http.get('/api/v1/products/export', { observe: 'response', responseType: 'blob' });
+  }
+
   /** Productos con IVA y costo para revisar si el costo se escribió con IVA (decisión 349). */
   costReview(): Observable<CostReviewRow[]> {
     return this.http.get<CostReviewRow[]>('/api/v1/products/cost-review');

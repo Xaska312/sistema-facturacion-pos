@@ -6,11 +6,17 @@ FROM --platform=$BUILDPLATFORM maven:3-eclipse-temurin-21-alpine AS builder
 WORKDIR /app
 # Primero solo el pom: las dependencias quedan en una capa que se reutiliza mientras el pom no cambie.
 COPY pom.xml ./
+# .mvn/maven.config: Maven reintenta hasta 8 veces una descarga que responde 429 o 503, esperando entre intentos.
+COPY .mvn/maven.config ./.mvn/maven.config
 # go-offline no baja los procesadores de anotaciones (mapstruct-processor): compilar una clase vacía los trae a esta
 # misma capa. Si no, se bajaban de Maven Central en cada versión y un 429 (límite de descargas) tumbaba la imagen.
-RUN mvn -B -q dependency:go-offline \
-    && mkdir -p src/main/java && echo 'class Warmup {}' > src/main/java/Warmup.java \
-    && mvn -B -q compile && rm -rf src target
+# Maven Central responde 429 cuando muchas máquinas de GitHub descargan a la vez (la prueba de Playwright arma la
+# imagen sin caché): se reintenta hasta 4 veces, esperando 30, 60 y 90 s. Lo ya bajado se conserva entre intentos.
+RUN mkdir -p src/main/java && echo 'class Warmup {}' > src/main/java/Warmup.java \
+    && ok=; for i in 1 2 3 4; do \
+         if mvn -B -q dependency:go-offline && mvn -B -q compile; then ok=1; break; fi; \
+         [ "$i" -lt 4 ] && echo "Maven Central no respondió (intento $i); reintentando…" && sleep $((i * 30)); \
+       done; [ -n "$ok" ] && rm -rf src target
 COPY src ./src
 RUN mvn -B -q clean package -Dmaven.test.skip=true \
     && cp target/*.jar app.jar \

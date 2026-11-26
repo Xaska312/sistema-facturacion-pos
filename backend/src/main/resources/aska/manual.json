@@ -519,6 +519,7 @@
   "title": "Cobrar una mesa",
   "summary": "La cuenta se cobra en Vender, con el diálogo de pago de siempre: toda junta, por productos (cada quien lo suyo) o en partes iguales. Cada cobro es una venta normal, con su tiquete.",
   "steps": [
+   "Si el cliente quiere revisar antes de pagar, toca \"Imprimir precuenta\": sale lo que falta por cobrar, el total y la propina sugerida, y la mesa queda en \"Pidió la cuenta\". La precuenta no es un tiquete de venta.",
    "En la cuenta toca \"Cobrar\" y elige cómo: \"Toda la cuenta\", \"Por productos\" o \"Partes iguales\" (necesitas la caja abierta en esa sucursal).",
    "Por productos: marca lo que paga esta persona (por ejemplo, una de las dos hamburguesas) y toca \"Cobrar esta parte\". Lo demás queda en la cuenta para la siguiente persona.",
    "Partes iguales: di entre cuántas personas; al cobrar ves cuánto paga cada una y registras los pagos de todos (con \"Pago mixto\" si unos pagan en efectivo y otros con tarjeta).",
@@ -599,6 +600,7 @@
   "tips": [
    "El cierre es \"ciego\": quien cierra no ve cuánto debería haber, así el conteo es honesto. La diferencia la ve quien supervisa.",
    "\"Informe parcial\" muestra cómo va el turno sin cerrarlo.",
+   "Si una caja lleva más de 24 horas abierta, Vender y \"Mi caja\" lo avisan en amarillo: ciérrala al terminar el día y ábrela de nuevo, así cada arqueo cuadra por día.",
    "En \"Historial de caja\" están todos los turnos con su informe; desde \"Informe\" puedes reimprimir el ticket de un cierre.",
    "Al cerrar, al correo del dueño llega un resumen con las ventas, los medios de pago y la diferencia, aunque cierre un cajero. Se apaga en Ajustes."
   ],
@@ -671,7 +673,8 @@
    "Corrige lo que falte y confirma la importación."
   ],
   "tips": [
-   "Si un SKU ya existe, ese producto se actualiza con los datos del archivo."
+   "Si un SKU ya existe, ese producto se actualiza con los datos del archivo.",
+   "Para corregir los que ya tienes (precios, costos, precio mayorista), toca \"Descargar mis productos\": sale un Excel con todos y la existencia de cada sede. Corrígelo y súbelo igual. La existencia es solo para consultar: no cambia el inventario."
   ],
   "who": null
  },
@@ -973,7 +976,8 @@
    "Arriba elige qué vas a crear: Categorías, Unidades, Impuestos o Listas de precios.",
    "Toca \"Nueva categoría\" (o \"Nueva lista de precios\", según lo que elegiste), escribe el nombre y guarda. Para una subcategoría, elige en \"Dentro de\" la categoría que la contiene.",
    "Para darle la categoría a un producto, ábrelo en Productos y elígela en su ficha.",
-   "Para precios de mayorista: crea la lista (por ejemplo MAYORISTA), pon el precio de cada producto en esa lista desde Productos → el producto → \"Más opciones\", y asígnale la lista al cliente en Clientes → el cliente → \"Lista de precios\". Al elegir ese cliente en la venta, se cobran sus precios."
+   "Para precios de mayorista: crea la lista (por ejemplo MAYORISTA), pon el precio de cada producto en esa lista desde Productos → el producto → \"Más opciones\", y asígnale la lista al cliente en Clientes → el cliente → \"Lista de precios\". Al elegir ese cliente en la venta, se cobran sus precios.",
+   "Con muchos productos, el precio mayorista también se carga desde el Excel de Productos → Importar: agrega la columna \"precio_mayorista\" (o \"precio_\" y el código de la lista). Si la lista no existe, se crea; una celda vacía no cambia ese precio."
   ],
   "tips": [
    "Las categorías agrupan los productos en el punto de venta y en los reportes; pueden tener subcategorías.",
@@ -1364,6 +1368,7 @@
    "Elige el periodo y la sucursal; cada pestaña muestra una vista del mismo periodo.",
    "Con \"Exportar a Excel (CSV)\" descargas la pestaña en un archivo que abre en Excel.",
    "\"Sin rotación\" muestra los productos con existencia que no se venden hace 30, 60, 90 o 180 días, primero los que tienen más plata quieta: buenos candidatos para una promoción. En el inicio aparece un aviso con lo de 90 días.",
+   "Si atiendes después de medianoche, en Ajustes elige a qué hora empieza el día del negocio (por ejemplo 6:00 a. m.): lo vendido en la madrugada cuenta en el día anterior en Reportes, en Inicio y en lo que te dice Aska.",
    "En Resumen, las ventas cuentan el día en que se registran. Los pedidos por encargo se vuelven venta al entregarlos; los tomados en el periodo y sus anticipos salen aparte, en \"Pedidos del periodo\"."
   ],
   "who": "Propietario, Administrador y Contador."
@@ -1423,6 +1428,7 @@
    "Encabezado de los documentos: lo que sale debajo del nombre del negocio en tiquetes, pedidos, cotizaciones e informes de caja. Escribe un dato por renglón y en el orden que quieras (por ejemplo NIT, dirección y celular). Si lo dejas vacío, sale la dirección y el teléfono de la sede.",
    "Pie del recibo: el texto que sale al final de cada tiquete.",
    "Enviarme el resumen de cada cierre de caja: llega al correo del dueño cada vez que se cierra una caja.",
+   "El día del negocio empieza a las: para bares y negocios que cierran de madrugada. Con 6:00 a. m., lo vendido hasta esa hora cuenta en el día anterior en Reportes, Inicio y Aska. La caja no cambia: se cierra por turno.",
    "Marca: sube tu logo (sale en el encabezado y en el tiquete) y elige el color de la app entre los de la paleta; toca un color para verlo antes de guardarlo."
   ],
   "who": "Para cambiarlos: Propietario y Administrador."
