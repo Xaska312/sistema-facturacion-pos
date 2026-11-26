@@ -599,6 +599,7 @@
   "tips": [
    "El cierre es \"ciego\": quien cierra no ve cuánto debería haber, así el conteo es honesto. La diferencia la ve quien supervisa.",
    "\"Informe parcial\" muestra cómo va el turno sin cerrarlo.",
+   "Si una caja lleva más de 24 horas abierta, Vender y \"Mi caja\" lo avisan en amarillo: ciérrala al terminar el día y ábrela de nuevo, así cada arqueo cuadra por día.",
    "En \"Historial de caja\" están todos los turnos con su informe; desde \"Informe\" puedes reimprimir el ticket de un cierre.",
    "Al cerrar, al correo del dueño llega un resumen con las ventas, los medios de pago y la diferencia, aunque cierre un cajero. Se apaga en Ajustes."
   ],

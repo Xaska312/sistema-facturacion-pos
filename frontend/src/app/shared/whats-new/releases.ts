@@ -11,6 +11,15 @@ export interface Release {
 
 export const RELEASES: readonly Release[] = [
   {
+    id: '2026-11-27',
+    title: 'Vender abre más rápido',
+    items: [
+      'Vender abre enseguida en el equipo donde tienes la caja abierta.',
+      'Si una caja lleva más de 24 horas abierta, Vender y Mi caja te avisan para que la cierres y el arqueo cuadre por día.',
+      'En Planes y pagos dice claro que los precios son finales: no se cobra IVA.',
+    ],
+  },
+  {
     id: '2026-11-26',
     title: 'Una sede nueva lista en un paso',
     items: [

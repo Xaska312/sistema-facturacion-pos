@@ -3,6 +3,9 @@ import { BillingAddon, BillingPlan, PaymentRequestStatus, ProofCheck } from '../
 
 /** Planes y pagos con Bre-B (decisión 302): cuentas de la pantalla, iguales a las del servidor. */
 
+/** XASKA no es responsable de IVA: el precio de los planes es el que se paga (revisión del 23 nov). */
+export const TAX_NOTE = 'Precios finales: no se cobra IVA.';
+
 export const COUNTABLE: ReadonlySet<string> = new Set(['BRANCH', 'REGISTER', 'USER']);
 
 /** Lo que se puede comprar aparte con el plan que quedará: sin precio o ya incluido, no se ofrece. */

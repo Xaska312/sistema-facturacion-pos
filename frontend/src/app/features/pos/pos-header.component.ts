@@ -3,7 +3,7 @@ import { RouterLink } from '@angular/router';
 import { CashSession } from '../../core/api/api.models';
 import { HasPermissionDirective } from '../../shared/has-permission.directive';
 import { XIconComponent } from '../../shared/icons/xicon.component';
-import { openedSince } from './pos-labels';
+import { openedSince, staleCash } from './pos-labels';
 
 /**
  * Encabezado del POS en baldosa (identidad parte 3, decisión 265): volver al inicio, negocio, caja (abierta desde…),
@@ -23,10 +23,19 @@ import { openedSince } from './pos-labels';
       </span>
 
       @if (session(); as s) {
-        <span class="pill bg-success-soft text-success-soft-fg" [title]="'Abierta por ' + (s.openedByName ?? userName())">
-          <i class="pi pi-lock-open text-xs" aria-hidden="true"></i>
-          Caja abierta <span class="hidden sm:inline">{{ since() }}</span>
-        </span>
+        @if (stale(); as old) {
+          <!-- Revisión del 23 nov: una caja de otro día mezcla ventas de varios días en un arqueo. -->
+          <a routerLink="/app/caja" class="pill bg-warning-soft text-warning-soft-fg"
+             [title]="old + ' (' + since() + '). Ciérrala en Mi caja y ábrela de nuevo para que el arqueo cuadre por día.'">
+            <i class="pi pi-exclamation-triangle text-xs" aria-hidden="true"></i>
+            Caja abierta <span class="hidden sm:inline">{{ staleShort() }}</span><span class="sr-only">. {{ old }}</span>
+          </a>
+        } @else {
+          <span class="pill bg-success-soft text-success-soft-fg" [title]="'Abierta por ' + (s.openedByName ?? userName())">
+            <i class="pi pi-lock-open text-xs" aria-hidden="true"></i>
+            Caja abierta <span class="hidden sm:inline">{{ since() }}</span>
+          </span>
+        }
         <span class="text-sm text-muted truncate">
           {{ s.registerCode }} · {{ s.branchName }}<span class="hidden lg:inline"> · {{ userName() }}</span>
         </span>
@@ -108,5 +117,16 @@ export class PosHeaderComponent {
   protected readonly since = computed(() => {
     const s = this.session();
     return s ? openedSince(s.openedAt) : '';
+  });
+  /** "Lleva 3 días abierta" si la caja es de otro día (más de 24 horas); null si no. */
+  protected readonly stale = computed(() => {
+    const s = this.session();
+    return s ? staleCash(s.openedAt) : null;
+  });
+  /** Corto para el encabezado: "hace 3 días" o "desde ayer" (la fecha completa no cabía y partía la barra). */
+  protected readonly staleShort = computed(() => {
+    const s = this.session();
+    const days = s ? Math.floor((Date.now() - new Date(s.openedAt).getTime()) / 86_400_000) : 0;
+    return days >= 2 ? `hace ${days} días` : 'desde ayer';
   });
 }

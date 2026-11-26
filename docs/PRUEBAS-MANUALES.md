@@ -228,6 +228,9 @@ _Dueño y un cajero, con XASKA Impresora y cajón; XASKA IA activo_
 | ☐ | 100 | Sucursales → "Nueva sucursal" → "Un restaurante", 6 mesas, categorías Platos y Jugos, "Crear su caja" marcado. | Queda la sucursal con su caja, Mesas abre en ella con el Salón de 6 mesas y en Cartas por piso está "Carta de …" cobrándose en su caja. Si el negocio no tenía Mesas, quedan encendidas Mesas y Cocina. |
 | ☐ | 101 | Abrir la caja de ese restaurante y entrar a Vender; buscar y escanear un producto del súper. | Solo salen las pestañas Platos y Jugos (sin "Todos"); la búsqueda no lo muestra y el lector dice "… no se vende en …". En la sede principal sí se vende. |
 | ☐ | 102 | Sucursales → Editar la principal → "Solo algunas categorías" → Abarrotes. Luego volver a "Todo el catálogo". | En Vender de la principal solo sale Abarrotes; al volver, sale todo otra vez. |
+| ☐ | 103 | Con una caja abierta desde ayer (o antes), entrar a Vender y a Mi caja. | En Vender la píldora sale amarilla ("Caja abierta hace N días") y lleva a Mi caja; en Mi caja sale "Lleva N días abierta…". Con una caja de hoy, todo sigue en verde. |
+| ☐ | 104 | En el equipo donde vendes, salir de Vender y volver a entrar (o recargar /pos). | Vender aparece de una vez, sin el recuadro gris; si la caja se cerró en otro equipo, a los segundos muestra "Abrir caja". |
+| ☐ | 105 | Abrir /precios y Planes y pagos; en el celular, abrir xaska.co. | Dice "Precios finales: no se cobra IVA". En xaska.co el botón de Aska es solo la burbuja y no tapa la demostración. |
 
 ## Hallazgos
 

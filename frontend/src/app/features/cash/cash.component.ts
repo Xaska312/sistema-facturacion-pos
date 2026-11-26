@@ -28,6 +28,7 @@ import { CashReportDialogComponent } from './cash-report-dialog.component';
 import { OfflineSalesService } from '../../core/offline/offline-sales.service';
 import { clearOfflineBoot } from '../../core/offline/offline-boot';
 import { CASH_MOVEMENT_LABEL } from './labels';
+import { staleCash } from '../pos/pos-labels';
 import { TermComponent } from '../../shared/help/term.component';
 import { PesosInputDirective } from '../../shared/forms/pesos-input.directive';
 import { permissionFlag } from '../../core/auth/permission-flag';
@@ -57,6 +58,13 @@ import { ExpenseDialogComponent } from '../expenses/expense-dialog.component';
             <p class="text-lg font-medium">{{ s.registerCode }} · {{ s.registerName }}</p>
             <p class="text-sm text-muted">{{ s.branchName }} · abierta el {{ s.openedAt | date: 'short' }}</p>
             <p class="text-sm text-muted">Base de apertura: {{ cop(s.openingAmount) }}</p>
+            @if (stale(s.openedAt); as old) {
+              <!-- Revisión del 23 nov: una caja de otro día mezcla las ventas de varios días en un solo arqueo. -->
+              <p class="stale mt-2" role="note">
+                <i class="pi pi-exclamation-triangle text-xs mr-1" aria-hidden="true"></i><b>{{ old }}.</b>
+                Ciérrala al terminar el día y ábrela de nuevo mañana, así cada arqueo cuadra por día.
+              </p>
+            }
             @if (!s.mine) {
               <p class="text-sm mt-1"><i class="pi pi-users text-xs mr-1" aria-hidden="true"></i>Caja compartida, abierta
                 por {{ s.openedByName ?? 'otra persona' }}. Vendes en ella hasta que se cierre.</p>
@@ -181,8 +189,16 @@ import { ExpenseDialogComponent } from '../expenses/expense-dialog.component';
     <!-- Al cerrar se abre solo: ticket para imprimir y resumen por WhatsApp. -->
     <app-cash-report-dialog [(visible)]="reportOpen" [report]="report()" />
   `,
+  styles: `
+    .stale {
+      font-size: 0.875rem; padding: 0.5rem 0.75rem; border-radius: 10px;
+      background: var(--warning-soft); color: var(--warning-soft-text);
+    }
+  `,
 })
 export class CashComponent implements OnInit {
+  /** "Lleva 3 días abierta" si la caja es de otro día (revisión del 23 nov). */
+  protected readonly stale = staleCash;
   private readonly cash = inject(CashApi);
   private readonly messages = inject(ToastService);
 
