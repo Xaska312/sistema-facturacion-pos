@@ -233,6 +233,7 @@ _Dueño y un cajero, con XASKA Impresora y cajón; XASKA IA activo_
 | ☐ | 105 | Abrir /precios y Planes y pagos; en el celular, abrir xaska.co. | Dice "Precios finales: no se cobra IVA". En xaska.co el botón de Aska es solo la burbuja y no tapa la demostración. |
 | ☐ | 106 | En Ajustes poner "El día del negocio empieza a las" en 6:00 a. m.; vender algo de madrugada (o antes de las 6) y abrir Reportes e Inicio. | La venta cuenta en el día anterior; "Hoy" en Inicio y el reporte de Hoy siguen mostrando el día que empezó a las 6. Volver a medianoche deja todo como antes. |
 | ☐ | 107 | En una mesa con pedidos, tocar "Imprimir precuenta" (con y sin XASKA Impresora). | Sale "PRECUENTA" con los productos, el total, la propina sugerida y "no es un tiquete de venta"; la mesa queda en rojo ("Pidió la cuenta"). No se crea ninguna venta. |
+| ☐ | 108 | En Productos → Importar, subir un Excel con la columna "precio_mayorista" (algunas celdas vacías); luego vender a un cliente con la lista Mayorista. | El reporte dice "listas de precios nuevas: MAYORISTA" (si no existía); al venderle al cliente mayorista se cobra ese precio, y donde la celda estaba vacía, el normal. |
 
 ## Hallazgos
 

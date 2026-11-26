@@ -24,6 +24,10 @@ import { ColumnDef } from '../../shared/table/table';
         <li>Toca <strong>Revisar</strong>: te mostramos qué filas tienen errores antes de guardar nada.</li>
         <li>Si todo está bien, toca <strong>Importar</strong>. Si un SKU ya existe, ese producto se actualiza.</li>
       </ol>
+      <!-- Decisión 381: precio mayorista (u otra lista) desde el mismo archivo. -->
+      <p class="text-sm text-muted"><strong>Precio mayorista:</strong> agrega una columna <code>precio_mayorista</code>
+        (o <code>precio_</code> y el código de otra lista de precios). Si la lista no existe, se crea. Una celda vacía no
+        cambia ese precio. La plantilla ya trae una columna por cada lista que tengas.</p>
       <div class="flex flex-wrap gap-2 items-center">
         <app-button label="Descargar plantilla de Excel" icon="pi pi-file-excel" severity="secondary" [outlined]="true"
                   [loading]="downloading()" (clicked)="downloadTemplate()" />
@@ -56,6 +60,9 @@ import { ColumnDef } from '../../shared/table/table';
           {{ r.totalRows }} filas · {{ r.toCreate }} nuevos · {{ r.toUpdate }} actualizados
           @if (r.newCategories.length > 0) {
             · categorías nuevas: {{ r.newCategories.join(', ') }}
+          }
+          @if (r.newPriceLists?.length) {
+            · listas de precios nuevas: {{ r.newPriceLists!.join(', ') }}
           }
         </p>
         @if (r.errors.length > 0) {

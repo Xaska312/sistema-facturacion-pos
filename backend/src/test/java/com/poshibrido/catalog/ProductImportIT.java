@@ -152,4 +152,59 @@ class ProductImportIT extends IntegrationTest {
         api.upload(owner.tenant(), "/api/v1/products/import", new byte[] {'P', 'K', 3, 4, 0, 0, 0})
                 .andExpect(status().is(422));
     }
+
+    /** Decisión 381: el precio mayorista (o de otra lista) se carga con una columna precio_<lista>. */
+    @Test
+    void listPricesComeFromPriceColumnsAndTheListIsCreated() throws Exception {
+        Owned owner = api.newTenant("mayor");
+        String file = """
+                sku,nombre,codigo_barras,impuesto,precio,precio_mayorista
+                ARR-1K,Arroz 1 kg,7704444444444,IVA5,4200,3900
+                SAL-1,Sal 1 kg,7705555555555,EXCLUIDO,1500,
+                """;
+        api.upload(owner.tenant(), "/api/v1/products/import", bytes(file), "dryRun", "false")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.applied").value(true))
+                .andExpect(jsonPath("$.newPriceLists[0]").value("MAYORISTA"));
+        String lists = api.getWith(owner.tenant(), "/api/v1/price-lists").andReturn().getResponse().getContentAsString();
+        String mayorista = ((List<String>) JsonPath.read(lists, "$[?(@.code == 'MAYORISTA')].id")).getFirst();
+        assertThat(((List<String>) JsonPath.read(lists, "$[?(@.code == 'MAYORISTA')].name")).getFirst())
+                .isEqualTo("Mayorista");
+        api.getWith(owner.tenant(), "/api/v1/products/lookup?code=7704444444444&priceListId=" + mayorista)
+                .andExpect(jsonPath("$.price").value(3900.0)).andExpect(jsonPath("$.fromList").value(true));
+        api.getWith(owner.tenant(), "/api/v1/products/lookup?code=7705555555555&priceListId=" + mayorista)
+                .andExpect(jsonPath("$.price").value(1500.0)).andExpect(jsonPath("$.fromList").value(false));
+
+        // Se actualiza el precio mayorista; la lista ya existe y una celda vacía no lo cambia.
+        api.upload(owner.tenant(), "/api/v1/products/import", bytes("""
+                sku,nombre,impuesto,precio,Precio Mayorista
+                ARR-1K,Arroz 1 kg,IVA5,4300,3800
+                """), "dryRun", "false").andExpect(jsonPath("$.newPriceLists.length()").value(0));
+        api.getWith(owner.tenant(), "/api/v1/products/lookup?code=7704444444444&priceListId=" + mayorista)
+                .andExpect(jsonPath("$.price").value(3800.0));
+        api.upload(owner.tenant(), "/api/v1/products/import", bytes("""
+                sku,nombre,impuesto,precio,precio_mayorista
+                ARR-1K,Arroz 1 kg,IVA5,4300,
+                """), "dryRun", "false").andExpect(jsonPath("$.applied").value(true));
+        api.getWith(owner.tenant(), "/api/v1/products/lookup?code=7704444444444&priceListId=" + mayorista)
+                .andExpect(jsonPath("$.price").value(3800.0));
+
+        // Errores: un precio que no es número, y la columna de la lista General.
+        api.upload(owner.tenant(), "/api/v1/products/import", bytes("""
+                sku,nombre,impuesto,precio,precio_mayorista
+                ARR-1K,Arroz 1 kg,IVA5,4300,barato
+                """)).andExpect(jsonPath("$.errors[0].message").value(org.hamcrest.Matchers.containsString(
+                "lista MAYORISTA")));
+        api.upload(owner.tenant(), "/api/v1/products/import", bytes("""
+                sku,nombre,impuesto,precio,precio_general
+                ARR-1K,Arroz 1 kg,IVA5,4300,4000
+                """)).andExpect(status().is(422));
+
+        // La plantilla ya trae la columna de la lista y se importa tal cual.
+        byte[] template = api.getWith(owner.tenant(), "/api/v1/products/import/template")
+                .andReturn().getResponse().getContentAsByteArray();
+        api.upload(owner.tenant(), "/api/v1/products/import", template)
+                .andExpect(jsonPath("$.errors.length()").value(0))
+                .andExpect(jsonPath("$.newPriceLists.length()").value(0));
+    }
 }

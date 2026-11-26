@@ -11,13 +11,19 @@ export interface Release {
 
 export const RELEASES: readonly Release[] = [
   {
+    id: '2026-11-29',
+    title: 'Precio mayorista desde Excel',
+    items: [
+      'En el Excel de productos agrega la columna "precio_mayorista" y cargas el precio de mayorista de todos tus productos.',
+      'Si la lista de precios no existe, se crea sola.',
+    ],
+  },
+  {
     id: '2026-11-28',
     title: 'Para bares: precuenta y la noche en un solo día',
     items: [
-      'En la cuenta de una mesa, "Imprimir precuenta" saca lo que falta por cobrar y la propina sugerida para que el '
-        + 'cliente lo revise antes de pagar.',
-      'En Ajustes eliges a qué hora empieza el día del negocio: con 6:00 a. m., lo vendido en la madrugada cuenta en el '
-        + 'día anterior en Reportes, Inicio y Aska.',
+      'En la cuenta de una mesa, "Imprimir precuenta" saca lo que falta por cobrar y la propina sugerida.',
+      'En Ajustes eliges a qué hora empieza el día: con 6:00 a. m., la madrugada cuenta en el día anterior.',
     ],
   },
   {
